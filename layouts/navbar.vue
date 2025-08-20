@@ -14,8 +14,8 @@
               class="w-6 h-8"
             />
           </button>
-          <p class="text-lg md:text-xl font-bold">
-            Lilly <span class="text-red-500">ISP</span>
+          <p class="text-lg md:text-xl font-bold text-gray-900">
+            Lilly <span class="text-red-600">ISP</span>
           </p>
         </div>
         <!-- Profile dropdown for desktop -->
@@ -96,7 +96,7 @@
 
         <!-- Desktop Sidebar -->
         <div 
-          class="hidden md:flex md:flex-col border-r transition-all duration-300 bg-white"
+          class="hidden md:flex md:flex-col border-r transition-all duration-300 bg-white text-gray-700"
           :class="[
             showSidebar ? 'w-16' : 'w-64',
           ]"
@@ -118,12 +118,12 @@
               <li 
                 v-for="(item, index) in filterMenu" 
                 :key="index"
-                class="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-blue-100"
+                class="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-100 text-gray-700"
                 :class="[showSidebar ? 'justify-center' : '']"
                 @click="navigateTo(item.link)"
               >
                 <UIcon :name="item.icon" class="w-6 h-6" />
-                <span v-if="!showSidebar" class="font-medium">{{ item.label }}</span>
+                <span v-if="!showSidebar" class="font-medium text-gray-800">{{ item.label }}</span>
               </li>
             </ul>
           </div>
@@ -208,6 +208,16 @@
       label: 'Transaction',
       icon: 'i-heroicons-document-currency-dollar-16-solid',
       link: '/dashboard/transaction',
+    },
+    {
+      label: 'Tickets',
+      icon: 'i-heroicons-exclamation-triangle-16-solid',
+      link: '/dashboard/tickets',
+    },
+    {
+      label: 'Trouble Reports',
+      icon: 'i-heroicons-chart-pie',
+      link: '/dashboard/tickets/reports',
     },
     {
       label: 'User Management',

@@ -1,7 +1,8 @@
 // plugins/echarts.ts
 import * as echarts from 'echarts/core';
 import {
-  LineChart
+  LineChart,
+  PieChart
 } from 'echarts/charts';
 import {
   TitleComponent,
@@ -15,6 +16,7 @@ import {
 
 echarts.use([
   LineChart,
+  PieChart,
   TitleComponent,
   TooltipComponent,
   GridComponent,
