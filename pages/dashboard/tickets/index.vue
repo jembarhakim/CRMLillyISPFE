@@ -1,34 +1,3 @@
-import { Bar } from 'vue-chartjs'
-import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-} from 'chart.js'
-
-ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
-
-const byTypeChartData = computed(() => {
-  return {
-    labels: byTypeRows.value.map(r => r.name),
-    datasets: [
-      {
-        label: 'Ticket Count',
-        data: byTypeRows.value.map(r => r.count),
-        backgroundColor: '#4F46E5', // biru indigo
-      },
-    ],
-  }
-})
-
-const byTypeChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-}
-
 <script setup lang="ts">
 import { onMounted, ref, watch, defineAsyncComponent, computed } from 'vue'
 import { ticketsApi } from '@/api/tickets'
@@ -66,7 +35,7 @@ async function pollUpdates() {
     }
     lastCheckedAt.value = new Date().toISOString()
   } catch (e) {
-    // silent
+    // silent - global plugin handles 401 errors
   }
 }
 
@@ -90,6 +59,7 @@ const newTypeName = ref('')
 const showTechnicianModal = ref(false)
 const showNOCNoteModal = ref(false)
 const nocNote = ref('')
+const nocActionSubmitting = ref(false)
 const typeNameMap = computed(() => {
   const map: Record<string, string> = {}
   for (const t of troubleTypes.value) map[t.id] = t.name || t.id
@@ -193,9 +163,23 @@ async function nocPhysicalFromModal() {
 
 async function sendToCSFromModal() {
   if (!selectedId.value) return;
-  await ticketsApi().sendToCS(selectedId.value, nocNote.value);
-  showNOCNoteModal.value = false;
-  await refresh()
+  try {
+    nocActionSubmitting.value = true
+    await ticketsApi().sendToCS(selectedId.value, nocNote.value)
+    showNOCNoteModal.value = false
+    // feedback
+    try { const toast = useToast(); toast.add({ title: 'Sent to CS', description: 'Ticket returned to Customer Service.', color: 'primary', timeout: 3000 }) } catch {}
+    await refresh()
+  } catch (e:any) {
+    console.error('sendToCS error:', e)
+    try {
+      const toast = useToast();
+      const msg = e?.data?.message || e?.message || 'Failed to send to CS'
+      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
+    } catch {}
+  } finally {
+    nocActionSubmitting.value = false
+  }
 }
 async function resolve() { if (!selectedId.value) return; await ticketsApi().resolve(selectedId.value, note.value); await refresh() }
 
@@ -227,24 +211,6 @@ const getTicketActions = (ticket: any) => {
         tooltip: 'Return ticket to Customer Service'
       },
       {
-        label: 'NOC Solved',
-        color: 'bg-green-600',
-        action: () => { actPrepareNOC(ticket.id) },
-        show: (isAdmin.value || isNOC.value) &&
-          ticket.current_assignee_name === 'NOC' &&
-          ticket.status !== 'finished',
-        tooltip: 'Mark as solved by NOC'
-      },
-      {
-        label: 'Physical',
-        color: 'bg-amber-600',
-        action: () => { actPrepareNOC(ticket.id) },
-        show: (isAdmin.value || isNOC.value) &&
-          ticket.current_assignee_name === 'NOC' &&
-          ticket.status !== 'finished',
-        tooltip: 'Requires physical intervention'
-      },
-      {
         label: 'Assign Tech',
         color: 'bg-cyan-600',
         action: () => { actPrepareTechnician(ticket.id) },
@@ -257,10 +223,10 @@ const getTicketActions = (ticket: any) => {
         label: 'Resolve',
         color: 'bg-emerald-600',
         action: () => { actPrepare(ticket.id); resolve() },
-        show: (isAdmin.value || isTechnician.value) &&
-          (ticket.current_assignee_name === 'TECHNICIAN' || ticket.current_assignee_name === 'ADMIN') &&
+        show: (isAdmin.value || isCustomerService.value) &&
+          (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN') &&
           ticket.status !== 'finished',
-        tooltip: 'Mark ticket as resolved'
+        tooltip: 'Mark ticket as resolved (CS communicates with customer)'
       }
     ]
 
@@ -391,50 +357,54 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         </div>
       </div>
 
-      <div class="p-4 bg-white rounded-lg shadow border border-gray-100">
+      <div class="p-4 bg-white rounded-lg shadow border border-gray-100 overflow-auto">
         <div class="flex items-center justify-between mb-3">
-          <button class="px-3 py-2 bg-emerald-600 text-white rounded" @click="showAdd = true">Add Ticket</button>
+          <button v-if="isAdmin || isCustomerService" class="px-3 py-2 bg-emerald-600 text-white rounded"
+            @click="showAdd = true">
+            Add Ticket
+          </button>
+          <button class="px-3 py-2 bg-indigo-600 text-white rounded" @click="loadHotspots">Refresh Hotspots</button>
         </div>
-        <div class="table-scroll-container">
-          <div class="table-scroll-content">
-            <table class="min-w-full text-sm text-gray-900">
-              <thead class="bg-gray-100">
-                <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
-                  <th class="p-2">ID</th>
-                  <th class="p-2">Title</th>
-                  <th class="p-2">Type</th>
-                  <th class="p-2">Status</th>
-                  <th class="p-2">Assignee</th>
-                  <th class="p-2">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="r in rows" :key="r.id" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70">
-                  <td class="p-2">{{ r.id }}</td>
-                  <td class="p-2">{{ r.title }}</td>
-                  <td class="p-2 capitalize">{{ r.type }}</td>
-                  <td class="p-2 capitalize">{{ r.status }}</td>
-                                 <td class="p-2 capitalize">{{ r.current_assignee_role }}</td>
-                  <td class="p-2 space-x-2">
-                    <button class="px-2 py-1 text-white bg-blue-600 rounded" @click="actPrepare(r.id); sendToNOC()">To
-                      NOC</button>
-                    <button class="px-2 py-1 text-white bg-green-600 rounded" @click="actPrepare(r.id); nocSolved()">NOC
-                      Solved</button>
-                    <button class="px-2 py-1 text-white bg-amber-600 rounded"
-                      @click="actPrepare(r.id); nocPhysical()">Physical</button>
-                    <button class="px-2 py-1 text-white bg-cyan-600 rounded"
-                      @click="actPrepare(r.id); assignTechnician()">Assign Tech</button>
-                    <button class="px-2 py-1 text-white bg-emerald-600 rounded"
-                      @click="actPrepare(r.id); resolve()">Resolve</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <div class="table-scroll-footer">
-            <span class="scroll-hint">↔ Scroll horizontally to see more columns | ↕ Scroll vertically for more rows</span>
-          </div>
+        <div class="mb-3 text-xs text-gray-600" v-if="hotspots.length">
+          <span class="font-semibold">Top Hotspots:</span>
+          <span v-for="(h, idx) in hotspots.slice(0, 5)" :key="idx" class="ml-2">({{ h.gps_lat?.toFixed?.(5) }}, {{
+            h.gps_lng?.toFixed?.(5) }}): {{ h.count }}</span>
         </div>
+        <table class="min-w-full text-sm text-gray-700">
+          <thead class="bg-gray-50">
+            <tr class="text-left border-b border-gray-100 uppercase text-xs tracking-wide text-gray-600">
+              <th class="p-2">ID</th>
+              <th class="p-2">Title</th>
+              <th class="p-2">Description</th>
+              <th class="p-2">Type</th>
+              <th class="p-2">Status</th>
+              <th class="p-2">Assigned To Role</th>
+              <th class="p-2">Notes</th>
+              <th class="p-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="r in rows" :key="r.id" class="border-b border-gray-100 hover:bg-gray-50/60">
+              <td class="p-2">{{ r.id }}</td>
+              <td class="p-2">{{ r.title }}</td>
+              <td class="p-2 max-w-xs truncate" :title="r.description">{{ r.description || '-' }}</td>
+              <td class="p-2 capitalize">{{ typeNameMap[r.type] || r.type }}</td>
+              <td class="p-2 capitalize">{{ r.status }}</td>
+              <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
+              <td class="p-2 capitalize">{{ r.notes }}</td>
+              <td class="p-2 space-x-2">
+                <button v-for="action in getTicketActions(r)" :key="action.label"
+                  :class="['px-2 py-1 text-white rounded hover:opacity-80 transition-opacity', action.color]"
+                  @click="action.action" :title="action.tooltip">
+                  {{ action.label }}
+                </button>
+                <span v-if="getTicketActions(r).length === 0" class="text-gray-400 text-xs">
+                  No actions available
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <!-- Modal Add Ticket -->
@@ -501,8 +471,6 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         </div>
       </div>
 
-      
-
       <!-- Modal Assign Technician -->
       <div v-if="showTechnicianModal" class="fixed inset-0 z-50 flex items-center justify-center">
         <div class="absolute inset-0 bg-black/60" @click="showTechnicianModal = false"></div>
@@ -552,14 +520,8 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
           <div class="mt-6 flex justify-end gap-2">
             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700"
               @click="showNOCNoteModal = false">Cancel</button>
-            <button class="px-4 py-2 rounded bg-purple-600 text-white" @click="sendToCSFromModal">
+            <button class="px-4 py-2 rounded bg-purple-600 text-white disabled:opacity-50" @click="sendToCSFromModal" :disabled="nocActionSubmitting">
               To CS
-            </button>
-            <button class="px-4 py-2 rounded bg-green-600 text-white" @click="nocSolvedFromModal">
-              NOC Solved
-            </button>
-            <button class="px-4 py-2 rounded bg-amber-600 text-white" @click="nocPhysicalFromModal">
-              Physical
             </button>
           </div>
         </div>
