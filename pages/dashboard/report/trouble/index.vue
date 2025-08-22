@@ -51,30 +51,34 @@ onMounted(async ()=>{
 
     <div class="p-4 bg-white rounded-lg shadow border border-gray-100">
       <h2 class="mb-4 font-semibold text-gray-800">All Trouble Tickets</h2>
-      <div class="overflow-auto">
-        <table class="min-w-full text-sm text-gray-700">
-          <thead class="bg-gray-50">
-            <tr class="text-left border-b border-gray-100 uppercase text-xs tracking-wide text-gray-600">
-              <th class="p-2">ID</th>
-              <th class="p-2">Title</th>
-              <th class="p-2">Type</th>
-              <th class="p-2">Status</th>
-              <th class="p-2">Assignee</th>
-              <th class="p-2">Created</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="r in rows" :key="r.id" class="border-b border-gray-100 hover:bg-gray-50/60">
-              <td class="p-2">{{ r.id }}</td>
-              <td class="p-2">{{ r.title }}</td>
-              <!-- <td class="p-2 capitalize">{{ r.type }}</td> -->
-              <td class="p-2 capitalize">{{ typeNameMap[r.type] || r.type }}</td>
-              <td class="p-2 capitalize">{{ r.status }}</td>
-              <td class="p-2 capitalize">{{ r.current_assignee_role }}</td>
-              <td class="p-2">{{ r.created_at?.slice?.(0,10) }}</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="table-scroll-container">
+        <div class="table-scroll-content">
+          <table class="min-w-full text-sm text-gray-900">
+            <thead class="bg-gray-100">
+              <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
+                <th class="p-2">ID</th>
+                <th class="p-2">Title</th>
+                <th class="p-2">Type</th>
+                <th class="p-2">Status</th>
+                <th class="p-2">Assignee</th>
+                <th class="p-2">Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in rows" :key="r.id" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70">
+                <td class="p-2">{{ r.id }}</td>
+                <td class="p-2">{{ r.title }}</td>
+                <td class="p-2 capitalize">{{ r.type }}</td>
+                <td class="p-2 capitalize">{{ r.status }}</td>
+                <td class="p-2 capitalize">{{ r.current_assignee_role }}</td>
+                <td class="p-2">{{ r.created_at?.slice?.(0,10) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-scroll-footer">
+          <span class="scroll-hint">↔ Scroll horizontally to see more columns | ↕ Scroll vertically for more rows</span>
+        </div>
       </div>
     </div>
   </div>

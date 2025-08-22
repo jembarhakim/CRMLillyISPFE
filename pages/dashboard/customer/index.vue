@@ -182,14 +182,21 @@ function OpenModalReportInstallation(isEdit: boolean, data: any) {
         <UInput v-model="q" placeholder="Filter customer..." />
     </div>
 
-    <UTable :rows="rows" :columns="columns">
+    <div class="table-scroll-container">
+        <div class="table-scroll-content">
+            <UTable :rows="rows" :columns="columns" class="dashboard-table">
 
-        <template #actions-data="{ row }">
-            <UDropdown :items="items(row)">
-                <UButton color="gray" variant="ghost" icon="i-heroicons-ellipsis-horizontal-20-solid" />
-            </UDropdown>
-        </template>
-    </UTable>
+                <template #actions-data="{ row }">
+                    <UDropdown :items="items(row)">
+                        <UButton color="gray" variant="ghost" icon="i-heroicons-ellipsis-horizontal-20-solid" />
+                    </UDropdown>
+                </template>
+            </UTable>
+        </div>
+        <div class="table-scroll-footer">
+          <span class="scroll-hint">↔ Scroll horizontally to see more columns | ↕ Scroll vertically for more rows</span>
+        </div>
+    </div>
 
     <div class="flex justify-end px-3 py-3.5 border-t border-gray-200 dark:border-gray-700">
         <UPagination v-model="page" :page-count="pageCount" :total="customer.length" />

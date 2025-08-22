@@ -141,26 +141,33 @@ const generatePDF = async () => {
             </div>
           </div>
 
-          <table class="w-full text-sm mb-6 border-t border-b border-gray-300">
-            <thead>
-              <tr class="text-left">
-                <th class="py-2">#</th>
-                <th class="py-2">Item</th>
-                <th class="py-2">Price</th>
-                <th class="py-2">Qty</th>
-                <th class="py-2">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(item, i) in invoiceDetail.invoice_items" :key="i">
-                <td class="py-2">{{ i + 1 }}</td>
-                <td class="py-2">{{ item.name }}</td>
-                <td class="py-2">{{ formatIDR(item.price) }}</td>
-                <td class="py-2">{{ item.qty }}</td>
-                <td class="py-2">{{ formatIDR(item.total) }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-scroll-container">
+            <div class="table-scroll-content">
+              <table class="w-full text-sm mb-6 border-t border-b border-gray-300 text-gray-900">
+                <thead class="bg-gray-100">
+                  <tr class="text-left uppercase text-xs tracking-wide text-gray-800">
+                    <th class="py-2">#</th>
+                    <th class="py-2">Item</th>
+                    <th class="py-2">Price</th>
+                    <th class="py-2">Qty</th>
+                    <th class="py-2">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, i) in invoiceDetail.invoice_items" :key="i" class="odd:bg-white even:bg-gray-50">
+                    <td class="py-2">{{ i + 1 }}</td>
+                    <td class="py-2">{{ item.name }}</td>
+                    <td class="py-2">{{ formatIDR(item.price) }}</td>
+                    <td class="py-2">{{ item.qty }}</td>
+                    <td class="py-2">{{ formatIDR(item.total) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-scroll-footer">
+              <span class="scroll-hint">↔ Scroll horizontally to see more columns | ↕ Scroll vertically for more rows</span>
+            </div>
+          </div>
 
           <div class="flex justify-end mb-6">
             <div class="text-sm w-1/3">
