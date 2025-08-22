@@ -79,13 +79,13 @@ async function refresh() {
     console.log('Fetching tickets...')
     console.log('Auth token:', authStore.getToken)
     console.log('User role:', authStore.user?.role)
-    
+
     const res: any = await ticketsApi().list()
     console.log('Tickets API response:', res)
-    
+
     rows.value = res.data || res
     console.log('Processed tickets:', rows.value)
-    
+
     loading.value = false
     isLoading.value = false
   } catch (error) {
@@ -95,7 +95,7 @@ async function refresh() {
   }
 }
 
-onMounted(async () => { 
+onMounted(async () => {
   // Test role extraction first
   try {
     const debugResponse = await ticketsApi().debugRole()
@@ -103,24 +103,35 @@ onMounted(async () => {
   } catch (error) {
     console.error('Debug role error:', error)
   }
-  
-  await refresh(); 
-  await loadLookups() 
+
+  await refresh();
+  await loadLookups()
   startPolling()
 })
 
-function actPrepare(id: number) { selectedId.value = id; note.value = ''; techId.value = '' }
-
-function actPrepareTechnician(id: number) { 
-  selectedId.value = id; 
-  techId.value = ''; 
-  showTechnicianModal.value = true 
+function dismissUpdates() {
+  showUpdatesBanner.value = false
+  newUpdates.value = []
 }
 
-function actPrepareNOC(id: number) { 
-  selectedId.value = id; 
-  nocNote.value = ''; 
-  showNOCNoteModal.value = true 
+async function refreshUpdates() {
+  await refresh()
+  showUpdatesBanner.value = false
+  newUpdates.value = []
+}
+
+function actPrepare(id: number) { selectedId.value = id; note.value = ''; techId.value = '' }
+
+function actPrepareTechnician(id: number) {
+  selectedId.value = id;
+  techId.value = '';
+  showTechnicianModal.value = true
+}
+
+function actPrepareNOC(id: number) {
+  selectedId.value = id;
+  nocNote.value = '';
+  showNOCNoteModal.value = true
 }
 
 async function sendToNOC() { if (!selectedId.value) return; await ticketsApi().sendToNOC(selectedId.value, note.value); await refresh() }
@@ -128,32 +139,32 @@ async function nocSolved() { if (!selectedId.value) return; await ticketsApi().n
 async function nocPhysical() { if (!selectedId.value) return; await ticketsApi().nocPhysical(selectedId.value, note.value); await refresh() }
 async function assignTechnician() { if (!selectedId.value) return; await ticketsApi().assignTechnician(selectedId.value, techId.value); await refresh() }
 
-async function assignTechnicianFromModal() { 
-  if (!selectedId.value || !techId.value) return; 
-  await ticketsApi().assignTechnician(selectedId.value, techId.value); 
+async function assignTechnicianFromModal() {
+  if (!selectedId.value || !techId.value) return;
+  await ticketsApi().assignTechnician(selectedId.value, techId.value);
   showTechnicianModal.value = false;
-  await refresh() 
+  await refresh()
 }
 
-async function nocSolvedFromModal() { 
-  if (!selectedId.value) return; 
-  await ticketsApi().nocSolved(selectedId.value, nocNote.value); 
+async function nocSolvedFromModal() {
+  if (!selectedId.value) return;
+  await ticketsApi().nocSolved(selectedId.value, nocNote.value);
   showNOCNoteModal.value = false;
-  await refresh() 
+  await refresh()
 }
 
-async function nocPhysicalFromModal() { 
-  if (!selectedId.value) return; 
-  await ticketsApi().nocPhysical(selectedId.value, nocNote.value); 
+async function nocPhysicalFromModal() {
+  if (!selectedId.value) return;
+  await ticketsApi().nocPhysical(selectedId.value, nocNote.value);
   showNOCNoteModal.value = false;
-  await refresh() 
+  await refresh()
 }
 
-async function sendToCSFromModal() { 
-  if (!selectedId.value) return; 
-  await ticketsApi().sendToCS(selectedId.value, nocNote.value); 
+async function sendToCSFromModal() {
+  if (!selectedId.value) return;
+  await ticketsApi().sendToCS(selectedId.value, nocNote.value);
   showNOCNoteModal.value = false;
-  await refresh() 
+  await refresh()
 }
 async function resolve() { if (!selectedId.value) return; await ticketsApi().resolve(selectedId.value, note.value); await refresh() }
 
@@ -166,72 +177,72 @@ const getTicketActions = (ticket: any) => {
     show: boolean
     tooltip?: string
   }> = [
-    {
-      label: 'To NOC',
-      color: 'bg-blue-600',
-      action: () => { actPrepare(ticket.id); sendToNOC() },
-      show: (isAdmin.value || isCustomerService.value) && 
-            (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'ADMIN') && 
-            ticket.status !== 'finished',
-      tooltip: 'Send ticket to Network Operations Center'
-    },
-    {
-      label: 'To CS',
-      color: 'bg-purple-600',
-      action: () => { actPrepareNOC(ticket.id) },
-      show: (isAdmin.value || isNOC.value) && 
-            ticket.current_assignee_name === 'NOC' && 
-            ticket.status !== 'finished',
-      tooltip: 'Return ticket to Customer Service'
-    },
-    {
-      label: 'NOC Solved',
-      color: 'bg-green-600',
-      action: () => { actPrepareNOC(ticket.id) },
-      show: (isAdmin.value || isNOC.value) && 
-            ticket.current_assignee_name === 'NOC' && 
-            ticket.status !== 'finished',
-      tooltip: 'Mark as solved by NOC'
-    },
-    {
-      label: 'Physical',
-      color: 'bg-amber-600',
-      action: () => { actPrepareNOC(ticket.id) },
-      show: (isAdmin.value || isNOC.value) && 
-            ticket.current_assignee_name === 'NOC' && 
-            ticket.status !== 'finished',
-      tooltip: 'Requires physical intervention'
-    },
-    {
-      label: 'Assign Tech',
-      color: 'bg-cyan-600',
-      action: () => { actPrepareTechnician(ticket.id) },
-      show: (isAdmin.value || isCustomerService.value) && 
-            (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'ADMIN') && 
-            ticket.status !== 'finished',
-      tooltip: 'Assign to technician for field work'
-    },
-    {
-      label: 'Resolve',
-      color: 'bg-emerald-600',
-      action: () => { actPrepare(ticket.id); resolve() },
-      show: (isAdmin.value || isTechnician.value) && 
-            (ticket.current_assignee_name === 'TECHNICIAN' || ticket.current_assignee_name === 'ADMIN') && 
-            ticket.status !== 'finished',
-      tooltip: 'Mark ticket as resolved'
-    }
-  ]
+      {
+        label: 'To NOC',
+        color: 'bg-blue-600',
+        action: () => { actPrepare(ticket.id); sendToNOC() },
+        show: (isAdmin.value || isCustomerService.value) &&
+          (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'ADMIN') &&
+          ticket.status !== 'finished',
+        tooltip: 'Send ticket to Network Operations Center'
+      },
+      {
+        label: 'To CS',
+        color: 'bg-purple-600',
+        action: () => { actPrepareNOC(ticket.id) },
+        show: (isAdmin.value || isNOC.value) &&
+          ticket.current_assignee_name === 'NOC' &&
+          ticket.status !== 'finished',
+        tooltip: 'Return ticket to Customer Service'
+      },
+      {
+        label: 'NOC Solved',
+        color: 'bg-green-600',
+        action: () => { actPrepareNOC(ticket.id) },
+        show: (isAdmin.value || isNOC.value) &&
+          ticket.current_assignee_name === 'NOC' &&
+          ticket.status !== 'finished',
+        tooltip: 'Mark as solved by NOC'
+      },
+      {
+        label: 'Physical',
+        color: 'bg-amber-600',
+        action: () => { actPrepareNOC(ticket.id) },
+        show: (isAdmin.value || isNOC.value) &&
+          ticket.current_assignee_name === 'NOC' &&
+          ticket.status !== 'finished',
+        tooltip: 'Requires physical intervention'
+      },
+      {
+        label: 'Assign Tech',
+        color: 'bg-cyan-600',
+        action: () => { actPrepareTechnician(ticket.id) },
+        show: (isAdmin.value || isCustomerService.value) &&
+          (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'ADMIN') &&
+          ticket.status !== 'finished',
+        tooltip: 'Assign to technician for field work'
+      },
+      {
+        label: 'Resolve',
+        color: 'bg-emerald-600',
+        action: () => { actPrepare(ticket.id); resolve() },
+        show: (isAdmin.value || isTechnician.value) &&
+          (ticket.current_assignee_name === 'TECHNICIAN' || ticket.current_assignee_name === 'ADMIN') &&
+          ticket.status !== 'finished',
+        tooltip: 'Mark ticket as resolved'
+      }
+    ]
 
   return actions.filter(action => action.show)
 }
 
 // Add sendToCS function for NOC users
-async function sendToCS() { 
-  if (!selectedId.value) return; 
+async function sendToCS() {
+  if (!selectedId.value) return;
   // For now, we'll use the same API endpoint but with different logic
   // In a real implementation, you'd have a separate sendToCS endpoint
-  await ticketsApi().sendToNOC(selectedId.value, note.value); 
-  await refresh() 
+  await ticketsApi().sendToNOC(selectedId.value, note.value);
+  await refresh()
 }
 
 const showAdd = ref(false)
@@ -338,23 +349,21 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
     <div v-if="activeTab === 0" class="space-y-4">
       <h1 class="text-2xl font-semibold text-gray-900">Trouble Tickets</h1>
 
-      <div v-if="showUpdatesBanner" class="p-3 rounded bg-yellow-50 border border-yellow-200 text-yellow-800 flex items-center justify-between">
+      <div v-if="showUpdatesBanner"
+        class="p-3 rounded bg-yellow-50 border border-yellow-200 text-yellow-800 flex items-center justify-between">
         <div>
           New updates available ({{ newUpdates.length }}). Some tickets may have been assigned to your role.
         </div>
         <div class="space-x-2">
-          <button class="px-2 py-1 rounded bg-yellow-600 text-white" @click="() => { showUpdatesBanner.value = false; newUpdates.value = [] }">Dismiss</button>
-          <button class="px-2 py-1 rounded bg-yellow-700 text-white" @click="async () => { await refresh(); showUpdatesBanner.value = false; newUpdates.value = [] }">Refresh</button>
+          <button class="px-2 py-1 rounded bg-yellow-600 text-white" @click="dismissUpdates">Dismiss</button>
+          <button class="px-2 py-1 rounded bg-yellow-700 text-white" @click="refreshUpdates">Refresh</button>
         </div>
       </div>
 
       <div class="p-4 bg-white rounded-lg shadow border border-gray-100 overflow-auto">
         <div class="flex items-center justify-between mb-3">
-          <button 
-            v-if="isAdmin || isCustomerService"
-            class="px-3 py-2 bg-emerald-600 text-white rounded" 
-            @click="showAdd = true"
-          >
+          <button v-if="isAdmin || isCustomerService" class="px-3 py-2 bg-emerald-600 text-white rounded"
+            @click="showAdd = true">
             Add Ticket
           </button>
           <button class="px-3 py-2 bg-indigo-600 text-white rounded" @click="loadHotspots">Refresh Hotspots</button>
@@ -385,13 +394,9 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
               <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
               <td class="p-2 capitalize">{{ r.notes }}</td>
               <td class="p-2 space-x-2">
-                <button 
-                  v-for="action in getTicketActions(r)" 
-                  :key="action.label"
+                <button v-for="action in getTicketActions(r)" :key="action.label"
                   :class="['px-2 py-1 text-white rounded hover:opacity-80 transition-opacity', action.color]"
-                  @click="action.action"
-                  :title="action.tooltip"
-                >
+                  @click="action.action" :title="action.tooltip">
                   {{ action.label }}
                 </button>
                 <span v-if="getTicketActions(r).length === 0" class="text-gray-400 text-xs">
@@ -467,78 +472,67 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         </div>
       </div>
 
-             <!-- Modal Assign Technician -->
-       <div v-if="showTechnicianModal" class="fixed inset-0 z-50 flex items-center justify-center">
-         <div class="absolute inset-0 bg-black/60" @click="showTechnicianModal = false"></div>
-         <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
-           <div class="flex items-center justify-between mb-4">
-             <h2 class="text-xl font-semibold text-gray-900">Assign Technician</h2>
-             <button class="text-gray-400 hover:text-gray-600" @click="showTechnicianModal = false">✕</button>
-           </div>
-           <div class="space-y-4">
-             <div>
-               <label class="block text-sm font-medium text-gray-700 mb-1">Select Technician</label>
-               <select v-model="techId"
-                 class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                 <option value="">Choose a technician...</option>
-                 <option v-for="tech in technicians" :key="tech.id" :value="tech.id">
-                   {{ tech.name || tech.username }} ({{ tech.id }})
-                 </option>
-               </select>
-             </div>
-           </div>
-           <div class="mt-6 flex justify-end gap-2">
-             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showTechnicianModal = false">Cancel</button>
-             <button 
-               class="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50" 
-               @click="assignTechnicianFromModal"
-               :disabled="!techId"
-             >
-               Assign Technician
-             </button>
-           </div>
-         </div>
-       </div>
+      <!-- Modal Assign Technician -->
+      <div v-if="showTechnicianModal" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" @click="showTechnicianModal = false"></div>
+        <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Assign Technician</h2>
+            <button class="text-gray-400 hover:text-gray-600" @click="showTechnicianModal = false">✕</button>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Select Technician</label>
+              <select v-model="techId"
+                class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Choose a technician...</option>
+                <option v-for="tech in technicians" :key="tech.id" :value="tech.id">
+                  {{ tech.name || tech.username }} ({{ tech.id }})
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="mt-6 flex justify-end gap-2">
+            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700"
+              @click="showTechnicianModal = false">Cancel</button>
+            <button class="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
+              @click="assignTechnicianFromModal" :disabled="!techId">
+              Assign Technician
+            </button>
+          </div>
+        </div>
+      </div>
 
-       <!-- Modal NOC Note -->
-       <div v-if="showNOCNoteModal" class="fixed inset-0 z-50 flex items-center justify-center">
-         <div class="absolute inset-0 bg-black/60" @click="showNOCNoteModal = false"></div>
-         <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
-           <div class="flex items-center justify-between mb-4">
-             <h2 class="text-xl font-semibold text-gray-900">NOC Action</h2>
-             <button class="text-gray-400 hover:text-gray-600" @click="showNOCNoteModal = false">✕</button>
-           </div>
-           <div class="space-y-4">
-             <div>
-               <label class="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
-               <textarea v-model="nocNote"
-                 placeholder="Enter any notes about this action..."
-                 class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none"></textarea>
-             </div>
-           </div>
-           <div class="mt-6 flex justify-end gap-2">
-             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showNOCNoteModal = false">Cancel</button>
-             <button 
-               class="px-4 py-2 rounded bg-purple-600 text-white" 
-               @click="sendToCSFromModal"
-             >
-               To CS
-             </button>
-             <button 
-               class="px-4 py-2 rounded bg-green-600 text-white" 
-               @click="nocSolvedFromModal"
-             >
-               NOC Solved
-             </button>
-             <button 
-               class="px-4 py-2 rounded bg-amber-600 text-white" 
-               @click="nocPhysicalFromModal"
-             >
-               Physical
-             </button>
-           </div>
-         </div>
-       </div>
+      <!-- Modal NOC Note -->
+      <div v-if="showNOCNoteModal" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" @click="showNOCNoteModal = false"></div>
+        <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">NOC Action</h2>
+            <button class="text-gray-400 hover:text-gray-600" @click="showNOCNoteModal = false">✕</button>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
+              <textarea v-model="nocNote" placeholder="Enter any notes about this action..."
+                class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none text-gray-900 bg-white"></textarea>
+            </div>
+          </div>
+          <div class="mt-6 flex justify-end gap-2">
+            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700"
+              @click="showNOCNoteModal = false">Cancel</button>
+            <button class="px-4 py-2 rounded bg-purple-600 text-white" @click="sendToCSFromModal">
+              To CS
+            </button>
+            <button class="px-4 py-2 rounded bg-green-600 text-white" @click="nocSolvedFromModal">
+              NOC Solved
+            </button>
+            <button class="px-4 py-2 rounded bg-amber-600 text-white" @click="nocPhysicalFromModal">
+              Physical
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div v-else class="space-y-4">
