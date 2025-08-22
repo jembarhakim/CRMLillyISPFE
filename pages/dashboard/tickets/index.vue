@@ -1,3 +1,34 @@
+import { Bar } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+} from 'chart.js'
+
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
+
+const byTypeChartData = computed(() => {
+  return {
+    labels: byTypeRows.value.map(r => r.name),
+    datasets: [
+      {
+        label: 'Ticket Count',
+        data: byTypeRows.value.map(r => r.count),
+        backgroundColor: '#4F46E5', // biru indigo
+      },
+    ],
+  }
+})
+
+const byTypeChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+}
+
 <script setup lang="ts">
 import { onMounted, ref, watch, defineAsyncComponent, computed } from 'vue'
 import { ticketsApi } from '@/api/tickets'
@@ -469,6 +500,8 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
           </div>
         </div>
       </div>
+
+      
 
       <!-- Modal Assign Technician -->
       <div v-if="showTechnicianModal" class="fixed inset-0 z-50 flex items-center justify-center">
