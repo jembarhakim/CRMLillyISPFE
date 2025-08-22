@@ -182,7 +182,7 @@ const getTicketActions = (ticket: any) => {
         color: 'bg-blue-600',
         action: () => { actPrepare(ticket.id); sendToNOC() },
         show: (isAdmin.value || isCustomerService.value) &&
-          (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'ADMIN') &&
+          (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN') &&
           ticket.status !== 'finished',
         tooltip: 'Send ticket to Network Operations Center'
       },
@@ -218,7 +218,7 @@ const getTicketActions = (ticket: any) => {
         color: 'bg-cyan-600',
         action: () => { actPrepareTechnician(ticket.id) },
         show: (isAdmin.value || isCustomerService.value) &&
-          (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'ADMIN') &&
+          (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN') &&
           ticket.status !== 'finished',
         tooltip: 'Assign to technician for field work'
       },
