@@ -5,7 +5,12 @@ import { ticketsApi } from '@/api/tickets'
 const rows = ref<any[]>([])
 const seriesData = ref<any[]>([])
 const loading = ref(true)
-
+const troubleTypes = ref<any[]>([])
+const typeNameMap = computed(() => {
+  const map: Record<string, string> = {}
+  for (const t of troubleTypes.value) map[t.id] = t.name || t.id
+  return map
+})
 onMounted(async () => {
   const [list, byType] = await Promise.all([
     ticketsApi().list() as any,
@@ -62,7 +67,8 @@ onMounted(async ()=>{
             <tr v-for="r in rows" :key="r.id" class="border-b border-gray-100 hover:bg-gray-50/60">
               <td class="p-2">{{ r.id }}</td>
               <td class="p-2">{{ r.title }}</td>
-              <td class="p-2 capitalize">{{ r.type }}</td>
+              <!-- <td class="p-2 capitalize">{{ r.type }}</td> -->
+              <td class="p-2 capitalize">{{ typeNameMap[r.type] || r.type }}</td>
               <td class="p-2 capitalize">{{ r.status }}</td>
               <td class="p-2 capitalize">{{ r.current_assignee_role }}</td>
               <td class="p-2">{{ r.created_at?.slice?.(0,10) }}</td>

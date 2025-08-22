@@ -18,20 +18,24 @@ const validate = (state: any): FormError[] => {
 async function onSubmitEmployee(event: FormSubmitEvent<any>) {
   const authStore = useAuthStore()
   const api = useApiHost()
-  console.log(api)
-  authApi().loginAuth(state.email, state.password)
-    .then((response) => {
-
-      authStore.login({ token: response.data.token, role_id: response.data.user.role.id })
-      navigateTo('/dashboard')
+  console.log('API host:', api)
+  
+  try {
+    const response = await authApi().loginAuth(state.email, state.password)
+    console.log('Login response:', response)
+    console.log('Response data:', response.data)
+    console.log('Token:', response.data?.token)
+    console.log('User role:', response.data?.user?.role)
+    
+    authStore.login({ token: response.data.token, role_id: response.data.user.role.id })
+    navigateTo('/dashboard')
+  } catch (error: any) {
+    console.error('Login error:', error)
+    useToast().add({
+      title: error.message || 'Login failed',
+      color: "red"
     })
-    .catch((error) => {
-      console.log(error, "apa ini")
-      useToast().add({
-        title: error,
-        color: "red"
-      })
-    })
+  }
 
   console.log(event.data)
 }

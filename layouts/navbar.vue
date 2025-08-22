@@ -126,6 +126,11 @@
                 <span v-if="!showSidebar" class="font-medium text-gray-800">{{ item.label }}</span>
               </li>
             </ul>
+            
+            <!-- Show message if no menu items -->
+            <div v-if="filterMenu.length === 0" class="p-3 text-center text-gray-500 text-sm">
+              No menu items available for role: {{ authStore.user?.role || 'Unknown' }}
+            </div>
           </div>
         </div>
 
@@ -143,14 +148,9 @@
   <script setup lang="ts">
   import { ref, computed } from 'vue'
   import { useRouter } from 'vue-router'
+  import { getMenuForRole, getRoleDisplayName } from '@/utilities/rolePermissions'
 
   // Type definitions
-  interface MenuItem {
-    label: string
-    icon: string
-    link: string
-  }
-
   interface ProfileDropdownItem {
     label: string
     click: () => Promise<void> | void
@@ -161,70 +161,6 @@
   const showSidebar = ref(true)
   const showMobileMenu = ref(false)
   const authStore = useAuthStore()
-
-  // Menu items
-  const items: MenuItem[] = [
-    {
-      label: 'Dashboard',
-      icon: 'i-heroicons-home',
-      link: '/dashboard',
-    },
-    {
-      label: 'Customer',
-      icon: 'i-heroicons-user-circle-16-solid',
-      link: '/dashboard/customer',
-    },
-    {
-      label: 'Area',
-      icon: 'i-heroicons-map',
-      link: '/dashboard/area',
-    },
-    {
-      label: 'Report',
-      icon: 'i-heroicons-book-open-solid',
-      link: '/dashboard/report',
-    },
-    {
-      label: 'Internet Package',
-      icon: 'i-heroicons-wifi-16-solid',
-      link: '/dashboard/internet-package',
-    },
-    {
-      label: 'Assets',
-      icon: 'i-heroicons-arrow-down-on-square-stack',
-      link: '/dashboard/asset',
-    },
-    {
-      label: 'Company',
-      icon: 'i-heroicons-building-office-16-solid',
-      link: '/dashboard/companies',
-    },
-    {
-      label: 'Invoice',
-      icon: 'i-heroicons-document-currency-dollar-16-solid',
-      link: '/dashboard/invoice',
-    },
-    {
-      label: 'Transaction',
-      icon: 'i-heroicons-document-currency-dollar-16-solid',
-      link: '/dashboard/transaction',
-    },
-    {
-      label: 'Tickets',
-      icon: 'i-heroicons-exclamation-triangle-16-solid',
-      link: '/dashboard/tickets',
-    },
-    {
-      label: 'Trouble Reports',
-      icon: 'i-heroicons-chart-pie',
-      link: '/dashboard/tickets/reports',
-    },
-    {
-      label: 'User Management',
-      icon: 'i-heroicons-user-circle-16-solid',
-      link: '/dashboard/user-management',
-    },
-  ]
 
   // Profile dropdown
   const ProfileDropdown: ProfileDropdownItem[][] = [
@@ -243,22 +179,13 @@
     ],
   ]
 
-  // Computed menu based on user role
+  // Computed menu based on user role using centralized system
   const filterMenu = computed(() => {
-    if (!authStore.user) return items // Fallback if user is not defined
-    if (authStore.user.role === 'ADMIN') {
-      const hideMenu = [''] // No items hidden for ADMIN
-      return items.filter(item => !hideMenu.includes(item.label))
+    if (!authStore.user || !authStore.user.role) {
+      return [] // Return empty array if user is not defined
     }
-    if (authStore.user.role === 'TECHNICIAN') {
-      const hideMenu = ['User Management', 'Report', 'Invoice', 'Transaction', 'Company', 'Area']
-      return items.filter(item => !hideMenu.includes(item.label))
-    }
-    if (authStore.user.role === 'FINANCE') {
-      const hideMenu = ['User Management','Company', 'Assets', 'Internet Package', 'Area']
-      return items.filter(item => !hideMenu.includes(item.label))
-    }
-    return items
+    
+    return getMenuForRole(authStore.user.role)
   })
 
   // Methods
