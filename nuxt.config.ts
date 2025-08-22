@@ -2,6 +2,10 @@
 import type { NuxtPage } from "nuxt/schema";
 
 export default defineNuxtConfig({
+  css: [
+    "~/assets/css/tailwind.css",
+    "~/assets/css/global.css",
+  ],
   plugins: ["~/plugins/echarts.ts"],
   echarts: {
     charts: ["BarChart", "LineChart", "PieChart"],
