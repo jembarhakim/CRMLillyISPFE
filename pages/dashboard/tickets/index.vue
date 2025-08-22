@@ -360,52 +360,50 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         </div>
       </div>
 
-      <div class="p-4 bg-white rounded-lg shadow border border-gray-100 overflow-auto">
+      <div class="p-4 bg-white rounded-lg shadow border border-gray-100">
         <div class="flex items-center justify-between mb-3">
-          <button v-if="isAdmin || isCustomerService" class="px-3 py-2 bg-emerald-600 text-white rounded"
-            @click="showAdd = true">
-            Add Ticket
-          </button>
-          <button class="px-3 py-2 bg-indigo-600 text-white rounded" @click="loadHotspots">Refresh Hotspots</button>
+          <button class="px-3 py-2 bg-emerald-600 text-white rounded" @click="showAdd = true">Add Ticket</button>
         </div>
-        <div class="mb-3 text-xs text-gray-600" v-if="hotspots.length">
-          <span class="font-semibold">Top Hotspots:</span>
-          <span v-for="(h, idx) in hotspots.slice(0, 5)" :key="idx" class="ml-2">({{ h.gps_lat?.toFixed?.(5) }}, {{
-            h.gps_lng?.toFixed?.(5) }}): {{ h.count }}</span>
+        <div class="table-scroll-container">
+          <div class="table-scroll-content">
+            <table class="min-w-full text-sm text-gray-900">
+              <thead class="bg-gray-100">
+                <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
+                  <th class="p-2">ID</th>
+                  <th class="p-2">Title</th>
+                  <th class="p-2">Type</th>
+                  <th class="p-2">Status</th>
+                  <th class="p-2">Assignee</th>
+                  <th class="p-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in rows" :key="r.id" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70">
+                  <td class="p-2">{{ r.id }}</td>
+                  <td class="p-2">{{ r.title }}</td>
+                  <td class="p-2 capitalize">{{ r.type }}</td>
+                  <td class="p-2 capitalize">{{ r.status }}</td>
+                                 <td class="p-2 capitalize">{{ r.current_assignee_role }}</td>
+                  <td class="p-2 space-x-2">
+                    <button class="px-2 py-1 text-white bg-blue-600 rounded" @click="actPrepare(r.id); sendToNOC()">To
+                      NOC</button>
+                    <button class="px-2 py-1 text-white bg-green-600 rounded" @click="actPrepare(r.id); nocSolved()">NOC
+                      Solved</button>
+                    <button class="px-2 py-1 text-white bg-amber-600 rounded"
+                      @click="actPrepare(r.id); nocPhysical()">Physical</button>
+                    <button class="px-2 py-1 text-white bg-cyan-600 rounded"
+                      @click="actPrepare(r.id); assignTechnician()">Assign Tech</button>
+                    <button class="px-2 py-1 text-white bg-emerald-600 rounded"
+                      @click="actPrepare(r.id); resolve()">Resolve</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-scroll-footer">
+            <span class="scroll-hint">↔ Scroll horizontally to see more columns | ↕ Scroll vertically for more rows</span>
+          </div>
         </div>
-        <table class="min-w-full text-sm text-gray-700">
-          <thead class="bg-gray-50">
-            <tr class="text-left border-b border-gray-100 uppercase text-xs tracking-wide text-gray-600">
-              <th class="p-2">ID</th>
-              <th class="p-2">Title</th>
-              <th class="p-2">Type</th>
-              <th class="p-2">Status</th>
-              <th class="p-2">Assigned To Role</th>
-              <th class="p-2">Notes</th>
-              <th class="p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="r in rows" :key="r.id" class="border-b border-gray-100 hover:bg-gray-50/60">
-              <td class="p-2">{{ r.id }}</td>
-              <td class="p-2">{{ r.title }}</td>
-              <td class="p-2 capitalize">{{ typeNameMap[r.type] || r.type }}</td>
-              <td class="p-2 capitalize">{{ r.status }}</td>
-              <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
-              <td class="p-2 capitalize">{{ r.notes }}</td>
-              <td class="p-2 space-x-2">
-                <button v-for="action in getTicketActions(r)" :key="action.label"
-                  :class="['px-2 py-1 text-white rounded hover:opacity-80 transition-opacity', action.color]"
-                  @click="action.action" :title="action.tooltip">
-                  {{ action.label }}
-                </button>
-                <span v-if="getTicketActions(r).length === 0" class="text-gray-400 text-xs">
-                  No actions available
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
       </div>
 
       <!-- Modal Add Ticket -->
