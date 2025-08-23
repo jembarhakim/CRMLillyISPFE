@@ -278,24 +278,6 @@ const getTicketActions = (ticket: any) => {
         tooltip: 'Return ticket to Customer Service'
       },
       {
-        label: 'NOC Solved',
-        color: 'bg-green-600',
-        action: () => { actPrepareNOC(ticket.id) },
-        show: (isAdmin.value || isNOC.value) &&
-          ticket.current_assignee_name === 'NOC' &&
-          ticket.status !== 'finished',
-        tooltip: 'Mark as solved by NOC'
-      },
-      {
-        label: 'Physical',
-        color: 'bg-amber-600',
-        action: () => { actPrepareNOC(ticket.id) },
-        show: (isAdmin.value || isNOC.value) &&
-          ticket.current_assignee_name === 'NOC' &&
-          ticket.status !== 'finished',
-        tooltip: 'Requires physical intervention'
-      },
-      {
         label: 'Assign Tech',
         color: 'bg-cyan-600',
         action: () => { actPrepareTechnician(ticket.id) },
@@ -315,10 +297,10 @@ const getTicketActions = (ticket: any) => {
         label: 'Resolve',
         color: 'bg-emerald-600',
         action: () => { actPrepare(ticket.id); resolve() },
-        show: (isAdmin.value || isTechnician.value) &&
-          (ticket.current_assignee_name === 'TECHNICIAN' || ticket.current_assignee_name === 'ADMIN') &&
+        show: (isAdmin.value || isCustomerService.value) &&
+          (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN') &&
           ticket.status !== 'finished',
-        tooltip: 'Mark ticket as resolved'
+        tooltip: 'Mark ticket as resolved (CS communicates with customer)'
       }
     ]
 

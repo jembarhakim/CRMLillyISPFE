@@ -27,7 +27,8 @@ async function onSubmitEmployee(event: FormSubmitEvent<any>) {
     console.log('Token:', response.data?.token)
     console.log('User role:', response.data?.user?.role)
     
-    authStore.login({ token: response.data.token, role_id: response.data.user.role.id })
+    // Fix: Use role name instead of role ID
+    authStore.login({ token: response.data.token, role_id: response.data.user.role.name })
     navigateTo('/dashboard')
   } catch (error: any) {
     console.error('Login error:', error)
@@ -78,7 +79,6 @@ const items = [{
 }
 ]
 </script>
-
 <template>
   <div class="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-green-800 to-black">
     <div
