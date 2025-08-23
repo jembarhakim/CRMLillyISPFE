@@ -19,7 +19,18 @@ export const ticketsApi = () => {
     nocPhysical: (id:number, note:string) => $fetch(`${base}/api/tickets/${id}/noc-physical`, { method:'POST', body:{note}, headers: authHeader() }),
     assignTechnician: (id:number, technician_id:string) => $fetch(`${base}/api/tickets/${id}/assign-technician`, { method:'POST', body:{technician_id}, headers: authHeader() }),
     resolve: (id:number, note:string) => $fetch(`${base}/api/tickets/${id}/resolve`, { method:'POST', body:{note}, headers: authHeader() }),
-    addTechnicianNote: (id:number, note:string) => $fetch(`${base}/api/tickets/${id}/technician-note`, { method:'POST', body:{note}, headers: authHeader() }),
+    addTechnicianNote: (id:number, note:string, imgTechBf?:File, imgTechAf?:File) => {
+      const formData = new FormData()
+      formData.append('note', note)
+      if (imgTechBf) formData.append('img_tech_bf', imgTechBf)
+      if (imgTechAf) formData.append('img_tech_af', imgTechAf)
+      
+      return $fetch(`${base}/api/tickets/${id}/technician-note`, { 
+        method:'POST', 
+        body: formData, 
+        headers: authHeader()
+      })
+    },
     byType: () => $fetch(`${base}/api/tickets/reports/by-type`, { headers: authHeader() }),
     troubleTypes: () => $fetch(`${base}/api/tickets/lookups/trouble-types`, { headers: authHeader() }),
     createTroubleType: (id:string, name?:string) => $fetch(`${base}/api/tickets/lookups/trouble-types`, { method:'POST', body:{ id, name }, headers: authHeader() }),

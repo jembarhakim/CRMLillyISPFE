@@ -103,6 +103,24 @@ const technicianNote = ref('')
 const nocActionSubmitting = ref(false)
 const technicianNoteSubmitting = ref(false)
 const nocSelectedType = ref<string>('')
+const imgTechBfFile = ref<File | null>(null)
+const imgTechAfFile = ref<File | null>(null)
+
+// Computed properties for image preview URLs
+const beforeImageUrl = computed(() => {
+  if (imgTechBfFile.value) {
+    return URL.createObjectURL(imgTechBfFile.value)
+  }
+  return undefined
+})
+
+const afterImageUrl = computed(() => {
+  if (imgTechAfFile.value) {
+    return URL.createObjectURL(imgTechAfFile.value)
+  }
+  return undefined
+})
+
 const typeNameMap = computed(() => {
   const map: Record<string, string> = {}
   for (const t of troubleTypes.value) map[t.id] = t.name || t.id
@@ -182,7 +200,60 @@ function actPrepareNOC(id: number) {
 function actPrepareTechnicianNote(id: number) {
   selectedId.value = id;
   technicianNote.value = '';
+  imgTechBfFile.value = null;
+  imgTechAfFile.value = null;
   showTechnicianNoteModal.value = true
+}
+
+// File validation function
+function validateFile(file: File): { isValid: boolean; message: string } {
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+  
+  if (file.size > maxSize) {
+    return { isValid: false, message: 'File size exceeds 10MB limit' };
+  }
+  
+  if (!allowedTypes.includes(file.type)) {
+    return { isValid: false, message: 'File type not supported. Please use JPG, PNG, or GIF' };
+  }
+  
+  return { isValid: true, message: 'File is valid' };
+}
+
+// File change handlers with validation
+function handleBeforeImageChange(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  
+  if (file) {
+    const validation = validateFile(file);
+    if (validation.isValid) {
+      imgTechBfFile.value = file;
+    } else {
+      // Show error and reset input
+      alert(validation.message);
+      target.value = '';
+      imgTechBfFile.value = null;
+    }
+  }
+}
+
+function handleAfterImageChange(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  
+  if (file) {
+    const validation = validateFile(file);
+    if (validation.isValid) {
+      imgTechAfFile.value = file;
+    } else {
+      // Show error and reset input
+      alert(validation.message);
+      target.value = '';
+      imgTechAfFile.value = null;
+    }
+  }
 }
 
 async function sendToNOC() { if (!selectedId.value) return; await ticketsApi().sendToNOC(selectedId.value, note.value); await refresh() }
@@ -215,7 +286,7 @@ async function sendTechnicianNoteFromModal() {
   if (!selectedId.value) return;
   try {
     technicianNoteSubmitting.value = true
-    await ticketsApi().addTechnicianNote(selectedId.value, technicianNote.value)
+    await ticketsApi().addTechnicianNote(selectedId.value, technicianNote.value, imgTechBfFile.value || undefined, imgTechAfFile.value || undefined)
     showTechnicianNoteModal.value = false
     // feedback
     try { const toast = useToast(); toast.add({ title: 'Technician Note Added', description: 'Note has been added successfully.', color: 'primary', timeout: 3000 }) } catch {}
@@ -317,11 +388,11 @@ const getTicketActions = (ticket: any) => {
         tooltip: 'Assign to technician for field work'
       },
       {
-        label: 'Add Tech Note',
+        label: 'Add Tech Note & Img',
         color: 'bg-orange-600',
         action: () => { actPrepareTechnicianNote(ticket.id) },
         show: isTechnician.value && ticket.status !== 'finished',
-        tooltip: 'Add technician note to this ticket'
+        tooltip: 'Add technician note and upload before/after images'
       },
       {
         label: 'Resolve',
@@ -653,24 +724,58 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
       <!-- Modal Technician Note -->
       <div v-if="showTechnicianNoteModal" class="fixed inset-0 z-50 flex items-center justify-center">
         <div class="absolute inset-0 bg-black/60" @click="showTechnicianNoteModal = false"></div>
-        <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
+        <div class="relative w-full max-w-lg mx-4 rounded-xl shadow-xl bg-white p-6">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold text-gray-900">Add Technician Note</h2>
+            <h2 class="text-xl font-semibold text-gray-900">Add Technician Note & Images</h2>
             <button class="text-gray-400 hover:text-gray-600" @click="showTechnicianNoteModal = false">✕</button>
           </div>
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Note</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Technician Note <span class="text-red-500">*</span></label>
               <textarea v-model="technicianNote" placeholder="Enter your technician note..."
                 class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none text-gray-900 bg-white"></textarea>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Before Image (Optional)</label>
+              <input type="file" @change="handleBeforeImageChange" 
+                accept="image/*" class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <p class="text-xs text-gray-500 mt-1">Max size: 10MB. Supported: JPG, PNG, GIF</p>
+              <!-- Preview Before Image -->
+              <div v-if="imgTechBfFile" class="mt-2 p-2 border border-gray-200 rounded bg-gray-50">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-gray-600">{{ imgTechBfFile.name }}</span>
+                  <button @click="imgTechBfFile = null" class="text-red-500 hover:text-red-700 text-sm">✕</button>
+                </div>
+                <div class="mt-2">
+                  <img v-if="beforeImageUrl" :src="beforeImageUrl" alt="Before Preview" class="w-20 h-20 object-cover rounded border" />
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">After Image (Optional)</label>
+              <input type="file" @change="handleAfterImageChange" 
+                accept="image/*" class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <p class="text-xs text-gray-500 mt-1">Max size: 10MB. Supported: JPG, PNG, GIF</p>
+              <!-- Preview After Image -->
+              <div v-if="imgTechAfFile" class="mt-2 p-2 border border-gray-200 rounded bg-gray-50">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-gray-600">{{ imgTechAfFile.name }}</span>
+                  <button @click="imgTechAfFile = null" class="text-red-500 hover:text-red-700 text-sm">✕</button>
+                </div>
+                <div class="mt-2">
+                  <img v-if="afterImageUrl" :src="afterImageUrl" alt="After Preview" class="w-20 h-20 object-cover rounded border" />
+                </div>
+              </div>
             </div>
           </div>
           <div class="mt-6 flex justify-end gap-2">
             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700"
               @click="showTechnicianNoteModal = false">Cancel</button>
             <button class="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
-              @click="sendTechnicianNoteFromModal" :disabled="technicianNoteSubmitting">
-              Add Note
+              @click="sendTechnicianNoteFromModal" :disabled="technicianNoteSubmitting || !technicianNote.trim()">
+              {{ technicianNoteSubmitting ? 'Sending...' : 'Add Note & Images' }}
             </button>
           </div>
         </div>
