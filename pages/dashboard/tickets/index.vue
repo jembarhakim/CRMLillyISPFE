@@ -174,8 +174,7 @@ async function sendTechnicianNoteFromModal() {
   if (!selectedId.value) return;
   try {
     technicianNoteSubmitting.value = true
-    // TODO: Implement API call for technician note
-    // await ticketsApi().addTechnicianNote(selectedId.value, technicianNote.value)
+    await ticketsApi().addTechnicianNote(selectedId.value, technicianNote.value)
     showTechnicianNoteModal.value = false
     // feedback
     try { const toast = useToast(); toast.add({ title: 'Technician Note Added', description: 'Note has been added successfully.', color: 'primary', timeout: 3000 }) } catch {}
