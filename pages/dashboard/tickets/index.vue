@@ -34,6 +34,7 @@ import { onMounted, ref, watch, defineAsyncComponent, computed } from 'vue'
 import { ticketsApi } from '@/api/tickets'
 import { customerAdminApi } from '@/api/admin/customer'
 import { userManagementAdminApi } from '@/api/admin/user-management'
+import { uploadFileAdminApi } from '@/api/admin/file-upload'
 import { useAuthStore } from '@/stores/auth'
 import { useRolePermissions } from '@/composables/useRolePermissions'
 
@@ -98,6 +99,8 @@ const newTypeName = ref('')
 const showTechnicianModal = ref(false)
 const showNOCNoteModal = ref(false)
 const showTechnicianNoteModal = ref(false)
+const showImageModalRef = ref(false)
+const selectedImage = ref('')
 const nocNote = ref('')
 const technicianNote = ref('')
 const nocActionSubmitting = ref(false)
@@ -126,6 +129,10 @@ const typeNameMap = computed(() => {
   for (const t of troubleTypes.value) map[t.id] = t.name || t.id
   return map
 })
+
+// Delete confirmation modal
+const showDeleteModal = ref(false)
+const ticketToDelete = ref<any>(null)
 
 // hotspots state
 const hotspots = ref<any[]>([])
@@ -410,6 +417,40 @@ const getTicketActions = (ticket: any) => {
   return filteredActions
 }
 
+// Dropdown items for ticket actions (similar to customer page)
+const items = (row: any) => {
+  const workflowActions = getTicketActions(row).map(action => ({
+    label: action.label,
+    icon: getActionIcon(action.label),
+    click: action.action
+  }))
+  
+  const actions = [workflowActions]
+  
+  // Add delete action (for admin and CS)
+  if (isAdmin.value || isCustomerService.value) {
+    actions.push([{
+      label: 'Delete',
+      icon: 'i-heroicons-trash-20-solid',
+      click: () => showDeleteConfirmation(row)
+    }])
+  }
+  
+  return actions
+}
+
+// Helper function to get icon for action
+function getActionIcon(actionLabel: string): string {
+  switch (actionLabel) {
+    case 'To NOC': return 'i-heroicons-arrow-right-20-solid'
+    case 'To CS': return 'i-heroicons-arrow-left-20-solid'
+    case 'Assign Tech': return 'i-heroicons-user-plus-20-solid'
+    case 'Add Tech Note': return 'i-heroicons-document-text-20-solid'
+    case 'Resolve': return 'i-heroicons-check-circle-20-solid'
+    default: return 'i-heroicons-cog-6-tooth-20-solid'
+  }
+}
+
 // Add sendToCS function for NOC users
 async function sendToCS() {
   if (!selectedId.value) return;
@@ -419,8 +460,40 @@ async function sendToCS() {
   await refresh()
 }
 
+// Show delete confirmation modal
+function showDeleteConfirmation(ticket: any) {
+  ticketToDelete.value = ticket
+  showDeleteModal.value = true
+}
+
+// Delete ticket function
+async function deleteTicket(id: number) {
+  try {
+    await ticketsApi().delete(id)
+    useToast().add({ 
+      title: 'Success!', 
+      description: 'Ticket deleted successfully', 
+      color: 'green', 
+      timeout: 3000 
+    })
+    showDeleteModal.value = false
+    ticketToDelete.value = null
+    await refresh()
+  } catch (error: any) {
+    console.error('Error deleting ticket:', error)
+    const msg = error?.data?.message || error?.message || 'Failed to delete ticket'
+    useToast().add({ 
+      title: 'Delete failed', 
+      description: String(msg), 
+      color: 'red', 
+      icon: 'i-heroicons-exclamation-triangle', 
+      timeout: 5000 
+    })
+  }
+}
+
 const showAdd = ref(false)
-const form = ref({ customer_id: '', title: '', description: '', type: '' })
+const form = ref({ customer_id: '', title: '', description: '', type: '', img_cs: '' })
 async function loadLookups() {
   try {
     const cust: any = await customerAdminApi().getAllCustomers()
@@ -465,6 +538,41 @@ const modalGpsLng = computed(() => {
   const c = customers.value.find(c => c.id === form.value.customer_id)
   return c?.longitude
 })
+async function handleImageUpload(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) {
+    try {
+      // Upload file using existing API
+      const uploadData = {
+        name: `ticket_cs_${Date.now()}`,
+        path: 'tickets/cs',
+        file: file
+      }
+      
+      const response = await uploadFileAdminApi().createUploadFile(uploadData)
+      if (response.data) {
+        // Store filename only, URL will be constructed in backend
+        const fileName = response.data.file || response.data.full_path?.split('/').pop()
+        form.value.img_cs = fileName
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      // Fallback to base64 for preview
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        form.value.img_cs = e.target?.result as string
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+}
+
+function showImageModal(imageSrc: string) {
+  selectedImage.value = imageSrc
+  showImageModalRef.value = true
+}
+
 async function createTicket() {
   try {
     console.log('Auth store token:', authStore.getToken) // Debug log
@@ -474,12 +582,27 @@ async function createTicket() {
       title: form.value.title,
       description: form.value.description,
       type: String(form.value.type),
+      img_cs: form.value.img_cs,
     })
     showAdd.value = false
-    form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', type: troubleTypes.value[0]?.id || '' }
+    form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', type: troubleTypes.value[0]?.id || '', img_cs: '' }
+    useToast().add({ 
+      title: 'Success!', 
+      description: 'Ticket created successfully', 
+      color: 'green', 
+      timeout: 3000 
+    })
     await refresh()
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating ticket:', error) // Debug log
+    const msg = error?.data?.message || error?.message || 'Failed to create ticket'
+    useToast().add({ 
+      title: 'Create failed', 
+      description: String(msg), 
+      color: 'red', 
+      icon: 'i-heroicons-exclamation-triangle', 
+      timeout: 5000 
+    })
   }
 }
 // Fetchers similar to transaction page
@@ -538,12 +661,6 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-4">
             <button v-if="isAdmin || isCustomerService" class="px-3 py-2 bg-emerald-600 text-white rounded" @click="showAdd = true">Add Ticket</button>
-            <span class="text-sm text-gray-600">Current Role: {{ userRole }}</span>
-            <span class="text-sm text-gray-600">Raw Role: {{ authStore.user?.role }}</span>
-            <span class="text-sm text-gray-600">isAdmin: {{ isAdmin }}</span>
-            <span class="text-sm text-gray-600">isCustomerService: {{ isCustomerService }}</span>
-            <span class="text-sm text-gray-600">isNOC: {{ isNOC }}</span>
-            <span class="text-sm text-gray-600">isTechnician: {{ isTechnician }}</span>
           </div>
         </div>
         <div class="table-scroll-container">
@@ -556,7 +673,9 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                   <th class="p-2">Type</th>
                   <th class="p-2">Status</th>
                   <th class="p-2">Assignee</th>
-                  <th class="p-2">Actions</th>
+                  <th class="p-2">Source</th>
+                  <th class="p-2">CS Image</th>
+                  <th class="p-2 w-16">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -566,15 +685,31 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                   <td class="p-2 capitalize">{{ r.type }}</td>
                   <td class="p-2 capitalize">{{ r.status }}</td>
                   <td class="p-2 capitalize">{{ r.current_assignee_role }}</td>
-                  <td class="p-2 space-x-2">
-                    <button v-for="action in getTicketActions(r)" :key="action.label"
-                      :class="['px-2 py-1 text-white rounded hover:opacity-80 transition-opacity', action.color]"
-                      @click="action.action" :title="action.tooltip">
-                      {{ action.label }}
-                    </button>
-                    <span v-if="getTicketActions(r).length === 0" class="text-gray-400 text-xs">
-                      No actions available
-                    </span>
+                  <td class="p-2">
+                    <div v-if="r.created_by_netwatch" class="flex items-center gap-2">
+                      <span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium">
+                        <i class="i-heroicons-computer-desktop mr-1"></i>
+                        Netwatch
+                      </span>
+                      <span v-if="r.device" class="text-xs text-gray-600">
+                        {{ r.device.name }}
+                      </span>
+                    </div>
+                    <span v-else class="text-gray-400 text-xs">Manual</span>
+                  </td>
+                  <td class="p-2">
+                    <div v-if="r.img_cs" class="flex items-center gap-2">
+                      <img :src="r.img_cs" alt="CS Image" class="w-8 h-8 object-cover rounded border" />
+                      <button @click="showImageModal(r.img_cs)" class="text-blue-600 hover:text-blue-800 text-xs">
+                        View
+                      </button>
+                    </div>
+                    <span v-else class="text-gray-400 text-xs">No image</span>
+                  </td>
+                  <td class="p-2 w-16">
+                    <UDropdown :items="items(r)">
+                      <UButton color="gray" variant="ghost" icon="i-heroicons-ellipsis-horizontal-20-solid" size="sm" />
+                    </UDropdown>
                   </td>
                 </tr>
               </tbody>
@@ -640,6 +775,14 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
               <label class="block text-sm text-slate-300 mb-1">GPS Lng (from customer)</label>
               <input :value="modalGpsLng ?? ''" disabled
                 class="w-full rounded px-3 py-2 bg-slate-800/50 border border-slate-700" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm text-slate-300 mb-1">Upload Image (CS)</label>
+              <input type="file" @change="handleImageUpload" accept="image/*"
+                class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none" />
+                             <div v-if="form.img_cs" class="mt-2">
+                 <img :src="`${useApiHost()}/uploads/tickets/cs/${form.img_cs}`" alt="Preview" class="w-32 h-32 object-cover rounded border" />
+               </div>
             </div>
           </div>
           <div v-else class="text-slate-300">Loading options...</div>
@@ -776,6 +919,67 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
             <button class="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
               @click="sendTechnicianNoteFromModal" :disabled="technicianNoteSubmitting || !technicianNote.trim()">
               {{ technicianNoteSubmitting ? 'Sending...' : 'Add Note & Images' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Image Viewer -->
+      <div v-if="showImageModalRef" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/80" @click="showImageModalRef = false"></div>
+        <div class="relative w-full max-w-4xl mx-4 rounded-xl shadow-xl bg-white p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">CS Image</h2>
+            <button class="text-gray-400 hover:text-gray-600" @click="showImageModalRef = false">✕</button>
+          </div>
+          <div class="flex justify-center">
+            <img :src="selectedImage" alt="CS Image" class="max-w-full max-h-96 object-contain rounded" />
+          </div>
+          <div class="mt-4 flex justify-end">
+            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showImageModalRef = false">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Delete Confirmation -->
+      <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" @click="showDeleteModal = false"></div>
+        <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-red-600">Confirm Delete</h2>
+            <button class="text-gray-400 hover:text-gray-600" @click="showDeleteModal = false">✕</button>
+          </div>
+          <div class="space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <i class="i-heroicons-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+              </div>
+              <div>
+                <h3 class="text-lg font-medium text-gray-900">Delete Ticket?</h3>
+                <p class="text-sm text-gray-600">
+                  Are you sure you want to delete ticket <strong>#{{ ticketToDelete?.id }}</strong>?
+                </p>
+                <p class="text-sm text-gray-500 mt-1">
+                  Title: "{{ ticketToDelete?.title }}"
+                </p>
+                <p class="text-xs text-red-600 mt-2">
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="mt-6 flex justify-end gap-2">
+            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700 hover:bg-gray-400"
+              @click="showDeleteModal = false">
+              Cancel
+            </button>
+            <button class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+              @click="deleteTicket(ticketToDelete?.id)">
+              Delete Ticket
             </button>
           </div>
         </div>
