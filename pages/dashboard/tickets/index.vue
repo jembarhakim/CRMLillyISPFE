@@ -40,6 +40,14 @@ import { useRolePermissions } from '@/composables/useRolePermissions'
 const authStore = useAuthStore()
 const { userRole, isAdmin, isCustomerService, isNOC, isTechnician } = useRolePermissions()
 
+// Debug logging for role detection
+console.log('Auth store user role:', authStore.user?.role)
+console.log('Normalized user role:', userRole.value)
+console.log('isAdmin:', isAdmin.value)
+console.log('isCustomerService:', isCustomerService.value)
+console.log('isNOC:', isNOC.value)
+console.log('isTechnician:', isTechnician.value)
+
 const rows = ref<any[]>([])
 const loading = ref(true)
 const note = ref('')
@@ -227,6 +235,24 @@ async function sendTechnicianNoteFromModal() {
 
 async function sendToCSFromModal() {
   if (!selectedId.value) return;
+  try {
+    nocActionSubmitting.value = true
+    await ticketsApi().sendToCS(selectedId.value, nocNote.value)
+    showNOCNoteModal.value = false
+    // feedback
+    try { const toast = useToast(); toast.add({ title: 'Sent to CS', description: 'Ticket returned to Customer Service.', color: 'primary', timeout: 3000 }) } catch {}
+    await refresh()
+  } catch (e:any) {
+    console.error('sendToCS error:', e)
+    try {
+      const toast = useToast();
+      const msg = e?.data?.message || e?.message || 'Failed to send to CS'
+      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
+    } catch {}
+  } finally {
+    nocActionSubmitting.value = false
+  }
+
   await ticketsApi().sendToCS(selectedId.value, nocNote.value);
   showNOCNoteModal.value = false;
   await refresh()
@@ -252,6 +278,11 @@ async function resolve() { if (!selectedId.value) return; await ticketsApi().res
 
 // Role-based action buttons with workflow awareness
 const getTicketActions = (ticket: any) => {
+  console.log('getTicketActions called for ticket:', ticket.id)
+  console.log('Current user role:', userRole.value)
+  console.log('Ticket assignee:', ticket.current_assignee_name)
+  console.log('Ticket status:', ticket.status)
+  
   const actions: Array<{
     label: string
     color: string
@@ -304,7 +335,9 @@ const getTicketActions = (ticket: any) => {
       }
     ]
 
-  return actions.filter(action => action.show)
+  const filteredActions = actions.filter(action => action.show)
+  console.log('Filtered actions:', filteredActions.map(a => a.label))
+  return filteredActions
 }
 
 // Add sendToCS function for NOC users
@@ -433,7 +466,15 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
 
       <div class="p-4 bg-white rounded-lg shadow border border-gray-100">
         <div class="flex items-center justify-between mb-3">
-          <button class="px-3 py-2 bg-emerald-600 text-white rounded" @click="showAdd = true">Add Ticket</button>
+          <div class="flex items-center gap-4">
+            <button v-if="isAdmin || isCustomerService" class="px-3 py-2 bg-emerald-600 text-white rounded" @click="showAdd = true">Add Ticket</button>
+            <span class="text-sm text-gray-600">Current Role: {{ userRole }}</span>
+            <span class="text-sm text-gray-600">Raw Role: {{ authStore.user?.role }}</span>
+            <span class="text-sm text-gray-600">isAdmin: {{ isAdmin }}</span>
+            <span class="text-sm text-gray-600">isCustomerService: {{ isCustomerService }}</span>
+            <span class="text-sm text-gray-600">isNOC: {{ isNOC }}</span>
+            <span class="text-sm text-gray-600">isTechnician: {{ isTechnician }}</span>
+          </div>
         </div>
         <div class="table-scroll-container">
           <div class="table-scroll-content">
@@ -454,18 +495,16 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                   <td class="p-2">{{ r.title }}</td>
                   <td class="p-2 capitalize">{{ r.type }}</td>
                   <td class="p-2 capitalize">{{ r.status }}</td>
-                                 <td class="p-2 capitalize">{{ r.current_assignee_role }}</td>
+                  <td class="p-2 capitalize">{{ r.current_assignee_role }}</td>
                   <td class="p-2 space-x-2">
-                    <button class="px-2 py-1 text-white bg-blue-600 rounded" @click="actPrepare(r.id); sendToNOC()">To
-                      NOC</button>
-                    <button class="px-2 py-1 text-white bg-green-600 rounded" @click="actPrepare(r.id); nocSolved()">NOC
-                      Solved</button>
-                    <button class="px-2 py-1 text-white bg-amber-600 rounded"
-                      @click="actPrepare(r.id); nocPhysical()">Physical</button>
-                    <button class="px-2 py-1 text-white bg-cyan-600 rounded"
-                      @click="actPrepare(r.id); assignTechnician()">Assign Tech</button>
-                    <button class="px-2 py-1 text-white bg-emerald-600 rounded"
-                      @click="actPrepare(r.id); resolve()">Resolve</button>
+                    <button v-for="action in getTicketActions(r)" :key="action.label"
+                      :class="['px-2 py-1 text-white rounded hover:opacity-80 transition-opacity', action.color]"
+                      @click="action.action" :title="action.tooltip">
+                      {{ action.label }}
+                    </button>
+                    <span v-if="getTicketActions(r).length === 0" class="text-gray-400 text-xs">
+                      No actions available
+                    </span>
                   </td>
                 </tr>
               </tbody>

@@ -25,10 +25,12 @@ async function onSubmitEmployee(event: FormSubmitEvent<any>) {
     console.log('Login response:', response)
     console.log('Response data:', response.data)
     console.log('Token:', response.data?.token)
-    console.log('User role:', response.data?.user?.role)
+    console.log('User role object:', response.data?.user?.role)
+    console.log('User role name:', response.data?.user?.role?.name)
     
     // Fix: Use role name instead of role ID
     authStore.login({ token: response.data.token, role_id: response.data.user.role.name })
+    console.log('Auth store after login - role:', authStore.user?.role)
     navigateTo('/dashboard')
   } catch (error: any) {
     console.error('Login error:', error)
