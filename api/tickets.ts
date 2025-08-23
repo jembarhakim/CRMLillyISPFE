@@ -14,7 +14,7 @@ export const ticketsApi = () => {
     list: () => $fetch(`${base}/api/tickets`, { headers: authHeader() }),
     create: (p:any) => $fetch(`${base}/api/tickets`, { method:'POST', body:p, headers: authHeader() }),
     sendToNOC: (id:number, note:string) => $fetch(`${base}/api/tickets/${id}/send-to-noc`, { method:'POST', body:{note}, headers: authHeader() }),
-    sendToCS: (id:number, note:string) => $fetch(`${base}/api/tickets/${id}/send-to-cs`, { method:'POST', body:{note}, headers: authHeader() }),
+    sendToCS: (id:number, note:string, type?:string) => $fetch(`${base}/api/tickets/${id}/send-to-cs`, { method:'POST', body:{note, type}, headers: authHeader() }),
     nocSolved: (id:number, note:string) => $fetch(`${base}/api/tickets/${id}/noc-solved`, { method:'POST', body:{note}, headers: authHeader() }),
     nocPhysical: (id:number, note:string) => $fetch(`${base}/api/tickets/${id}/noc-physical`, { method:'POST', body:{note}, headers: authHeader() }),
     assignTechnician: (id:number, technician_id:string) => $fetch(`${base}/api/tickets/${id}/assign-technician`, { method:'POST', body:{technician_id}, headers: authHeader() }),

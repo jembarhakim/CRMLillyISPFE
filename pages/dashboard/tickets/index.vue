@@ -1,3 +1,34 @@
+import { Bar } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+} from 'chart.js'
+
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
+
+const byTypeChartData = computed(() => {
+  return {
+    labels: byTypeRows.value.map(r => r.name),
+    datasets: [
+      {
+        label: 'Ticket Count',
+        data: byTypeRows.value.map(r => r.count),
+        backgroundColor: '#4F46E5', // biru indigo
+      },
+    ],
+  }
+})
+
+const byTypeChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+}
+
 <script setup lang="ts">
 import { onMounted, ref, watch, defineAsyncComponent, computed } from 'vue'
 import { ticketsApi } from '@/api/tickets'
@@ -8,6 +39,14 @@ import { useRolePermissions } from '@/composables/useRolePermissions'
 
 const authStore = useAuthStore()
 const { userRole, isAdmin, isCustomerService, isNOC, isTechnician } = useRolePermissions()
+
+// Debug logging for role detection
+console.log('Auth store user role:', authStore.user?.role)
+console.log('Normalized user role:', userRole.value)
+console.log('isAdmin:', isAdmin.value)
+console.log('isCustomerService:', isCustomerService.value)
+console.log('isNOC:', isNOC.value)
+console.log('isTechnician:', isTechnician.value)
 
 const rows = ref<any[]>([])
 const loading = ref(true)
@@ -35,7 +74,7 @@ async function pollUpdates() {
     }
     lastCheckedAt.value = new Date().toISOString()
   } catch (e) {
-    // silent - global plugin handles 401 errors
+    // silent
   }
 }
 
@@ -63,6 +102,7 @@ const nocNote = ref('')
 const technicianNote = ref('')
 const nocActionSubmitting = ref(false)
 const technicianNoteSubmitting = ref(false)
+const nocSelectedType = ref<string>('')
 const typeNameMap = computed(() => {
   const map: Record<string, string> = {}
   for (const t of troubleTypes.value) map[t.id] = t.name || t.id
@@ -135,6 +175,7 @@ function actPrepareTechnician(id: number) {
 function actPrepareNOC(id: number) {
   selectedId.value = id;
   nocNote.value = '';
+  nocSelectedType.value = troubleTypes.value[0]?.id || ''
   showNOCNoteModal.value = true
 }
 
@@ -210,11 +251,37 @@ async function sendToCSFromModal() {
   } finally {
     nocActionSubmitting.value = false
   }
+
+  await ticketsApi().sendToCS(selectedId.value, nocNote.value);
+  showNOCNoteModal.value = false;
+  await refresh()
+  try {
+    nocActionSubmitting.value = true
+    await ticketsApi().sendToCS(selectedId.value, nocNote.value, nocSelectedType.value || undefined)
+    showNOCNoteModal.value = false
+    // feedback
+    try { const toast = useToast(); toast.add({ title: 'Sent to CS', description: 'Ticket returned to Customer Service.', color: 'primary', timeout: 3000 }) } catch {}
+    await refresh()
+  } catch (e:any) {
+    console.error('sendToCS error:', e)
+    try {
+      const toast = useToast();
+      const msg = e?.data?.message || e?.message || 'Failed to send to CS'
+      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
+    } catch {}
+  } finally {
+    nocActionSubmitting.value = false
+  }
 }
 async function resolve() { if (!selectedId.value) return; await ticketsApi().resolve(selectedId.value, note.value); await refresh() }
 
 // Role-based action buttons with workflow awareness
 const getTicketActions = (ticket: any) => {
+  console.log('getTicketActions called for ticket:', ticket.id)
+  console.log('Current user role:', userRole.value)
+  console.log('Ticket assignee:', ticket.current_assignee_name)
+  console.log('Ticket status:', ticket.status)
+  
   const actions: Array<{
     label: string
     color: string
@@ -267,7 +334,9 @@ const getTicketActions = (ticket: any) => {
       }
     ]
 
-  return actions.filter(action => action.show)
+  const filteredActions = actions.filter(action => action.show)
+  console.log('Filtered actions:', filteredActions.map(a => a.label))
+  return filteredActions
 }
 
 // Add sendToCS function for NOC users
@@ -394,54 +463,56 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         </div>
       </div>
 
-      <div class="p-4 bg-white rounded-lg shadow border border-gray-100 overflow-auto">
+      <div class="p-4 bg-white rounded-lg shadow border border-gray-100">
         <div class="flex items-center justify-between mb-3">
-          <button v-if="isAdmin || isCustomerService" class="px-3 py-2 bg-emerald-600 text-white rounded"
-            @click="showAdd = true">
-            Add Ticket
-          </button>
-          <button class="px-3 py-2 bg-indigo-600 text-white rounded" @click="loadHotspots">Refresh Hotspots</button>
+          <div class="flex items-center gap-4">
+            <button v-if="isAdmin || isCustomerService" class="px-3 py-2 bg-emerald-600 text-white rounded" @click="showAdd = true">Add Ticket</button>
+            <span class="text-sm text-gray-600">Current Role: {{ userRole }}</span>
+            <span class="text-sm text-gray-600">Raw Role: {{ authStore.user?.role }}</span>
+            <span class="text-sm text-gray-600">isAdmin: {{ isAdmin }}</span>
+            <span class="text-sm text-gray-600">isCustomerService: {{ isCustomerService }}</span>
+            <span class="text-sm text-gray-600">isNOC: {{ isNOC }}</span>
+            <span class="text-sm text-gray-600">isTechnician: {{ isTechnician }}</span>
+          </div>
         </div>
-        <div class="mb-3 text-xs text-gray-600" v-if="hotspots.length">
-          <span class="font-semibold">Top Hotspots:</span>
-          <span v-for="(h, idx) in hotspots.slice(0, 5)" :key="idx" class="ml-2">({{ h.gps_lat?.toFixed?.(5) }}, {{
-            h.gps_lng?.toFixed?.(5) }}): {{ h.count }}</span>
+        <div class="table-scroll-container">
+          <div class="table-scroll-content">
+            <table class="min-w-full text-sm text-gray-900">
+              <thead class="bg-gray-100">
+                <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
+                  <th class="p-2">ID</th>
+                  <th class="p-2">Title</th>
+                  <th class="p-2">Type</th>
+                  <th class="p-2">Status</th>
+                  <th class="p-2">Assignee</th>
+                  <th class="p-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in rows" :key="r.id" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70">
+                  <td class="p-2">{{ r.id }}</td>
+                  <td class="p-2">{{ r.title }}</td>
+                  <td class="p-2 capitalize">{{ r.type }}</td>
+                  <td class="p-2 capitalize">{{ r.status }}</td>
+                  <td class="p-2 capitalize">{{ r.current_assignee_role }}</td>
+                  <td class="p-2 space-x-2">
+                    <button v-for="action in getTicketActions(r)" :key="action.label"
+                      :class="['px-2 py-1 text-white rounded hover:opacity-80 transition-opacity', action.color]"
+                      @click="action.action" :title="action.tooltip">
+                      {{ action.label }}
+                    </button>
+                    <span v-if="getTicketActions(r).length === 0" class="text-gray-400 text-xs">
+                      No actions available
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-scroll-footer">
+            <span class="scroll-hint">↔ Scroll horizontally to see more columns | ↕ Scroll vertically for more rows</span>
+          </div>
         </div>
-        <table class="min-w-full text-sm text-gray-700">
-          <thead class="bg-gray-50">
-            <tr class="text-left border-b border-gray-100 uppercase text-xs tracking-wide text-gray-600">
-              <th class="p-2">ID</th>
-              <th class="p-2">Title</th>
-              <th class="p-2">Description</th>
-              <th class="p-2">Type</th>
-              <th class="p-2">Status</th>
-              <th class="p-2">Assigned To Role</th>
-              <th class="p-2">Notes</th>
-              <th class="p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="r in rows" :key="r.id" class="border-b border-gray-100 hover:bg-gray-50/60">
-              <td class="p-2">{{ r.id }}</td>
-              <td class="p-2">{{ r.title }}</td>
-              <td class="p-2 max-w-xs truncate" :title="r.description">{{ r.description || '-' }}</td>
-              <td class="p-2 capitalize">{{ typeNameMap[r.type] || r.type }}</td>
-              <td class="p-2 capitalize">{{ r.status }}</td>
-              <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
-              <td class="p-2 capitalize">{{ r.notes }}</td>
-              <td class="p-2 space-x-2">
-                <button v-for="action in getTicketActions(r)" :key="action.label"
-                  :class="['px-2 py-1 text-white rounded hover:opacity-80 transition-opacity', action.color]"
-                  @click="action.action" :title="action.tooltip">
-                  {{ action.label }}
-                </button>
-                <span v-if="getTicketActions(r).length === 0" class="text-gray-400 text-xs">
-                  No actions available
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
       </div>
 
       <!-- Modal Add Ticket -->
@@ -508,6 +579,8 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         </div>
       </div>
 
+      
+
       <!-- Modal Assign Technician -->
       <div v-if="showTechnicianModal" class="fixed inset-0 z-50 flex items-center justify-center">
         <div class="absolute inset-0 bg-black/60" @click="showTechnicianModal = false"></div>
@@ -553,12 +626,25 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
               <textarea v-model="nocNote" placeholder="Enter any notes about this action..."
                 class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none text-gray-900 bg-white"></textarea>
             </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Diagnosed Trouble Type</label>
+              <select v-model="nocSelectedType" class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">-- Select trouble type (optional) --</option>
+                <option v-for="t in troubleTypes" :key="t.id" :value="t.id">{{ t.name || t.id }}</option>
+              </select>
+            </div>
           </div>
           <div class="mt-6 flex justify-end gap-2">
             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700"
               @click="showNOCNoteModal = false">Cancel</button>
-            <button class="px-4 py-2 rounded bg-purple-600 text-white disabled:opacity-50" @click="sendToCSFromModal" :disabled="nocActionSubmitting">
+            <button class="px-4 py-2 rounded bg-purple-600 text-white" @click="sendToCSFromModal">
               To CS
+            </button>
+            <button class="px-4 py-2 rounded bg-green-600 text-white" @click="nocSolvedFromModal">
+              NOC Solved
+            </button>
+            <button class="px-4 py-2 rounded bg-amber-600 text-white" @click="nocPhysicalFromModal">
+              Physical
             </button>
           </div>
         </div>

@@ -4,6 +4,23 @@ import type { RouteLocationNormalizedGeneric } from "vue-router";
 
 export default defineNuxtRouteMiddleware((to, from) => {
   const authStore = useAuthStore();
+
+  // Early gate for protected areas: dashboard and customer
+  if (to.path.startsWith('/dashboard') || to.path.startsWith('/customer')) {
+    if (!authStore.isLoggedIn) {
+      try {
+        const toast = useToast();
+        toast.add({
+          title: 'Login required',
+          description: 'Please log in to continue.',
+          color: 'amber'
+        });
+      } catch {}
+      authStore.logout();
+      return navigateTo(`/login?redirect=${encodeURIComponent(to.fullPath)}`);
+    }
+  }
+
   if (to.path.startsWith('/dashboard') ) {
       checkAuth();
   }
