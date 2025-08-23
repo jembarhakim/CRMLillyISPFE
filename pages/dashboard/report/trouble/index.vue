@@ -1,6 +1,18 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { ticketsApi } from '@/api/tickets'
+import { Bar } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+} from 'chart.js'
+
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 const rows = ref<any[]>([])
 const seriesData = ref<any[]>([])
@@ -163,13 +175,31 @@ const summaryStats = computed(() => {
   return { total, byType, avgPerType, typesCount: seriesData.value.length }
 })
 
-// Table data for inline display
+// Chart data for inline display
 const byTypeModalRows = computed(() => {
   return [...seriesData.value]
     .map((r:any)=>({ type: r.type, name: r.name, count: r.value }))
     .sort((a,b)=> b.count - a.count)
 })
 const byTypeModalTotal = computed(()=> byTypeModalRows.value.reduce((a:any,b:any)=> a + (b.count||0), 0))
+
+const byTypeChartData = computed(() => {
+  return {
+    labels: byTypeModalRows.value.map(r => r.name),
+    datasets: [
+      {
+        label: 'Ticket Count',
+        data: byTypeModalRows.value.map(r => r.count),
+        backgroundColor: '#4F46E5', // biru indigo
+      },
+    ],
+  }
+})
+
+const byTypeChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+}
 </script>
 
 <template>
@@ -202,35 +232,9 @@ const byTypeModalTotal = computed(()=> byTypeModalRows.value.reduce((a:any,b:any
        <div class="p-4 bg-white rounded-lg shadow border border-gray-100">
          <h2 class="mb-3 font-semibold text-gray-800">Tickets by Type (Bar Chart)</h2>
          <ECharts :option="barOption" style="height:320px" />
-         <!-- Inline table -->
-         <div class="mt-4 table-scroll-container">
-           <div class="table-scroll-content">
-             <table class="min-w-full text-sm text-gray-900">
-               <thead class="bg-gray-100">
-                 <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
-                   <th class="p-2">#</th>
-                   <th class="p-2">Type</th>
-                   <th class="p-2">Count</th>
-                 </tr>
-               </thead>
-               <tbody>
-                 <tr v-for="(r, i) in byTypeModalRows" :key="r.type" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70">
-                   <td class="p-2">{{ i + 1 }}</td>
-                   <td class="p-2 capitalize">{{ r.name }}</td>
-                   <td class="p-2">{{ r.count }}</td>
-                 </tr>
-               </tbody>
-               <tfoot>
-                 <tr class="bg-gray-50 font-medium">
-                   <td class="p-2" colspan="2">Total</td>
-                   <td class="p-2">{{ byTypeModalTotal }}</td>
-                 </tr>
-               </tfoot>
-             </table>
-           </div>
-           <div class="table-scroll-footer">
-             <span class="scroll-hint">↔ Scroll horizontally to see more columns | ↕ Scroll vertically for more rows</span>
-           </div>
+         <!-- Chart instead of table -->
+         <div class="mt-4">
+           <Bar :data="byTypeChartData" :options="byTypeChartOptions" style="height: 200px;" />
          </div>
        </div>
       
