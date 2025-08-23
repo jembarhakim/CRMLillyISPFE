@@ -14,7 +14,22 @@ export const ticketsApi = () => {
     list: () => $fetch(`${base}/api/tickets`, { headers: authHeader() }),
     create: (p:any) => $fetch(`${base}/api/tickets`, { method:'POST', body:p, headers: authHeader() }),
     sendToNOC: (id:number, note:string) => $fetch(`${base}/api/tickets/${id}/send-to-noc`, { method:'POST', body:{note}, headers: authHeader() }),
-    sendToCS: (id:number, note:string, type?:string) => $fetch(`${base}/api/tickets/${id}/send-to-cs`, { method:'POST', body:{note, type}, headers: authHeader() }),
+    sendToCS: (id:number, note:string, type?:string, imageFile?:File) => {
+      const formData = new FormData()
+      formData.append('note', note)
+      if (type) formData.append('type', type)
+      if (imageFile) formData.append('image', imageFile)
+      
+      // For FormData, don't include Content-Type header - let browser set it automatically
+      const headers: any = authHeader()
+      delete headers['Content-Type']
+      
+      return $fetch(`${base}/api/tickets/${id}/send-to-cs`, { 
+        method:'POST', 
+        body: formData, 
+        headers: headers
+      })
+    },
     nocSolved: (id:number, note:string) => $fetch(`${base}/api/tickets/${id}/noc-solved`, { method:'POST', body:{note}, headers: authHeader() }),
     nocPhysical: (id:number, note:string) => $fetch(`${base}/api/tickets/${id}/noc-physical`, { method:'POST', body:{note}, headers: authHeader() }),
     assignTechnician: (id:number, technician_id:string) => $fetch(`${base}/api/tickets/${id}/assign-technician`, { method:'POST', body:{technician_id}, headers: authHeader() }),
@@ -25,10 +40,14 @@ export const ticketsApi = () => {
       if (imgTechBf) formData.append('img_tech_bf', imgTechBf)
       if (imgTechAf) formData.append('img_tech_af', imgTechAf)
       
+      // For FormData, don't include Content-Type header - let browser set it automatically
+      const headers: any = authHeader()
+      delete headers['Content-Type']
+      
       return $fetch(`${base}/api/tickets/${id}/technician-note`, { 
         method:'POST', 
         body: formData, 
-        headers: authHeader()
+        headers: headers
       })
     },
     byType: () => $fetch(`${base}/api/tickets/reports/by-type`, { headers: authHeader() }),

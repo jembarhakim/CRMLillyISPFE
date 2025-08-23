@@ -121,6 +121,10 @@ const afterImageUrl = computed(() => {
   return undefined
 })
 
+const nocImageFile = ref<File | null>(null)
+const nocImagePreview = ref<string>('')
+const showImageModal = ref(false)
+const selectedImageUrl = ref('')
 const typeNameMap = computed(() => {
   const map: Record<string, string> = {}
   for (const t of troubleTypes.value) map[t.id] = t.name || t.id
@@ -194,7 +198,52 @@ function actPrepareNOC(id: number) {
   selectedId.value = id;
   nocNote.value = '';
   nocSelectedType.value = troubleTypes.value[0]?.id || ''
+  nocImageFile.value = null;
+  nocImagePreview.value = '';
   showNOCNoteModal.value = true
+}
+
+function handleNOCImageUpload(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  
+  if (file) {
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+    
+    // Validate file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be less than 10MB');
+      return;
+    }
+    
+    nocImageFile.value = file;
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      nocImagePreview.value = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function removeNOCImage() {
+  nocImageFile.value = null;
+  nocImagePreview.value = '';
+  // Reset the file input
+  const fileInput = document.getElementById('noc-image-upload') as HTMLInputElement;
+  if (fileInput) {
+    fileInput.value = '';
+  }
+}
+
+function openImageModal(imageUrl: string) {
+  selectedImageUrl.value = imageUrl;
+  showImageModal.value = true;
 }
 
 function actPrepareTechnicianNote(id: number) {
@@ -307,28 +356,8 @@ async function sendToCSFromModal() {
   if (!selectedId.value) return;
   try {
     nocActionSubmitting.value = true
-    await ticketsApi().sendToCS(selectedId.value, nocNote.value)
-    showNOCNoteModal.value = false
-    // feedback
-    try { const toast = useToast(); toast.add({ title: 'Sent to CS', description: 'Ticket returned to Customer Service.', color: 'primary', timeout: 3000 }) } catch {}
-    await refresh()
-  } catch (e:any) {
-    console.error('sendToCS error:', e)
-    try {
-      const toast = useToast();
-      const msg = e?.data?.message || e?.message || 'Failed to send to CS'
-      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
-    } catch {}
-  } finally {
-    nocActionSubmitting.value = false
-  }
-
-  await ticketsApi().sendToCS(selectedId.value, nocNote.value);
-  showNOCNoteModal.value = false;
-  await refresh()
-  try {
-    nocActionSubmitting.value = true
-    await ticketsApi().sendToCS(selectedId.value, nocNote.value, nocSelectedType.value || undefined)
+    
+    await ticketsApi().sendToCS(selectedId.value, nocNote.value, nocSelectedType.value || undefined, nocImageFile.value || undefined)
     showNOCNoteModal.value = false
     // feedback
     try { const toast = useToast(); toast.add({ title: 'Sent to CS', description: 'Ticket returned to Customer Service.', color: 'primary', timeout: 3000 }) } catch {}
@@ -554,19 +583,41 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                   <th class="p-2">ID</th>
                   <th class="p-2">Title</th>
                   <th class="p-2">Type</th>
-                  <th class="p-2">Status</th>
-                  <th class="p-2">Assignee</th>
-                  <th class="p-2">Actions</th>
+                              <th class="p-2">Status</th>
+            <th class="p-2">Assignee</th>
+            <th class="p-2">Images</th>
+            <th class="p-2">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="r in rows" :key="r.id" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70">
-                  <td class="p-2">{{ r.id }}</td>
-                  <td class="p-2">{{ r.title }}</td>
-                  <td class="p-2 capitalize">{{ r.type }}</td>
-                  <td class="p-2 capitalize">{{ r.status }}</td>
-                  <td class="p-2 capitalize">{{ r.current_assignee_role }}</td>
-                  <td class="p-2 space-x-2">
+                                     <td class="p-2">{{ r.id }}</td>
+                   <td class="p-2">{{ r.title }}</td>
+                   <td class="p-2 capitalize">{{ r.type_name || r.type }}</td>
+                   <td class="p-2 capitalize">{{ r.status }}</td>
+                   <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
+                <td class="p-2">
+                  <div class="flex flex-wrap gap-1">
+                    <div v-if="r.img_cs" class="flex items-center gap-1">
+                      <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">CS</span>
+                      <img :src="`/uploads/cs-images/${r.img_cs}`" alt="CS Image" class="w-8 h-8 object-cover rounded cursor-pointer" @click="openImageModal(`/uploads/cs-images/${r.img_cs}`)" />
+                    </div>
+                    <div v-if="r.img_noc" class="flex items-center gap-1">
+                      <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">NOC</span>
+                      <img :src="`/uploads/noc-images/${r.img_noc}`" alt="NOC Image" class="w-8 h-8 object-cover rounded cursor-pointer" @click="openImageModal(`/uploads/noc-images/${r.img_noc}`)" />
+                    </div>
+                    <div v-if="r.img_tech_bf" class="flex items-center gap-1">
+                      <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">Tech BF</span>
+                      <img :src="`/uploads/tech-images/${r.img_tech_bf}`" alt="Tech Before" class="w-8 h-8 object-cover rounded cursor-pointer" @click="openImageModal(`/uploads/tech-images/${r.img_tech_bf}`)" />
+                    </div>
+                    <div v-if="r.img_tech_af" class="flex items-center gap-1">
+                      <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Tech AF</span>
+                      <img :src="`/uploads/tech-images/${r.img_tech_af}`" alt="Tech After" class="w-8 h-8 object-cover rounded cursor-pointer" @click="openImageModal(`/uploads/tech-images/${r.img_tech_af}`)" />
+                    </div>
+                    <span v-if="!r.img_cs && !r.img_noc && !r.img_tech_bf && !r.img_tech_af" class="text-gray-400 text-xs">No images</span>
+                  </div>
+                </td>
+                <td class="p-2 space-x-2">
                     <button v-for="action in getTicketActions(r)" :key="action.label"
                       :class="['px-2 py-1 text-white rounded hover:opacity-80 transition-opacity', action.color]"
                       @click="action.action" :title="action.tooltip">
@@ -699,10 +750,37 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Diagnosed Trouble Type</label>
-              <select v-model="nocSelectedType" class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">-- Select trouble type (optional) --</option>
-                <option v-for="t in troubleTypes" :key="t.id" :value="t.id">{{ t.name || t.id }}</option>
+              <select v-model="nocSelectedType" class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900">
+                <option value="" class="text-gray-500">-- Select trouble type (optional) --</option>
+                <option v-for="t in troubleTypes" :key="t.id" :value="t.id" class="text-gray-900 bg-white">{{ t.name || t.id }}</option>
               </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Upload Image (Optional)</label>
+              <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                <div class="space-y-1 text-center">
+                  <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <div class="flex text-sm text-gray-600">
+                    <label for="noc-image-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                      <span>Upload a file</span>
+                      <input id="noc-image-upload" name="noc-image-upload" type="file" class="sr-only" accept="image/*" @change="handleNOCImageUpload" />
+                    </label>
+                    <p class="pl-1">or drag and drop</p>
+                  </div>
+                  <p class="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                </div>
+              </div>
+              <div v-if="nocImageFile" class="mt-2">
+                <div class="flex items-center space-x-2">
+                  <img :src="nocImagePreview" alt="Preview" class="h-16 w-16 object-cover rounded" />
+                  <div>
+                    <p class="text-sm text-gray-600">{{ nocImageFile.name }}</p>
+                    <button @click="removeNOCImage" class="text-sm text-red-600 hover:text-red-800">Remove</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="mt-6 flex justify-end gap-2">
@@ -777,6 +855,20 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
               @click="sendTechnicianNoteFromModal" :disabled="technicianNoteSubmitting || !technicianNote.trim()">
               {{ technicianNoteSubmitting ? 'Sending...' : 'Add Note & Images' }}
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Image Modal -->
+      <div v-if="showImageModal" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/80" @click="showImageModal = false"></div>
+        <div class="relative max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden">
+          <div class="flex items-center justify-between p-4 border-b">
+            <h3 class="text-lg font-semibold">Image Preview</h3>
+            <button class="text-gray-400 hover:text-gray-600" @click="showImageModal = false">✕</button>
+          </div>
+          <div class="p-4">
+            <img :src="selectedImageUrl" alt="Preview" class="max-w-full max-h-[70vh] object-contain mx-auto" />
           </div>
         </div>
       </div>
