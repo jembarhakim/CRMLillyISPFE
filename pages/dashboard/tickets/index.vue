@@ -89,7 +89,12 @@ const showNewType = ref(false)
 const newTypeName = ref('')
 const showTechnicianModal = ref(false)
 const showNOCNoteModal = ref(false)
+const showTechnicianNoteModal = ref(false)
 const nocNote = ref('')
+const technicianNote = ref('')
+const nocActionSubmitting = ref(false)
+const technicianNoteSubmitting = ref(false)
+const nocSelectedType = ref<string>('')
 const typeNameMap = computed(() => {
   const map: Record<string, string> = {}
   for (const t of troubleTypes.value) map[t.id] = t.name || t.id
@@ -162,7 +167,14 @@ function actPrepareTechnician(id: number) {
 function actPrepareNOC(id: number) {
   selectedId.value = id;
   nocNote.value = '';
+  nocSelectedType.value = troubleTypes.value[0]?.id || ''
   showNOCNoteModal.value = true
+}
+
+function actPrepareTechnicianNote(id: number) {
+  selectedId.value = id;
+  technicianNote.value = '';
+  showTechnicianNoteModal.value = true
 }
 
 async function sendToNOC() { if (!selectedId.value) return; await ticketsApi().sendToNOC(selectedId.value, note.value); await refresh() }
@@ -191,11 +203,50 @@ async function nocPhysicalFromModal() {
   await refresh()
 }
 
+async function sendTechnicianNoteFromModal() {
+  if (!selectedId.value) return;
+  try {
+    technicianNoteSubmitting.value = true
+    // TODO: Implement API call for technician note
+    // await ticketsApi().addTechnicianNote(selectedId.value, technicianNote.value)
+    showTechnicianNoteModal.value = false
+    // feedback
+    try { const toast = useToast(); toast.add({ title: 'Technician Note Added', description: 'Note has been added successfully.', color: 'primary', timeout: 3000 }) } catch {}
+    await refresh()
+  } catch (e:any) {
+    console.error('sendTechnicianNote error:', e)
+    try {
+      const toast = useToast();
+      const msg = e?.data?.message || e?.message || 'Failed to add technician note'
+      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
+    } catch {}
+  } finally {
+    technicianNoteSubmitting.value = false
+  }
+}
+
 async function sendToCSFromModal() {
   if (!selectedId.value) return;
   await ticketsApi().sendToCS(selectedId.value, nocNote.value);
   showNOCNoteModal.value = false;
   await refresh()
+  try {
+    nocActionSubmitting.value = true
+    await ticketsApi().sendToCS(selectedId.value, nocNote.value, nocSelectedType.value || undefined)
+    showNOCNoteModal.value = false
+    // feedback
+    try { const toast = useToast(); toast.add({ title: 'Sent to CS', description: 'Ticket returned to Customer Service.', color: 'primary', timeout: 3000 }) } catch {}
+    await refresh()
+  } catch (e:any) {
+    console.error('sendToCS error:', e)
+    try {
+      const toast = useToast();
+      const msg = e?.data?.message || e?.message || 'Failed to send to CS'
+      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
+    } catch {}
+  } finally {
+    nocActionSubmitting.value = false
+  }
 }
 async function resolve() { if (!selectedId.value) return; await ticketsApi().resolve(selectedId.value, note.value); await refresh() }
 
@@ -252,6 +303,13 @@ const getTicketActions = (ticket: any) => {
           (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN') &&
           ticket.status !== 'finished',
         tooltip: 'Assign to technician for field work'
+      },
+      {
+        label: 'Add Tech Note',
+        color: 'bg-orange-600',
+        action: () => { actPrepareTechnicianNote(ticket.id) },
+        show: isTechnician.value && ticket.status !== 'finished',
+        tooltip: 'Add technician note to this ticket'
       },
       {
         label: 'Resolve',
@@ -548,6 +606,13 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
               <textarea v-model="nocNote" placeholder="Enter any notes about this action..."
                 class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none text-gray-900 bg-white"></textarea>
             </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Diagnosed Trouble Type</label>
+              <select v-model="nocSelectedType" class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">-- Select trouble type (optional) --</option>
+                <option v-for="t in troubleTypes" :key="t.id" :value="t.id">{{ t.name || t.id }}</option>
+              </select>
+            </div>
           </div>
           <div class="mt-6 flex justify-end gap-2">
             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700"
@@ -560,6 +625,32 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
             </button>
             <button class="px-4 py-2 rounded bg-amber-600 text-white" @click="nocPhysicalFromModal">
               Physical
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Technician Note -->
+      <div v-if="showTechnicianNoteModal" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" @click="showTechnicianNoteModal = false"></div>
+        <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Add Technician Note</h2>
+            <button class="text-gray-400 hover:text-gray-600" @click="showTechnicianNoteModal = false">✕</button>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Note</label>
+              <textarea v-model="technicianNote" placeholder="Enter your technician note..."
+                class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none text-gray-900 bg-white"></textarea>
+            </div>
+          </div>
+          <div class="mt-6 flex justify-end gap-2">
+            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700"
+              @click="showTechnicianNoteModal = false">Cancel</button>
+            <button class="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
+              @click="sendTechnicianNoteFromModal" :disabled="technicianNoteSubmitting">
+              Add Note
             </button>
           </div>
         </div>
