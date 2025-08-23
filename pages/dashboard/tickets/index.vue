@@ -60,6 +60,7 @@ const showTechnicianModal = ref(false)
 const showNOCNoteModal = ref(false)
 const nocNote = ref('')
 const nocActionSubmitting = ref(false)
+const nocSelectedType = ref<string>('')
 const typeNameMap = computed(() => {
   const map: Record<string, string> = {}
   for (const t of troubleTypes.value) map[t.id] = t.name || t.id
@@ -132,6 +133,7 @@ function actPrepareTechnician(id: number) {
 function actPrepareNOC(id: number) {
   selectedId.value = id;
   nocNote.value = '';
+  nocSelectedType.value = troubleTypes.value[0]?.id || ''
   showNOCNoteModal.value = true
 }
 
@@ -165,7 +167,7 @@ async function sendToCSFromModal() {
   if (!selectedId.value) return;
   try {
     nocActionSubmitting.value = true
-    await ticketsApi().sendToCS(selectedId.value, nocNote.value)
+    await ticketsApi().sendToCS(selectedId.value, nocNote.value, nocSelectedType.value || undefined)
     showNOCNoteModal.value = false
     // feedback
     try { const toast = useToast(); toast.add({ title: 'Sent to CS', description: 'Ticket returned to Customer Service.', color: 'primary', timeout: 3000 }) } catch {}
@@ -515,6 +517,13 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
               <label class="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
               <textarea v-model="nocNote" placeholder="Enter any notes about this action..."
                 class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none text-gray-900 bg-white"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Diagnosed Trouble Type</label>
+              <select v-model="nocSelectedType" class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">-- Select trouble type (optional) --</option>
+                <option v-for="t in troubleTypes" :key="t.id" :value="t.id">{{ t.name || t.id }}</option>
+              </select>
             </div>
           </div>
           <div class="mt-6 flex justify-end gap-2">
