@@ -34,6 +34,7 @@ import { onMounted, ref, watch, defineAsyncComponent, computed } from 'vue'
 import { ticketsApi } from '@/api/tickets'
 import { customerAdminApi } from '@/api/admin/customer'
 import { userManagementAdminApi } from '@/api/admin/user-management'
+import { uploadFileAdminApi } from '@/api/admin/file-upload'
 import { useAuthStore } from '@/stores/auth'
 import { useRolePermissions } from '@/composables/useRolePermissions'
 
@@ -49,9 +50,10 @@ console.log('isNOC:', isNOC.value)
 console.log('isTechnician:', isTechnician.value)
 
 const rows = ref<any[]>([])
+const byTypeRows = ref<any[]>([])
 const loading = ref(true)
 const note = ref('')
-const techId = ref('')
+
 const selectedId = ref<number | null>(null)
 const activeTab = ref(0)
 const isLoading = ref(true)
@@ -91,20 +93,25 @@ function stopPolling() {
 // Lookups for modal and table rendering
 const customers = ref<any[]>([])
 const troubleTypes = ref<any[]>([])
-const technicians = ref<any[]>([])
 const loadingLookups = ref(true)
 const showNewType = ref(false)
 const newTypeName = ref('')
-const showTechnicianModal = ref(false)
 const showNOCNoteModal = ref(false)
 const showTechnicianNoteModal = ref(false)
+const showResolveModal = ref(false)
+// Removed duplicate declarations - these are declared later
 const nocNote = ref('')
 const technicianNote = ref('')
+const resolveNote = ref('')
 const nocActionSubmitting = ref(false)
 const technicianNoteSubmitting = ref(false)
+const resolveSubmitting = ref(false)
 const nocSelectedType = ref<string>('')
 const imgTechBfFile = ref<File | null>(null)
 const imgTechAfFile = ref<File | null>(null)
+
+// Search functionality
+const searchQuery = ref('')
 
 // Computed properties for image preview URLs
 const beforeImageUrl = computed(() => {
@@ -121,6 +128,29 @@ const afterImageUrl = computed(() => {
   return undefined
 })
 
+// Filtered tickets based on search query
+const filteredRows = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return rows.value
+  }
+  
+  const query = searchQuery.value.toLowerCase().trim()
+  return rows.value.filter(ticket => {
+    return (
+      ticket.id?.toString().includes(query) ||
+      ticket.title?.toLowerCase().includes(query) ||
+      ticket.type?.toLowerCase().includes(query) ||
+      ticket.type_name?.toLowerCase().includes(query) ||
+      ticket.status?.toLowerCase().includes(query) ||
+      ticket.current_assignee_name?.toLowerCase().includes(query) ||
+      ticket.current_assignee_role?.toLowerCase().includes(query) ||
+      ticket.customer_note?.toLowerCase().includes(query) ||
+      ticket.technician_note?.toLowerCase().includes(query) ||
+      ticket.noc_note?.toLowerCase().includes(query)
+    )
+  })
+})
+
 const nocImageFile = ref<File | null>(null)
 const nocImagePreview = ref<string>('')
 const showImageModal = ref(false)
@@ -130,6 +160,10 @@ const typeNameMap = computed(() => {
   for (const t of troubleTypes.value) map[t.id] = t.name || t.id
   return map
 })
+
+// Delete confirmation modal
+const showDeleteModal = ref(false)
+const ticketToDelete = ref<any>(null)
 
 // hotspots state
 const hotspots = ref<any[]>([])
@@ -186,21 +220,23 @@ async function refreshUpdates() {
   newUpdates.value = []
 }
 
-function actPrepare(id: number) { selectedId.value = id; note.value = ''; techId.value = '' }
+function actPrepare(id: number) { selectedId.value = id; note.value = '' }
 
-function actPrepareTechnician(id: number) {
+function actPrepareResolve(id: number) {
   selectedId.value = id;
-  techId.value = '';
-  showTechnicianModal.value = true
+  resolveNote.value = '';
+  showResolveModal.value = true;
 }
 
 function actPrepareNOC(id: number) {
+  console.log('actPrepareNOC called with id:', id)
   selectedId.value = id;
   nocNote.value = '';
   nocSelectedType.value = troubleTypes.value[0]?.id || ''
   nocImageFile.value = null;
   nocImagePreview.value = '';
   showNOCNoteModal.value = true
+  console.log('showNOCNoteModal set to:', showNOCNoteModal.value)
 }
 
 function handleNOCImageUpload(event: Event) {
@@ -241,10 +277,7 @@ function removeNOCImage() {
   }
 }
 
-function openImageModal(imageUrl: string) {
-  selectedImageUrl.value = imageUrl;
-  showImageModal.value = true;
-}
+// This function is already declared later, removing duplicate
 
 function actPrepareTechnicianNote(id: number) {
   selectedId.value = id;
@@ -306,15 +339,43 @@ function handleAfterImageChange(event: Event) {
 }
 
 async function sendToNOC() { if (!selectedId.value) return; await ticketsApi().sendToNOC(selectedId.value, note.value); await refresh() }
+
+// Open the same modal and reuse note + image inputs to send to NOC
+async function sendToNOCFromModal() {
+  if (!selectedId.value) return;
+  try {
+    nocActionSubmitting.value = true
+    await ticketsApi().sendToNOC(selectedId.value, nocNote.value, nocImageFile.value || undefined)
+    showNOCNoteModal.value = false
+    try { const toast = useToast(); toast.add({ title: 'Sent to NOC', description: 'Ticket sent to NOC.', color: 'primary', timeout: 3000 }) } catch {}
+    await refresh()
+  } catch (e:any) {
+    console.error('sendToNOC error:', e)
+    try {
+      const toast = useToast();
+      const msg = e?.data?.message || e?.message || 'Failed to send to NOC'
+      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
+    } catch {}
+  } finally {
+    nocActionSubmitting.value = false
+  }
+}
 async function nocSolved() { if (!selectedId.value) return; await ticketsApi().nocSolved(selectedId.value, note.value); await refresh() }
 async function nocPhysical() { if (!selectedId.value) return; await ticketsApi().nocPhysical(selectedId.value, note.value); await refresh() }
-async function assignTechnician() { if (!selectedId.value) return; await ticketsApi().assignTechnician(selectedId.value, techId.value); await refresh() }
-
-async function assignTechnicianFromModal() {
-  if (!selectedId.value || !techId.value) return;
-  await ticketsApi().assignTechnician(selectedId.value, techId.value);
-  showTechnicianModal.value = false;
-  await refresh()
+async function assignTechnician() { 
+  if (!selectedId.value) return; 
+  try {
+    await ticketsApi().assignTechnician(selectedId.value);
+    try { const toast = useToast(); toast.add({ title: 'Assigned to Technician', description: 'Ticket assigned to technician role.', color: 'primary', timeout: 3000 }) } catch {}
+    await refresh()
+  } catch (e: any) {
+    console.error('assignTechnician error:', e)
+    try {
+      const toast = useToast();
+      const msg = e?.data?.message || e?.message || 'Failed to assign technician'
+      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
+    } catch {}
+  }
 }
 
 async function nocSolvedFromModal() {
@@ -375,6 +436,26 @@ async function sendToCSFromModal() {
 }
 async function resolve() { if (!selectedId.value) return; await ticketsApi().resolve(selectedId.value, note.value); await refresh() }
 
+async function resolveFromModal() {
+  if (!selectedId.value) return;
+  try {
+    resolveSubmitting.value = true
+    await ticketsApi().resolve(selectedId.value, resolveNote.value)
+    showResolveModal.value = false
+    try { const toast = useToast(); toast.add({ title: 'Ticket Resolved', description: 'Ticket has been marked as resolved.', color: 'primary', timeout: 3000 }) } catch {}
+    await refresh()
+  } catch (e: any) {
+    console.error('resolve error:', e)
+    try {
+      const toast = useToast();
+      const msg = e?.data?.message || e?.message || 'Failed to resolve ticket'
+      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
+    } catch {}
+  } finally {
+    resolveSubmitting.value = false
+  }
+}
+
 // Role-based action buttons with workflow awareness
 const getTicketActions = (ticket: any) => {
   console.log('getTicketActions called for ticket:', ticket.id)
@@ -392,7 +473,7 @@ const getTicketActions = (ticket: any) => {
       {
         label: 'To NOC',
         color: 'bg-blue-600',
-        action: () => { actPrepare(ticket.id); sendToNOC() },
+        action: () => { actPrepareNOC(ticket.id) },
         show: (isAdmin.value || isCustomerService.value) &&
           (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN') &&
           ticket.status !== 'finished',
@@ -410,33 +491,69 @@ const getTicketActions = (ticket: any) => {
       {
         label: 'Assign Tech',
         color: 'bg-cyan-600',
-        action: () => { actPrepareTechnician(ticket.id) },
+        action: () => { actPrepare(ticket.id); assignTechnician() },
         show: (isAdmin.value || isCustomerService.value) &&
           (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN') &&
           ticket.status !== 'finished',
-        tooltip: 'Assign to technician for field work'
+        tooltip: 'Assign to technician role (all technicians can see it)'
       },
       {
         label: 'Add Tech Note & Img',
         color: 'bg-orange-600',
         action: () => { actPrepareTechnicianNote(ticket.id) },
-        show: isTechnician.value && ticket.status !== 'finished',
+        show: isTechnician.value && 
+          (ticket.current_assignee_name === 'TECHNICIAN' || ticket.current_assignee_name === authStore.user?.user_id) &&
+          ticket.status !== 'finished',
         tooltip: 'Add technician note and upload before/after images'
       },
       {
         label: 'Resolve',
         color: 'bg-emerald-600',
-        action: () => { actPrepare(ticket.id); resolve() },
+        action: () => { actPrepareResolve(ticket.id) },
         show: (isAdmin.value || isCustomerService.value) &&
           (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN') &&
           ticket.status !== 'finished',
-        tooltip: 'Mark ticket as resolved (CS communicates with customer)'
+        tooltip: 'Mark ticket as resolved with customer note'
       }
     ]
 
   const filteredActions = actions.filter(action => action.show)
   console.log('Filtered actions:', filteredActions.map(a => a.label))
   return filteredActions
+}
+
+// Dropdown items for ticket actions (similar to customer page)
+const items = (row: any) => {
+  const workflowActions = getTicketActions(row).map(action => ({
+    label: action.label,
+    icon: getActionIcon(action.label),
+    click: action.action
+  }))
+  
+  const actions = [workflowActions]
+  
+  // Add delete action (for admin and CS)
+  if (isAdmin.value || isCustomerService.value) {
+    actions.push([{
+      label: 'Delete',
+      icon: 'i-heroicons-trash-20-solid',
+      click: () => showDeleteConfirmation(row)
+    }])
+  }
+  
+  return actions
+}
+
+// Helper function to get icon for action
+function getActionIcon(actionLabel: string): string {
+  switch (actionLabel) {
+    case 'To NOC': return 'i-heroicons-arrow-right-20-solid'
+    case 'To CS': return 'i-heroicons-arrow-left-20-solid'
+    case 'Assign Tech': return 'i-heroicons-user-plus-20-solid'
+    case 'Add Tech Note': return 'i-heroicons-document-text-20-solid'
+    case 'Resolve': return 'i-heroicons-check-circle-20-solid'
+    default: return 'i-heroicons-cog-6-tooth-20-solid'
+  }
 }
 
 // Add sendToCS function for NOC users
@@ -448,8 +565,40 @@ async function sendToCS() {
   await refresh()
 }
 
+// Show delete confirmation modal
+function showDeleteConfirmation(ticket: any) {
+  ticketToDelete.value = ticket
+  showDeleteModal.value = true
+}
+
+// Delete ticket function
+async function deleteTicket(id: number) {
+  try {
+    await ticketsApi().delete(id)
+    useToast().add({ 
+      title: 'Success!', 
+      description: 'Ticket deleted successfully', 
+      color: 'green', 
+      timeout: 3000 
+    })
+    showDeleteModal.value = false
+    ticketToDelete.value = null
+    await refresh()
+  } catch (error: any) {
+    console.error('Error deleting ticket:', error)
+    const msg = error?.data?.message || error?.message || 'Failed to delete ticket'
+    useToast().add({ 
+      title: 'Delete failed', 
+      description: String(msg), 
+      color: 'red', 
+      icon: 'i-heroicons-exclamation-triangle', 
+      timeout: 5000 
+    })
+  }
+}
+
 const showAdd = ref(false)
-const form = ref({ customer_id: '', title: '', description: '', type: '' })
+const form = ref({ customer_id: '', title: '', description: '', type: '', img_cs: '' })
 async function loadLookups() {
   try {
     const cust: any = await customerAdminApi().getAllCustomers()
@@ -459,10 +608,7 @@ async function loadLookups() {
     const tt: any = await ticketsApi().troubleTypes()
     troubleTypes.value = tt.data || tt || []
   } catch (e) { console.error('load trouble types', e) }
-  try {
-    const tech: any = await userManagementAdminApi().getAllUsers({ query: { role: "TECHNICIAN" } })
-    technicians.value = (tech.data || tech) || []
-  } catch (e) { console.error('load technicians', e) }
+
   if (!form.value.customer_id && customers.value.length) form.value.customer_id = customers.value[0].id
   if (!form.value.type && troubleTypes.value.length) form.value.type = troubleTypes.value[0].id
   showNewType.value = troubleTypes.value.length === 0
@@ -494,6 +640,41 @@ const modalGpsLng = computed(() => {
   const c = customers.value.find(c => c.id === form.value.customer_id)
   return c?.longitude
 })
+async function handleImageUpload(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (file) {
+    try {
+      // Upload file using existing API
+      const uploadData = {
+        name: `ticket_cs_${Date.now()}`,
+        path: 'tickets/cs',
+        file: file
+      }
+      
+      const response = await uploadFileAdminApi().createUploadFile(uploadData)
+      if (response.data) {
+        // Store filename only, URL will be constructed in backend
+        const fileName = response.data.file || response.data.full_path?.split('/').pop()
+        form.value.img_cs = fileName
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      // Fallback to base64 for preview
+      const fallbackReader = new FileReader()
+      fallbackReader.onload = (e) => {
+        form.value.img_cs = e.target?.result as string
+      }
+      fallbackReader.readAsDataURL(file)
+    }
+  }
+}
+
+function openImageModal(imageSrc: string) {
+  selectedImageUrl.value = imageSrc
+  showImageModal.value = true
+}
+
 async function createTicket() {
   try {
     console.log('Auth store token:', authStore.getToken) // Debug log
@@ -503,12 +684,27 @@ async function createTicket() {
       title: form.value.title,
       description: form.value.description,
       type: String(form.value.type),
+      img_cs: form.value.img_cs,
     })
     showAdd.value = false
-    form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', type: troubleTypes.value[0]?.id || '' }
+    form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', type: troubleTypes.value[0]?.id || '', img_cs: '' }
+    useToast().add({ 
+      title: 'Success!', 
+      description: 'Ticket created successfully', 
+      color: 'green', 
+      timeout: 3000 
+    })
     await refresh()
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating ticket:', error) // Debug log
+    const msg = error?.data?.message || error?.message || 'Failed to create ticket'
+    useToast().add({ 
+      title: 'Create failed', 
+      description: String(msg), 
+      color: 'red', 
+      icon: 'i-heroicons-exclamation-triangle', 
+      timeout: 5000 
+    })
   }
 }
 // Fetchers similar to transaction page
@@ -567,57 +763,85 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-4">
             <button v-if="isAdmin || isCustomerService" class="px-3 py-2 bg-emerald-600 text-white rounded" @click="showAdd = true">Add Ticket</button>
-            <span class="text-sm text-gray-600">Current Role: {{ userRole }}</span>
-            <span class="text-sm text-gray-600">Raw Role: {{ authStore.user?.role }}</span>
-            <span class="text-sm text-gray-600">isAdmin: {{ isAdmin }}</span>
-            <span class="text-sm text-gray-600">isCustomerService: {{ isCustomerService }}</span>
-            <span class="text-sm text-gray-600">isNOC: {{ isNOC }}</span>
-            <span class="text-sm text-gray-600">isTechnician: {{ isTechnician }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="relative">
+              <input 
+                v-model="searchQuery"
+                type="text" 
+                placeholder="Search tickets..." 
+                class="pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-64"
+              />
+              <svg class="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+            <span v-if="searchQuery" class="text-sm text-gray-500">
+              {{ filteredRows.length }} of {{ rows.length }} tickets
+            </span>
           </div>
         </div>
         <div class="table-scroll-container">
           <div class="table-scroll-content">
             <table class="min-w-full text-sm text-gray-900">
-              <thead class="bg-gray-100">
-                <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
-                  <th class="p-2">ID</th>
-                  <th class="p-2">Title</th>
-                  <th class="p-2">Type</th>
-                              <th class="p-2">Status</th>
-            <th class="p-2">Assignee</th>
-            <th class="p-2">Images</th>
-            <th class="p-2">Actions</th>
-                </tr>
-              </thead>
+                             <thead class="bg-gray-100">
+                 <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
+                   <th class="p-2">ID</th>
+                   <th class="p-2">Title</th>
+                   <th class="p-2">Type</th>
+                   <th class="p-2">Status</th>
+                   <th class="p-2">Assignee</th>
+                   <th class="p-2">Notes</th>
+                   <th class="p-2">Images</th>
+                   <th class="p-2 w-16">Actions</th>
+                 </tr>
+               </thead>
               <tbody>
-                <tr v-for="r in rows" :key="r.id" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70">
-                                     <td class="p-2">{{ r.id }}</td>
-                   <td class="p-2">{{ r.title }}</td>
-                   <td class="p-2 capitalize">{{ r.type_name || r.type }}</td>
-                   <td class="p-2 capitalize">{{ r.status }}</td>
-                   <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
-                <td class="p-2">
-                  <div class="flex flex-wrap gap-1">
-                    <div v-if="r.img_cs" class="flex items-center gap-1">
-                      <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">CS</span>
-                      <img :src="`/uploads/cs-images/${r.img_cs}`" alt="CS Image" class="w-8 h-8 object-cover rounded cursor-pointer" @click="openImageModal(`/uploads/cs-images/${r.img_cs}`)" />
+                <tr v-for="r in filteredRows" :key="r.id" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70">
+                  <td class="p-2">{{ r.id }}</td>
+                  <td class="p-2">{{ r.title }}</td>
+                  <td class="p-2 capitalize">{{ r.type_name || r.type }}</td>
+                  <td class="p-2 capitalize">{{ r.status }}</td>
+                  <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
+                  <td class="p-2">
+                    <div class="flex flex-wrap gap-1 max-w-xs">
+                      <div v-if="r.customer_note" class="text-xs">
+                        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">CS:</span>
+                        <span class="ml-1 text-gray-700 truncate">{{ r.customer_note.length > 30 ? r.customer_note.substring(0, 30) + '...' : r.customer_note }}</span>
+                      </div>
+                      <div v-if="r.technician_note" class="text-xs">
+                        <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">Tech:</span>
+                        <span class="ml-1 text-gray-700 truncate">{{ r.technician_note.length > 30 ? r.technician_note.substring(0, 30) + '...' : r.technician_note }}</span>
+                      </div>
+                      <div v-if="r.noc_note" class="text-xs">
+                        <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">NOC:</span>
+                        <span class="ml-1 text-gray-700 truncate">{{ r.noc_note.length > 30 ? r.noc_note.substring(0, 30) + '...' : r.noc_note }}</span>
+                      </div>
+                      <span v-if="!r.customer_note && !r.technician_note && !r.noc_note" class="text-gray-400 text-xs">No notes</span>
                     </div>
-                    <div v-if="r.img_noc" class="flex items-center gap-1">
-                      <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">NOC</span>
-                      <img :src="`/uploads/noc-images/${r.img_noc}`" alt="NOC Image" class="w-8 h-8 object-cover rounded cursor-pointer" @click="openImageModal(`/uploads/noc-images/${r.img_noc}`)" />
+                  </td>
+                  <td class="p-2">
+                    <div class="flex flex-wrap gap-1">
+                      <div v-if="r.img_cs" class="flex items-center gap-1">
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">CS</span>
+                        <img :src="`${useApiHost()}/uploads/cs-images/${r.img_cs}`" alt="CS Image" class="w-8 h-8 object-cover rounded cursor-pointer" @click="openImageModal(`${useApiHost()}/uploads/cs-images/${r.img_cs}`)" />
+                      </div>
+                      <div v-if="r.img_noc" class="flex items-center gap-1">
+                        <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">NOC</span>
+                        <img :src="`${useApiHost()}/uploads/noc-images/${r.img_noc}`" alt="NOC Image" class="w-8 h-8 object-cover rounded cursor-pointer" @click="openImageModal(`${useApiHost()}/uploads/noc-images/${r.img_noc}`)" />
+                      </div>
+                      <div v-if="r.img_tech_bf" class="flex items-center gap-1">
+                        <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">Tech BF</span>
+                        <img :src="`${useApiHost()}/uploads/technician-images/${r.img_tech_bf}`" alt="Tech Before" class="w-8 h-8 object-cover rounded cursor-pointer" @click="openImageModal(`${useApiHost()}/uploads/technician-images/${r.img_tech_bf}`)" />
+                      </div>
+                      <div v-if="r.img_tech_af" class="flex items-center gap-1">
+                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Tech AF</span>
+                        <img :src="`${useApiHost()}/uploads/technician-images/${r.img_tech_af}`" alt="Tech After" class="w-8 h-8 object-cover rounded cursor-pointer" @click="openImageModal(`${useApiHost()}/uploads/technician-images/${r.img_tech_af}`)" />
+                      </div>
+                      <span v-if="!r.img_cs && !r.img_noc && !r.img_tech_bf && !r.img_tech_af" class="text-gray-400 text-xs">No images</span>
                     </div>
-                    <div v-if="r.img_tech_bf" class="flex items-center gap-1">
-                      <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">Tech BF</span>
-                      <img :src="`/uploads/tech-images/${r.img_tech_bf}`" alt="Tech Before" class="w-8 h-8 object-cover rounded cursor-pointer" @click="openImageModal(`/uploads/tech-images/${r.img_tech_bf}`)" />
-                    </div>
-                    <div v-if="r.img_tech_af" class="flex items-center gap-1">
-                      <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Tech AF</span>
-                      <img :src="`/uploads/tech-images/${r.img_tech_af}`" alt="Tech After" class="w-8 h-8 object-cover rounded cursor-pointer" @click="openImageModal(`/uploads/tech-images/${r.img_tech_af}`)" />
-                    </div>
-                    <span v-if="!r.img_cs && !r.img_noc && !r.img_tech_bf && !r.img_tech_af" class="text-gray-400 text-xs">No images</span>
-                  </div>
-                </td>
-                <td class="p-2 space-x-2">
+                  </td>
+                  <td class="p-2 space-x-2">
                     <button v-for="action in getTicketActions(r)" :key="action.label"
                       :class="['px-2 py-1 text-white rounded hover:opacity-80 transition-opacity', action.color]"
                       @click="action.action" :title="action.tooltip">
@@ -692,6 +916,14 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
               <input :value="modalGpsLng ?? ''" disabled
                 class="w-full rounded px-3 py-2 bg-slate-800/50 border border-slate-700" />
             </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm text-slate-300 mb-1">Upload Image (CS)</label>
+              <input type="file" @change="handleImageUpload" accept="image/*"
+                class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none" />
+                             <div v-if="form.img_cs" class="mt-2">
+                 <img :src="`${useApiHost()}/uploads/tickets/cs/${form.img_cs}`" alt="Preview" class="w-32 h-32 object-cover rounded border" />
+               </div>
+            </div>
           </div>
           <div v-else class="text-slate-300">Loading options...</div>
           <div class="mt-4 flex justify-end gap-2">
@@ -703,36 +935,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
 
       
 
-      <!-- Modal Assign Technician -->
-      <div v-if="showTechnicianModal" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/60" @click="showTechnicianModal = false"></div>
-        <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold text-gray-900">Assign Technician</h2>
-            <button class="text-gray-400 hover:text-gray-600" @click="showTechnicianModal = false">✕</button>
-          </div>
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Select Technician</label>
-              <select v-model="techId"
-                class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Choose a technician...</option>
-                <option v-for="tech in technicians" :key="tech.id" :value="tech.id">
-                  {{ tech.name || tech.username }} ({{ tech.id }})
-                </option>
-              </select>
-            </div>
-          </div>
-          <div class="mt-6 flex justify-end gap-2">
-            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700"
-              @click="showTechnicianModal = false">Cancel</button>
-            <button class="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
-              @click="assignTechnicianFromModal" :disabled="!techId">
-              Assign Technician
-            </button>
-          </div>
-        </div>
-      </div>
+
 
       <!-- Modal NOC Note -->
       <div v-if="showNOCNoteModal" class="fixed inset-0 z-50 flex items-center justify-center">
@@ -748,7 +951,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
               <textarea v-model="nocNote" placeholder="Enter any notes about this action..."
                 class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none text-gray-900 bg-white"></textarea>
             </div>
-            <div>
+            <div v-if="isNOC || isAdmin">
               <label class="block text-sm font-medium text-gray-700 mb-1">Diagnosed Trouble Type</label>
               <select v-model="nocSelectedType" class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900">
                 <option value="" class="text-gray-500">-- Select trouble type (optional) --</option>
@@ -786,6 +989,10 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
           <div class="mt-6 flex justify-end gap-2">
             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700"
               @click="showNOCNoteModal = false">Cancel</button>
+            <button class="px-4 py-2 rounded bg-blue-600 text-white" @click="sendToNOCFromModal"
+              v-if="isAdmin || isCustomerService">
+              To NOC
+            </button>
             <button class="px-4 py-2 rounded bg-purple-600 text-white" @click="sendToCSFromModal">
               To CS
             </button>
@@ -854,6 +1061,96 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
             <button class="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
               @click="sendTechnicianNoteFromModal" :disabled="technicianNoteSubmitting || !technicianNote.trim()">
               {{ technicianNoteSubmitting ? 'Sending...' : 'Add Note & Images' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+             <!-- Modal Image Viewer -->
+       <div v-if="showImageModal" class="fixed inset-0 z-50 flex items-center justify-center">
+         <div class="absolute inset-0 bg-black/80" @click="showImageModal = false"></div>
+         <div class="relative w-full max-w-4xl mx-4 rounded-xl shadow-xl bg-white p-6">
+           <div class="flex items-center justify-between mb-4">
+             <h2 class="text-xl font-semibold text-gray-900">CS Image</h2>
+             <button class="text-gray-400 hover:text-gray-600" @click="showImageModal = false">✕</button>
+           </div>
+           <div class="flex justify-center">
+             <img :src="selectedImageUrl" alt="CS Image" class="max-w-full max-h-96 object-contain rounded" />
+           </div>
+           <div class="mt-4 flex justify-end">
+             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showImageModal = false">
+               Close
+             </button>
+           </div>
+         </div>
+       </div>
+
+      <!-- Modal Delete Confirmation -->
+      <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" @click="showDeleteModal = false"></div>
+        <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-red-600">Confirm Delete</h2>
+            <button class="text-gray-400 hover:text-gray-600" @click="showDeleteModal = false">✕</button>
+          </div>
+          <div class="space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <i class="i-heroicons-exclamation-triangle text-red-600 text-xl"></i>
+                </div>
+              </div>
+              <div>
+                <h3 class="text-lg font-medium text-gray-900">Delete Ticket?</h3>
+                <p class="text-sm text-gray-600">
+                  Are you sure you want to delete ticket <strong>#{{ ticketToDelete?.id }}</strong>?
+                </p>
+                <p class="text-sm text-gray-500 mt-1">
+                  Title: "{{ ticketToDelete?.title }}"
+                </p>
+                <p class="text-xs text-red-600 mt-2">
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="mt-6 flex justify-end gap-2">
+            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700 hover:bg-gray-400"
+              @click="showDeleteModal = false">
+              Cancel
+            </button>
+            <button class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+              @click="deleteTicket(ticketToDelete?.id)">
+              Delete Ticket
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Resolve Ticket -->
+      <div v-if="showResolveModal" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" @click="showResolveModal = false"></div>
+        <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Resolve Ticket</h2>
+            <button class="text-gray-400 hover:text-gray-600" @click="showResolveModal = false">✕</button>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Customer Note</label>
+              <textarea v-model="resolveNote" 
+                placeholder="Add a note about the resolution to communicate with the customer..."
+                class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-gray-900 bg-white"
+                rows="4"></textarea>
+              <p class="text-xs text-gray-500 mt-1">This note will be saved as customer_note and the ticket status will be set to finished.</p>
+            </div>
+          </div>
+          <div class="mt-6 flex justify-end gap-2">
+            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700 hover:bg-gray-400"
+              @click="showResolveModal = false">Cancel</button>
+            <button class="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+              @click="resolveFromModal" :disabled="resolveSubmitting">
+              {{ resolveSubmitting ? 'Resolving...' : 'Resolve Ticket' }}
             </button>
           </div>
         </div>

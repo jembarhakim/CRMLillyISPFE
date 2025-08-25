@@ -288,7 +288,7 @@ const byTypeChartOptions = {
                     {{ r.status }}
                   </span>
                 </td>
-                <td class="p-2 capitalize">{{ r.current_assignee_role }}</td>
+                <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
                 <td class="p-2">{{ r.created_at?.slice?.(0,10) }}</td>
               </tr>
             </tbody>
