@@ -241,6 +241,8 @@ function actPrepareNOC(id: number) {
   nocSelectedType.value = troubleTypes.value[0]?.id || ''
   nocImageFile.value = null;
   nocImagePreview.value = '';
+  showNewType.value = false; // Reset new type form
+  newTypeName.value = ''; // Clear new type name
   showNOCNoteModal.value = true
   console.log('showNOCNoteModal set to:', showNOCNoteModal.value)
 }
@@ -743,13 +745,40 @@ function generateTypeId(): string {
 }
 
 const saveNewType = async () => {
-  const id = generateTypeId()
-  await ticketsApi().createTroubleType(id, newTypeName.value || undefined)
-  const tt: any = await ticketsApi().troubleTypes()
-  troubleTypes.value = tt.data || tt || []
-  form.value.type = id
-  newTypeName.value = ''
-  showNewType.value = false
+  try {
+    const id = generateTypeId()
+    await ticketsApi().createTroubleType(id, newTypeName.value || undefined)
+    const tt: any = await ticketsApi().troubleTypes()
+    troubleTypes.value = tt.data || tt || []
+    // Set the newly created type as selected
+    nocSelectedType.value = id
+    newTypeName.value = ''
+    showNewType.value = false
+    
+    // Show success message
+    try { 
+      const toast = useToast(); 
+      toast.add({ 
+        title: 'Success!', 
+        description: 'New trouble type created successfully', 
+        color: 'green', 
+        timeout: 3000 
+      }) 
+    } catch {}
+  } catch (error: any) {
+    console.error('Error creating trouble type:', error)
+    const msg = error?.data?.message || error?.message || 'Failed to create trouble type'
+    try {
+      const toast = useToast();
+      toast.add({ 
+        title: 'Create failed', 
+        description: String(msg), 
+        color: 'red', 
+        icon: 'i-heroicons-exclamation-triangle', 
+        timeout: 5000 
+      })
+    } catch {}
+  }
 }
 
 // derived GPS for modal
@@ -1102,10 +1131,22 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
             </div>
             <div v-if="isNOC || isAdmin">
               <label class="block text-sm font-medium text-gray-700 mb-1">Diagnosed Trouble Type</label>
-              <select v-model="nocSelectedType" class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900">
-                <option value="" class="text-gray-500">-- Select trouble type (optional) --</option>
-                <option v-for="t in troubleTypes" :key="t.id" :value="t.id" class="text-gray-900 bg-white">{{ t.name || t.id }}</option>
-              </select>
+              <div class="flex gap-2" v-if="!showNewType">
+                <select v-model="nocSelectedType" class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900">
+                  <option value="" class="text-gray-500">-- Select trouble type (optional) --</option>
+                  <option v-for="t in troubleTypes" :key="t.id" :value="t.id" class="text-gray-900 bg-white">{{ t.name || t.id }}</option>
+                </select>
+                <button type="button" class="px-3 py-2 rounded bg-blue-600 text-white text-sm" @click="showNewType = true">Add New Type</button>
+              </div>
+              <div v-else class="space-y-2">
+                <input v-model="newTypeName" placeholder="Display Name (optional)"
+                  class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900" />
+                <div class="flex gap-2">
+                  <button type="button" class="px-3 py-2 bg-emerald-600 text-white rounded text-sm" @click="saveNewType">Save Type</button>
+                  <button type="button" class="px-3 py-2 bg-gray-300 text-gray-700 rounded text-sm"
+                    @click="showNewType = false">Cancel</button>
+                </div>
+              </div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Upload Image (Optional)</label>
