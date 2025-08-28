@@ -2,27 +2,27 @@
     <div class="min-h-screen flex flex-col">
       <!-- Navbar -->
       <div class="sticky top-0 z-20 flex justify-between items-center w-full h-16 px-4 md:px-6 bg-white border-b shadow-sm">
-        <div class="flex items-center gap-4">
-                    <!-- Mobile sidebar toggle button -->
-                      <button 
-              class="lg:hidden p-2 focus:outline-none fixed top-4 left-4 z-50"
-              @click="toggleMobileSidebar"
-              aria-label="Toggle mobile sidebar"
-            >
-              <div v-if="!showMobileSidebar" class="flex flex-col gap-1">
-                <div class="w-4 h-0.5 bg-gray-800 rounded"></div>
-                <div class="w-4 h-0.5 bg-gray-800 rounded"></div>
-                <div class="w-4 h-0.5 bg-gray-800 rounded"></div>
-              </div>
-              <div v-else class="flex flex-col gap-1">
-                <div class="w-4 h-0.5 bg-gray-800 rounded rotate-45 translate-y-1.5"></div>
-                <div class="w-4 h-0.5 bg-gray-800 rounded opacity-0"></div>
-                <div class="w-4 h-0.5 bg-gray-800 rounded -rotate-45 -translate-y-1.5"></div>
-              </div>
-            </button>
+        <div class="flex items-start gap-2 flex-col lg:flex-row lg:items-center">
           <p class="text-lg md:text-xl font-bold text-gray-900">
             Lilly <span class="text-red-600">ISP</span>
           </p>
+          <!-- Mobile sidebar toggle button: placed under title on small screens -->
+          <button 
+            class="lg:hidden p-2 focus:outline-none mt-1"
+            @click="toggleMobileSidebar"
+            aria-label="Toggle mobile sidebar"
+          >
+            <div v-if="!showMobileSidebar" class="flex flex-col gap-1">
+              <div class="w-4 h-0.5 bg-gray-800 rounded"></div>
+              <div class="w-4 h-0.5 bg-gray-800 rounded"></div>
+              <div class="w-4 h-0.5 bg-gray-800 rounded"></div>
+            </div>
+            <div v-else class="flex flex-col gap-1">
+              <div class="w-4 h-0.5 bg-gray-800 rounded rotate-45 translate-y-1.5"></div>
+              <div class="w-4 h-0.5 bg-gray-800 rounded opacity-0"></div>
+              <div class="w-4 h-0.5 bg-gray-800 rounded -rotate-45 -translate-y-1.5"></div>
+            </div>
+          </button>
         </div>
         <!-- Profile dropdown for desktop -->
         <div class="hidden lg:block">
