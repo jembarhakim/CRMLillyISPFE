@@ -66,6 +66,23 @@ function format(amount: number) {
 }
 const pdfContentRef = ref(null);
 const invoiceNumber = computed(() => `#${props.invoice.id}`);
+
+// Computed properties for invoice calculations
+const invoiceTotal = computed(() => {
+  if (!invoiceDetail.value.invoice_items || invoiceDetail.value.invoice_items.length === 0) {
+    return invoiceDetail.value.amount || 0;
+  }
+  return invoiceDetail.value.invoice_items.reduce((sum: number, item: any) => sum + (item.total || 0), 0);
+});
+
+const totalPaid = computed(() => {
+  if (!invoiceDetail.value.transaction) return 0;
+  return invoiceDetail.value.transaction.amount || 0;
+});
+
+const remainingAmount = computed(() => {
+  return invoiceTotal.value - totalPaid.value;
+});
 const generatePDF = async () => {
   try {
     const element = pdfContentRef.value;
@@ -126,14 +143,12 @@ const generatePDF = async () => {
                 Invoice Date: {{ formatDateToYMD(invoiceDetail.created_at) }}
               </p>
               <p>Due Date: {{ formatDateToYMD(invoiceDetail.created_at) }}</p>
-              <p class="mt-4 font-bold">
-                Invoice Total: Rp
-                {{ props.invoice.total.toLocaleString("id-ID") }}
-              </p>
-              <p>
-                Total Paid: Rp
-                {{ props.invoice.totalPaid.toLocaleString("id-ID") }}
-              </p>
+                              <p class="mt-4 font-bold">
+                  Invoice Total: {{ formatIDR(invoiceTotal) }}
+                </p>
+                <p>
+                  Total Paid: {{ formatIDR(totalPaid) }}
+                </p>
               <!-- <p>
               Amount Due: Rp
               {{ props.invoice.amountDue.toLocaleString("id-ID") }}
@@ -183,18 +198,16 @@ const generatePDF = async () => {
             </div> -->
               <div class="flex justify-between font-bold">
                 <span>Total</span>
-                <span>Rp {{ props.invoice.total.toLocaleString("id-ID") }}</span>
+                <span>{{ formatIDR(invoiceTotal) }}</span>
               </div>
               <div class="flex justify-between">
                 <span>Total Paid</span>
-                <span>Rp {{ props.invoice.totalPaid.toLocaleString("id-ID") }}</span>
+                <span>{{ formatIDR(totalPaid) }}</span>
               </div>
-              <!-- <div class="flex justify-between">
-              <span>Amount Due</span>
-              <span
-                >Rp {{ props.invoice.amountDue.toLocaleString("id-ID") }}</span
-              >
-            </div> -->
+              <div class="flex justify-between">
+                <span>Amount Due</span>
+                <span>{{ formatIDR(remainingAmount) }}</span>
+              </div>
             </div>
           </div>
 
