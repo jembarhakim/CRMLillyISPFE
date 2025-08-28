@@ -3,9 +3,9 @@
       <!-- Navbar -->
       <div class="sticky top-0 z-20 flex justify-between items-center w-full h-16 px-4 md:px-6 bg-white border-b shadow-sm">
         <div class="flex items-center gap-4">
-                     <!-- Mobile sidebar toggle button -->
-                       <button 
-              class="lg:hidden p-2 focus:outline-none"
+                    <!-- Mobile sidebar toggle button -->
+                      <button 
+              class="lg:hidden p-2 focus:outline-none fixed top-4 left-4 z-50"
               @click="toggleMobileSidebar"
               aria-label="Toggle mobile sidebar"
             >
@@ -58,7 +58,7 @@
         <!-- Mobile Sidebar Backdrop -->
         <div 
           v-if="showMobileSidebar"
-          class="lg:hidden fixed inset-0 bg-black/30 z-10 transition-opacity duration-300"
+          class="lg:hidden fixed inset-0 bg-black/30 z-40 transition-opacity duration-300"
           @click="toggleMobileSidebar"
         ></div>
 
@@ -72,7 +72,7 @@
         >
           <!-- Sidebar toggle button - Always visible -->
           <div 
-            class="flex justify-center items-center p-4 border-b cursor-pointer hover:bg-gray-100 transition-colors duration-200 bg-white min-h-[60px] z-20"
+            class="toggle-header flex justify-center items-center p-4 border-b cursor-pointer hover:bg-gray-100 transition-colors duration-200 bg-white min-h-[60px] z-20"
             @click="toggleSidebar"
             role="button"
             aria-label="Toggle sidebar"
@@ -123,7 +123,8 @@
         </div>
 
         <!-- Main Content -->
-        <div class="flex-1 p-4 sm:p-6 md:p-8 lg:p-10 overflow-auto bg-gray-50">
+        <div class="flex-1 p-4 sm:p-6 md:p-8 lg:p-10 overflow-auto bg-gray-50"
+          :class="{'lg:ml-16': showSidebar, 'lg:ml-0': !showSidebar}">
           <slot name="header"></slot>
           <slot name="header-child"></slot>
           <hr class="my-6" />
@@ -208,9 +209,9 @@
     display: flex !important;
     flex-direction: column !important;
     position: fixed !important;
-    top: 64px !important; /* Below navbar */
+    top: 0 !important;
     left: 0 !important;
-    height: calc(100vh - 64px) !important;
+    height: 100vh !important;
     z-index: 30 !important;
     transform: translateX(-100%) !important;
     transition: transform 0.3s ease !important;
@@ -225,10 +226,13 @@
     transform: translateX(0) !important;
   }
   
-  /* Desktop sidebar - always visible */
+  /* Desktop sidebar - fixed and non-scrolling */
   @media (min-width: 1024px) {
     .sidebar-fix {
-      position: relative !important;
+      position: fixed !important;
+      top: 64px !important; /* fixed below navbar */
+      left: 0 !important;
+      height: calc(100vh - 64px) !important;
       transform: none !important;
       box-shadow: none !important;
       width: auto !important;
@@ -236,25 +240,19 @@
     }
   }
   
-  /* Ensure sidebar toggle button is always visible and clickable */
-  .sidebar-fix .flex.justify-center {
+  /* Ensure sidebar toggle button is always visible and aligned under navbar */
+  .sidebar-fix .toggle-header {
     position: sticky !important;
-    top: 0 !important;
+    top: 40px !important; /* 64px - ~one button height */
     z-index: 20 !important;
     background: white !important;
     border-bottom: 1px solid #e5e7eb !important;
     min-height: 60px !important;
   }
   
-  .sidebar-fix .flex.justify-center:hover {
+  .sidebar-fix .toggle-header:hover {
     background-color: #f3f4f6 !important;
   }
   
-  /* Mobile specific adjustments */
-  @media (max-width: 1023px) {
-    .sidebar-fix .flex.justify-center {
-      position: relative !important;
-      top: auto !important;
-    }
-  }
+  /* Keep sticky behavior on all sizes */
   </style>

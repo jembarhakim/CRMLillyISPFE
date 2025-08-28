@@ -75,13 +75,19 @@ const invoiceTotal = computed(() => {
   return invoiceDetail.value.invoice_items.reduce((sum: number, item: any) => sum + (item.total || 0), 0);
 });
 
+const isPaidStatus = computed(() => {
+  const s = (invoiceDetail.value?.status || '').toString().toLowerCase()
+  return s === 'paid'
+})
+
 const totalPaid = computed(() => {
+  if (isPaidStatus.value) return invoiceTotal.value
   if (!invoiceDetail.value.transaction) return 0;
   return invoiceDetail.value.transaction.amount || 0;
 });
 
 const remainingAmount = computed(() => {
-  return invoiceTotal.value - totalPaid.value;
+  return isPaidStatus.value ? 0 : (invoiceTotal.value - totalPaid.value);
 });
 const generatePDF = async () => {
   try {
