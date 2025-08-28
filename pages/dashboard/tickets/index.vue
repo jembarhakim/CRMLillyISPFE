@@ -58,6 +58,11 @@ const selectedId = ref<number | null>(null)
 const activeTab = ref(0)
 const isLoading = ref(true)
 
+// Loading states for action buttons
+const actionLoading = ref<{ [key: string]: boolean }>({})
+const createTicketSubmitting = ref(false)
+const deleteTicketSubmitting = ref(false)
+
 // Realtime notifications (simple polling)
 const lastCheckedAt = ref<string>(new Date().toISOString())
 const newUpdates = ref<any[]>([])
@@ -129,27 +134,28 @@ const afterImageUrl = computed(() => {
 })
 
 // Filtered tickets based on search query
-const filteredRows = computed(() => {
-  if (!searchQuery.value.trim()) {
-    return rows.value
-  }
-  
-  const query = searchQuery.value.toLowerCase().trim()
-  return rows.value.filter(ticket => {
-    return (
-      ticket.id?.toString().includes(query) ||
-      ticket.title?.toLowerCase().includes(query) ||
-      ticket.type?.toLowerCase().includes(query) ||
-      ticket.type_name?.toLowerCase().includes(query) ||
-      ticket.status?.toLowerCase().includes(query) ||
-      ticket.current_assignee_name?.toLowerCase().includes(query) ||
-      ticket.current_assignee_role?.toLowerCase().includes(query) ||
-      ticket.customer_note?.toLowerCase().includes(query) ||
-      ticket.technician_note?.toLowerCase().includes(query) ||
-      ticket.noc_note?.toLowerCase().includes(query)
-    )
+  const filteredRows = computed(() => {
+    if (!searchQuery.value.trim()) {
+      return rows.value
+    }
+    
+    const query = searchQuery.value.toLowerCase().trim()
+    return rows.value.filter(ticket => {
+      return (
+        ticket.id?.toString().includes(query) ||
+        ticket.customer_name?.toLowerCase().includes(query) ||
+        ticket.title?.toLowerCase().includes(query) ||
+        ticket.type?.toLowerCase().includes(query) ||
+        ticket.type_name?.toLowerCase().includes(query) ||
+        ticket.status?.toLowerCase().includes(query) ||
+        ticket.current_assignee_name?.toLowerCase().includes(query) ||
+        ticket.current_assignee_role?.toLowerCase().includes(query) ||
+        ticket.customer_note?.toLowerCase().includes(query) ||
+        ticket.technician_note?.toLowerCase().includes(query) ||
+        ticket.noc_note?.toLowerCase().includes(query)
+      )
+    })
   })
-})
 
 const nocImageFile = ref<File | null>(null)
 const nocImagePreview = ref<string>('')
@@ -338,7 +344,26 @@ function handleAfterImageChange(event: Event) {
   }
 }
 
-async function sendToNOC() { if (!selectedId.value) return; await ticketsApi().sendToNOC(selectedId.value, note.value); await refresh() }
+async function sendToNOC() { 
+  if (!selectedId.value) return; 
+  const actionKey = `tonoc_${selectedId.value}`
+  if (actionLoading.value[actionKey]) return; // Prevent duplicate requests
+  
+  try {
+    actionLoading.value[actionKey] = true
+    await ticketsApi().sendToNOC(selectedId.value, note.value); 
+    await refresh()
+  } catch (e: any) {
+    console.error('sendToNOC error:', e)
+    try {
+      const toast = useToast();
+      const msg = e?.data?.message || e?.message || 'Failed to send to NOC'
+      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
+    } catch {}
+  } finally {
+    actionLoading.value[actionKey] = false
+  }
+}
 
 // Open the same modal and reuse note + image inputs to send to NOC
 async function sendToNOCFromModal() {
@@ -360,11 +385,53 @@ async function sendToNOCFromModal() {
     nocActionSubmitting.value = false
   }
 }
-async function nocSolved() { if (!selectedId.value) return; await ticketsApi().nocSolved(selectedId.value, note.value); await refresh() }
-async function nocPhysical() { if (!selectedId.value) return; await ticketsApi().nocPhysical(selectedId.value, note.value); await refresh() }
+async function nocSolved() { 
+  if (!selectedId.value) return; 
+  const actionKey = `nocsolved_${selectedId.value}`
+  if (actionLoading.value[actionKey]) return; // Prevent duplicate requests
+  
+  try {
+    actionLoading.value[actionKey] = true
+    await ticketsApi().nocSolved(selectedId.value, note.value); 
+    await refresh()
+  } catch (e: any) {
+    console.error('nocSolved error:', e)
+    try {
+      const toast = useToast();
+      const msg = e?.data?.message || e?.message || 'Failed to mark as NOC solved'
+      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
+    } catch {}
+  } finally {
+    actionLoading.value[actionKey] = false
+  }
+}
+async function nocPhysical() { 
+  if (!selectedId.value) return; 
+  const actionKey = `nocphysical_${selectedId.value}`
+  if (actionLoading.value[actionKey]) return; // Prevent duplicate requests
+  
+  try {
+    actionLoading.value[actionKey] = true
+    await ticketsApi().nocPhysical(selectedId.value, note.value); 
+    await refresh()
+  } catch (e: any) {
+    console.error('nocPhysical error:', e)
+    try {
+      const toast = useToast();
+      const msg = e?.data?.message || e?.message || 'Failed to mark as physical'
+      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
+    } catch {}
+  } finally {
+    actionLoading.value[actionKey] = false
+  }
+}
 async function assignTechnician() { 
   if (!selectedId.value) return; 
+  const actionKey = `assigntech_${selectedId.value}`
+  if (actionLoading.value[actionKey]) return; // Prevent duplicate requests
+  
   try {
+    actionLoading.value[actionKey] = true
     await ticketsApi().assignTechnician(selectedId.value);
     try { const toast = useToast(); toast.add({ title: 'Assigned to Technician', description: 'Ticket assigned to technician role.', color: 'primary', timeout: 3000 }) } catch {}
     await refresh()
@@ -375,21 +442,51 @@ async function assignTechnician() {
       const msg = e?.data?.message || e?.message || 'Failed to assign technician'
       toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
     } catch {}
+  } finally {
+    actionLoading.value[actionKey] = false
   }
 }
 
 async function nocSolvedFromModal() {
   if (!selectedId.value) return;
-  await ticketsApi().nocSolved(selectedId.value, nocNote.value);
-  showNOCNoteModal.value = false;
-  await refresh()
+  if (nocActionSubmitting.value) return; // Prevent duplicate requests
+  
+  try {
+    nocActionSubmitting.value = true
+    await ticketsApi().nocSolved(selectedId.value, nocNote.value);
+    showNOCNoteModal.value = false;
+    await refresh()
+  } catch (e: any) {
+    console.error('nocSolvedFromModal error:', e)
+    try {
+      const toast = useToast();
+      const msg = e?.data?.message || e?.message || 'Failed to mark as NOC solved'
+      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
+    } catch {}
+  } finally {
+    nocActionSubmitting.value = false
+  }
 }
 
 async function nocPhysicalFromModal() {
   if (!selectedId.value) return;
-  await ticketsApi().nocPhysical(selectedId.value, nocNote.value);
-  showNOCNoteModal.value = false;
-  await refresh()
+  if (nocActionSubmitting.value) return; // Prevent duplicate requests
+  
+  try {
+    nocActionSubmitting.value = true
+    await ticketsApi().nocPhysical(selectedId.value, nocNote.value);
+    showNOCNoteModal.value = false;
+    await refresh()
+  } catch (e: any) {
+    console.error('nocPhysicalFromModal error:', e)
+    try {
+      const toast = useToast();
+      const msg = e?.data?.message || e?.message || 'Failed to mark as physical'
+      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
+    } catch {}
+  } finally {
+    nocActionSubmitting.value = false
+  }
 }
 
 async function sendTechnicianNoteFromModal() {
@@ -434,7 +531,26 @@ async function sendToCSFromModal() {
     nocActionSubmitting.value = false
   }
 }
-async function resolve() { if (!selectedId.value) return; await ticketsApi().resolve(selectedId.value, note.value); await refresh() }
+async function resolve() { 
+  if (!selectedId.value) return; 
+  const actionKey = `resolve_${selectedId.value}`
+  if (actionLoading.value[actionKey]) return; // Prevent duplicate requests
+  
+  try {
+    actionLoading.value[actionKey] = true
+    await ticketsApi().resolve(selectedId.value, note.value); 
+    await refresh()
+  } catch (e: any) {
+    console.error('resolve error:', e)
+    try {
+      const toast = useToast();
+      const msg = e?.data?.message || e?.message || 'Failed to resolve ticket'
+      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
+    } catch {}
+  } finally {
+    actionLoading.value[actionKey] = false
+  }
+}
 
 async function resolveFromModal() {
   if (!selectedId.value) return;
@@ -573,7 +689,10 @@ function showDeleteConfirmation(ticket: any) {
 
 // Delete ticket function
 async function deleteTicket(id: number) {
+  if (deleteTicketSubmitting.value) return; // Prevent duplicate requests
+  
   try {
+    deleteTicketSubmitting.value = true
     await ticketsApi().delete(id)
     useToast().add({ 
       title: 'Success!', 
@@ -594,6 +713,8 @@ async function deleteTicket(id: number) {
       icon: 'i-heroicons-exclamation-triangle', 
       timeout: 5000 
     })
+  } finally {
+    deleteTicketSubmitting.value = false
   }
 }
 
@@ -676,7 +797,10 @@ function openImageModal(imageSrc: string) {
 }
 
 async function createTicket() {
+  if (createTicketSubmitting.value) return; // Prevent duplicate requests
+  
   try {
+    createTicketSubmitting.value = true
     console.log('Auth store token:', authStore.getToken) // Debug log
     console.log('Creating ticket with data:', form.value) // Debug log
     await ticketsApi().create({
@@ -705,6 +829,8 @@ async function createTicket() {
       icon: 'i-heroicons-exclamation-triangle', 
       timeout: 5000 
     })
+  } finally {
+    createTicketSubmitting.value = false
   }
 }
 // Fetchers similar to transaction page
@@ -762,7 +888,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
       <div class="p-4 bg-white rounded-lg shadow border border-gray-100">
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-4">
-            <button v-if="isAdmin || isCustomerService" class="px-3 py-2 bg-emerald-600 text-white rounded" @click="showAdd = true">Add Ticket</button>
+            <button v-if="isAdmin || isCustomerService" class="px-3 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700" @click="showAdd = true">Add Ticket</button>
           </div>
           <div class="flex items-center gap-2">
             <div class="relative">
@@ -783,74 +909,95 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         </div>
         <div class="table-scroll-container">
           <div class="table-scroll-content">
-            <table class="min-w-full text-sm text-gray-900">
-                             <thead class="bg-gray-100">
-                 <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
-                   <th class="p-2">ID</th>
-                   <th class="p-2">Title</th>
-                   <th class="p-2">Type</th>
-                   <th class="p-2">Status</th>
-                   <th class="p-2">Assignee</th>
-                   <th class="p-2">Notes</th>
-                   <th class="p-2">Images</th>
-                   <th class="p-2 w-16">Actions</th>
-                 </tr>
-               </thead>
-              <tbody>
-                <tr v-for="r in filteredRows" :key="r.id" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70">
-                  <td class="p-2">{{ r.id }}</td>
-                  <td class="p-2">{{ r.title }}</td>
-                  <td class="p-2 capitalize">{{ r.type_name || r.type }}</td>
-                  <td class="p-2 capitalize">{{ r.status }}</td>
-                  <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
-                  <td class="p-2">
-                    <div class="flex flex-wrap gap-1 max-w-xs">
-                      <div v-if="r.customer_note" class="text-xs">
-                        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">CS:</span>
-                        <span class="ml-1 text-gray-700 truncate">{{ r.customer_note.length > 30 ? r.customer_note.substring(0, 30) + '...' : r.customer_note }}</span>
-                      </div>
-                      <div v-if="r.technician_note" class="text-xs">
-                        <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">Tech:</span>
-                        <span class="ml-1 text-gray-700 truncate">{{ r.technician_note.length > 30 ? r.technician_note.substring(0, 30) + '...' : r.technician_note }}</span>
-                      </div>
-                      <div v-if="r.noc_note" class="text-xs">
-                        <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">NOC:</span>
-                        <span class="ml-1 text-gray-700 truncate">{{ r.noc_note.length > 30 ? r.noc_note.substring(0, 30) + '...' : r.noc_note }}</span>
-                      </div>
-                      <span v-if="!r.customer_note && !r.technician_note && !r.noc_note" class="text-gray-400 text-xs">No notes</span>
-                    </div>
-                  </td>
-                  <td class="p-2">
-                    <div class="flex flex-wrap gap-1">
-                      <div v-if="r.img_cs" class="flex items-center gap-1">
-                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">CS</span>
-                        <img :src="`${useApiHost()}/uploads/cs-images/${r.img_cs}`" alt="CS Image" class="w-8 h-8 object-cover rounded cursor-pointer" @click="openImageModal(`${useApiHost()}/uploads/cs-images/${r.img_cs}`)" />
-                      </div>
-                      <div v-if="r.img_noc" class="flex items-center gap-1">
-                        <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">NOC</span>
-                        <img :src="`${useApiHost()}/uploads/noc-images/${r.img_noc}`" alt="NOC Image" class="w-8 h-8 object-cover rounded cursor-pointer" @click="openImageModal(`${useApiHost()}/uploads/noc-images/${r.img_noc}`)" />
-                      </div>
-                      <div v-if="r.img_tech_bf" class="flex items-center gap-1">
-                        <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">Tech BF</span>
-                        <img :src="`${useApiHost()}/uploads/technician-images/${r.img_tech_bf}`" alt="Tech Before" class="w-8 h-8 object-cover rounded cursor-pointer" @click="openImageModal(`${useApiHost()}/uploads/technician-images/${r.img_tech_bf}`)" />
-                      </div>
-                      <div v-if="r.img_tech_af" class="flex items-center gap-1">
-                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Tech AF</span>
-                        <img :src="`${useApiHost()}/uploads/technician-images/${r.img_tech_af}`" alt="Tech After" class="w-8 h-8 object-cover rounded cursor-pointer" @click="openImageModal(`${useApiHost()}/uploads/technician-images/${r.img_tech_af}`)" />
-                      </div>
-                      <span v-if="!r.img_cs && !r.img_noc && !r.img_tech_bf && !r.img_tech_af" class="text-gray-400 text-xs">No images</span>
-                    </div>
-                  </td>
-                  <td class="p-2 space-x-2">
-                    <button v-for="action in getTicketActions(r)" :key="action.label"
-                      :class="['px-2 py-1 text-white rounded hover:opacity-80 transition-opacity', action.color]"
-                      @click="action.action" :title="action.tooltip">
-                      {{ action.label }}
-                    </button>
-                    <span v-if="getTicketActions(r).length === 0" class="text-gray-400 text-xs">
-                      No actions available
-                    </span>
-                  </td>
+                         <table class="min-w-full text-sm text-gray-900">
+               <colgroup>
+                 <col class="w-16">
+                 <col class="w-32">
+                 <col class="w-48">
+                 <col class="w-24">
+                 <col class="w-24">
+                 <col class="w-32">
+                 <col class="w-64">
+                 <col class="w-32">
+                 <col class="w-32">
+               </colgroup>
+                                             <thead class="bg-gray-100">
+                  <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
+                    <th class="p-2 w-16">ID</th>
+                    <th class="p-2 w-32">Customer</th>
+                    <th class="p-2 w-48">Title</th>
+                    <th class="p-2 w-24">Type</th>
+                    <th class="p-2 w-24">Status</th>
+                    <th class="p-2 w-32">Assignee</th>
+                    <th class="p-2 w-64">Notes</th>
+                    <th class="p-2 w-32">Images</th>
+                    <th class="p-2 w-32">Actions</th>
+                  </tr>
+                </thead>
+                              <tbody>
+                  <tr v-for="r in filteredRows" :key="r.id" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70 transition-colors">
+                    <td class="p-2">{{ r.id }}</td>
+                    <td class="p-2 font-medium text-blue-600">{{ r.customer_name || 'Unknown Customer' }}</td>
+                    <td class="p-2">{{ r.title }}</td>
+                    <td class="p-2 capitalize">{{ r.type_name || r.type }}</td>
+                    <td class="p-2 capitalize">{{ r.status }}</td>
+                    <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
+                                     <td class="p-2 max-w-xs">
+                     <div class="flex flex-col gap-1 max-w-xs">
+                       <div v-if="r.customer_note" class="text-xs">
+                         <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">CS:</span>
+                         <span class="ml-1 text-gray-700 break-words">{{ r.customer_note }}</span>
+                       </div>
+                       <div v-if="r.technician_note" class="text-xs">
+                         <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">Tech:</span>
+                         <span class="ml-1 text-gray-700 break-words">{{ r.technician_note }}</span>
+                       </div>
+                       <div v-if="r.noc_note" class="text-xs">
+                         <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">NOC:</span>
+                         <span class="ml-1 text-gray-700 break-words">{{ r.noc_note }}</span>
+                       </div>
+                       <span v-if="!r.customer_note && !r.technician_note && !r.noc_note" class="text-gray-400 text-xs">No notes</span>
+                     </div>
+                   </td>
+                                     <td class="p-2">
+                     <div class="flex flex-col gap-1">
+                       <div v-if="r.img_cs" class="flex items-center gap-1">
+                         <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">CS</span>
+                         <img :src="`${useApiHost()}/uploads/cs-images/${r.img_cs}`" alt="CS Image" class="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity" @click="openImageModal(`${useApiHost()}/uploads/cs-images/${r.img_cs}`)" />
+                       </div>
+                       <div v-if="r.img_noc" class="flex items-center gap-1">
+                         <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">NOC</span>
+                         <img :src="`${useApiHost()}/uploads/noc-images/${r.img_noc}`" alt="NOC Image" class="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity" @click="openImageModal(`${useApiHost()}/uploads/noc-images/${r.img_noc}`)" />
+                       </div>
+                       <div v-if="r.img_tech_bf" class="flex items-center gap-1">
+                         <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">Tech BF</span>
+                         <img :src="`${useApiHost()}/uploads/technician-images/${r.img_tech_bf}`" alt="Tech Before" class="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity" @click="openImageModal(`${useApiHost()}/uploads/technician-images/${r.img_tech_bf}`)" />
+                       </div>
+                       <div v-if="r.img_tech_af" class="flex items-center gap-1">
+                         <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Tech AF</span>
+                         <img :src="`${useApiHost()}/uploads/technician-images/${r.img_tech_af}`" alt="Tech After" class="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity" @click="openImageModal(`${useApiHost()}/uploads/technician-images/${r.img_tech_af}`)" />
+                       </div>
+                       <span v-if="!r.img_cs && !r.img_noc && !r.img_tech_bf && !r.img_tech_af" class="text-gray-400 text-xs text-center">No images</span>
+                     </div>
+                   </td>
+                                     <td class="p-2">
+                     <div class="flex flex-col gap-1 min-w-[120px]">
+                       <button v-for="action in getTicketActions(r)" :key="action.label"
+                         :class="['px-3 py-1.5 text-white rounded text-xs font-medium hover:opacity-80 transition-opacity w-full text-center flex items-center justify-center gap-2', action.color]"
+                         @click="action.action" :title="action.tooltip"
+                         :disabled="actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting">
+                         <svg v-if="actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting" 
+                              class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                         </svg>
+                         {{ actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting ? 'Loading...' : action.label }}
+                       </button>
+                       <span v-if="getTicketActions(r).length === 0" class="text-gray-400 text-xs text-center py-1">
+                         No actions available
+                       </span>
+                     </div>
+                   </td>
                 </tr>
               </tbody>
             </table>
@@ -927,8 +1074,10 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
           </div>
           <div v-else class="text-slate-300">Loading options...</div>
           <div class="mt-4 flex justify-end gap-2">
-            <button class="px-4 py-2 rounded bg-gray-600 text-white" @click="showAdd = false">Cancel</button>
-            <button class="px-4 py-2 rounded bg-emerald-600 text-white" @click="createTicket">Submit</button>
+            <button class="px-4 py-2 rounded bg-gray-600 text-white" @click="showAdd = false" :disabled="createTicketSubmitting">Cancel</button>
+            <button class="px-4 py-2 rounded bg-emerald-600 text-white disabled:opacity-50" @click="createTicket" :disabled="createTicketSubmitting">
+              {{ createTicketSubmitting ? 'Creating...' : 'Submit' }}
+            </button>
           </div>
         </div>
       </div>
@@ -988,19 +1137,22 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
           </div>
           <div class="mt-6 flex justify-end gap-2">
             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700"
-              @click="showNOCNoteModal = false">Cancel</button>
-            <button class="px-4 py-2 rounded bg-blue-600 text-white" @click="sendToNOCFromModal"
-              v-if="isAdmin || isCustomerService">
-              To NOC
+              @click="showNOCNoteModal = false" :disabled="nocActionSubmitting">Cancel</button>
+            <button class="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50" @click="sendToNOCFromModal"
+              v-if="isAdmin || isCustomerService" :disabled="nocActionSubmitting">
+              {{ nocActionSubmitting ? 'Sending...' : 'To NOC' }}
             </button>
-            <button class="px-4 py-2 rounded bg-purple-600 text-white" @click="sendToCSFromModal">
-              To CS
+            <button class="px-4 py-2 rounded bg-purple-600 text-white disabled:opacity-50" @click="sendToCSFromModal"
+              :disabled="nocActionSubmitting">
+              {{ nocActionSubmitting ? 'Sending...' : 'To CS' }}
             </button>
-            <button class="px-4 py-2 rounded bg-green-600 text-white" @click="nocSolvedFromModal">
-              NOC Solved
+            <button class="px-4 py-2 rounded bg-green-600 text-white disabled:opacity-50" @click="nocSolvedFromModal"
+              :disabled="nocActionSubmitting">
+              {{ nocActionSubmitting ? 'Processing...' : 'NOC Solved' }}
             </button>
-            <button class="px-4 py-2 rounded bg-amber-600 text-white" @click="nocPhysicalFromModal">
-              Physical
+            <button class="px-4 py-2 rounded bg-amber-600 text-white disabled:opacity-50" @click="nocPhysicalFromModal"
+              :disabled="nocActionSubmitting">
+              {{ nocActionSubmitting ? 'Processing...' : 'Physical' }}
             </button>
           </div>
         </div>
@@ -1119,9 +1271,9 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
               @click="showDeleteModal = false">
               Cancel
             </button>
-            <button class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
-              @click="deleteTicket(ticketToDelete?.id)">
-              Delete Ticket
+            <button class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+              @click="deleteTicket(ticketToDelete?.id)" :disabled="deleteTicketSubmitting">
+              {{ deleteTicketSubmitting ? 'Deleting...' : 'Delete Ticket' }}
             </button>
           </div>
         </div>

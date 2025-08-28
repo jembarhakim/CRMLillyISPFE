@@ -5,12 +5,12 @@
         <div class="flex items-center gap-4">
           <!-- Mobile menu toggle button -->
           <button 
-            class="md:hidden p-2 focus:outline-none"
-            @click="toggleMobileMenu"
-            aria-label="Toggle mobile menu"
+            class="lg:hidden p-2 focus:outline-none"
+            @click="toggleMobileSidebar"
+            aria-label="Toggle mobile sidebar"
           >
             <UIcon 
-              :name="showMobileMenu ? 'i-line-md-close' : 'i-line-md-menu'" 
+              :name="showMobileSidebar ? 'i-line-md-close' : 'i-line-md-menu'" 
               class="w-6 h-8"
             />
           </button>
@@ -19,7 +19,7 @@
           </p>
         </div>
         <!-- Profile dropdown for desktop -->
-        <div class="hidden md:block">
+        <div class="hidden lg:block">
           <UDropdown 
             :items="ProfileDropdown" 
             mode="hover" 
@@ -36,7 +36,7 @@
           </UDropdown>
         </div>
         <!-- Profile avatar for mobile -->
-        <div class="md:hidden">
+        <div class="lg:hidden">
           <UAvatar 
             src="https://avatars.githubusercontent.com/u/739984?v=4" 
             alt="Avatar" 
@@ -50,7 +50,7 @@
         <!-- Mobile Menu -->
         <div 
           v-if="showMobileMenu"
-          class="md:hidden fixed inset-0 bg-black/30 z-10 transition-opacity duration-300"
+          class="lg:hidden fixed inset-0 bg-black/30 z-10 transition-opacity duration-300"
           @click="toggleMobileMenu"
         >
           <div 
@@ -94,23 +94,32 @@
           </div>
         </div>
 
+        <!-- Mobile Sidebar Backdrop -->
+        <div 
+          v-if="showMobileSidebar"
+          class="lg:hidden fixed inset-0 bg-black/30 z-10 transition-opacity duration-300"
+          @click="toggleMobileSidebar"
+        ></div>
+
         <!-- Desktop Sidebar -->
         <div 
-          class="hidden md:flex md:flex-col border-r transition-all duration-300 bg-white text-gray-700"
+          class="hidden lg:flex lg:flex-col sidebar-fix border-r transition-all duration-300 bg-white text-gray-700"
           :class="[
             showSidebar ? 'w-16' : 'w-64',
+            showMobileSidebar ? 'show' : '',
           ]"
         >
           <!-- Sidebar toggle button -->
           <div 
-            class="flex justify-center p-4 border-b cursor-pointer hover:bg-gray-100"
+            class="flex justify-center items-center p-4 border-b cursor-pointer hover:bg-gray-100 transition-colors duration-200 bg-white min-h-[60px]"
             @click="toggleSidebar"
             role="button"
             aria-label="Toggle sidebar"
+            title="Toggle sidebar"
           >
             <UIcon 
               :name="showSidebar ? 'i-line-md-arrow-open-right' : 'i-line-md-arrow-close-left'" 
-              class="w-5 h-5"
+              class="w-6 h-6 text-gray-700 hover:text-gray-900 transition-colors duration-200"
             />
           </div>
           <div class="flex-1 p-2 overflow-auto no-scrollbar">
@@ -160,6 +169,7 @@
   const router = useRouter()
   const showSidebar = ref(true)
   const showMobileMenu = ref(false)
+  const showMobileSidebar = ref(false)
   const authStore = useAuthStore()
 
   // Profile dropdown
@@ -197,8 +207,14 @@
     showMobileMenu.value = !showMobileMenu.value
   }
 
+  const toggleMobileSidebar = () => {
+    showMobileSidebar.value = !showMobileSidebar.value
+  }
+
   const navigateTo = (link: string) => {
     router.push(link)
+    // Close mobile sidebar on navigation
+    showMobileSidebar.value = false
   }
   </script>
 
@@ -209,5 +225,48 @@
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+  
+  /* Mobile-first responsive sidebar */
+  @media (max-width: 1023px) {
+    .sidebar-fix {
+      display: flex !important;
+      flex-direction: column !important;
+      position: fixed !important;
+      top: 64px !important; /* Below navbar */
+      left: 0 !important;
+      height: calc(100vh - 64px) !important;
+      z-index: 30 !important;
+      transform: translateX(-100%) !important;
+      transition: transform 0.3s ease !important;
+      width: 280px !important;
+      max-width: 80vw !important;
+    }
+    
+    .sidebar-fix.show {
+      transform: translateX(0) !important;
+    }
+  }
+  
+  /* Desktop sidebar */
+  @media (min-width: 1024px) {
+    .sidebar-fix {
+      display: flex !important;
+      flex-direction: column !important;
+      position: relative !important;
+      transform: none !important;
+    }
+  }
+  
+  /* Ensure sidebar toggle button is always visible and clickable */
+  .sidebar-fix .flex.justify-center {
+    position: relative !important;
+    z-index: 10 !important;
+    background: white !important;
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+  
+  .sidebar-fix .flex.justify-center:hover {
+    background-color: #f3f4f6 !important;
   }
   </style>
