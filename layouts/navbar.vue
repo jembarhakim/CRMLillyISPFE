@@ -3,17 +3,23 @@
       <!-- Navbar -->
       <div class="sticky top-0 z-20 flex justify-between items-center w-full h-16 px-4 md:px-6 bg-white border-b shadow-sm">
         <div class="flex items-center gap-4">
-          <!-- Mobile menu toggle button -->
-          <button 
-            class="lg:hidden p-2 focus:outline-none"
-            @click="toggleMobileSidebar"
-            aria-label="Toggle mobile sidebar"
-          >
-            <UIcon 
-              :name="showMobileSidebar ? 'i-line-md-close' : 'i-line-md-menu'" 
-              class="w-6 h-8"
-            />
-          </button>
+                     <!-- Mobile sidebar toggle button -->
+                       <button 
+              class="lg:hidden p-2 focus:outline-none"
+              @click="toggleMobileSidebar"
+              aria-label="Toggle mobile sidebar"
+            >
+              <div v-if="!showMobileSidebar" class="flex flex-col gap-1">
+                <div class="w-4 h-0.5 bg-gray-800 rounded"></div>
+                <div class="w-4 h-0.5 bg-gray-800 rounded"></div>
+                <div class="w-4 h-0.5 bg-gray-800 rounded"></div>
+              </div>
+              <div v-else class="flex flex-col gap-1">
+                <div class="w-4 h-0.5 bg-gray-800 rounded rotate-45 translate-y-1.5"></div>
+                <div class="w-4 h-0.5 bg-gray-800 rounded opacity-0"></div>
+                <div class="w-4 h-0.5 bg-gray-800 rounded -rotate-45 -translate-y-1.5"></div>
+              </div>
+            </button>
           <p class="text-lg md:text-xl font-bold text-gray-900">
             Lilly <span class="text-red-600">ISP</span>
           </p>
@@ -41,58 +47,13 @@
             src="https://avatars.githubusercontent.com/u/739984?v=4" 
             alt="Avatar" 
             size="sm"
-            @click="toggleMobileMenu"
+            @click="toggleMobileSidebar"
           />
         </div>
       </div>
 
       <div class="flex flex-1 overflow-hidden">
-        <!-- Mobile Menu -->
-        <div 
-          v-if="showMobileMenu"
-          class="lg:hidden fixed inset-0 bg-black/30 z-10 transition-opacity duration-300"
-          @click="toggleMobileMenu"
-        >
-          <div 
-            class="w-64 bg-white h-full p-4 overflow-auto transform transition-transform duration-300"
-            :class="[showMobileMenu ? 'translate-x-0' : '-translate-x-full']"
-            @click.stop
-          >
-            <div class="flex justify-between items-center mb-4">
-              <p class="text-lg font-bold">
-                Lilly <span class="text-red-500">ISP</span>
-              </p>
-              <button 
-                class="p-2"
-                @click="toggleMobileMenu"
-                aria-label="Close mobile menu"
-              >
-                <UIcon name="i-line-md-close" class="w-6 h-6" />
-              </button>
-            </div>
-            <ul class="space-y-2">
-              <li 
-                v-for="(item, index) in filterMenu" 
-                :key="index"
-                class="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-blue-100"
-                @click="navigateTo(item.link); toggleMobileMenu()"
-              >
-                <UIcon :name="item.icon" class="w-6 h-6" />
-                <span class="font-medium">{{ item.label }}</span>
-              </li>
-              <!-- Profile dropdown items in mobile menu -->
-              <li 
-                v-for="(item, index) in ProfileDropdown[0]" 
-                :key="'profile-' + index"
-                class="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-blue-100"
-                @click="item.click(); toggleMobileMenu()"
-              >
-                <UIcon name="i-line-md-account" class="w-6 h-6" />
-                <span class="font-medium">{{ item.label }}</span>
-              </li>
-            </ul>
-          </div>
-        </div>
+
 
         <!-- Mobile Sidebar Backdrop -->
         <div 
@@ -101,17 +62,17 @@
           @click="toggleMobileSidebar"
         ></div>
 
-        <!-- Desktop Sidebar -->
+        <!-- Responsive Sidebar -->
         <div 
-          class="hidden lg:flex lg:flex-col sidebar-fix border-r transition-all duration-300 bg-white text-gray-700"
+          class="sidebar-fix border-r transition-all duration-300 bg-white text-gray-700"
           :class="[
             showSidebar ? 'w-16' : 'w-64',
             showMobileSidebar ? 'show' : '',
           ]"
         >
-          <!-- Sidebar toggle button -->
+          <!-- Sidebar toggle button - Always visible -->
           <div 
-            class="flex justify-center items-center p-4 border-b cursor-pointer hover:bg-gray-100 transition-colors duration-200 bg-white min-h-[60px]"
+            class="flex justify-center items-center p-4 border-b cursor-pointer hover:bg-gray-100 transition-colors duration-200 bg-white min-h-[60px] z-20"
             @click="toggleSidebar"
             role="button"
             aria-label="Toggle sidebar"
@@ -140,6 +101,24 @@
             <div v-if="filterMenu.length === 0" class="p-3 text-center text-gray-500 text-sm">
               No menu items available for role: {{ authStore.user?.role || 'Unknown' }}
             </div>
+            
+            <!-- Profile section for mobile -->
+            <div class="lg:hidden mt-4 pt-4 border-t border-gray-200">
+              <div class="p-3 text-sm text-gray-600">
+                Logged in as: {{ authStore.user?.user_id || 'User' }}
+              </div>
+              <ul class="space-y-2">
+                <li 
+                  v-for="(item, index) in ProfileDropdown[0]" 
+                  :key="'profile-' + index"
+                  class="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-100 text-gray-700"
+                  @click="() => { item.click(); showMobileSidebar = false }"
+                >
+                  <UIcon name="i-line-md-account" class="w-6 h-6" />
+                  <span class="font-medium text-gray-800">{{ item.label }}</span>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 
@@ -150,6 +129,8 @@
           <hr class="my-6" />
           <slot></slot>
         </div>
+        
+        
       </div>
     </div>
   </template>
@@ -168,7 +149,6 @@
   // Reactive state
   const router = useRouter()
   const showSidebar = ref(true)
-  const showMobileMenu = ref(false)
   const showMobileSidebar = ref(false)
   const authStore = useAuthStore()
 
@@ -203,10 +183,6 @@
     showSidebar.value = !showSidebar.value
   }
 
-  const toggleMobileMenu = () => {
-    showMobileMenu.value = !showMobileMenu.value
-  }
-
   const toggleMobileSidebar = () => {
     showMobileSidebar.value = !showMobileSidebar.value
   }
@@ -227,46 +203,58 @@
     scrollbar-width: none;
   }
   
-  /* Mobile-first responsive sidebar */
-  @media (max-width: 1023px) {
-    .sidebar-fix {
-      display: flex !important;
-      flex-direction: column !important;
-      position: fixed !important;
-      top: 64px !important; /* Below navbar */
-      left: 0 !important;
-      height: calc(100vh - 64px) !important;
-      z-index: 30 !important;
-      transform: translateX(-100%) !important;
-      transition: transform 0.3s ease !important;
-      width: 280px !important;
-      max-width: 80vw !important;
-    }
-    
-    .sidebar-fix.show {
-      transform: translateX(0) !important;
-    }
+  /* Responsive sidebar - Mobile first approach */
+  .sidebar-fix {
+    display: flex !important;
+    flex-direction: column !important;
+    position: fixed !important;
+    top: 64px !important; /* Below navbar */
+    left: 0 !important;
+    height: calc(100vh - 64px) !important;
+    z-index: 30 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s ease !important;
+    width: 280px !important;
+    max-width: 80vw !important;
+    background: white !important;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1) !important;
   }
   
-  /* Desktop sidebar */
+  /* Show sidebar when active */
+  .sidebar-fix.show {
+    transform: translateX(0) !important;
+  }
+  
+  /* Desktop sidebar - always visible */
   @media (min-width: 1024px) {
     .sidebar-fix {
-      display: flex !important;
-      flex-direction: column !important;
       position: relative !important;
       transform: none !important;
+      box-shadow: none !important;
+      width: auto !important;
+      max-width: none !important;
     }
   }
   
   /* Ensure sidebar toggle button is always visible and clickable */
   .sidebar-fix .flex.justify-center {
-    position: relative !important;
-    z-index: 10 !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 20 !important;
     background: white !important;
     border-bottom: 1px solid #e5e7eb !important;
+    min-height: 60px !important;
   }
   
   .sidebar-fix .flex.justify-center:hover {
     background-color: #f3f4f6 !important;
+  }
+  
+  /* Mobile specific adjustments */
+  @media (max-width: 1023px) {
+    .sidebar-fix .flex.justify-center {
+      position: relative !important;
+      top: auto !important;
+    }
   }
   </style>
