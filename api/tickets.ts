@@ -101,7 +101,16 @@ export const ticketsApi = () => {
     },
 
     delete: (id: number) => $fetch(`${base}/api/tickets/${id}`, { method: 'DELETE', headers: authHeader() }),
-    byType: () => $fetch(`${base}/api/tickets/reports/by-type`, { headers: authHeader() }),
+    byType: (startDate?: string, endDate?: string) => {
+      const params = new URLSearchParams()
+      if (startDate) params.append('start_date', startDate)
+      if (endDate) params.append('end_date', endDate)
+      
+      const queryString = params.toString()
+      const url = queryString ? `${base}/api/tickets/reports/by-type?${queryString}` : `${base}/api/tickets/reports/by-type`
+      
+      return $fetch(url, { headers: authHeader() })
+    },
     troubleTypes: () => $fetch(`${base}/api/tickets/lookups/trouble-types`, { headers: authHeader() }),
     createTroubleType: (id: string, name?: string) => $fetch(`${base}/api/tickets/lookups/trouble-types`, { method: 'POST', body: { id, name }, headers: authHeader() }),
     hotspots: () => $fetch(`${base}/api/tickets/reports/hotspots`, { headers: authHeader() }),

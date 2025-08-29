@@ -354,7 +354,7 @@ async function sendToNOC() {
   try {
     actionLoading.value[actionKey] = true
     await ticketsApi().sendToNOC(selectedId.value, note.value); 
-    await refresh()
+  await refresh()
   } catch (e: any) {
     console.error('sendToNOC error:', e)
     try {
@@ -455,9 +455,9 @@ async function nocSolvedFromModal() {
   
   try {
     nocActionSubmitting.value = true
-    await ticketsApi().nocSolved(selectedId.value, nocNote.value);
-    showNOCNoteModal.value = false;
-    await refresh()
+  await ticketsApi().nocSolved(selectedId.value, nocNote.value);
+  showNOCNoteModal.value = false;
+  await refresh()
   } catch (e: any) {
     console.error('nocSolvedFromModal error:', e)
     try {
@@ -476,9 +476,9 @@ async function nocPhysicalFromModal() {
   
   try {
     nocActionSubmitting.value = true
-    await ticketsApi().nocPhysical(selectedId.value, nocNote.value);
-    showNOCNoteModal.value = false;
-    await refresh()
+  await ticketsApi().nocPhysical(selectedId.value, nocNote.value);
+  showNOCNoteModal.value = false;
+  await refresh()
   } catch (e: any) {
     console.error('nocPhysicalFromModal error:', e)
     try {
@@ -537,11 +537,11 @@ async function resolve() {
   if (!selectedId.value) return; 
   const actionKey = `resolve_${selectedId.value}`
   if (actionLoading.value[actionKey]) return; // Prevent duplicate requests
-  
+
   try {
     actionLoading.value[actionKey] = true
     await ticketsApi().resolve(selectedId.value, note.value); 
-    await refresh()
+  await refresh()
   } catch (e: any) {
     console.error('resolve error:', e)
     try {
@@ -746,14 +746,14 @@ function generateTypeId(): string {
 
 const saveNewType = async () => {
   try {
-    const id = generateTypeId()
-    await ticketsApi().createTroubleType(id, newTypeName.value || undefined)
-    const tt: any = await ticketsApi().troubleTypes()
-    troubleTypes.value = tt.data || tt || []
+  const id = generateTypeId()
+  await ticketsApi().createTroubleType(id, newTypeName.value || undefined)
+  const tt: any = await ticketsApi().troubleTypes()
+  troubleTypes.value = tt.data || tt || []
     // Set the newly created type as selected
     nocSelectedType.value = id
-    newTypeName.value = ''
-    showNewType.value = false
+  newTypeName.value = ''
+  showNewType.value = false
     
     // Show success message
     try { 
@@ -938,7 +938,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         </div>
         <div class="table-scroll-container">
           <div class="table-scroll-content">
-                         <table class="min-w-full text-sm text-gray-900">
+            <table class="min-w-full text-sm text-gray-900">
                <colgroup>
                  <col class="w-16">
                  <col class="w-32">
@@ -950,8 +950,8 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                  <col class="w-32">
                  <col class="w-32">
                </colgroup>
-                                             <thead class="bg-gray-100">
-                  <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
+              <thead class="bg-gray-100">
+                <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
                     <th class="p-2 w-16">ID</th>
                     <th class="p-2 w-32">Customer</th>
                     <th class="p-2 w-48">Title</th>
@@ -961,15 +961,15 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                     <th class="p-2 w-64">Notes</th>
                     <th class="p-2 w-32">Images</th>
                     <th class="p-2 w-32">Actions</th>
-                  </tr>
-                </thead>
-                              <tbody>
+                </tr>
+              </thead>
+              <tbody>
                   <tr v-for="r in filteredRows" :key="r.id" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70 transition-colors">
-                    <td class="p-2">{{ r.id }}</td>
+                  <td class="p-2">{{ r.id }}</td>
                     <td class="p-2 font-medium text-blue-600">{{ r.customer_name || 'Unknown Customer' }}</td>
-                    <td class="p-2">{{ r.title }}</td>
+                  <td class="p-2">{{ r.title }}</td>
                     <td class="p-2 capitalize">{{ r.type_name || r.type }}</td>
-                    <td class="p-2 capitalize">{{ r.status }}</td>
+                  <td class="p-2 capitalize">{{ r.status }}</td>
                     <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
                                      <td class="p-2 max-w-xs">
                      <div class="flex flex-col gap-1 max-w-xs">
@@ -988,12 +988,12 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                        <span v-if="!r.customer_note && !r.technician_note && !r.noc_note" class="text-gray-400 text-xs">No notes</span>
                      </div>
                    </td>
-                                     <td class="p-2">
+                  <td class="p-2">
                      <div class="flex flex-col gap-1">
                        <div v-if="r.img_cs" class="flex items-center gap-1">
                          <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">CS</span>
                          <img :src="`${useApiHost()}/uploads/cs-images/${r.img_cs}`" alt="CS Image" class="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity" @click="openImageModal(`${useApiHost()}/uploads/cs-images/${r.img_cs}`)" />
-                       </div>
+                    </div>
                        <div v-if="r.img_noc" class="flex items-center gap-1">
                          <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">NOC</span>
                          <img :src="`${useApiHost()}/uploads/noc-images/${r.img_noc}`" alt="NOC Image" class="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity" @click="openImageModal(`${useApiHost()}/uploads/noc-images/${r.img_noc}`)" />
@@ -1008,8 +1008,8 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                        </div>
                        <span v-if="!r.img_cs && !r.img_noc && !r.img_tech_bf && !r.img_tech_af" class="text-gray-400 text-xs text-center">No images</span>
                      </div>
-                   </td>
-                                     <td class="p-2">
+                  </td>
+                  <td class="p-2">
                      <div class="flex flex-col gap-1 min-w-[120px]">
                        <button v-for="action in getTicketActions(r)" :key="action.label"
                          :class="['px-3 py-1.5 text-white rounded text-xs font-medium hover:opacity-80 transition-opacity w-full text-center flex items-center justify-center gap-2', action.color]"
@@ -1021,12 +1021,12 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                          </svg>
                          {{ actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting ? 'Loading...' : action.label }}
-                       </button>
+                      </button>
                        <span v-if="getTicketActions(r).length === 0" class="text-gray-400 text-xs text-center py-1">
                          No actions available
                        </span>
-                     </div>
-                   </td>
+                    </div>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -1135,7 +1135,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                 <select v-model="nocSelectedType" class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900">
                   <option value="" class="text-gray-500">-- Select trouble type (optional) --</option>
                   <option v-for="t in troubleTypes" :key="t.id" :value="t.id" class="text-gray-900 bg-white">{{ t.name || t.id }}</option>
-                </select>
+              </select>
                 <button type="button" class="px-3 py-2 rounded bg-blue-600 text-white text-sm" @click="showNewType = true">Add New Type</button>
               </div>
               <div v-else class="space-y-2">
@@ -1259,24 +1259,24 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         </div>
       </div>
 
-             <!-- Modal Image Viewer -->
+      <!-- Modal Image Viewer -->
        <div v-if="showImageModal" class="fixed inset-0 z-50 flex items-center justify-center">
          <div class="absolute inset-0 bg-black/80" @click="showImageModal = false"></div>
-         <div class="relative w-full max-w-4xl mx-4 rounded-xl shadow-xl bg-white p-6">
-           <div class="flex items-center justify-between mb-4">
-             <h2 class="text-xl font-semibold text-gray-900">CS Image</h2>
+        <div class="relative w-full max-w-4xl mx-4 rounded-xl shadow-xl bg-white p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">CS Image</h2>
              <button class="text-gray-400 hover:text-gray-600" @click="showImageModal = false">✕</button>
-           </div>
-           <div class="flex justify-center">
+          </div>
+          <div class="flex justify-center">
              <img :src="selectedImageUrl" alt="CS Image" class="max-w-full max-h-96 object-contain rounded" />
-           </div>
-           <div class="mt-4 flex justify-end">
+          </div>
+          <div class="mt-4 flex justify-end">
              <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showImageModal = false">
-               Close
-             </button>
-           </div>
-         </div>
-       </div>
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
 
       <!-- Modal Delete Confirmation -->
       <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center">

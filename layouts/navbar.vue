@@ -205,25 +205,25 @@
   }
   
   /* Responsive sidebar - Mobile first approach */
-  .sidebar-fix {
-    display: flex !important;
-    flex-direction: column !important;
-    position: fixed !important;
+    .sidebar-fix {
+      display: flex !important;
+      flex-direction: column !important;
+      position: fixed !important;
     top: 0 !important;
-    left: 0 !important;
+      left: 0 !important;
     height: 100vh !important;
-    z-index: 30 !important;
-    transform: translateX(-100%) !important;
-    transition: transform 0.3s ease !important;
-    width: 280px !important;
-    max-width: 80vw !important;
+      z-index: 30 !important;
+      transform: translateX(-100%) !important;
+      transition: transform 0.3s ease !important;
+      width: 280px !important;
+      max-width: 80vw !important;
     background: white !important;
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1) !important;
-  }
-  
+    }
+    
   /* Show sidebar when active */
-  .sidebar-fix.show {
-    transform: translateX(0) !important;
+    .sidebar-fix.show {
+      transform: translateX(0) !important;
   }
   
   /* Desktop sidebar - fixed and non-scrolling */

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, computed } from 'vue'
+import { onMounted, onUnmounted, ref, computed, watch } from 'vue'
 import { ticketsApi } from '@/api/tickets'
 import { Bar } from 'vue-chartjs'
 import {
@@ -18,6 +18,14 @@ const rows = ref<any[]>([])
 const seriesData = ref<any[]>([])
 const loading = ref(true)
 const troubleTypes = ref<any[]>([])
+const selectedTimeFilter = ref('current_month') // Default to current month
+
+const timeFilterOptions = [
+  { value: 'current_month', label: '1 Bulan Ini' },
+  { value: 'last_month', label: 'Bulan Lalu' },
+  { value: 'this_year', label: 'Tahun Ini' },
+]
+
 const typeNameMap = computed(() => {
   const map: Record<string, string> = {}
   for (const t of troubleTypes.value) map[t.id] = t.name || t.id
@@ -26,10 +34,44 @@ const typeNameMap = computed(() => {
 
 let pollTimer: any = null
 
+// Helper functions for date filtering
+function getDateRange(filter: string) {
+  const now = new Date()
+  const currentMonth = now.getMonth()
+  const currentYear = now.getFullYear()
+  
+  switch (filter) {
+    case 'current_month':
+      const startOfMonth = new Date(currentYear, currentMonth, 1)
+      const endOfMonth = new Date(currentYear, currentMonth + 1, 0)
+      return {
+        start: startOfMonth.toISOString().split('T')[0],
+        end: endOfMonth.toISOString().split('T')[0]
+      }
+    case 'last_month':
+      const startOfLastMonth = new Date(currentYear, currentMonth - 1, 1)
+      const endOfLastMonth = new Date(currentYear, currentMonth, 0)
+      return {
+        start: startOfLastMonth.toISOString().split('T')[0],
+        end: endOfLastMonth.toISOString().split('T')[0]
+      }
+    case 'this_year':
+      const startOfYear = new Date(currentYear, 0, 1)
+      const endOfYear = new Date(currentYear, 11, 31)
+      return {
+        start: startOfYear.toISOString().split('T')[0],
+        end: endOfYear.toISOString().split('T')[0]
+      }
+    default:
+      return { start: '', end: '' }
+  }
+}
+
 async function fetchSnapshot() {
+  const dateRange = getDateRange(selectedTimeFilter.value)
   const [list, byType, types] = await Promise.all([
     ticketsApi().list() as any,
-    ticketsApi().byType() as any,
+    ticketsApi().byType(dateRange.start, dateRange.end) as any,
     ticketsApi().troubleTypes() as any,
   ])
   rows.value = (list?.data || list) as any[]
@@ -63,6 +105,11 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stopPolling()
+})
+
+// Watch for time filter changes and refetch data
+watch(selectedTimeFilter, () => {
+  fetchSnapshot()
 })
 
 // Keep a simple bar chart for "Tickets by Type" (still useful)
@@ -162,10 +209,6 @@ const troubleFrequencyOption = computed(() => {
 })
 
 const hotspots = ref<any[]>([])
-onMounted(async () => {
-  const res:any = await ticketsApi().hotspots()
-  hotspots.value = res.data || res
-})
 
 // Summary statistics
 const summaryStats = computed(() => {
@@ -200,6 +243,12 @@ const byTypeChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
 }
+
+// Fetch hotspots data
+onMounted(async () => {
+  const res:any = await ticketsApi().hotspots()
+  hotspots.value = res.data || res
+})
 </script>
 
 <template>
@@ -230,7 +279,22 @@ const byTypeChartOptions = {
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
              <!-- Bar Chart -->
        <div class="p-4 bg-white rounded-lg shadow border border-gray-100">
-         <h2 class="mb-3 font-semibold text-gray-800">Tickets by Type (Bar Chart)</h2>
+         <div class="flex items-center justify-between mb-3">
+           <h2 class="font-semibold text-gray-800">Tickets by Type (Bar Chart)</h2>
+           <!-- Time Filter Dropdown -->
+           <div class="flex items-center gap-2">
+             <label class="text-sm font-medium text-gray-700">Filter Waktu:</label>
+             <select 
+               v-model="selectedTimeFilter" 
+               class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+               @change="fetchSnapshot"
+             >
+               <option v-for="option in timeFilterOptions" :key="option.value" :value="option.value">
+                 {{ option.label }}
+               </option>
+             </select>
+           </div>
+         </div>
          <ECharts :option="barOption" style="height:320px" />
          <!-- Chart instead of table -->
          <div class="mt-4">
