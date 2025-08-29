@@ -103,6 +103,7 @@ const showNewType = ref(false)
 const newTypeName = ref('')
 const showNOCNoteModal = ref(false)
 const showTechnicianNoteModal = ref(false)
+const selectedTicket = ref<any | null>(null)
 const showResolveModal = ref(false)
 // Removed duplicate declarations - these are declared later
 const nocNote = ref('')
@@ -114,6 +115,56 @@ const resolveSubmitting = ref(false)
 const nocSelectedType = ref<string>('')
 const imgTechBfFile = ref<File | null>(null)
 const imgTechAfFile = ref<File | null>(null)
+
+// Location detail modal state
+const showLocationModal = ref(false)
+const selectedLocation = ref<{
+  customer_name?: string
+  customer_id?: string
+  customer_address?: string | null
+  customer_phone?: string | null
+  lat?: number | null
+  lng?: number | null
+} | null>(null)
+
+async function openLocationDetail(ticket: any) {
+  selectedLocation.value = {
+    customer_name: ticket.customer_name,
+    customer_id: ticket.customer_id,
+    customer_address: ticket.customer_address ?? null,
+    customer_phone: ticket.customer_phone ?? null,
+    lat: ticket.gps_lat ?? null,
+    lng: ticket.gps_lng ?? null,
+  }
+  showLocationModal.value = true
+
+  // Fallback: if any detail missing, fetch from customer API by id
+  const needsFetch = !selectedLocation.value.customer_address || !selectedLocation.value.customer_phone || selectedLocation.value.lat == null || selectedLocation.value.lng == null
+  if (needsFetch && ticket.customer_id) {
+    try {
+      const resp: any = await customerAdminApi().getCustomer(ticket.customer_id)
+      const data = resp?.data || resp
+      if (data) {
+        selectedLocation.value = {
+          customer_name: data.name ?? selectedLocation.value.customer_name,
+          customer_id: data.id ?? selectedLocation.value.customer_id,
+          customer_address: data.address ?? selectedLocation.value.customer_address,
+          customer_phone: data.phone ?? selectedLocation.value.customer_phone,
+          lat: (data.latitude ?? selectedLocation.value.lat) as any,
+          lng: (data.longitude ?? selectedLocation.value.lng) as any,
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch customer details', e)
+    }
+  }
+}
+
+const googleMapsUrl = computed(() => {
+  if (!selectedLocation.value?.lat || !selectedLocation.value?.lng) return ''
+  const q = `${selectedLocation.value.lat},${selectedLocation.value.lng}`
+  return `https://www.google.com/maps?q=${encodeURIComponent(q)}`
+})
 
 // Search functionality
 const searchQuery = ref('')
@@ -287,8 +338,9 @@ function removeNOCImage() {
 
 // This function is already declared later, removing duplicate
 
-function actPrepareTechnicianNote(id: number) {
-  selectedId.value = id;
+function actPrepareTechnicianNote(ticket: any) {
+  selectedTicket.value = ticket;
+  selectedId.value = ticket.id;
   technicianNote.value = '';
   imgTechBfFile.value = null;
   imgTechAfFile.value = null;
@@ -618,11 +670,18 @@ const getTicketActions = (ticket: any) => {
       {
         label: 'Add Tech Note & Img',
         color: 'bg-orange-600',
-        action: () => { actPrepareTechnicianNote(ticket.id) },
+        action: () => { actPrepareTechnicianNote(ticket) },
         show: isTechnician.value && 
           (ticket.current_assignee_name === 'TECHNICIAN' || ticket.current_assignee_name === authStore.user?.user_id) &&
           ticket.status !== 'finished',
         tooltip: 'Add technician note and upload before/after images'
+      },
+      {
+        label: 'Detail Customer & Lokasi',
+        color: 'bg-sky-600',
+        action: () => { openLocationDetail(ticket) },
+        show: isTechnician.value,
+        tooltip: 'Lihat detail customer dan koordinat (lat, lng)'
       },
       {
         label: 'Resolve',
@@ -1037,6 +1096,29 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         </div>
       </div>
 
+      <!-- Modal Detail Lokasi -->
+      <div v-if="showLocationModal" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" @click="showLocationModal = false"></div>
+        <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Detail Lokasi</h2>
+            <button class="text-gray-400 hover:text-gray-600" @click="showLocationModal = false">✕</button>
+          </div>
+          <div class="space-y-2 text-gray-900">
+            <div class="text-sm"><span class="font-medium">Customer:</span> {{ selectedLocation?.customer_name || '-' }}</div>
+            <div class="text-sm"><span class="font-medium">Customer ID:</span> {{ selectedLocation?.customer_id || '-' }}</div>
+            <div class="text-sm"><span class="font-medium">Address:</span> {{ selectedLocation?.customer_address || '-' }}</div>
+            <div class="text-sm"><span class="font-medium">Phone:</span> {{ selectedLocation?.customer_phone || '-' }}</div>
+            <div class="text-sm"><span class="font-medium">Latitude:</span> {{ selectedLocation?.lat ?? '-' }}</div>
+            <div class="text-sm"><span class="font-medium">Longitude:</span> {{ selectedLocation?.lng ?? '-' }}</div>
+          </div>
+          <div class="mt-4 flex justify-end gap-2">
+            <a v-if="googleMapsUrl" :href="googleMapsUrl" target="_blank" rel="noopener" class="px-4 py-2 rounded bg-sky-600 text-white hover:bg-sky-700">Buka di Google Maps</a>
+            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700 hover:bg-gray-400" @click="showLocationModal = false">Tutup</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Modal Add Ticket -->
       <div v-if="showAdd" class="fixed inset-0 z-50 flex items-center justify-center">
         <div class="absolute inset-0 bg-black/60" @click="showAdd = false"></div>
@@ -1208,6 +1290,22 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
             <button class="text-gray-400 hover:text-gray-600" @click="showTechnicianNoteModal = false">✕</button>
           </div>
           <div class="space-y-4">
+            <div class="p-3 rounded bg-gray-50 border">
+              <div class="text-sm text-gray-700"><span class="font-medium">Customer:</span> {{ selectedTicket?.customer_name || '-' }}</div>
+              <div class="text-xs text-gray-600 mt-1">
+                <span class="font-medium">GPS:</span>
+                <span>
+                  {{ (selectedTicket?.gps_lat ?? '-') }} , {{ (selectedTicket?.gps_lng ?? '-') }}
+                </span>
+              </div>
+              <div class="mt-2">
+                <button
+                  class="px-3 py-1.5 rounded bg-sky-600 text-white text-xs hover:bg-sky-700 disabled:opacity-50"
+                  :disabled="!(selectedTicket?.gps_lat && selectedTicket?.gps_lng)"
+                  @click="openLocationDetail(selectedTicket)"
+                >Detail Lokasi</button>
+              </div>
+            </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Technician Note <span class="text-red-500">*</span></label>
               <textarea v-model="technicianNote" placeholder="Enter your technician note..."
