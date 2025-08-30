@@ -25,7 +25,10 @@ export const authApi = () => {
         },
         verifyAuth: async () => {
             const token = authStore.getToken;
-            if (!token) {
+            console.log('verifyAuth - token from store:', token);
+            
+            if (!token || token === '' || token === 'null' || token === 'undefined') {
+                console.error('verifyAuth - No valid token available');
                 throw new Error('No token available');
             }
             
@@ -41,7 +44,10 @@ export const authApi = () => {
         },
         verifyAuthCustomer: async () => {
             const token = authStore.getToken;
-            if (!token) {
+            console.log('verifyAuthCustomer - token from store:', token);
+            
+            if (!token || token === '' || token === 'null' || token === 'undefined') {
+                console.error('verifyAuthCustomer - No valid token available');
                 throw new Error('No token available');
             }
             
