@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import FormCustomerInstallation from './FormCustomerInstallation.vue'
 import FormAddComponent from './FormAddComponent.vue'
+import CustomerDetailModal from './CustomerDetailModal.vue'
 import { customerAdminApi } from '@/api/admin/customer'
 let customer = ref<any[]>([])
 
@@ -123,9 +124,15 @@ let customerData = customer
 // })
 
 const isOpen = ref(false)
+const showDetailModal = ref(false)
+const selectedCustomerId = ref<string | null>(null)
 
 const items = (row: Customer) => [
     [{
+        label: 'View Detail Customer',
+        icon: 'i-heroicons-eye-20-solid',
+        click: () => OpenCustomerDetailModal(row.id)
+    }, {
         label: 'Edit',
         icon: 'i-heroicons-pencil-square-20-solid',
         click: () => OpenModalAddCustomer(true, row)
@@ -172,6 +179,16 @@ function OpenModalReportInstallation(isEdit: boolean, data: any) {
         }
     })
 }
+
+function OpenCustomerDetailModal(customerId: string) {
+    selectedCustomerId.value = customerId
+    showDetailModal.value = true
+}
+
+function closeDetailModal() {
+    showDetailModal.value = false
+    selectedCustomerId.value = null
+}
 </script>
 
 
@@ -201,5 +218,12 @@ function OpenModalReportInstallation(isEdit: boolean, data: any) {
     <div class="flex justify-end px-3 py-3.5 border-t border-gray-200 dark:border-gray-700">
         <UPagination v-model="page" :page-count="pageCount" :total="customer.length" />
     </div>
+
+    <!-- Customer Detail Modal -->
+    <CustomerDetailModal 
+        v-if="showDetailModal && selectedCustomerId" 
+        :customer-id="selectedCustomerId" 
+        @close="closeDetailModal" 
+    />
 
 </template>
