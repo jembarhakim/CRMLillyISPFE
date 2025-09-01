@@ -185,13 +185,6 @@ export const MAIN_MENU: MenuItem[] = [
     description: 'Support ticket management'
   },
   {
-    label: 'Trouble Reports',
-    icon: 'i-heroicons-chart-pie',
-    link: '/dashboard/tickets/reports',
-    roles: [ROLES.ADMIN, ROLES.CUSTOMER_SERVICE, ROLES.NOC, ROLES.TECHNICIAN],
-    description: 'Trouble ticket reports'
-  },
-  {
     label: 'MikroTik Monitoring',
     icon: 'i-heroicons-server-stack',
     link: '/dashboard/mikrotik',
