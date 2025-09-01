@@ -192,6 +192,13 @@ export const MAIN_MENU: MenuItem[] = [
     description: 'Trouble ticket reports'
   },
   {
+    label: 'MikroTik Monitoring',
+    icon: 'i-heroicons-server-stack',
+    link: '/dashboard/mikrotik',
+    roles: [ROLES.ADMIN, ROLES.NOC],
+    description: 'MikroTik device monitoring and logs'
+  },
+  {
     label: 'User Management',
     icon: 'i-heroicons-user-circle-16-solid',
     link: '/dashboard/user-management',

@@ -4,7 +4,14 @@ import { useAuthStore } from '@/stores/auth'
 const authHeader = () => {
   const authStore = useAuthStore()
   const token = authStore.getToken
-  console.log('Auth token:', token) // Debug log
+  console.log('Auth token from store:', token) // Debug log
+  
+  // Validate token before using it
+  if (!token || token === '' || token === 'null' || token === 'undefined') {
+    console.error('authHeader - Invalid token detected:', token)
+    throw new Error('No valid authentication token available')
+  }
+  
   return { Authorization: `Bearer ${token}` }
 }
 
