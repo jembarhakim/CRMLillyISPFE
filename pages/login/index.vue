@@ -29,7 +29,12 @@ async function onSubmitEmployee(event: FormSubmitEvent<any>) {
     console.log('User role name:', response.data?.user?.role?.name)
     
     // Fix: Use role name instead of role ID
-    authStore.login({ token: response.data.token, role_id: response.data.user.role.name })
+    authStore.login({ 
+      token: response.data.token, 
+      role_id: response.data.user.role.name,
+      name: response.data.user.name,
+      email: response.data.user.email
+    })
     console.log('Auth store after login - role:', authStore.user?.role)
     navigateTo('/dashboard')
   } catch (error: any) {

@@ -13,8 +13,6 @@ export type CreateCustomerRequest = {
   longitude: Number
   password: String
   product_id: String
-  ip_static: String
-  mac_address: String
   job: String
 }
 
@@ -27,4 +25,18 @@ export type CreateCustomerInstallationRequest = {
   previews: String[] ,
   selectedImage: String,
   showModal: boolean,
+}
+
+export type CreateNetworkDeviceRequest = {
+  customer_id: String
+  assets_id?: String
+  switch_id?: String
+  port_number?: String
+  remote_port?: String
+  eth_port?: String
+  kepemilikan_perangkat?: String
+  status_perangkat?: String
+  last_ping_status?: String
+  mac_address?: String
+  ip_static?: String
 }

@@ -14,8 +14,7 @@ type Customer = {
     area_code: string
     gmaps_link: string
     packet_internet: string
-    ip_static: string
-    mac_address: string
+
 }
 
 
@@ -75,12 +74,6 @@ const columns = [
     }, {
         key: 'product_name',
         label: 'Packet Internet'
-    }, {
-        key: 'ip_static',
-        label: 'IP Static'
-    }, {
-        key: 'mac_address',
-        label: 'Mac Address'
     }, {
         key: 'actions',
         label: 'Actions'

@@ -30,17 +30,23 @@ function handleClick(row:any) {
 
 
 async function getData() {
-  archiveInstallationAdminApi().getAllArchiveInstallation().then((res) => {
+  try {
+    const res = await archiveInstallationAdminApi().getAllArchiveInstallation();
     res.data.map((item:any) => {
       item.customer = item.customer.name;
       item.technician = item.technician.name;
       item.date = item.date.split("T")[0];
     });
     dataList.value = res.data;
-  }).catch((err) => {
+  } catch (err) {
     console.log(err);
-  });
+  }
 }
+
+// Expose refresh function for parent components
+defineExpose({
+  refreshData: getData
+});
 
 const rows = computed(() => {
     if (!q.value) {
