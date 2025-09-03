@@ -104,5 +104,24 @@ export const invoiceAdminApi = () => {
       }
       return response.json();
     },
+
+    processPartialPayment: async (
+      invoiceId: string,
+      amount: number
+    ) => {
+      const response = await fetch(`${api}/api/admin/invoice/${invoiceId}/partial-payment`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+        body: JSON.stringify({ amount }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
+      }
+      return response.json();
+    },
   };
 };
