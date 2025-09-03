@@ -201,6 +201,11 @@ const items = (row: any) => [
       icon: "i-heroicons-arrow-down-on-square-20-solid",
       click: () => navigateTo(`/invoice/${row.id}`),
     },
+    {
+      label: "Edit",
+      icon: "i-heroicons-pencil-20-solid",
+      click: () => OpenModalAddCustomer(true, row),
+    },
   ],
   [
     {

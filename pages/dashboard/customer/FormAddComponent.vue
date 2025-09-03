@@ -5,6 +5,8 @@ import { customerAdminApi } from "@/api/admin/customer";
 import { areaAdminApi } from "@/api/admin/area";
 import { companyAdminApi } from "@/api/admin/company";
 import { internetPackageAdminApi } from "@/api/admin/internet-package";
+import { networkDeviceAdminApi } from "@/api/admin/network-device";
+import { assetAdminApi } from "@/api/admin/asset";
 
 const props = defineProps({
   isEdit: {
@@ -74,14 +76,7 @@ const props = defineProps({
         type: String,
         default: ""
       },
-      ip_static: {
-        type: String,
-        default: ""
-      },
-      mac_address: {
-        type: String,
-        default: ""
-      },
+
       job: {
         type: String,
         default: ""
@@ -130,14 +125,18 @@ const state = reactive({
   longitude: 0,
   password: "",
   product_id: "",
+  job: "",
+});
+
+const networkDeviceState = reactive({
   ip_static: "",
   mac_address: "",
-  job: "",
+  assets_id: "",
 });
 
 watch(
   () => props.isEdit,
-  (newValue) => {
+  async (newValue) => {
     if (newValue) {
       state.type_of_service = props.data.type_of_service,
         state.email = props.data.email,
@@ -153,9 +152,21 @@ watch(
         state.longitude = props.data.longitude,
         state.password = props.data.password,
         state.product_id = props.data.product_id,
-        state.ip_static = props.data.ip_static,
-        state.mac_address = props.data.mac_address,
         state.job = props.data.job
+      
+      // Load existing network device data if available
+      try {
+        const networkDevices = await networkDeviceAdminApi().getNetworkDevicesByCustomer(props.data.id);
+        if (networkDevices.data && networkDevices.data.length > 0) {
+          const device = networkDevices.data[0]; // Assuming one device per customer for now
+          networkDeviceState.ip_static = device.ip_static || "";
+          networkDeviceState.mac_address = device.mac_address || "";
+          networkDeviceState.assets_id = device.assets_id || "";
+        }
+      } catch (error) {
+        // Network device data not found, which is fine
+        console.log("No network device data found for customer");
+      }
     }
   },
   { immediate: true }
@@ -169,19 +180,92 @@ function onSuccess() {
 async function onSubmit(event: FormSubmitEvent<Schema>) {
   // Do something with event.data
   if (props.isEdit) {
-    customerAdminApi().editCustomer(props.data.id, state).then((response) => {
-      useToast().add({ title: response.message })
-      onSuccess()
-    }).catch((error) => {
-
-    })
+    try {
+      const response = await customerAdminApi().editCustomer(props.data.id, state);
+      
+      // Update or create network device if data is provided
+      if (response.success && (networkDeviceState.ip_static || networkDeviceState.mac_address)) {
+        try {
+          const networkDevices = await networkDeviceAdminApi().getNetworkDevicesByCustomer(props.data.id);
+          if (networkDevices.data && networkDevices.data.length > 0) {
+            // Update existing network device
+            const device = networkDevices.data[0];
+            const networkDeviceData: any = {
+              customer_id: props.data.id,
+              ip_static: networkDeviceState.ip_static || device.ip_static || "",
+              mac_address: networkDeviceState.mac_address || device.mac_address || "",
+              status_perangkat: device.status_perangkat || "active",
+              last_ping_status: device.last_ping_status || "unknown"
+            };
+            
+            // Only add assets_id if it has a value
+            if (networkDeviceState.assets_id) {
+              networkDeviceData.assets_id = networkDeviceState.assets_id;
+            } else if (device.assets_id) {
+              networkDeviceData.assets_id = device.assets_id;
+            }
+            await networkDeviceAdminApi().editNetworkDevice(device.id, networkDeviceData);
+          } else {
+            // Create new network device
+            const networkDeviceData: any = {
+              customer_id: props.data.id,
+              ip_static: networkDeviceState.ip_static || "",
+              mac_address: networkDeviceState.mac_address || "",
+              status_perangkat: "active",
+              last_ping_status: "unknown"
+            };
+            
+            // Only add assets_id if it has a value
+            if (networkDeviceState.assets_id) {
+              networkDeviceData.assets_id = networkDeviceState.assets_id;
+            }
+            await networkDeviceAdminApi().createNetworkDevice(networkDeviceData);
+          }
+        } catch (networkError: any) {
+          console.error("Failed to update network device:", networkError);
+          // Don't fail the entire operation if network device update fails
+        }
+      }
+      
+      useToast().add({ title: response.message });
+      onSuccess();
+    } catch (error: any) {
+      useToast().add({ 
+        title: error.message || 'Failed to update customer', 
+        color: 'red' 
+      });
+    }
   } else {
-    customerAdminApi().createCustomer(state).then((response) => {
-      useToast().add({ title: response.message })
-      onSuccess()
-    }).catch((error) => {
-
-    })
+    try {
+      // Create customer first
+      const customerResponse = await customerAdminApi().createCustomer(state);
+      
+      // If customer creation is successful and network device data is provided, create network device
+      if (customerResponse.success && (networkDeviceState.ip_static || networkDeviceState.mac_address)) {
+        const networkDeviceData: any = {
+          customer_id: customerResponse.data.id,
+          ip_static: networkDeviceState.ip_static || "",
+          mac_address: networkDeviceState.mac_address || "",
+          status_perangkat: "active",
+          last_ping_status: "unknown"
+        };
+        
+        // Only add assets_id if it has a value
+        if (networkDeviceState.assets_id) {
+          networkDeviceData.assets_id = networkDeviceState.assets_id;
+        }
+        
+        await networkDeviceAdminApi().createNetworkDevice(networkDeviceData);
+      }
+      
+      useToast().add({ title: customerResponse.message });
+      onSuccess();
+    } catch (error: any) {
+      useToast().add({ 
+        title: error.message || 'Failed to create customer', 
+        color: 'red' 
+      });
+    }
   }
 
 }
@@ -276,7 +360,8 @@ const type_of_services = [
 
 const companies = ref([]);
 const internet_packages = ref([]);
-const areas = ref([])
+const areas = ref([]);
+const assets = ref([]);
 
 async function getDataOptions() {
   companyAdminApi().getAllCompanies().then((response) => {
@@ -296,6 +381,13 @@ async function getDataOptions() {
   areaAdminApi().getAllAreas().then((response) => {
     areas.value = response.data.map((value: any, index: number) => ({
       label: value.name_city + "-" + value.name_subdistrict + "-" + value.name_village,
+      value: value.id
+    }))
+  })
+
+  assetAdminApi().getAllAssets().then((response) => {
+    assets.value = response.data.map((value: any, index: number) => ({
+      label: `${value.brand} - ${value.model}`,
       value: value.id
     }))
   })
@@ -347,12 +439,8 @@ await getDataOptions()
             <UFormGroup label="Phone" name="phone">
               <UInput v-model="state.phone" />
             </UFormGroup>
-            <UFormGroup label="Ip Static" name="ip_static">
-              <UInput v-model="state.ip_static" />
-            </UFormGroup>
-            <UFormGroup label="Mac Address" name="mac_address">
-              <UInput v-model="state.mac_address" />
-            </UFormGroup>
+            
+            
           </div>
           <div class="w-full">
 
@@ -387,6 +475,26 @@ await getDataOptions()
             <UFormGroup label="Job" name="job">
               <UInput v-model="state.job" />
             </UFormGroup>
+
+            <!-- Network Device Fields -->
+            <div class="border-t pt-4 mt-4">
+              <h3 class="text-lg font-semibold mb-3">Network Device Information</h3>
+              <UFormGroup label="IP Static" name="ip_static">
+                <UInput v-model="networkDeviceState.ip_static" placeholder="192.168.1.100" />
+              </UFormGroup>
+              <UFormGroup label="MAC Address" name="mac_address">
+                <UInput v-model="networkDeviceState.mac_address" placeholder="00:11:22:33:44:55" />
+              </UFormGroup>
+              <UFormGroup label="Asset" name="assets_id">
+                <USelectMenu 
+                  v-model="networkDeviceState.assets_id" 
+                  :options="assets" 
+                  value-attribute="value"
+                  option-attribute="label"
+                  placeholder="Select an asset"
+                />
+              </UFormGroup>
+            </div>
 
             <div class="flex justify-end mt-4">
               <UButton type="submit"> Submit </UButton>

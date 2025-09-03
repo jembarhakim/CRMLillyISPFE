@@ -27,14 +27,25 @@
         <!-- Profile dropdown for desktop -->
         <div class="hidden lg:block">
           <UDropdown :items="ProfileDropdown" mode="hover" :popper="{ placement: 'bottom-start' }">
-            <UAvatar src="https://avatars.githubusercontent.com/u/739984?v=4" alt="Avatar" chip-color="blue"
-              chip-text="" chip-position="top-right" size="md" />
+            <div class="flex items-center gap-3 cursor-pointer">
+              <UAvatar src="https://avatars.githubusercontent.com/u/739984?v=4" alt="Avatar" chip-color="blue"
+                chip-text="" chip-position="top-right" size="md" />
+              <div class="flex flex-col">
+                <span class="text-sm font-medium text-gray-900">{{ authStore.user?.name || 'User' }}</span>
+                <span class="text-xs text-gray-500">{{ authStore.user?.role || 'Role' }}</span>
+              </div>
+            </div>
           </UDropdown>
         </div>
         <!-- Profile avatar for mobile -->
         <div class="lg:hidden">
-          <UAvatar src="https://avatars.githubusercontent.com/u/739984?v=4" alt="Avatar" size="sm"
-            @click="toggleMobileSidebar" />
+          <div class="flex items-center gap-2" @click="toggleMobileSidebar">
+            <UAvatar src="https://avatars.githubusercontent.com/u/739984?v=4" alt="Avatar" size="sm" />
+            <div class="flex flex-col">
+              <span class="text-sm font-medium text-gray-900">{{ authStore.user?.name || 'User' }}</span>
+              <span class="text-xs text-gray-500">{{ authStore.user?.role || 'Role' }}</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -76,7 +87,7 @@
             <!-- Profile section for mobile -->
             <div class="lg:hidden mt-4 pt-4 border-t border-gray-200">
               <div class="p-3 text-sm text-gray-600">
-                Logged in as: {{ authStore.user?.user_id || 'User' }}
+                Logged in as: {{ authStore.user?.name || 'User' }}
               </div>
               <ul class="space-y-2">
                 <li v-for="(item, index) in ProfileDropdown[0]" :key="'profile-' + index"

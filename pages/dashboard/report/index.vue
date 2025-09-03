@@ -4,6 +4,7 @@ import FormAddComponent from "./cash-flow/FormAddComponent.vue";
 import CustomerInstallation from "./customer-installation/CustomerInstallation.vue";
 import Internet from "./internet/Internet.vue";
 
+const customerInstallationRef = ref();
 
 const tab_items = [
   {
@@ -19,6 +20,20 @@ const tab_items = [
     value: "report-customer",
   }
 ];
+
+// Listen for installation creation events
+onMounted(() => {
+  // Listen for custom events from the form
+  window.addEventListener('installation-created', () => {
+    if (customerInstallationRef.value) {
+      customerInstallationRef.value.refreshData();
+    }
+  });
+});
+
+onUnmounted(() => {
+  window.removeEventListener('installation-created', () => {});
+});
 </script>
 
 <template>
@@ -33,8 +48,7 @@ const tab_items = [
       </div>
 
       <div v-if="item.value == 'report-customer'">
-        <CustomerInstallation />
-
+        <CustomerInstallation ref="customerInstallationRef" />
       </div>
     </template>
   </UTabs>
