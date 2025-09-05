@@ -196,6 +196,15 @@ function closeDetailModal() {
         <div class="table-scroll-content">
             <UTable :rows="rows" :columns="columns" class="dashboard-table">
 
+                <template #name-data="{ row }">
+                    <button 
+                        @click="OpenCustomerDetailModal(row.id)"
+                        class="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                    >
+                        {{ row.name }}
+                    </button>
+                </template>
+
                 <template #actions-data="{ row }">
                     <UDropdown :items="items(row)">
                         <UButton color="gray" variant="ghost" icon="i-heroicons-ellipsis-horizontal-20-solid" />
