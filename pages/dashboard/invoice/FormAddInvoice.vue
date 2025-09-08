@@ -120,6 +120,7 @@ const customer = ref([]);
 const searchOptions = ref();
 const productOptions = ref<any[]>([])
 const productOptionsD = ref<any[]>([])
+const selectedCustomerDetail = ref<any>(null)
 
 async function getDataOptions() {
   customerAdminApi()
@@ -128,6 +129,7 @@ async function getDataOptions() {
       customer.value = response.data.map((value: any, index: number) => ({
         label: value.email,
         value: value.id,
+        customerData: value // Store full customer data for reference
       }));
     });
 }
@@ -169,6 +171,75 @@ function checkProductIsExist(name: string, index: number) {
     };
   }
 }
+
+// Watch for customer selection changes
+watch(
+  () => state.customer_id,
+  async (newCustomerId) => {
+    if (newCustomerId) {
+      try {
+        // Get customer detail with product information
+        const response = await customerAdminApi().getCustomerDetail(newCustomerId);
+        selectedCustomerDetail.value = response.data;
+        
+        // Auto-fill product name and price for the first item
+        if (selectedCustomerDetail.value.customer.product) {
+          const product = selectedCustomerDetail.value.customer.product;
+          
+          // Reset invoice items to only have one item
+          state.invoice_items = [{
+            name: product.name,
+            price: product.price,
+            qty: 1, // Default quantity to 1
+            total: product.price
+          }];
+          
+          // Update total amount
+          state.amount = state.invoice_items.reduce((acc, item) => acc + item.total, 0);
+          
+          // Show success message
+          useToast().add({
+            title: 'Success',
+            description: `Product "${product.name}" auto-filled from customer's package`,
+            color: 'green'
+          });
+        } else {
+          // If customer has no product, reset to empty
+          state.invoice_items = [{
+            name: "",
+            price: 0,
+            qty: 0,
+            total: 0
+          }];
+          state.amount = 0;
+          
+          useToast().add({
+            title: 'Warning',
+            description: 'Customer has no product package assigned',
+            color: 'yellow'
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch customer detail:', error);
+        useToast().add({
+          title: 'Error',
+          description: 'Failed to load customer product information',
+          color: 'red'
+        });
+      }
+    } else {
+      // Reset when no customer is selected
+      selectedCustomerDetail.value = null;
+      state.invoice_items = [{
+        name: "",
+        price: 0,
+        qty: 0,
+        total: 0
+      }];
+      state.amount = 0;
+    }
+  }
+);
 </script>
 
 <template>
@@ -182,13 +253,64 @@ function checkProductIsExist(name: string, index: number) {
           <USelectMenu v-model="state.customer_id" :options="customer" value-attribute="value"
             option-attribute="label" />
         </UFormGroup>
+        
+        <!-- Customer Product Information -->
+        <div v-if="selectedCustomerDetail" class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+          <h3 class="text-lg font-medium text-blue-900 mb-3">Customer Product Information</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-blue-700">Customer Name</label>
+              <p class="mt-1 text-sm text-blue-900">{{ selectedCustomerDetail.customer.name }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-blue-700">Product Package</label>
+              <p class="mt-1 text-sm text-blue-900">{{ selectedCustomerDetail.customer.product?.name || 'No product assigned' }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-blue-700">Package Price</label>
+              <p class="mt-1 text-sm text-blue-900">{{ selectedCustomerDetail.customer.product?.price ? `Rp ${selectedCustomerDetail.customer.product.price.toLocaleString()}` : 'No price' }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-blue-700">Installation Date</label>
+              <p class="mt-1 text-sm text-blue-900">{{ selectedCustomerDetail.customer.installation_date ? new Date(selectedCustomerDetail.customer.installation_date).toLocaleDateString() : 'Not installed' }}</p>
+            </div>
+          </div>
+        </div>
         <UFormGroup label="Amount" name="amount">
           <UInput v-model="state.amount" type="number" />
         </UFormGroup>
         <div v-for="(item, index) in state.invoice_items" :key="index" class="space-y-4">
           <UFormGroup :label="`Product ${index + 1} Name`" :name="`item-name-${index}`">
-            <UInputMenu v-model="item.name" :loading="loadingProduct" by="id" :options="productOptions"
-              @change="(name) => checkProductIsExist(name, index)" :search="search" />
+            <div class="relative">
+              <!-- For first item (index 0), show as read-only input when customer is selected -->
+              <UInput 
+                v-if="index === 0 && selectedCustomerDetail?.customer?.product" 
+                v-model="item.name" 
+                readonly 
+                class="bg-gray-100 cursor-not-allowed"
+                placeholder="Product name will be auto-filled when customer is selected"
+              />
+              <!-- For additional items or when no customer selected, show dropdown -->
+              <UInputMenu 
+                v-else
+                v-model="item.name" 
+                :loading="loadingProduct" 
+                by="id" 
+                :options="productOptions"
+                @change="(name) => checkProductIsExist(name, index)" 
+                :search="search" 
+              />
+              <div v-if="index === 0 && selectedCustomerDetail?.customer?.product" class="mt-1">
+                <p class="text-xs text-green-600">
+                  ✓ Auto-filled from customer's package: {{ selectedCustomerDetail.customer.product.name }}
+                </p>
+              </div>
+              <div v-else-if="index === 0 && !selectedCustomerDetail" class="mt-1">
+                <p class="text-xs text-gray-500">
+                  Select a customer to auto-fill product information
+                </p>
+              </div>
+            </div>
           </UFormGroup>
 
           <div class="flex space-x-4">
