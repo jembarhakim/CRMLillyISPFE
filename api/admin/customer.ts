@@ -117,6 +117,36 @@ export const customerAdminApi = () => {
       return response.json();
     },
 
+    getCustomerTickets: async (customerId: string) => {
+      const response = await fetch(`${api}/api/tickets?customer_id=${customerId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch customer tickets');
+      }
+      return response.json();
+    },
+
+    getCustomerInvoices: async (customerId: string) => {
+      const response = await fetch(`${api}/api/admin/invoice?customer_id=${customerId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch customer invoices');
+      }
+      return response.json();
+    },
+
 
 
   };
