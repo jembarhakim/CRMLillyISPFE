@@ -780,7 +780,11 @@ async function deleteTicket(id: number) {
 }
 
 const showAdd = ref(false)
-const form = ref({ customer_id: '', title: '', description: '', type: '', img_cs: '' })
+const form = ref({ customer_id: '', title: '', description: '', img_cs: '' })
+
+// SVM Classification
+const svmResult = ref<any>(null)
+const isClassifying = ref(false)
 async function loadLookups() {
   try {
     const cust: any = await customerAdminApi().getAllCustomers()
@@ -792,8 +796,6 @@ async function loadLookups() {
   } catch (e) { console.error('load trouble types', e) }
 
   if (!form.value.customer_id && customers.value.length) form.value.customer_id = customers.value[0].id
-  if (!form.value.type && troubleTypes.value.length) form.value.type = troubleTypes.value[0].id
-  showNewType.value = troubleTypes.value.length === 0
   loadingLookups.value = false
 }
 function generateTypeId(): string {
@@ -891,18 +893,33 @@ async function createTicket() {
     createTicketSubmitting.value = true
     console.log('Auth store token:', authStore.getToken) // Debug log
     console.log('Creating ticket with data:', form.value) // Debug log
+    
+    // Auto-classify the ticket using SVM
+    let ticketType = null
+    if (form.value.title.trim()) {
+      try {
+        const classificationResponse: any = await ticketsApi().classifyTicket(form.value.title.trim())
+        ticketType = classificationResponse.data.type
+        console.log('Auto-classified ticket type:', ticketType)
+      } catch (classificationError) {
+        console.warn('SVM classification failed, creating ticket without type:', classificationError)
+      }
+    }
+    
     await ticketsApi().create({
       customer_id: String(form.value.customer_id),
       title: form.value.title,
       description: form.value.description,
-      type: String(form.value.type),
+      type: ticketType, // Use SVM classification result
       img_cs: form.value.img_cs,
+      auto_classify: true, // Flag to indicate auto-classification was used
     })
     showAdd.value = false
-    form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', type: troubleTypes.value[0]?.id || '', img_cs: '' }
+    form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', img_cs: '' }
+    svmResult.value = null // Clear SVM result
     useToast().add({ 
       title: 'Success!', 
-      description: 'Ticket created successfully', 
+      description: `Ticket created successfully${ticketType ? ` with type: ${ticketType.toUpperCase()}` : ''}`, 
       color: 'green', 
       timeout: 3000 
     })
@@ -920,6 +937,65 @@ async function createTicket() {
   } finally {
     createTicketSubmitting.value = false
   }
+}
+
+// SVM Classification Methods
+const classifyWithSVM = async () => {
+  if (!form.value.title.trim()) return
+  
+  try {
+    isClassifying.value = true
+    svmResult.value = null
+    
+    const response = await ticketsApi().classifyTicket(form.value.title.trim()) as any
+    svmResult.value = response.data
+    
+    console.log('SVM Classification result:', svmResult.value)
+  } catch (error: any) {
+    console.error('SVM Classification error:', error)
+    useToast().add({
+      title: 'Classification failed',
+      description: error.message || 'Failed to classify ticket',
+      color: 'red'
+    })
+  } finally {
+    isClassifying.value = false
+  }
+}
+
+const applySVMResult = () => {
+  if (svmResult.value) {
+    // Since we removed manual type selection, this function now just shows a preview
+    // The actual type will be applied automatically when creating the ticket
+    useToast().add({
+      title: 'Type preview',
+      description: `Ticket will be classified as: ${svmResult.value.type?.toUpperCase()}`,
+      color: 'blue'
+    })
+  }
+}
+
+const onTitleChange = () => {
+  // Clear SVM result when title changes
+  svmResult.value = null
+}
+
+const getTypeColor = (type: string) => {
+  const colors = {
+    kabel_putus: 'bg-red-100 text-red-800',
+    listrik_mati: 'bg-yellow-100 text-yellow-800',
+    kendala_dhcp: 'bg-blue-100 text-blue-800',
+    perangkat_mati: 'bg-gray-100 text-gray-800',
+    config_koneksi_server: 'bg-purple-100 text-purple-800',
+    over_user: 'bg-orange-100 text-orange-800',
+    wifi: 'bg-blue-100 text-blue-800',
+    internet: 'bg-green-100 text-green-800',
+    hardware: 'bg-orange-100 text-orange-800',
+    power: 'bg-red-100 text-red-800',
+    software: 'bg-purple-100 text-purple-800',
+    other: 'bg-gray-100 text-gray-800'
+  }
+  return colors[type as keyof typeof colors] || colors.other
 }
 // Fetchers similar to transaction page
 async function fetchAllTickets(params: any) {
@@ -1135,29 +1211,42 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                 <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }} ({{ c.id }})</option>
               </select>
             </div>
-            <div>
-              <label class="block text-sm text-slate-300 mb-1">Type</label>
-              <div class="flex gap-2" v-if="!showNewType">
-                <select v-model="form.type"
-                  class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none">
-                  <option v-for="t in troubleTypes" :key="t.id" :value="t.id">{{ t.name || t.id }}</option>
-                </select>
-                <button type="button" class="px-3 py-2 rounded bg-slate-700" @click="showNewType = true">New</button>
-              </div>
-              <div v-else class="space-y-2">
-                <input v-model="newTypeName" placeholder="Display Name (optional)"
-                  class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700" />
-                <div class="flex gap-2">
-                  <button type="button" class="px-3 py-2 bg-emerald-600 rounded" @click="saveNewType">Save Type</button>
-                  <button type="button" class="px-3 py-2 bg-slate-700 rounded"
-                    @click="showNewType = false">Cancel</button>
-                </div>
-              </div>
-            </div>
             <div class="md:col-span-2">
               <label class="block text-sm text-slate-300 mb-1">Title</label>
+              <div class="flex gap-2">
               <input v-model="form.title"
-                class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none" />
+                  class="flex-1 rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none" 
+                  placeholder="Enter trouble description..."
+                  @input="onTitleChange" />
+                <button
+                  @click="classifyWithSVM"
+                  :disabled="!form.title.trim() || isClassifying"
+                  class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  🤖 Auto
+                </button>
+              </div>
+              <!-- SVM Classification Result -->
+              <div v-if="svmResult" class="mt-2 p-2 bg-blue-900/20 border border-blue-500/30 rounded text-sm">
+                <div class="flex items-center gap-2">
+                  <span class="text-blue-300">SVM suggests:</span>
+                  <span 
+                    :class="getTypeColor(svmResult.type)"
+                    class="px-2 py-1 rounded-full text-xs font-medium"
+                  >
+                    {{ svmResult.type?.toUpperCase() }}
+                  </span>
+                  <span class="text-blue-300">
+                    ({{ Math.round(svmResult.confidence * 100) }}% confidence)
+                  </span>
+                  <button
+                    @click="applySVMResult"
+                    class="ml-auto text-blue-400 hover:text-blue-300 text-xs underline"
+                  >
+                    Preview
+                  </button>
+                </div>
+              </div>
             </div>
             <div class="md:col-span-2">
               <label class="block text-sm text-slate-300 mb-1">Description</label>

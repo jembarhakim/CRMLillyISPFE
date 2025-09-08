@@ -70,24 +70,24 @@
           <!-- Contact Information -->
           <div class="bg-white border border-gray-200 rounded-lg p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
                 <label class="block text-sm font-medium text-gray-700">Full Name</label>
-                <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.name }}</p>
-              </div>
+              <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.name }}</p>
+            </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700">Company Name</label>
                 <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.company?.name || 'N/A' }}</p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Email</label>
-                <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.email || 'N/A' }}</p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Phone</label>
-                <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.phone }}</p>
-              </div>
-              <div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Email</label>
+              <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.email || 'N/A' }}</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700">Phone</label>
+              <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.phone }}</p>
+            </div>
+            <div>
                 <label class="block text-sm font-medium text-gray-700">Address</label>
                 <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.address }}</p>
               </div>
@@ -164,7 +164,7 @@
             <div class="space-y-4">
               <div v-for="activity in recentActivity" :key="activity.id" class="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                 <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                <div>
+            <div>
                   <p class="text-sm font-medium text-gray-900">{{ activity.description }}</p>
                   <p class="text-xs text-gray-500">{{ formatDate(activity.date) }}</p>
                 </div>
@@ -347,12 +347,12 @@
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                   <UInput v-model="editForm.phone" placeholder="Enter phone number" />
-                </div>
-                <div>
+            </div>
+            <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Company</label>
                   <UInput v-model="editForm.company" placeholder="Enter company name" />
-                </div>
-                <div class="md:col-span-2">
+            </div>
+            <div class="md:col-span-2">
                   <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
                   <UTextarea v-model="editForm.address" placeholder="Enter address" />
                 </div>
@@ -537,7 +537,7 @@
               </tbody>
             </table>
           </div>
-        </div>
+          </div>
         </div>
       </div>
 

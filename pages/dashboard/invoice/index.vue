@@ -11,6 +11,15 @@ let customer = ref<any[]>([]);
 const showPartialPaymentModal = ref(false)
 const selectedInvoiceForPayment = ref<any>(null)
 
+// Status confirmation modal state
+const showStatusConfirmationModal = ref(false)
+const statusConfirmationData = ref<{
+  invoiceId: string
+  newStatus: string
+  currentStatus: string
+  invoiceData: any
+} | null>(null)
+
 const router = useRouter();
 type Customer = {
   id: string;
@@ -62,7 +71,30 @@ async function getData() {
     });
 }
 
-async function updateStatus(id: string, status: string) {
+async function updateStatus(id: string, status: string, currentStatus: string) {
+  // If changing to 'paid', show confirmation modal
+  if (status === 'paid' && currentStatus !== 'paid') {
+    // Find the invoice data
+    const invoiceData = customer.value.find(inv => inv.id === id);
+    
+    // Set confirmation modal data
+    statusConfirmationData.value = {
+      invoiceId: id,
+      newStatus: status,
+      currentStatus: currentStatus,
+      invoiceData: invoiceData
+    };
+    
+    // Show confirmation modal
+    showStatusConfirmationModal.value = true;
+    return;
+  }
+
+  // For other status changes, proceed directly
+  await proceedWithStatusUpdate(id, status, currentStatus);
+}
+
+async function proceedWithStatusUpdate(id: string, status: string, currentStatus: string) {
   invoiceAdminApi()
     .updateStatusInvoice(id, { status })
     .then((response) => {
@@ -81,7 +113,40 @@ async function updateStatus(id: string, status: string) {
         title: err,
         color: "red",
       });
+      // Revert the status back to original on error
+      const invoiceIndex = customer.value.findIndex(inv => inv.id === id);
+      if (invoiceIndex !== -1) {
+        customer.value[invoiceIndex].status = currentStatus;
+      }
     });
+}
+
+// Handle confirmation modal actions
+function confirmStatusChange() {
+  if (statusConfirmationData.value) {
+    proceedWithStatusUpdate(
+      statusConfirmationData.value.invoiceId,
+      statusConfirmationData.value.newStatus,
+      statusConfirmationData.value.currentStatus
+    );
+  }
+  closeStatusConfirmationModal();
+}
+
+function cancelStatusChange() {
+  if (statusConfirmationData.value) {
+    // Revert the status back to original
+    const invoiceIndex = customer.value.findIndex(inv => inv.id === statusConfirmationData.value!.invoiceId);
+    if (invoiceIndex !== -1) {
+      customer.value[invoiceIndex].status = statusConfirmationData.value.currentStatus;
+    }
+  }
+  closeStatusConfirmationModal();
+}
+
+function closeStatusConfirmationModal() {
+  showStatusConfirmationModal.value = false;
+  statusConfirmationData.value = null;
 }
 
 async function sendWhatsapp(number: string, id: string) {
@@ -301,15 +366,27 @@ function handlePaymentSuccess() {
           </svg>
         </button>
       </div>
+      <div v-else-if="row.status === 'paid'">
+        <!-- Show as disabled badge for paid status -->
+        <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 cursor-not-allowed">
+          <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          {{ row.status }}
+        </span>
+      </div>
       <div v-else>
         <USelectMenu
-          v-model="row.status"
+          :model-value="row.status"
           :options="[
             { label: 'Pending', value: 'pending' },
             { label: 'Paid', value: 'paid' },
             { label: 'Unpaid', value: 'unpaid' },
           ]"
-          @change="updateStatus(row.id, row.status)"
+          @update:model-value="(newStatus) => {
+            const originalStatus = row.status;
+            updateStatus(row.id, newStatus, originalStatus);
+          }"
           value-attribute="value"
           option-attribute="label"
         />
@@ -334,4 +411,116 @@ function handlePaymentSuccess() {
     @close="closePartialPaymentModal"
     @success="handlePaymentSuccess"
   />
+
+  <!-- Status Confirmation Modal -->
+  <UModal v-model="showStatusConfirmationModal">
+    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+      <template #header>
+        <div class="flex items-center gap-3">
+          <div class="flex-shrink-0">
+            <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+            </div>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+              Konfirmasi Perubahan Status
+            </h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              Anda akan mengubah status pembayaran invoice
+            </p>
+          </div>
+        </div>
+      </template>
+
+      <div class="p-6">
+        <div v-if="statusConfirmationData" class="space-y-4">
+          <!-- Invoice Information -->
+          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <h4 class="font-medium text-gray-900 dark:text-white mb-3">Detail Invoice</h4>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span class="text-gray-500 dark:text-gray-400">Customer:</span>
+                <p class="font-medium text-gray-900 dark:text-white">{{ statusConfirmationData.invoiceData?.customer?.name || 'N/A' }}</p>
+              </div>
+              <div>
+                <span class="text-gray-500 dark:text-gray-400">Amount:</span>
+                <p class="font-medium text-gray-900 dark:text-white">{{ currency.formatIDR(statusConfirmationData.invoiceData?.amount || 0) }}</p>
+              </div>
+              <div>
+                <span class="text-gray-500 dark:text-gray-400">Status Saat Ini:</span>
+                <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full"
+                      :class="{
+                        'bg-red-100 text-red-800': statusConfirmationData.currentStatus === 'unpaid',
+                        'bg-yellow-100 text-yellow-800': statusConfirmationData.currentStatus === 'pending',
+                        'bg-green-100 text-green-800': statusConfirmationData.currentStatus === 'paid'
+                      }">
+                  {{ statusConfirmationData.currentStatus?.toUpperCase() }}
+                </span>
+              </div>
+              <div>
+                <span class="text-gray-500 dark:text-gray-400">Status Baru:</span>
+                <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                  {{ statusConfirmationData.newStatus?.toUpperCase() }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Warning Message -->
+          <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                  Peringatan Penting
+                </h3>
+                <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+                  <p>
+                    Setelah status diubah menjadi <strong>PAID</strong>, status ini tidak dapat diubah kembali. 
+                    Pastikan pembayaran sudah benar-benar diterima sebelum melanjutkan.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Confirmation Question -->
+          <div class="text-center">
+            <p class="text-lg font-medium text-gray-900 dark:text-white">
+              Apakah Anda yakin ingin mengubah status pembayaran menjadi <span class="text-green-600 font-bold">PAID</span>?
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UButton
+            color="gray"
+            variant="soft"
+            @click="cancelStatusChange"
+          >
+            Batal
+          </UButton>
+          <UButton
+            color="green"
+            @click="confirmStatusChange"
+            class="bg-green-600 hover:bg-green-700"
+          >
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            Ya, Ubah Status
+          </UButton>
+        </div>
+      </template>
+    </UCard>
+  </UModal>
 </template>
