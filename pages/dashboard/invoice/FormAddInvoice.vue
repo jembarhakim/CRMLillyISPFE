@@ -127,7 +127,7 @@ async function getDataOptions() {
     .getAllCustomers()
     .then((response) => {
       customer.value = response.data.map((value: any, index: number) => ({
-        label: value.email,
+        label: value.name,
         value: value.id,
         customerData: value // Store full customer data for reference
       }));

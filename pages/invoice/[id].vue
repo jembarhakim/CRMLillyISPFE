@@ -46,12 +46,24 @@ async function getData() {
     .getInvoice(id)
     .then((response) => {
       invoiceDetail.value = response.data;
+      console.log('Invoice detail loaded:', {
+        status: response.data.status,
+        amount: response.data.amount,
+        transaction: response.data.transaction,
+        invoice_items: response.data.invoice_items
+      });
     })
     .catch((err) => {
+      console.error('Error fetching invoice:', err);
       useToast().add({
-        title: err,
+        title: "Error",
+        description: "Gagal memuat data invoice. Silakan coba lagi.",
         color: "red",
       });
+      // Redirect back to invoice list after 2 seconds
+      setTimeout(() => {
+        navigateTo('/dashboard/invoice');
+      }, 2000);
     }).finally(() => {
       isLoading.value = false;
     });
@@ -81,13 +93,29 @@ const isPaidStatus = computed(() => {
 })
 
 const totalPaid = computed(() => {
-  if (isPaidStatus.value) return invoiceTotal.value
-  if (!invoiceDetail.value.transaction) return 0;
-  return invoiceDetail.value.transaction.amount || 0;
+  if (isPaidStatus.value) {
+    // If status is paid, total paid should be the full invoice amount
+    console.log('Status is paid, total paid = invoice total:', invoiceTotal.value);
+    return invoiceTotal.value;
+  }
+  // If not paid, check transaction amount
+  if (!invoiceDetail.value.transaction) {
+    console.log('No transaction data, total paid = 0');
+    return 0;
+  }
+  const transactionAmount = invoiceDetail.value.transaction.amount || 0;
+  console.log('Status not paid, total paid = transaction amount:', transactionAmount);
+  return transactionAmount;
 });
 
 const remainingAmount = computed(() => {
-  return isPaidStatus.value ? 0 : (invoiceTotal.value - totalPaid.value);
+  if (isPaidStatus.value) {
+    console.log('Status is paid, amount due = 0');
+    return 0;
+  }
+  const remaining = invoiceTotal.value - totalPaid.value;
+  console.log('Status not paid, amount due =', remaining, '(total:', invoiceTotal.value, '- paid:', totalPaid.value, ')');
+  return remaining;
 });
 const generatePDF = async () => {
   try {
@@ -118,6 +146,10 @@ const generatePDF = async () => {
   } catch (error) {
     console.error("Error generating PDF:", error);
   }
+};
+
+const goBackToInvoiceList = () => {
+  navigateTo('/dashboard/invoice');
 };
 </script>
 
@@ -238,9 +270,14 @@ const generatePDF = async () => {
         </table> -->
         </client-only>
       </div>
-      <button @click="generatePDF" class="px-4 py-2 mt-4 text-white bg-green-500 rounded">
-        Download PDF
-      </button>
+      <div class="flex gap-4 mt-4">
+        <button @click="generatePDF" class="px-4 py-2 text-white bg-green-500 rounded hover:bg-green-600">
+          Download PDF
+        </button>
+        <button @click="goBackToInvoiceList" class="px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600">
+          ← Kembali ke Invoice List
+        </button>
+      </div>
     </div>
   </div>
 </template>

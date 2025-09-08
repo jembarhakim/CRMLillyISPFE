@@ -123,5 +123,27 @@ export const invoiceAdminApi = () => {
       }
       return response.json();
     },
+
+    markPdfViewed: async (invoiceId: string) => {
+      const response = await fetch(`${api}/api/admin/invoice/${invoiceId}/mark-pdf-viewed`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        let errorMessage = 'Failed to mark PDF as viewed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (jsonError) {
+          // If response is not JSON (e.g., HTML error page), use status text
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+      return response.json();
+    },
   };
 };

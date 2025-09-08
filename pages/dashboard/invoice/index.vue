@@ -20,6 +20,9 @@ const statusConfirmationData = ref<{
   invoiceData: any
 } | null>(null)
 
+// PDF view tracking state
+const pdfViewingInvoices = ref<Set<string>>(new Set())
+
 const router = useRouter();
 type Customer = {
   id: string;
@@ -95,42 +98,81 @@ async function updateStatus(id: string, status: string, currentStatus: string) {
 }
 
 async function proceedWithStatusUpdate(id: string, status: string, currentStatus: string) {
-  invoiceAdminApi()
-    .updateStatusInvoice(id, { status })
-    .then((response) => {
-      useToast().add({
-        title: response.message,
-        color: "green",
-      });
-      // Update the specific invoice in the local array instead of refreshing all data
-      const invoiceIndex = customer.value.findIndex(inv => inv.id === id);
-      if (invoiceIndex !== -1) {
-        customer.value[invoiceIndex].status = status;
-      }
-    })
-    .catch((err) => {
-      useToast().add({
-        title: err,
-        color: "red",
-      });
-      // Revert the status back to original on error
-      const invoiceIndex = customer.value.findIndex(inv => inv.id === id);
-      if (invoiceIndex !== -1) {
-        customer.value[invoiceIndex].status = currentStatus;
-      }
+  try {
+    const response = await invoiceAdminApi().updateStatusInvoice(id, { status });
+    
+    useToast().add({
+      title: response.message,
+      color: "green",
     });
+    
+    // Update the specific invoice in the local array instead of refreshing all data
+    const invoiceIndex = customer.value.findIndex(inv => inv.id === id);
+    if (invoiceIndex !== -1) {
+      customer.value[invoiceIndex].status = status;
+    }
+    
+    return response;
+  } catch (err: any) {
+    useToast().add({
+      title: err,
+      color: "red",
+    });
+    
+    // Revert the status back to original on error
+    const invoiceIndex = customer.value.findIndex(inv => inv.id === id);
+    if (invoiceIndex !== -1) {
+      customer.value[invoiceIndex].status = currentStatus;
+    }
+    
+    throw err;
+  }
 }
 
 // Handle confirmation modal actions
-function confirmStatusChange() {
+async function confirmStatusChange() {
   if (statusConfirmationData.value) {
-    proceedWithStatusUpdate(
-      statusConfirmationData.value.invoiceId,
-      statusConfirmationData.value.newStatus,
-      statusConfirmationData.value.currentStatus
-    );
+    // Store invoice ID before closing modal
+    const invoiceId = statusConfirmationData.value.invoiceId;
+    const newStatus = statusConfirmationData.value.newStatus;
+    
+    try {
+      await proceedWithStatusUpdate(
+        invoiceId,
+        newStatus,
+        statusConfirmationData.value.currentStatus
+      );
+      
+      // Close modal first
+      closeStatusConfirmationModal();
+      
+      // If status was successfully changed to 'paid', automatically open PDF
+      if (newStatus === 'paid') {
+        console.log('Status changed to paid, opening PDF automatically for invoice:', invoiceId);
+        
+        // Use nextTick to ensure modal is closed and UI is updated
+        await nextTick();
+        
+        // Small delay to ensure status update is reflected in UI
+        setTimeout(async () => {
+          try {
+            console.log('Attempting to open PDF for invoice:', invoiceId);
+            await handlePdfView(invoiceId, true);
+          } catch (error) {
+            console.error('Error opening PDF automatically:', error);
+            useToast().add({
+              title: 'Error',
+              description: 'Gagal membuka PDF otomatis. Silakan klik "Download PDF" secara manual.',
+              color: 'red'
+            });
+          }
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      closeStatusConfirmationModal();
+    }
   }
-  closeStatusConfirmationModal();
 }
 
 function cancelStatusChange() {
@@ -147,6 +189,127 @@ function cancelStatusChange() {
 function closeStatusConfirmationModal() {
   showStatusConfirmationModal.value = false;
   statusConfirmationData.value = null;
+}
+
+// PDF View Tracking Functions
+async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
+  console.log('handlePdfView called with:', { invoiceId, isAutoOpen });
+  
+  try {
+    // Check if PDF has already been viewed
+    const invoice = customer.value.find(inv => inv.id === invoiceId);
+    console.log('Found invoice:', invoice);
+    
+    if (invoice?.pdf_viewed) {
+      console.log('PDF already viewed, showing error message');
+      useToast().add({
+        title: 'PDF Sudah Dilihat',
+        description: 'PDF invoice ini sudah pernah dilihat dan tidak dapat diakses lagi untuk mencegah duplikasi pembayaran.',
+        color: 'red'
+      });
+      return;
+    }
+
+    console.log('Marking PDF as viewed...');
+    try {
+      // Mark PDF as viewed before opening
+      await invoiceAdminApi().markPdfViewed(invoiceId);
+      console.log('PDF marked as viewed successfully');
+    } catch (markError) {
+      console.error('Failed to mark PDF as viewed:', markError);
+      // Continue anyway - we'll still open the PDF
+      useToast().add({
+        title: 'Warning',
+        description: 'Gagal menandai PDF sebagai dilihat, tetapi PDF tetap akan dibuka.',
+        color: 'yellow'
+      });
+    }
+    
+    // Add to tracking set
+    pdfViewingInvoices.value.add(invoiceId);
+    
+    // Update local invoice data
+    const invoiceIndex = customer.value.findIndex(inv => inv.id === invoiceId);
+    if (invoiceIndex !== -1) {
+      customer.value[invoiceIndex].pdf_viewed = true;
+      customer.value[invoiceIndex].pdf_viewed_at = new Date().toISOString();
+      console.log('Updated local invoice data');
+    }
+
+    // Navigate to PDF view
+    try {
+      console.log('Attempting to navigate to PDF:', `/invoice/${invoiceId}`);
+      
+      // Always use navigateTo for consistent behavior
+      console.log('Navigating to PDF with navigateTo');
+      await navigateTo(`/invoice/${invoiceId}`);
+      console.log('Successfully navigated to PDF');
+    } catch (error) {
+      console.error('Navigation failed, trying window.open:', error);
+      // Fallback to window.open if navigateTo fails
+      const pdfUrl = `${window.location.origin}/invoice/${invoiceId}`;
+      console.log('Opening PDF in new window:', pdfUrl);
+      window.open(pdfUrl, '_blank');
+    }
+    
+    // Different messages for manual vs auto open
+    if (isAutoOpen) {
+      useToast().add({
+        title: 'Status Diubah ke PAID',
+        description: 'PDF invoice dibuka otomatis. PDF ini tidak dapat dibuka lagi untuk mencegah duplikasi pembayaran.',
+        color: 'green'
+      });
+    } else {
+      useToast().add({
+        title: 'PDF Dibuka',
+        description: 'PDF invoice telah dibuka. PDF ini tidak dapat dibuka lagi untuk mencegah duplikasi pembayaran.',
+        color: 'yellow'
+      });
+    }
+    
+  } catch (error: any) {
+    console.error('Error handling PDF view:', error);
+    
+    // Check if it's a JSON parsing error
+    if (error.message && error.message.includes('Unexpected token')) {
+      console.error('JSON parsing error - server returned HTML instead of JSON');
+      useToast().add({
+        title: 'Error',
+        description: 'Server error: PDF tidak dapat dibuka. Silakan coba lagi.',
+        color: 'red'
+      });
+    } else {
+      useToast().add({
+        title: 'Error',
+        description: error.message || 'Gagal membuka PDF',
+        color: 'red'
+      });
+    }
+  }
+}
+
+function isPdfViewed(invoiceId: string): boolean {
+  const invoice = customer.value.find(inv => inv.id === invoiceId);
+  return invoice?.pdf_viewed || false;
+}
+
+// Helper functions for paid status logic
+function getTotalPaid(row: any): number {
+  if (row.status?.toLowerCase() === 'paid') {
+    // If status is paid, total paid should be the full amount
+    return row.amount || 0;
+  }
+  // If not paid, use the actual total_paid from backend
+  return row.total_paid || 0;
+}
+
+function getAmountDue(row: any): number {
+  if (row.status?.toLowerCase() === 'paid') {
+    // If status is paid, amount due should be 0
+    return 0;
+  }
+  // If not paid, use the actual amount_due from backend
+  return row.amount_due || 0;
 }
 
 async function sendWhatsapp(number: string, id: string) {
@@ -245,19 +408,44 @@ const rows = computed(() => {
 });
 
 const q = ref("");
+const dateFilter = ref("");
+const statusFilter = ref("");
+
+// Clear all filters
+function clearFilters() {
+    q.value = "";
+    dateFilter.value = "";
+    statusFilter.value = "";
+}
 
 const filteredRows = computed(() => {
-    if (!q.value) {
-        return customer.value.slice((page.value - 1) * pageCount, (page.value) * pageCount)
+    let filteredData = customer.value;
+
+    // Filter by search query (customer name only)
+    if (q.value) {
+        filteredData = filteredData.filter((invoice) => {
+            // Only search in the customer name field
+            return invoice.customer?.name?.toLowerCase().includes(q.value.toLowerCase())
+        })
     }
 
-    const newData = customer.value.filter((person) => {
-        return Object.values(person).some((value) => {
-            // person with paginate
-            return String(value).toLowerCase().includes(q.value.toLowerCase())
+    // Filter by date
+    if (dateFilter.value) {
+        filteredData = filteredData.filter((invoice) => {
+            const invoiceDate = new Date(invoice.created_at);
+            const filterDate = new Date(dateFilter.value);
+            return invoiceDate.toDateString() === filterDate.toDateString();
         })
-    })
-    return newData.slice((page.value - 1) * pageCount, (page.value) * pageCount)
+    }
+
+    // Filter by status
+    if (statusFilter.value) {
+        filteredData = filteredData.filter((invoice) => {
+            return invoice.status?.toLowerCase() === statusFilter.value.toLowerCase();
+        })
+    }
+
+    return filteredData.slice((page.value - 1) * pageCount, (page.value) * pageCount)
 })
 
 const items = (row: any) => [
@@ -268,9 +456,10 @@ const items = (row: any) => [
       click: () => sendWhatsapp(row.customer.phone, row.id),
     },
     {
-      label: "Download PDF",
-      icon: "i-heroicons-arrow-down-on-square-20-solid",
-      click: () => navigateTo(`/invoice/${row.id}`),
+      label: isPdfViewed(row.id) ? "PDF Sudah Dilihat" : "Download PDF",
+      icon: isPdfViewed(row.id) ? "i-heroicons-eye-slash-20-solid" : "i-heroicons-arrow-down-on-square-20-solid",
+      disabled: isPdfViewed(row.id),
+      click: () => handlePdfView(row.id),
     },
     {
       label: "Edit",
@@ -327,8 +516,51 @@ function handlePaymentSuccess() {
 
 <template>
   <UButton label="Add Invoice" @click="OpenModalAddCustomer(false, null)" />
-  <div class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700">
-    <UInput v-model="q" placeholder="Filter customer..." />
+  
+  <!-- Filter Section -->
+  <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 dark:border-gray-700 mb-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <!-- Customer Search Filter -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Filter Customer</label>
+        <UInput v-model="q" placeholder="Search customer..." />
+      </div>
+      
+      <!-- Date Filter -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Date</label>
+        <UInput v-model="dateFilter" type="date" placeholder="Select date..." />
+      </div>
+      
+      <!-- Status Filter -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
+        <USelectMenu 
+          v-model="statusFilter" 
+          :options="[
+            { label: 'All Status', value: '' },
+            { label: 'Paid', value: 'paid' },
+            { label: 'Unpaid', value: 'unpaid' },
+            { label: 'Pending', value: 'pending' }
+          ]"
+          option-attribute="label"
+          value-attribute="value"
+          placeholder="Select status..."
+        />
+      </div>
+      
+      <!-- Clear Filters Button -->
+      <div class="flex items-end">
+        <UButton 
+          @click="clearFilters" 
+          color="gray" 
+          variant="outline"
+          class="w-full"
+        >
+          Clear Filters
+        </UButton>
+      </div>
+    </div>
   </div>
 
   <UTable :rows="filteredRows" :columns="columns">
@@ -345,51 +577,62 @@ function handlePaymentSuccess() {
       <p>{{ currency.formatIDR(row.amount) }}</p>
     </template>
     <template #total_paid-data="{ row }">
-      <p>{{ currency.formatIDR(row.total_paid) }}</p>
+      <p>{{ currency.formatIDR(getTotalPaid(row)) }}</p>
     </template>
     <template #amount_due-data="{ row }">
       <p class="font-medium" :class="{
-        'text-red-600': row.amount_due > 0,
-        'text-green-600': row.amount_due <= 0
-      }">{{ currency.formatIDR(row.amount_due) }}</p>
+        'text-red-600': getAmountDue(row) > 0,
+        'text-green-600': getAmountDue(row) <= 0
+      }">{{ currency.formatIDR(getAmountDue(row)) }}</p>
     </template>
     <template #status-data="{ row }">
-      <div v-if="row.status === 'pending'">
-        <button
-          @click="openPartialPaymentModal(row)"
-          class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition-colors cursor-pointer"
-          title="Click to make partial payment"
-        >
-          {{ row.status }}
-          <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-          </svg>
-        </button>
-      </div>
-      <div v-else-if="row.status === 'paid'">
-        <!-- Show as disabled badge for paid status -->
-        <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 cursor-not-allowed">
+      <div class="space-y-1">
+        <!-- Status Badge -->
+        <div v-if="row.status === 'pending'">
+          <button
+            @click="openPartialPaymentModal(row)"
+            class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition-colors cursor-pointer"
+            title="Click to make partial payment"
+          >
+            {{ row.status }}
+            <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+          </button>
+        </div>
+        <div v-else-if="row.status === 'paid'">
+          <!-- Show as disabled badge for paid status -->
+          <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 cursor-not-allowed">
+            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+            </svg>
+            {{ row.status }}
+          </span>
+        </div>
+        <div v-else>
+          <USelectMenu
+            :model-value="row.status"
+            :options="[
+              { label: 'Pending', value: 'pending' },
+              { label: 'Paid', value: 'paid' },
+              { label: 'Unpaid', value: 'unpaid' },
+            ]"
+            @update:model-value="(newStatus) => {
+              const originalStatus = row.status;
+              updateStatus(row.id, newStatus, originalStatus);
+            }"
+            value-attribute="value"
+            option-attribute="label"
+          />
+        </div>
+        
+        <!-- PDF Viewed Indicator -->
+        <div v-if="isPdfViewed(row.id)" class="flex items-center text-xs text-red-600">
           <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+            <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"></path>
           </svg>
-          {{ row.status }}
-        </span>
-      </div>
-      <div v-else>
-        <USelectMenu
-          :model-value="row.status"
-          :options="[
-            { label: 'Pending', value: 'pending' },
-            { label: 'Paid', value: 'paid' },
-            { label: 'Unpaid', value: 'unpaid' },
-          ]"
-          @update:model-value="(newStatus) => {
-            const originalStatus = row.status;
-            updateStatus(row.id, newStatus, originalStatus);
-          }"
-          value-attribute="value"
-          option-attribute="label"
-        />
+          PDF Sudah Dilihat
+        </div>
       </div>
     </template>
   </UTable>
@@ -495,6 +738,9 @@ function handlePaymentSuccess() {
           <div class="text-center">
             <p class="text-lg font-medium text-gray-900 dark:text-white">
               Apakah Anda yakin ingin mengubah status pembayaran menjadi <span class="text-green-600 font-bold">PAID</span>?
+            </p>
+            <p class="text-sm text-blue-600 dark:text-blue-400 mt-2">
+              💡 PDF invoice akan terbuka otomatis setelah konfirmasi
             </p>
           </div>
         </div>
