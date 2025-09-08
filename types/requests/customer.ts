@@ -16,6 +16,14 @@ export type CreateCustomerRequest = {
   job: String
 }
 
+export type UpdateCustomerRequest = {
+  name?: String
+  email?: String
+  phone?: String
+  address?: String
+  company?: String
+}
+
 export type CreateCustomerInstallationRequest = {
   customer_id: String,
   technician_id: String,

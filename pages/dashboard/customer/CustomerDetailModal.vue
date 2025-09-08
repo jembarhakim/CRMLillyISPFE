@@ -145,17 +145,13 @@
             </div>
           </div>
 
-          <!-- Accounting Summary -->
+          <!-- Invoice Summary -->
           <div class="bg-white border border-gray-200 rounded-lg p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Accounting Summary</h3>
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Invoice Summary</h3>
             <div class="flex items-center gap-4">
-              <div class="bg-green-100 text-green-800 px-4 py-2 rounded-lg">
-                <span class="text-sm font-medium">Total Income</span>
-                <p class="text-lg font-bold">Rp {{ formatIDR(getTotalIncome()) }}</p>
-              </div>
-              <div class="bg-red-100 text-red-800 px-4 py-2 rounded-lg">
-                <span class="text-sm font-medium">Total Expense</span>
-                <p class="text-lg font-bold">Rp {{ formatIDR(getTotalExpense()) }}</p>
+              <div class="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg">
+                <span class="text-sm font-medium">Total Revenue from Customer</span>
+                <p class="text-lg font-bold">{{ formatIDR(getTotalInvoiceAmount()) }}</p>
               </div>
             </div>
           </div>
@@ -510,7 +506,7 @@
         </div>
 
         <!-- Recent Invoices -->
-        <div v-if="customerDetail.invoices && customerDetail.invoices.length > 0" class="bg-indigo-50 rounded-lg p-4">
+        <div v-if="customerInvoices && customerInvoices.length > 0" class="bg-indigo-50 rounded-lg p-4">
           <h3 class="text-lg font-medium text-gray-900 mb-4">Recent Invoices</h3>
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
@@ -522,9 +518,9 @@
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="invoice in customerDetail.invoices" :key="invoice.id">
+                <tr v-for="invoice in customerInvoices.slice(0, 5)" :key="invoice.id">
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {{ formatDate(invoice.createdAt) }}
+                    {{ formatDate(invoice.created_at) }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {{ formatIDR(invoice.amount) }}
@@ -594,7 +590,13 @@ const recentActivity = ref([
 ])
 
 // Edit form data
-const editForm = ref({
+const editForm = ref<{
+  name: string
+  email: string
+  phone: string
+  company: string
+  address: string
+}>({
   name: '',
   email: '',
   phone: '',
@@ -633,17 +635,10 @@ const getTicketStatusColor = (status: string) => {
   }
 }
 
-const getTotalIncome = () => {
+const getTotalInvoiceAmount = () => {
   if (!customerInvoices.value || customerInvoices.value.length === 0) return 0
   return customerInvoices.value
-    .filter(invoice => invoice.status?.toLowerCase() === 'paid')
     .reduce((total, invoice) => total + (invoice.amount || 0), 0)
-}
-
-const getTotalExpense = () => {
-  // For now, return 0 as we don't have expense data
-  // This can be implemented when expense tracking is added
-  return 0
 }
 
 // Auto Login URL functionality

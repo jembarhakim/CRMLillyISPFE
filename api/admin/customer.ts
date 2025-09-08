@@ -1,4 +1,4 @@
-import type { CreateCustomerInstallationRequest, CreateCustomerRequest } from "@/types/requests/customer";
+import type { CreateCustomerInstallationRequest, CreateCustomerRequest, UpdateCustomerRequest } from "@/types/requests/customer";
 
 export const customerAdminApi = () => {
   const api = useApiHost();
@@ -53,7 +53,7 @@ export const customerAdminApi = () => {
 
     editCustomer: async (
       customerId: string,
-      data: CreateCustomerRequest
+      data: UpdateCustomerRequest
     ) => {
       const response = await fetch(`${api}/api/admin/customer/${customerId}`, {
         method: "PUT",
