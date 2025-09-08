@@ -125,10 +125,7 @@ const errorMessage = ref('')
 
 // Calculate total paid from existing transactions
 const totalPaid = computed(() => {
-  // Handle multiple transactions or single transaction object
-  if (Array.isArray(props.invoice.transactions)) {
-    return props.invoice.transactions.reduce((sum: number, tx: any) => sum + (tx.amount || 0), 0)
-  }
+  // Backend provides a single transaction object with total amount
   return props.invoice.transaction?.amount || 0
 })
 

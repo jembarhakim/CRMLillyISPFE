@@ -39,13 +39,16 @@ async function getData() {
         // Calculate amount_due
         invoice.amount_due = invoice.amount - invoice.total_paid;
         
-        // Update status based on payment if needed
-        if (invoice.total_paid >= invoice.amount && invoice.status !== 'paid') {
-          invoice.status = 'paid';
-        } else if (invoice.total_paid > 0 && invoice.total_paid < invoice.amount && invoice.status !== 'pending') {
-          invoice.status = 'pending';
-        } else if (invoice.total_paid === 0 && invoice.status !== 'unpaid') {
-          invoice.status = 'unpaid';
+        // Only auto-update status if it's not manually set to 'paid' or 'pending'
+        // This prevents overriding manual status changes
+        if (invoice.status === 'unpaid' || !invoice.status) {
+          if (invoice.total_paid >= invoice.amount) {
+            invoice.status = 'paid';
+          } else if (invoice.total_paid > 0) {
+            invoice.status = 'pending';
+          } else {
+            invoice.status = 'unpaid';
+          }
         }
       });
 
@@ -67,8 +70,11 @@ async function updateStatus(id: string, status: string) {
         title: response.message,
         color: "green",
       });
-      // Refresh data to update the display
-      getData();
+      // Update the specific invoice in the local array instead of refreshing all data
+      const invoiceIndex = customer.value.findIndex(inv => inv.id === id);
+      if (invoiceIndex !== -1) {
+        customer.value[invoiceIndex].status = status;
+      }
     })
     .catch((err) => {
       useToast().add({
