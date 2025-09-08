@@ -1,8 +1,8 @@
 export default defineNuxtRouteMiddleware((to) => {
-  const authStore = useAuthStore()
+  const { isLoggedIn, user } = useAuth()
   
   // If not logged in, redirect to login
-  if (!authStore.isLoggedIn) {
+  if (!isLoggedIn.value) {
     return navigateTo('/login')
   }
 
@@ -22,14 +22,21 @@ export default defineNuxtRouteMiddleware((to) => {
     '/dashboard/user-management': ['ADMIN'],
   }
 
-  const userRole = authStore.user?.role
+  const userRole = user.value?.role
   const requiredRoles = routePermissions[to.path]
 
-  // If route requires specific roles
+  // If route requires specific roles and we have a role
   if (requiredRoles && userRole) {
     if (!requiredRoles.includes(userRole)) {
       // Redirect to dashboard if user doesn't have permission
       return navigateTo('/dashboard')
     }
+  }
+  
+  // If we don't have a role yet but we're logged in, allow access
+  // The role will be loaded asynchronously
+  if (!userRole && isLoggedIn.value) {
+    console.log('User logged in but role not loaded yet, allowing access')
+    return
   }
 })

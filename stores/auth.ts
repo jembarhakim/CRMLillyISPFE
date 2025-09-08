@@ -12,10 +12,12 @@ export const useAuthStore = defineStore('auth', {
   }),
   getters: {
     isLoggedIn: (state) => {
-      // Always check both state and cookie for token
-      const tokenFromCookie = process.client ? useCookie('token', { default: () => '' }).value : ''
-      const currentToken = state.token || tokenFromCookie
-      return !!currentToken && currentToken !== '' && currentToken !== 'null'
+      // Simple check - just validate the token in state
+      return !!state.token && 
+             state.token !== '' && 
+             state.token !== 'null' && 
+             state.token !== 'undefined' &&
+             state.token.length > 10
     },
     getToken: (state) => {
       // Always get the most current token from cookie if available
@@ -43,12 +45,26 @@ export const useAuthStore = defineStore('auth', {
         const nameCookie = useCookie('user_name', { default: () => '' })
         const emailCookie = useCookie('user_email', { default: () => '' })
         
-        this.token = tokenCookie.value || ''
-        this.user.role = roleCookie.value || ''
-        this.user.name = nameCookie.value || ''
-        this.user.email = emailCookie.value || ''
+        const tokenValue = tokenCookie.value || ''
+        const roleValue = roleCookie.value || ''
+        const nameValue = nameCookie.value || ''
+        const emailValue = emailCookie.value || ''
         
-        console.log('Auth store initialized from cookies - token:', this.token, 'role:', this.user.role, 'name:', this.user.name)
+        // Only update if values are different to avoid unnecessary reactivity triggers
+        if (this.token !== tokenValue) {
+          this.token = tokenValue
+        }
+        if (this.user.role !== roleValue) {
+          this.user.role = roleValue
+        }
+        if (this.user.name !== nameValue) {
+          this.user.name = nameValue
+        }
+        if (this.user.email !== emailValue) {
+          this.user.email = emailValue
+        }
+        
+        console.log('Auth store initialized from cookies - token:', this.token ? 'exists' : 'missing', 'role:', this.user.role, 'name:', this.user.name)
       }
     },
     login({token,role_id,name,email}:{token:string,role_id?:string,name?:string,email?:string}) {
@@ -59,25 +75,29 @@ export const useAuthStore = defineStore('auth', {
           default: () => '',
           maxAge: 60 * 60 * 24 * 7, // 7 days
           secure: false, // Set to true in production
-          sameSite: 'lax' // More permissive for development
+          sameSite: 'lax', // More permissive for development
+          httpOnly: false // Allow client-side access
         })
         const roleCookie = useCookie('role_id', { 
           default: () => '',
           maxAge: 60 * 60 * 24 * 7, // 7 days
           secure: false, // Set to true in production
-          sameSite: 'lax' // More permissive for development
+          sameSite: 'lax', // More permissive for development
+          httpOnly: false // Allow client-side access
         })
         const nameCookie = useCookie('user_name', { 
           default: () => '',
           maxAge: 60 * 60 * 24 * 7, // 7 days
           secure: false, // Set to true in production
-          sameSite: 'lax' // More permissive for development
+          sameSite: 'lax', // More permissive for development
+          httpOnly: false // Allow client-side access
         })
         const emailCookie = useCookie('user_email', { 
           default: () => '',
           maxAge: 60 * 60 * 24 * 7, // 7 days
           secure: false, // Set to true in production
-          sameSite: 'lax' // More permissive for development
+          sameSite: 'lax', // More permissive for development
+          httpOnly: false // Allow client-side access
         })
         
         // Set cookies first
@@ -85,6 +105,8 @@ export const useAuthStore = defineStore('auth', {
         roleCookie.value = role_id || ''
         nameCookie.value = name || ''
         emailCookie.value = email || ''
+        
+        console.log('Cookies set - token:', tokenCookie.value ? 'exists' : 'missing')
       }
       
       // Then update state
@@ -112,6 +134,35 @@ export const useAuthStore = defineStore('auth', {
       this.user = { user_id: "", role: "", name: "", email: "" }
       
       console.log('Auth store logged out')
+    },
+    // Method to check if user is properly authenticated
+    async verifyAuth() {
+      if (!this.isLoggedIn) {
+        return false
+      }
+      
+      try {
+        // Try to verify token with backend
+        const { authApi } = await import('@/api/auth')
+        const response = await authApi().verifyAuth()
+        
+        if (response.success) {
+          // Update user data from response
+          this.user = { ...this.user, ...response.data }
+          return true
+        } else {
+          this.logout()
+          return false
+        }
+      } catch (error) {
+        console.error('Auth verification failed:', error)
+        // Don't logout on network errors, only on auth errors
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          this.logout()
+          return false
+        }
+        return true // Assume valid if network error
+      }
     },
   },
 })

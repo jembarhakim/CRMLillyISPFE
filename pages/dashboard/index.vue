@@ -4,6 +4,11 @@ import { invoiceAdminApi } from "@/api/admin/invoice";
 import { formatIDR } from "@/helper/currency";
 import { formatDateToYMD } from "@/helper/date";
 
+// Apply auth middleware
+definePageMeta({
+  middleware: 'auth'
+})
+
 
 let invoices = ref<any[]>([]);
 const latestDeposites = ref<any[]>([]);

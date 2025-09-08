@@ -4,5 +4,5 @@ export default defineNuxtPlugin(() => {
   // Initialize auth store from cookies
   authStore.initFromCookies()
   
-  console.log('Auth plugin initialized - token exists:', !!authStore.token)
+  console.log('Auth persistence plugin loaded - token exists:', !!authStore.token)
 })

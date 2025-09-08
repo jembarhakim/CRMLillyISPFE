@@ -19,23 +19,8 @@ export default defineNuxtConfig({
       WA_HOST: process.env.NUXT_PUBLIC_WA_HOST, // Memastikan API_HOST tersedia
     },
   },
-  hooks: {
-    "pages:extend"(pages) {
-      function setMiddleware(pages: NuxtPage[]) {
-        for (const page of pages) {
-          if (/* some condition */ true) {
-            page.meta ||= {};
-            // Note that this will override any middleware set in `definePageMeta` in the page
-            page.meta.middleware = ["auth"];
-          }
-          if (page.children) {
-            setMiddleware(page.children);
-          }
-        }
-      }
-      setMiddleware(pages);
-    },
-  },
+  // Remove automatic middleware assignment to prevent race conditions
+  // Middleware will be applied manually in each page that needs it
   app: {
     head: {
       meta: [

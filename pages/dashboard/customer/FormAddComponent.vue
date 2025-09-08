@@ -126,6 +126,8 @@ const state = reactive({
   password: "",
   product_id: "",
   job: "",
+  ip_static: "",
+  mac_address: "",
 });
 
 const networkDeviceState = reactive({
@@ -152,7 +154,9 @@ watch(
         state.longitude = props.data.longitude,
         state.password = props.data.password,
         state.product_id = props.data.product_id,
-        state.job = props.data.job
+        state.job = props.data.job,
+        state.ip_static = props.data.ip_static || "",
+        state.mac_address = props.data.mac_address || ""
       
       // Load existing network device data if available
       try {
@@ -184,7 +188,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       const response = await customerAdminApi().editCustomer(props.data.id, state);
       
       // Update or create network device if data is provided
-      if (response.success && (networkDeviceState.ip_static || networkDeviceState.mac_address)) {
+      if (response.success && (state.ip_static || state.mac_address || networkDeviceState.assets_id)) {
         try {
           const networkDevices = await networkDeviceAdminApi().getNetworkDevicesByCustomer(props.data.id);
           if (networkDevices.data && networkDevices.data.length > 0) {
@@ -192,8 +196,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
             const device = networkDevices.data[0];
             const networkDeviceData: any = {
               customer_id: props.data.id,
-              ip_static: networkDeviceState.ip_static || device.ip_static || "",
-              mac_address: networkDeviceState.mac_address || device.mac_address || "",
+              ip_static: state.ip_static || device.ip_static || "",
+              mac_address: state.mac_address || device.mac_address || "",
               status_perangkat: device.status_perangkat || "active",
               last_ping_status: device.last_ping_status || "unknown"
             };
@@ -209,8 +213,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
             // Create new network device
             const networkDeviceData: any = {
               customer_id: props.data.id,
-              ip_static: networkDeviceState.ip_static || "",
-              mac_address: networkDeviceState.mac_address || "",
+              ip_static: state.ip_static || "",
+              mac_address: state.mac_address || "",
               status_perangkat: "active",
               last_ping_status: "unknown"
             };
@@ -241,11 +245,11 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       const customerResponse = await customerAdminApi().createCustomer(state);
       
       // If customer creation is successful and network device data is provided, create network device
-      if (customerResponse.success && (networkDeviceState.ip_static || networkDeviceState.mac_address)) {
+      if (customerResponse.success && (state.ip_static || state.mac_address || networkDeviceState.assets_id)) {
         const networkDeviceData: any = {
           customer_id: customerResponse.data.id,
-          ip_static: networkDeviceState.ip_static || "",
-          mac_address: networkDeviceState.mac_address || "",
+          ip_static: state.ip_static || "",
+          mac_address: state.mac_address || "",
           status_perangkat: "active",
           last_ping_status: "unknown"
         };
@@ -480,10 +484,10 @@ await getDataOptions()
             <div class="border-t pt-4 mt-4">
               <h3 class="text-lg font-semibold mb-3">Network Device Information</h3>
               <UFormGroup label="IP Static" name="ip_static">
-                <UInput v-model="networkDeviceState.ip_static" placeholder="192.168.1.100" />
+                <UInput v-model="state.ip_static" placeholder="192.168.1.100" />
               </UFormGroup>
               <UFormGroup label="MAC Address" name="mac_address">
-                <UInput v-model="networkDeviceState.mac_address" placeholder="00:11:22:33:44:55" />
+                <UInput v-model="state.mac_address" placeholder="00:11:22:33:44:55" />
               </UFormGroup>
               <UFormGroup label="Asset" name="assets_id">
                 <USelectMenu 

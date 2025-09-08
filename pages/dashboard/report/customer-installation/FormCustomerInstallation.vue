@@ -5,6 +5,11 @@ import { customerAdminApi } from "@/api/admin/customer";
 import { userManagementAdminApi } from "@/api/admin/user-management";
 import { uploadFileAdminApi } from "@/api/admin/file-upload";
 
+// Apply auth middleware
+definePageMeta({
+  middleware: 'auth'
+})
+
 // Define props to receive customer data
 const props = defineProps<{
   isEdit?: boolean;
