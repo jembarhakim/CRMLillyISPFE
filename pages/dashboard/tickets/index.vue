@@ -35,6 +35,7 @@ import { ticketsApi } from '@/api/tickets'
 import { customerAdminApi } from '@/api/admin/customer'
 import { userManagementAdminApi } from '@/api/admin/user-management'
 import { uploadFileAdminApi } from '@/api/admin/file-upload'
+import { areaAdminApi } from '@/api/admin/area'
 import { useAuthStore } from '@/stores/auth'
 import { useRolePermissions } from '@/composables/useRolePermissions'
 
@@ -97,6 +98,9 @@ function stopPolling() {
 
 // Lookups for modal and table rendering
 const customers = ref<any[]>([])
+const allCustomers = ref<any[]>([])
+const areas = ref<any[]>([])
+const selectedAreaId = ref('')
 const troubleTypes = ref<any[]>([])
 const loadingLookups = ref(true)
 const showNewType = ref(false)
@@ -782,20 +786,67 @@ async function deleteTicket(id: number) {
 const showAdd = ref(false)
 const form = ref({ customer_id: '', title: '', description: '', img_cs: '' })
 
-// SVM Classification
-const svmResult = ref<any>(null)
-const isClassifying = ref(false)
+// Keyword-based trouble type classification
+const classifyTroubleType = (text: string): string => {
+  const lowerText = text.toLowerCase()
+  
+  // Define keywords for each trouble type (using new database IDs)
+  const keywords = {
+    '1': ['kabel', 'terputus', 'putus', 'cable', 'broken', 'cut', 'terpotong', 'damage'],
+    '2': ['listrik', 'mati', 'power', 'electric', 'elektrik', 'mati listrik', 'blackout', 'outage', 'gangguan listrik'],
+    '3': ['dhcp', 'restart', 'reboot', 'router', 'modem', 'koneksi', 'connection', 'ip', 'network', 'masalah dhcp'],
+    '4': ['perangkat', 'device', 'tidak berfungsi', 'rusak', 'broken', 'mati', 'offline', 'perangkat tidak berfungsi'],
+    '5': ['server', 'konfigurasi', 'config', 'setting', 'setup', 'configuration', 'koneksi server'],
+    '6': ['batas', 'limit', 'terlampaui', 'exceeded', 'over', 'quota', 'bandwidth', 'pengguna terlampaui']
+  }
+  
+  // Check for keyword matches
+  for (const [troubleType, keywordList] of Object.entries(keywords)) {
+    for (const keyword of keywordList) {
+      if (lowerText.includes(keyword)) {
+        return troubleType
+      }
+    }
+  }
+  
+  return '1' // Default fallback to 'Kabel Terputus'
+}
+
+
+// Filter customers based on selected area
+const filteredCustomers = computed(() => {
+  if (!selectedAreaId.value) {
+    return customers.value
+  }
+  return customers.value.filter(customer => {
+    // Check if customer has area and if it matches selected area
+    if (!customer.area) return false
+    // Try different possible area ID properties
+    return (customer.area as any)?.id === selectedAreaId.value || 
+           (customer as any).area_id === selectedAreaId.value ||
+           (customer as any).areaId === selectedAreaId.value
+  })
+})
+
 async function loadLookups() {
   try {
     const cust: any = await customerAdminApi().getAllCustomers()
-    customers.value = (cust.data || cust) || []
+    const customerData = (cust.data || cust) || []
+    customers.value = customerData
+    allCustomers.value = customerData
   } catch (e) { console.error('load customers', e) }
+  
+  try {
+    const areaRes: any = await areaAdminApi().getAllAreas()
+    areas.value = (areaRes.data || areaRes) || []
+  } catch (e) { console.error('load areas', e) }
+  
   try {
     const tt: any = await ticketsApi().troubleTypes()
     troubleTypes.value = tt.data || tt || []
   } catch (e) { console.error('load trouble types', e) }
 
-  if (!form.value.customer_id && customers.value.length) form.value.customer_id = customers.value[0].id
+  if (!form.value.customer_id && filteredCustomers.value.length) form.value.customer_id = filteredCustomers.value[0].id
   loadingLookups.value = false
 }
 function generateTypeId(): string {
@@ -842,15 +893,6 @@ const saveNewType = async () => {
   }
 }
 
-// derived GPS for modal
-const modalGpsLat = computed(() => {
-  const c = customers.value.find(c => c.id === form.value.customer_id)
-  return c?.latitude
-})
-const modalGpsLng = computed(() => {
-  const c = customers.value.find(c => c.id === form.value.customer_id)
-  return c?.longitude
-})
 async function handleImageUpload(event: Event) {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
@@ -894,32 +936,26 @@ async function createTicket() {
     console.log('Auth store token:', authStore.getToken) // Debug log
     console.log('Creating ticket with data:', form.value) // Debug log
     
-    // Auto-classify the ticket using SVM
-    let ticketType = null
-    if (form.value.title.trim()) {
-      try {
-        const classificationResponse: any = await ticketsApi().classifyTicket(form.value.title.trim())
-        ticketType = classificationResponse.data.type
-        console.log('Auto-classified ticket type:', ticketType)
-      } catch (classificationError) {
-        console.warn('SVM classification failed, creating ticket without type:', classificationError)
-      }
+    // Auto-classify trouble type based on title/description
+    const textToAnalyze = form.value.title || form.value.description || ''
+    let classifiedType = ''
+    
+    if (textToAnalyze.trim()) {
+      classifiedType = classifyTroubleType(textToAnalyze)
     }
     
     await ticketsApi().create({
       customer_id: String(form.value.customer_id),
       title: form.value.title,
       description: form.value.description,
-      type: ticketType, // Use SVM classification result
+      type: classifiedType,
       img_cs: form.value.img_cs,
-      auto_classify: true, // Flag to indicate auto-classification was used
     })
     showAdd.value = false
     form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', img_cs: '' }
-    svmResult.value = null // Clear SVM result
     useToast().add({ 
       title: 'Success!', 
-      description: `Ticket created successfully${ticketType ? ` with type: ${ticketType.toUpperCase()}` : ''}`, 
+      description: 'Ticket created successfully', 
       color: 'green', 
       timeout: 3000 
     })
@@ -939,64 +975,7 @@ async function createTicket() {
   }
 }
 
-// SVM Classification Methods
-const classifyWithSVM = async () => {
-  if (!form.value.title.trim()) return
-  
-  try {
-    isClassifying.value = true
-    svmResult.value = null
-    
-    const response = await ticketsApi().classifyTicket(form.value.title.trim()) as any
-    svmResult.value = response.data
-    
-    console.log('SVM Classification result:', svmResult.value)
-  } catch (error: any) {
-    console.error('SVM Classification error:', error)
-    useToast().add({
-      title: 'Classification failed',
-      description: error.message || 'Failed to classify ticket',
-      color: 'red'
-    })
-  } finally {
-    isClassifying.value = false
-  }
-}
 
-const applySVMResult = () => {
-  if (svmResult.value) {
-    // Since we removed manual type selection, this function now just shows a preview
-    // The actual type will be applied automatically when creating the ticket
-    useToast().add({
-      title: 'Type preview',
-      description: `Ticket will be classified as: ${svmResult.value.type?.toUpperCase()}`,
-      color: 'blue'
-    })
-  }
-}
-
-const onTitleChange = () => {
-  // Clear SVM result when title changes
-  svmResult.value = null
-}
-
-const getTypeColor = (type: string) => {
-  const colors = {
-    kabel_putus: 'bg-red-100 text-red-800',
-    listrik_mati: 'bg-yellow-100 text-yellow-800',
-    kendala_dhcp: 'bg-blue-100 text-blue-800',
-    perangkat_mati: 'bg-gray-100 text-gray-800',
-    config_koneksi_server: 'bg-purple-100 text-purple-800',
-    over_user: 'bg-orange-100 text-orange-800',
-    wifi: 'bg-blue-100 text-blue-800',
-    internet: 'bg-green-100 text-green-800',
-    hardware: 'bg-orange-100 text-orange-800',
-    power: 'bg-red-100 text-red-800',
-    software: 'bg-purple-100 text-purple-800',
-    other: 'bg-gray-100 text-gray-800'
-  }
-  return colors[type as keyof typeof colors] || colors.other
-}
 // Fetchers similar to transaction page
 async function fetchAllTickets(params: any) {
   // params is kept for parity; current API does not filter server-side
@@ -1205,63 +1184,34 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4" v-if="!loadingLookups">
             <div>
+              <label class="block text-sm text-slate-300 mb-1">Area</label>
+              <select v-model="selectedAreaId"
+                class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none">
+                <option value="">All Areas</option>
+                <option v-for="area in areas" :key="area.id" :value="area.id">
+                  {{ area.name_city }} - {{ area.name_subdistrict }}
+                </option>
+              </select>
+            </div>
+            <div>
               <label class="block text-sm text-slate-300 mb-1">Customer</label>
               <select v-model="form.customer_id"
                 class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none">
-                <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }} ({{ c.id }})</option>
+                <option v-for="c in filteredCustomers" :key="c.id" :value="c.id">
+                  {{ c.name }}
+                </option>
               </select>
             </div>
             <div class="md:col-span-2">
               <label class="block text-sm text-slate-300 mb-1">Title</label>
-              <div class="flex gap-2">
               <input v-model="form.title"
-                  class="flex-1 rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none" 
-                  placeholder="Enter trouble description..."
-                  @input="onTitleChange" />
-                <button
-                  @click="classifyWithSVM"
-                  :disabled="!form.title.trim() || isClassifying"
-                  class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                >
-                  🤖 Auto
-                </button>
-              </div>
-              <!-- SVM Classification Result -->
-              <div v-if="svmResult" class="mt-2 p-2 bg-blue-900/20 border border-blue-500/30 rounded text-sm">
-                <div class="flex items-center gap-2">
-                  <span class="text-blue-300">SVM suggests:</span>
-                  <span 
-                    :class="getTypeColor(svmResult.type)"
-                    class="px-2 py-1 rounded-full text-xs font-medium"
-                  >
-                    {{ svmResult.type?.toUpperCase() }}
-                  </span>
-                  <span class="text-blue-300">
-                    ({{ Math.round(svmResult.confidence * 100) }}% confidence)
-                  </span>
-                  <button
-                    @click="applySVMResult"
-                    class="ml-auto text-blue-400 hover:text-blue-300 text-xs underline"
-                  >
-                    Preview
-                  </button>
-                </div>
-              </div>
+                  class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none" 
+                  placeholder="Enter trouble description..." />
             </div>
             <div class="md:col-span-2">
               <label class="block text-sm text-slate-300 mb-1">Description</label>
               <textarea v-model="form.description"
                 class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none"></textarea>
-            </div>
-            <div>
-              <label class="block text-sm text-slate-300 mb-1">GPS Lat (from customer)</label>
-              <input :value="modalGpsLat ?? ''" disabled
-                class="w-full rounded px-3 py-2 bg-slate-800/50 border border-slate-700" />
-            </div>
-            <div>
-              <label class="block text-sm text-slate-300 mb-1">GPS Lng (from customer)</label>
-              <input :value="modalGpsLng ?? ''" disabled
-                class="w-full rounded px-3 py-2 bg-slate-800/50 border border-slate-700" />
             </div>
             <div class="md:col-span-2">
               <label class="block text-sm text-slate-300 mb-1">Upload Image (CS)</label>

@@ -124,13 +124,6 @@ export const ticketsApi = () => {
     debugRole: () => $fetch(`${base}/api/tickets/debug/role`, { headers: authHeader() }),
     updates: (since: string) => $fetch(`${base}/api/tickets/updates?since=${encodeURIComponent(since)}`, { headers: authHeader() }),
     
-    // ML Classification endpoints
-    classifyTicket: (title: string) => $fetch(`${base}/api/tickets/classify`, { 
-      method: 'POST', 
-      body: { title }, 
-      headers: authHeader() 
-    }),
-    getMLStats: () => $fetch(`${base}/api/tickets/ml/stats`, { headers: authHeader() }),
   }
 }
 

@@ -2,9 +2,13 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { ticketsApi } from '@/api/tickets'
 import { customerAdminApi } from '@/api/admin/customer'
+import { areaAdminApi } from '@/api/admin/area'
 
 const loading = ref(true)
-const customers = ref<{id:string, name:string}[]>([])
+const customers = ref<{id:string, name:string, area?:{id:string, name_city:string, name_subdistrict:string, name_village:string}, area_id?:string, areaId?:string}[]>([])
+const allCustomers = ref<{id:string, name:string, area?:{id:string, name_city:string, name_subdistrict:string, name_village:string}, area_id?:string, areaId?:string}[]>([])
+const areas = ref<{id:string, name_city:string, name_subdistrict:string, name_village:string}[]>([])
+const selectedAreaId = ref('')
 const types = ref<{id:string, name?:string}[]>([])
 const showNewType = ref(false)
 const newTypeName = ref('')
@@ -12,25 +16,75 @@ const newTypeName = ref('')
 const form = ref({
   customer_id: '',
   title: '',
-  description: '' as string | undefined,
-  type: ''
+  description: '' as string | undefined
 })
 
-// derived GPS from selected customer
-const gpsLat = ref<number | undefined>(undefined)
-const gpsLng = ref<number | undefined>(undefined)
-watch(() => form.value.customer_id, (id) => {
-  const c = customers.value.find(c => c.id === id)
-  // gpsLat.value = c?.latitude
-  // gpsLng.value = c?.longitude
+// Keyword-based trouble type classification
+const classifyTroubleType = (text: string): string => {
+  const lowerText = text.toLowerCase()
+  
+  // Define keywords for each trouble type (using new database IDs)
+  const keywords = {
+    '1': ['kabel', 'terputus', 'putus', 'cable', 'broken', 'cut', 'terpotong', 'damage'],
+    '2': ['listrik', 'mati', 'power', 'electric', 'elektrik', 'mati listrik', 'blackout', 'outage', 'gangguan listrik'],
+    '3': ['dhcp', 'restart', 'reboot', 'router', 'modem', 'koneksi', 'connection', 'ip', 'network', 'masalah dhcp'],
+    '4': ['perangkat', 'device', 'tidak berfungsi', 'rusak', 'broken', 'mati', 'offline', 'perangkat tidak berfungsi'],
+    '5': ['server', 'konfigurasi', 'config', 'setting', 'setup', 'configuration', 'koneksi server'],
+    '6': ['batas', 'limit', 'terlampaui', 'exceeded', 'over', 'quota', 'bandwidth', 'pengguna terlampaui']
+  }
+  
+  // Check for keyword matches
+  for (const [troubleType, keywordList] of Object.entries(keywords)) {
+    for (const keyword of keywordList) {
+      if (lowerText.includes(keyword)) {
+        return troubleType
+      }
+    }
+  }
+  
+  return '1' // Default fallback to 'Kabel Terputus'
+}
+
+
+// Filter customers based on selected area
+const filteredCustomers = computed(() => {
+  if (!selectedAreaId.value) {
+    return customers.value
+  }
+  return customers.value.filter(customer => {
+    // Check if customer has area and if it matches selected area
+    if (!customer.area) return false
+    // Try different possible area ID properties
+    return (customer.area as any)?.id === selectedAreaId.value || 
+           (customer as any).area_id === selectedAreaId.value ||
+           (customer as any).areaId === selectedAreaId.value
+  })
 })
+
 
 onMounted(async () => {
   // load customers (reuse admin API which already exists)
   try {
     const custRes: any = await customerAdminApi().getAllCustomers()
-    customers.value = (custRes.data || custRes || []).map((c:any) => ({ id: c.id, name: c.name }))
+    const customerData = (custRes.data || custRes || []).map((c:any) => ({ 
+      id: c.id, 
+      name: c.name,
+      area: c.area
+    }))
+    customers.value = customerData
+    allCustomers.value = customerData
   } catch (e) { console.error('load customers', e) }
+
+  // load areas
+  try {
+    const areaRes: any = await areaAdminApi().getAllAreas()
+    areas.value = (areaRes.data || areaRes || []).map((a:any) => ({
+      id: a.id,
+      name_city: a.name_city,
+      name_subdistrict: a.name_subdistrict,
+      name_village: a.name_village
+    }))
+  } catch (e) { console.error('load areas', e) }
 
   try {
     const tt: any = await ticketsApi().troubleTypes()
@@ -38,18 +92,26 @@ onMounted(async () => {
   } catch (e) { console.error('load trouble types', e) }
 
   // preselect first options if empty
-  if (!form.value.customer_id && customers.value.length) form.value.customer_id = customers.value[0].id
+  if (!form.value.customer_id && filteredCustomers.value.length) form.value.customer_id = filteredCustomers.value[0].id
   if (!form.value.type && types.value.length) form.value.type = types.value[0].id
   showNewType.value = types.value.length === 0
   loading.value = false
 })
 
 async function submit(){
+  // Auto-classify trouble type based on title/description
+  const textToAnalyze = form.value.title || form.value.description || ''
+  let classifiedType = ''
+  
+  if (textToAnalyze.trim()) {
+    classifiedType = classifyTroubleType(textToAnalyze)
+  }
+  
   await ticketsApi().create({
     customer_id: form.value.customer_id,
     title: form.value.title,
     description: form.value.description,
-    type: form.value.type,
+    type: classifiedType,
   })
   navigateTo('/dashboard/tickets')
 }
@@ -79,45 +141,35 @@ const saveNewType = async () => {
 
     <div v-if="loading">Loading...</div>
     <form v-else class="space-y-4" @submit.prevent="submit">
-      <div>
-        <label class="block text-sm text-gray-600 mb-1">Customer</label>
-        <select v-model="form.customer_id" class="w-full border rounded px-3 py-2">
-          <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }} ({{ c.id }})</option>
-        </select>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Area</label>
+          <select v-model="selectedAreaId" class="w-full border rounded px-3 py-2">
+            <option value="">All Areas</option>
+            <option v-for="area in areas" :key="area.id" :value="area.id">
+              {{ area.name_city }} - {{ area.name_subdistrict }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">Customer</label>
+          <select v-model="form.customer_id" class="w-full border rounded px-3 py-2">
+            <option v-for="c in filteredCustomers" :key="c.id" :value="c.id">
+              {{ c.name }}
+              <template v-if="c.area">
+                ({{ c.area.name_city }} - {{ c.area.name_subdistrict }})
+              </template>
+            </option>
+          </select>
+        </div>
       </div>
       <div>
         <label class="block text-sm text-gray-600 mb-1">Title</label>
-        <input v-model="form.title" class="w-full border rounded px-3 py-2" />
+        <input v-model="form.title" class="w-full border rounded px-3 py-2" placeholder="Enter trouble description..." />
       </div>
       <div>
         <label class="block text-sm text-gray-600 mb-1">Description</label>
         <textarea v-model="form.description as any" class="w-full border rounded px-3 py-2"></textarea>
-      </div>
-      <div>
-        <label class="block text-sm text-gray-600 mb-1">Type</label>
-        <div v-if="!showNewType" class="flex gap-2">
-          <select v-model="form.type" class="w-full border rounded px-3 py-2">
-            <option v-for="t in types" :key="t.id" :value="t.id">{{ t.name || t.id }}</option>
-          </select>
-          <button type="button" class="px-3 py-2 border rounded" @click="showNewType = true">New</button>
-        </div>
-        <div v-else class="space-y-2">
-          <input v-model="newTypeName" placeholder="Display Name (optional)" class="w-full border rounded px-3 py-2" />
-          <div class="flex gap-2">
-            <button type="button" class="px-3 py-2 bg-emerald-600 text-white rounded" @click="saveNewType">Save Type</button>
-            <button type="button" class="px-3 py-2 border rounded" @click="showNewType = false">Cancel</button>
-          </div>
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm text-gray-600 mb-1">GPS Lat (from customer)</label>
-          <input :value="gpsLat ?? ''" disabled class="w-full border rounded px-3 py-2 bg-gray-100" />
-        </div>
-        <div>
-          <label class="block text-sm text-gray-600 mb-1">GPS Lng (from customer)</label>
-          <input :value="gpsLng ?? ''" disabled class="w-full border rounded px-3 py-2 bg-gray-100" />
-        </div>
       </div>
 
       <button class="px-4 py-2 bg-emerald-600 text-white rounded">Create Ticket</button>
