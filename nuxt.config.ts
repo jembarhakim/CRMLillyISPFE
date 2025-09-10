@@ -6,7 +6,11 @@ export default defineNuxtConfig({
     "~/assets/css/tailwind.css",
     "~/assets/css/global.css",
   ],
-  plugins: ["~/plugins/echarts.ts"],
+  plugins: [
+    "~/plugins/auth-init.client.ts",
+    "~/plugins/auth-persistence.client.ts", 
+    "~/plugins/echarts.ts"
+  ],
   echarts: {
     charts: ["BarChart", "LineChart", "PieChart"],
     components: ["DatasetComponent", "GridComponent", "TooltipComponent"],
@@ -33,6 +37,7 @@ export default defineNuxtConfig({
   },
   compatibilityDate: "2024-11-01",
   devtools: { enabled: true },
+  ssr: false, // Disable SSR to avoid auth issues during refresh
   modules: [
     "@pinia/nuxt",
     "@nuxt/ui",

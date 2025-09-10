@@ -9,10 +9,12 @@ export const useAuthStore = defineStore('auth', {
       name: '',
       email: ''
     },
+    isInitialized: false,
   }),
   getters: {
     isLoggedIn: (state) => {
-      // Simple check - just validate the token in state
+      // Wait for initialization and then check token
+      if (!state.isInitialized) return false
       return !!state.token && 
              state.token !== '' && 
              state.token !== 'null' && 
@@ -55,6 +57,7 @@ export const useAuthStore = defineStore('auth', {
           this.token = tokenValue
         }
         if (this.user.role !== roleValue) {
+          this.user.user_id = roleValue // Update user_id as well if it's the role
           this.user.role = roleValue
         }
         if (this.user.name !== nameValue) {
@@ -64,7 +67,10 @@ export const useAuthStore = defineStore('auth', {
           this.user.email = emailValue
         }
         
-        console.log('Auth store initialized from cookies - token:', this.token ? 'exists' : 'missing', 'role:', this.user.role, 'name:', this.user.name)
+        // Mark as initialized
+        this.isInitialized = true
+        
+        console.log('Auth store initialized from cookies - token:', this.token ? 'exists' : 'missing', 'role:', this.user.role, 'name:', this.user.name, 'initialized:', this.isInitialized)
       }
     },
     login({token,role_id,name,email}:{token:string,role_id?:string,name?:string,email?:string}) {
@@ -111,9 +117,11 @@ export const useAuthStore = defineStore('auth', {
       
       // Then update state
       this.token = token
+      this.user.user_id = role_id || ''
       this.user.role = role_id || ''
       this.user.name = name || ''
       this.user.email = email || ''
+      this.isInitialized = true
       
       console.log('Auth store after login - token:', this.token, 'role:', this.user.role, 'name:', this.user.name)
     },
@@ -132,6 +140,7 @@ export const useAuthStore = defineStore('auth', {
       
       this.token = ''
       this.user = { user_id: "", role: "", name: "", email: "" }
+      this.isInitialized = true // Keep initialized to prevent race conditions
       
       console.log('Auth store logged out')
     },
@@ -154,7 +163,7 @@ export const useAuthStore = defineStore('auth', {
           this.logout()
           return false
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Auth verification failed:', error)
         // Don't logout on network errors, only on auth errors
         if (error.response?.status === 401 || error.response?.status === 403) {

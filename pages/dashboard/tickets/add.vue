@@ -16,7 +16,8 @@ const newTypeName = ref('')
 const form = ref({
   customer_id: '',
   title: '',
-  description: '' as string | undefined
+  description: '' as string | undefined,
+  type: ''
 })
 
 // Keyword-based trouble type classification

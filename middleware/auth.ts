@@ -1,4 +1,7 @@
-export default defineNuxtRouteMiddleware((to, from) => {
+import { authApi } from '@/api/auth'
+import type { RouteLocationNormalized } from 'vue-router'
+
+export default defineNuxtRouteMiddleware(async (to, from) => {
   // Only run on client side to avoid SSR issues
   if (!process.client) {
     return;
@@ -11,23 +14,24 @@ export default defineNuxtRouteMiddleware((to, from) => {
     return;
   }
 
-  // Get token from cookie directly
-  const tokenCookie = useCookie('token', { default: () => '' });
-  const token = tokenCookie.value;
+  const authStore = useAuthStore();
   
-  // Simple token validation
-  const hasValidToken = token && 
-                       token !== '' && 
-                       token !== 'null' && 
-                       token !== 'undefined' &&
-                       token.length > 10;
+  // Wait for auth store to be initialized
+  if (!authStore.isInitialized) {
+    // Force initialization
+    authStore.initFromCookies();
+    
+    // Small delay to ensure initialization is complete
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
 
-  if (!hasValidToken) {
-    console.log('No valid token found, redirecting to login');
+  // Check if user is logged in using the store
+  if (!authStore.isLoggedIn) {
+    console.log('No valid authentication found, redirecting to login');
     return navigateTo(`/login?redirect=${encodeURIComponent(to.fullPath)}`);
   }
 
-  console.log('Valid token found, allowing access to:', to.path);
+  console.log('Valid authentication found, allowing access to:', to.path);
 });
 
 async function checkAuth() {
@@ -47,7 +51,7 @@ async function checkAuth() {
     } else {
       authStore.user = response.data;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("authStore cek auth error", error);
     // Don't logout immediately on network errors, just log the error
     // Only logout if it's a clear authentication error
@@ -75,7 +79,7 @@ async function checkAuthCustomer() {
     } else {
       authStore.user = response.data;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("authStore cek auth error", error);
     // Don't logout immediately on network errors, just log the error
     // Only logout if it's a clear authentication error
@@ -86,7 +90,7 @@ async function checkAuthCustomer() {
   }
 }
 
-function checkPermission(to: RouteLocationNormalizedGeneric) {
+function checkPermission(to: RouteLocationNormalized) {
   const { user } = useAuth();
 
   const restrictedForAdmins = [""];
