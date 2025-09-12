@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { companyAdminApi } from "@/api/admin/company";
 import AddCompanyForm from "./AddCompanyForm.vue";
+// Set page title
+useHead({
+  title: 'Company Management - CRM System'
+})
+
 let people: any[] = [];
 
 const page = ref(1);

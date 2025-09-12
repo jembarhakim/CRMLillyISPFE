@@ -3,6 +3,11 @@ import { reportAdminApi } from '@/api/admin/report';
 import FormInternet from './FormInternet.vue';
 
 
+// Set page title
+useHead({
+  title: 'Internet Report - CRM System'
+})
+
 const dataList = ref([
 ])
 

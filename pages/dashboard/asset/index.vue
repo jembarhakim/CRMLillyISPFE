@@ -4,6 +4,11 @@ import FormAddComponent from './AddAssetForm.vue'
 import { defaultAssets } from './asset.model'
 import { tableColumns } from './table'
 
+// Set page title
+useHead({
+  title: 'Asset Management - CRM System'
+})
+
 const page = ref(1)
 const pageCount = 5
 

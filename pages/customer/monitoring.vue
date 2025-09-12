@@ -345,6 +345,11 @@ import {
 } from '../../api/customer/monitoring'
 import { customerAdminApi } from '../../api/admin/customer'
 
+// Set page title
+useHead({
+  title: 'Network Monitoring - CRM System'
+})
+
 // Define interfaces for customer data
 interface CustomerWithStatus {
   id: string

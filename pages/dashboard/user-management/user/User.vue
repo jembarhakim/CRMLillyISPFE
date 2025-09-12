@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { userManagementAdminApi } from "@/api/admin/user-management";
 import AddUserForm from "./AddUserForm.vue";
+// Set page title
+useHead({
+  title: 'User Management - CRM System'
+})
+
 let user: any[] = [];
 const page = ref(1);
 const pageCount = 5;

@@ -3,6 +3,11 @@ import { formatIDR } from "@/helper/currency";
 import FormExpense from "./FormExpense.vue";
 import { transactionAdminApi } from "@/api/admin/transaction";
 
+// Set page title
+useHead({
+  title: 'Expense Transaction - CRM System'
+})
+
 const props = defineProps<{
   data: any[];
   onRefresh: () => Promise<void>;

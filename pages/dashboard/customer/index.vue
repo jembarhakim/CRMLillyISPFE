@@ -3,6 +3,11 @@ import FormCustomerInstallation from './FormCustomerInstallation.vue'
 import FormAddComponent from './FormAddComponent.vue'
 import CustomerDetailModal from './CustomerDetailModal.vue'
 import { customerAdminApi } from '@/api/admin/customer'
+// Set page title
+useHead({
+  title: 'Customer Management - CRM System'
+})
+
 let customer = ref<any[]>([])
 
 type Customer = {

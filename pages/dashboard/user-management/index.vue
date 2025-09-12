@@ -4,6 +4,11 @@ import User from './user/User.vue';
 
 
 
+// Set page title
+useHead({
+  title: 'User & Role Management - CRM System'
+})
+
 const tab_items = [
   {
     label: "User Management",

@@ -4,6 +4,11 @@ import { dashboardCustomerApi } from "../../api/customer/dashboard";
 import { formatDateToYMD } from "@/helper/date";
 import { use } from "echarts/core";
 
+// Set page title
+useHead({
+  title: 'Customer Dashboard - CRM System'
+})
+
 interface Customer {
   id: string;
   address: string;

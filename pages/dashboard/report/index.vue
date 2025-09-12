@@ -4,6 +4,11 @@ import FormAddComponent from "./cash-flow/FormAddComponent.vue";
 import CustomerInstallation from "./customer-installation/CustomerInstallation.vue";
 import Internet from "./internet/Internet.vue";
 
+// Set page title
+useHead({
+  title: 'Reports - CRM System'
+})
+
 const customerInstallationRef = ref();
 
 const tab_items = [

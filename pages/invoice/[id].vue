@@ -4,6 +4,11 @@ import html2canvas from "html2canvas";
 import { invoiceAdminApi } from "@/api/admin/invoice";
 import { formatDateToYMD } from "@/helper/date";
 import { formatIDR } from "@/helper/currency";
+// Set page title
+useHead({
+  title: 'Invoice Details - CRM System'
+})
+
 const props = defineProps({
   invoice: {
     type: Object,

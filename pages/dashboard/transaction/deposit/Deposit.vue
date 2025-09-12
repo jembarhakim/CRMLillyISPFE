@@ -8,6 +8,11 @@ const props = defineProps<{
   onRefresh: () => Promise<void>;
   type?: any;
 }>();
+// Set page title
+useHead({
+  title: 'Deposit Transaction - CRM System'
+})
+
 const q = ref("");
 const page = ref(1);
 const pageCount = 5;

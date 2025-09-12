@@ -5,6 +5,12 @@
 
 <script setup>
     import { useAuthStore } from "@/stores/auth";
+    
+    // Set page title
+    useHead({
+      title: 'CRM System'
+    })
+    
     const authStore = useAuthStore()
     function setToken(data) {
         authStore.token = data
