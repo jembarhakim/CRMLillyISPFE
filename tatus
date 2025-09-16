@@ -1,0 +1,144 @@
+[1mdiff --git a/pages/dashboard/invoice/FormAddInvoice.vue b/pages/dashboard/invoice/FormAddInvoice.vue[m
+[1mindex 23e9a10..b17df85 100644[m
+[1m--- a/pages/dashboard/invoice/FormAddInvoice.vue[m
+[1m+++ b/pages/dashboard/invoice/FormAddInvoice.vue[m
+[36m@@ -97,24 +97,72 @@[m [mfunction onSuccess() {[m
+   emit("success");[m
+ }[m
+ [m
+[32m+[m[32mconst isSubmitting = ref(false);[m
+[32m+[m
+ async function onSubmit(event: FormSubmitEvent<Schema>) {[m
+[31m-  // Do something with event.data[m
+[31m-  if (props.isEdit) {[m
+[31m-    invoiceAdminApi()[m
+[31m-      .editInvoice(props.data.id, state)[m
+[31m-      .then((response) => {[m
+[31m-        notification.success('Success', response.message);[m
+[31m-        onSuccess();[m
+[31m-      })[m
+[31m-      .catch((error) => { });[m
+[31m-  } else {[m
+[31m-    invoiceAdminApi()[m
+[31m-      .createInvoice(state)[m
+[31m-      .then((response) => {[m
+[31m-        notification.success('Success', response.message);[m
+[31m-        onSuccess();[m
+[31m-      })[m
+[31m-      .catch((error) => { });[m
+[32m+[m[32m  if (isSubmitting.value) {[m
+[32m+[m[32m    return; // Prevent double submission[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  isSubmitting.value = true;[m
+[32m+[m[41m  [m
+[32m+[m[32m  try {[m
+[32m+[m[32m    // Validate required fields[m
+[32m+[m[32m    if (!state.customer_id) {[m
+[32m+[m[32m      throw new Error("Customer is required");[m
+[32m+[m[32m    }[m
+[32m+[m[32m    if (!state.invoice_items || state.invoice_items.length === 0) {[m
+[32m+[m[32m      throw new Error("At least one invoice item is required");[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Validate invoice items[m
+[32m+[m[32m    for (let i = 0; i < state.invoice_items.length; i++) {[m
+[32m+[m[32m      const item = state.invoice_items[i];[m
+[32m+[m[32m      if (!item.name || !item.price || !item.qty) {[m
+[32m+[m[32m        throw new Error(`Item ${i + 1} is missing required fields (name, price, or quantity)`);[m
+[32m+[m[32m      }[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Prepare data for API[m
+[32m+[m[32m    const submitData = {[m
+[32m+[m[32m      customer_id: state.customer_id,[m
+[32m+[m[32m      amount: state.amount,[m
+[32m+[m[32m      invoice_items: state.invoice_items.map(item => ({[m
+[32m+[m[32m        name: item.name,[m
+[32m+[m[32m        price: item.price,[m
+[32m+[m[32m        qty: item.qty,[m
+[32m+[m[32m        total: item.total[m
+[32m+[m[32m      }))[m
+[32m+[m[32m    };[m
+[32m+[m[41m    [m
+[32m+[m[32m    console.log("Submitting invoice data:", submitData);[m
+[32m+[m[41m    [m
+[32m+[m[32m    if (props.isEdit) {[m
+[32m+[m[32m      const response = await invoiceAdminApi().editInvoice(props.data.id, submitData);[m
+[32m+[m[32m      useToast().add({[m[41m [m
+[32m+[m[32m        title: "Success",[m[41m [m
+[32m+[m[32m        description: response.message || "Invoice updated successfully",[m
+[32m+[m[32m        color: "green"[m
+[32m+[m[32m      });[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      const response = await invoiceAdminApi().createInvoice(submitData);[m
+[32m+[m[32m      useToast().add({[m[41m [m
+[32m+[m[32m        title: "Success",[m[41m [m
+[32m+[m[32m        description: response.message || "Invoice created successfully",[m
+[32m+[m[32m        color: "green"[m
+[32m+[m[32m      });[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    onSuccess();[m
+[32m+[m[32m  } catch (error: any) {[m
+[32m+[m[32m    console.error("Invoice submission error:", error);[m
+[32m+[m[32m    useToast().add({[m
+[32m+[m[32m      title: "Error",[m
+[32m+[m[32m      description: error.message || "Failed to save invoice",[m
+[32m+[m[32m      color: "red"[m
+[32m+[m[32m    });[m
+[32m+[m[32m  } finally {[m
+[32m+[m[32m    isSubmitting.value = false;[m
+   }[m
+ }[m
+ [m
+[36m@@ -199,8 +247,13 @@[m [mwatch([m
+           // Update total amount[m
+           state.amount = state.invoice_items.reduce((acc, item) => acc + item.total, 0);[m
+           [m
+[31m-          // Show success message[m
+[31m-          notification.success('Success', `Product "${product.name}" auto-filled from customer's package`);[m
+[32m+[m[32m          // Show success message with timeout to prevent UI blocking[m
+[32m+[m[32m          useToast().add({[m
+[32m+[m[32m            title: 'Success',[m
+[32m+[m[32m            description: `Product "${product.name}" auto-filled from customer's package`,[m
+[32m+[m[32m            color: 'green',[m
+[32m+[m[32m            timeout: 3000[m
+[32m+[m[32m          });[m
+         } else {[m
+           // If customer has no product, reset to empty[m
+           state.invoice_items = [{[m
+[36m@@ -211,11 +264,20 @@[m [mwatch([m
+           }];[m
+           state.amount = 0;[m
+           [m
+[31m-          notification.warning('Warning', 'Customer has no product package assigned');[m
+[32m+[m[32m          useToast().add({[m
+[32m+[m[32m            title: 'Warning',[m
+[32m+[m[32m            description: 'Customer has no product package assigned',[m
+[32m+[m[32m            color: 'yellow',[m
+[32m+[m[32m            timeout: 3000[m
+[32m+[m[32m          });[m
+         }[m
+       } catch (error) {[m
+         console.error('Failed to fetch customer detail:', error);[m
+[31m-        notification.error('Error', 'Failed to load customer product information');[m
+[32m+[m[32m        useToast().add({[m
+[32m+[m[32m          title: 'Error',[m
+[32m+[m[32m          description: 'Failed to load customer product information',[m
+[32m+[m[32m          color: 'red'[m
+[32m+[m[32m        });[m
+       }[m
+     } else {[m
+       // Reset when no customer is selected[m
+[36m@@ -322,7 +384,9 @@[m [mwatch([m
+         <UFormGroup>[m
+           <UButton @click="addItem" variant="outline">Tambah Item</UButton>[m
+         </UFormGroup>[m
+[31m-        <UButton type="submit"> Submit </UButton>[m
+[32m+[m[32m        <UButton type="submit" :loading="isSubmitting" :disabled="isSubmitting">[m
+[32m+[m[32m          {{ isSubmitting ? 'Submitting...' : 'Submit' }}[m
+[32m+[m[32m        </UButton>[m
+       </UForm>[m
+     </div>[m
+   </UModal>[m

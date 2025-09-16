@@ -4,6 +4,7 @@ import type { FormSubmitEvent } from "#ui/types";
 import { customerAdminApi } from "@/api/admin/customer";
 import { invoiceAdminApi } from "@/api/admin/invoice";
 import { internetPackageAdminApi } from "@/api/admin/internet-package";
+import { useNotification } from '@/composables/useNotification';
 
 const props = defineProps({
   isEdit: {
@@ -24,6 +25,7 @@ const props = defineProps({
     }),
   },
 });
+const notification = useNotification();
 const loadingProduct = ref(false);
 
 const schema = object({
@@ -101,7 +103,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     invoiceAdminApi()
       .editInvoice(props.data.id, state)
       .then((response) => {
-        useToast().add({ title: response.message });
+        notification.success('Success', response.message);
         onSuccess();
       })
       .catch((error) => { });
@@ -109,7 +111,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     invoiceAdminApi()
       .createInvoice(state)
       .then((response) => {
-        useToast().add({ title: response.message });
+        notification.success('Success', response.message);
         onSuccess();
       })
       .catch((error) => { });
@@ -198,11 +200,7 @@ watch(
           state.amount = state.invoice_items.reduce((acc, item) => acc + item.total, 0);
           
           // Show success message
-          useToast().add({
-            title: 'Success',
-            description: `Product "${product.name}" auto-filled from customer's package`,
-            color: 'green'
-          });
+          notification.success('Success', `Product "${product.name}" auto-filled from customer's package`);
         } else {
           // If customer has no product, reset to empty
           state.invoice_items = [{
@@ -213,19 +211,11 @@ watch(
           }];
           state.amount = 0;
           
-          useToast().add({
-            title: 'Warning',
-            description: 'Customer has no product package assigned',
-            color: 'yellow'
-          });
+          notification.warning('Warning', 'Customer has no product package assigned');
         }
       } catch (error) {
         console.error('Failed to fetch customer detail:', error);
-        useToast().add({
-          title: 'Error',
-          description: 'Failed to load customer product information',
-          color: 'red'
-        });
+        notification.error('Error', 'Failed to load customer product information');
       }
     } else {
       // Reset when no customer is selected

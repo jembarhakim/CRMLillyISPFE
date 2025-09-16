@@ -3,6 +3,7 @@ import FormCustomerInstallation from './FormCustomerInstallation.vue'
 import FormAddComponent from './FormAddComponent.vue'
 import CustomerDetailModal from './CustomerDetailModal.vue'
 import { customerAdminApi } from '@/api/admin/customer'
+import { useNotification } from '@/composables/useNotification'
 // Set page title
 useHead({
   title: 'Customer Management - CRM System'
@@ -34,24 +35,16 @@ async function getData() {
 
         customer.value = [...response.data]
     }).catch((err) => {
-        useToast().add({
-            title: err,
-            color: "red"
-        })
+        notification.error('Error', err)
     })
 }
 
 async function deleteData(id: string) {
     await customerAdminApi().deleteCustomer(id).then((response) => {
         getData()
-        useToast().add({
-            title: response.message,
-        })
+        notification.success('Success', response.message)
     }).catch((err) => {
-        useToast().add({
-            title: err,
-            color: "red"
-        })
+        notification.error('Error', err)
     })
 }
 
@@ -149,7 +142,7 @@ const items = (row: Customer) => [
     }]
 ]
 
-const toast = useToast()
+const notification = useNotification()
 const modal = useModal()
 
 function OpenModalAddCustomer(isEdit: boolean, data: any) {
@@ -169,10 +162,7 @@ function OpenModalReportInstallation(isEdit: boolean, data: any) {
         data,
         async onSuccess() {
             await getData()
-            toast.add({
-                title: 'Success !',
-                id: 'modal-success'
-            })
+            notification.success('Success!', 'Customer data updated successfully')
             modal.close()
         }
     })

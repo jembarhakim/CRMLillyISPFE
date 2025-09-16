@@ -3,11 +3,14 @@ import { defaultAreaData, type Area } from "./area.model";
 import AddAreaFrom from "./AddAreaForm.vue";
 import { areaAdminApi } from "@/api/admin/area";
 import AddAreaForm from "./AddAreaForm.vue";
+import { useNotification } from '@/composables/useNotification';
 
 // Set page title
 useHead({
   title: 'Area Management - CRM System'
 })
+
+const notification = useNotification();
 
 const area = ref<any[]>([]);
 const areaList = computed(()=>{
@@ -87,9 +90,11 @@ function openModal(isEdit: boolean, data: any) {
 
 async function deleteData(id: string){
   await areaAdminApi().deleteArea(id).then((response) => {
+    notification.success('Success', 'Area deleted successfully')
     fetchData()
-  }).catch((error) => { })
-  
+  }).catch((error) => {
+    notification.error('Error', 'Failed to delete area')
+  })
 }
 </script>
 

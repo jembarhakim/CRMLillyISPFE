@@ -2,6 +2,7 @@
 import type { FormError, FormErrorEvent, FormSubmitEvent } from '#ui/types'
 import { authApi } from '@/api/auth'
 import { authCustomerApi } from '@/api/customer/auth'
+import LoginNotification from '@/components/LoginNotification.vue'
 
 // Set page title
 useHead({
@@ -12,6 +13,9 @@ const state = reactive({
   email: '',
   password: ''
 })
+
+const showError = ref(false)
+const errorMessage = ref('')
 
 const validate = (state: any): FormError[] => {
   const errors = []
@@ -44,10 +48,11 @@ async function onSubmitEmployee(event: FormSubmitEvent<any>) {
     navigateTo('/dashboard')
   } catch (error: any) {
     console.error('Login error:', error)
-    useToast().add({
-      title: error.message || 'Login failed',
-      color: "red"
-    })
+    
+    // Show generic error message for all login errors
+    errorMessage.value = 'Wrong email or password'
+    
+    showError.value = true
   }
 
   console.log(event.data)
@@ -65,10 +70,11 @@ async function onSubmitCustomer(event: FormSubmitEvent<any>) {
     })
     .catch((error) => {
       console.log(error, "apa ini")
-      useToast().add({
-        title: error,
-        color: "red"
-      })
+      
+      // Show generic error message for all login errors
+      errorMessage.value = 'Wrong email or password'
+      
+      showError.value = true
     })
 
   console.log(event.data)
@@ -77,6 +83,11 @@ async function onError(event: FormErrorEvent) {
   const element = document.getElementById(event.errors[0].id)
   element?.focus()
   element?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
+function closeError() {
+  showError.value = false
+  errorMessage.value = ''
 }
 
 const items = [{
@@ -104,6 +115,11 @@ const items = [{
       <UTabs :items="items" class="w-full">
         <template #item="{ item }">
           <div v-if="item.key === 'customer'" class="space-y-3">
+            <LoginNotification 
+              :show="showError" 
+              :message="errorMessage" 
+              @close="closeError" 
+            />
              <UForm :validate="validate" :state="state" class="space-y-6" @submit="onSubmitCustomer" @error="onError">
               <UFormGroup name="email">
                 <h1 class="mb-1 text-xl font-semibold text-white animate-fade-in-up">No. Handphone</h1>
@@ -122,6 +138,11 @@ const items = [{
             </UForm>
           </div>
           <div v-if="item.key === 'employee'" class="space-y-3">
+            <LoginNotification 
+              :show="showError" 
+              :message="errorMessage" 
+              @close="closeError" 
+            />
             <UForm :validate="validate" :state="state" class="space-y-6" @submit="onSubmitEmployee" @error="onError">
               <UFormGroup name="email">
                 <h1 class="mb-1 text-xl font-semibold text-white animate-fade-in-up">Email</h1>

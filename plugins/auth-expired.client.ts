@@ -10,12 +10,9 @@ export default defineNuxtPlugin((nuxtApp) => {
 					auth.logout()
 				} catch {}
 				try {
-					const toast = useToast()
-					toast.add({
-						title: 'Session expired',
-						description: 'Your session has expired. Please log in again.',
-						color: 'amber'
-					})
+					const { useNotification } = await import('@/composables/useNotification')
+					const notification = useNotification()
+					notification.warning('Session expired', 'Your session has expired. Please log in again.', 5000)
 				} catch {}
 				try { navigateTo('/login') } catch {}
 			}
