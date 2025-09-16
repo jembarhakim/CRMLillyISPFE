@@ -4,6 +4,7 @@ import type { FormSubmitEvent } from "#ui/types";
 import { customerAdminApi } from "@/api/admin/customer";
 import { invoiceAdminApi } from "@/api/admin/invoice";
 import { internetPackageAdminApi } from "@/api/admin/internet-package";
+import { useNotification } from '@/composables/useNotification';
 
 const props = defineProps({
   isEdit: {
@@ -24,6 +25,7 @@ const props = defineProps({
     }),
   },
 });
+const notification = useNotification();
 const loadingProduct = ref(false);
 
 const schema = object({
@@ -162,6 +164,25 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   } finally {
     isSubmitting.value = false;
   }
+  
+  // Do something with event.data
+  if (props.isEdit) {
+    invoiceAdminApi()
+      .editInvoice(props.data.id, state)
+      .then((response) => {
+        notification.success('Success', response.message);
+        onSuccess();
+      })
+      .catch((error) => { });
+  } else {
+    invoiceAdminApi()
+      .createInvoice(state)
+      .then((response) => {
+        notification.success('Success', response.message);
+        onSuccess();
+      })
+      .catch((error) => { });
+  }
 }
 
 const customer = ref([]);
@@ -252,6 +273,8 @@ watch(
             color: 'green',
             timeout: 3000
           });
+          // Show success message
+          notification.success('Success', `Product "${product.name}" auto-filled from customer's package`);
         } else {
           // If customer has no product, reset to empty
           state.invoice_items = [{
@@ -262,6 +285,7 @@ watch(
           }];
           state.amount = 0;
           
+          notification.warning('Warning', 'Customer has no product package assigned');
           useToast().add({
             title: 'Warning',
             description: 'Customer has no product package assigned',
@@ -277,6 +301,7 @@ watch(
           color: 'red',
           timeout: 3000
         });
+        notification.error('Error', 'Failed to load customer product information');
       }
     } else {
       // Reset when no customer is selected
