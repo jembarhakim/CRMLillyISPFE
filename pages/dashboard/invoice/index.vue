@@ -73,6 +73,11 @@ async function getData() {
       customer.value = [...response.data];
     })
     .catch((err) => {
+      const message = typeof err === 'string' ? err : err?.message || 'Terjadi kesalahan';
+      useToast().add({
+        title: message,
+        color: "red",
+      });
       notification.error('Error', err);
     });
 }
@@ -114,8 +119,9 @@ async function proceedWithStatusUpdate(id: string, status: string, currentStatus
     
     return response;
   } catch (err: any) {
+    const message = typeof err === 'string' ? err : err?.message || 'Terjadi kesalahan';
     useToast().add({
-      title: err,
+      title: message,
       color: "red",
     });
     
@@ -295,6 +301,11 @@ async function sendWhatsapp(number: string, id: string) {
       notification.success('Success', response.message);
     })
     .catch((err) => {
+      const message = typeof err === 'string' ? err : err?.message || 'Gagal mengirim WhatsApp';
+      useToast().add({
+        title: message,
+        color: "red",
+      });
       notification.error('Error', err);
     });
 }
@@ -495,7 +506,7 @@ function handlePaymentSuccess() {
       
       <!-- Status Filter -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
+        <label class="block text sm font-medium text-gray-700 mb-1">Filter by Status</label>
         <USelectMenu 
           v-model="statusFilter" 
           :options="[

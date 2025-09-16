@@ -139,6 +139,7 @@ export const userManagementAdminApi = () => {
     createRole: async (
       data: CreateRoleRequest = {
         name: "",
+        permissions: []
       }
     ) => {
       const response = await fetch(`${api}/api/admin/role`, {
@@ -160,6 +161,7 @@ export const userManagementAdminApi = () => {
       roleId: string,
       data: CreateRoleRequest = {
         name: "",
+        permissions: []
       }
     ) => {
       const response = await fetch(`${api}/api/admin/role/${roleId}`, {

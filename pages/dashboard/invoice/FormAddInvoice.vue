@@ -4,7 +4,6 @@ import type { FormSubmitEvent } from "#ui/types";
 import { customerAdminApi } from "@/api/admin/customer";
 import { invoiceAdminApi } from "@/api/admin/invoice";
 import { internetPackageAdminApi } from "@/api/admin/internet-package";
-import { useNotification } from '@/composables/useNotification';
 
 const props = defineProps({
   isEdit: {
@@ -25,7 +24,6 @@ const props = defineProps({
     }),
   },
 });
-const notification = useNotification();
 const loadingProduct = ref(false);
 
 const schema = object({
@@ -97,24 +95,72 @@ function onSuccess() {
   emit("success");
 }
 
+const isSubmitting = ref(false);
+
 async function onSubmit(event: FormSubmitEvent<Schema>) {
-  // Do something with event.data
-  if (props.isEdit) {
-    invoiceAdminApi()
-      .editInvoice(props.data.id, state)
-      .then((response) => {
-        notification.success('Success', response.message);
-        onSuccess();
-      })
-      .catch((error) => { });
-  } else {
-    invoiceAdminApi()
-      .createInvoice(state)
-      .then((response) => {
-        notification.success('Success', response.message);
-        onSuccess();
-      })
-      .catch((error) => { });
+  if (isSubmitting.value) {
+    return; // Prevent double submission
+  }
+  
+  isSubmitting.value = true;
+  
+  try {
+    // Validate required fields
+    if (!state.customer_id) {
+      throw new Error("Customer is required");
+    }
+    if (!state.invoice_items || state.invoice_items.length === 0) {
+      throw new Error("At least one invoice item is required");
+    }
+    
+    // Validate invoice items
+    for (let i = 0; i < state.invoice_items.length; i++) {
+      const item = state.invoice_items[i];
+      if (!item.name || !item.price || !item.qty) {
+        throw new Error(`Item ${i + 1} is missing required fields (name, price, or quantity)`);
+      }
+    }
+    
+    // Prepare data for API
+    const submitData = {
+      customer_id: state.customer_id,
+      amount: state.amount,
+      invoice_items: state.invoice_items.map(item => ({
+        name: item.name,
+        price: item.price,
+        qty: item.qty,
+        total: item.total
+      }))
+    };
+    
+    console.log("Submitting invoice data:", submitData);
+    
+    if (props.isEdit) {
+      const response = await invoiceAdminApi().editInvoice(props.data.id, submitData);
+      useToast().add({ 
+        title: "Success", 
+        description: response.message || "Invoice updated successfully",
+        color: "green"
+      });
+    } else {
+      const response = await invoiceAdminApi().createInvoice(submitData);
+      useToast().add({ 
+        title: "Success", 
+        description: response.message || "Invoice created successfully",
+        color: "green"
+      });
+    }
+    
+    onSuccess();
+  } catch (error: any) {
+    console.error("Invoice submission error:", error);
+    useToast().add({
+      title: "Error",
+      description: error.message || "Failed to save invoice",
+      color: "red"
+    });
+  } finally {
+    isSubmitting.value = false;
   }
 }
 
@@ -147,7 +193,7 @@ function search(q: any) {
   return [q]
 }
 
-await internetPackageAdminApi()
+internetPackageAdminApi()
   .getAllInternetPacket()
   .then((response) => {
     productOptions.value = response.data.map((value: any, index: number) => value.name);
@@ -161,7 +207,7 @@ await internetPackageAdminApi()
   .finally(() => {
     loadingProduct.value = false;
   });
-await getDataOptions();
+getDataOptions();
 
 function checkProductIsExist(name: string, index: number) {
   const product = productOptionsD.value.find((option: any) => option.label === name);
@@ -199,8 +245,13 @@ watch(
           // Update total amount
           state.amount = state.invoice_items.reduce((acc, item) => acc + item.total, 0);
           
-          // Show success message
-          notification.success('Success', `Product "${product.name}" auto-filled from customer's package`);
+          // Show success message with timeout to prevent UI blocking
+          useToast().add({
+            title: 'Success',
+            description: `Product "${product.name}" auto-filled from customer's package`,
+            color: 'green',
+            timeout: 3000
+          });
         } else {
           // If customer has no product, reset to empty
           state.invoice_items = [{
@@ -211,11 +262,21 @@ watch(
           }];
           state.amount = 0;
           
-          notification.warning('Warning', 'Customer has no product package assigned');
+          useToast().add({
+            title: 'Warning',
+            description: 'Customer has no product package assigned',
+            color: 'yellow',
+            timeout: 3000
+          });
         }
       } catch (error) {
         console.error('Failed to fetch customer detail:', error);
-        notification.error('Error', 'Failed to load customer product information');
+        useToast().add({
+          title: 'Error',
+          description: 'Failed to load customer product information',
+          color: 'red',
+          timeout: 3000
+        });
       }
     } else {
       // Reset when no customer is selected
@@ -258,7 +319,7 @@ watch(
             </div>
             <div>
               <label class="block text-sm font-medium text-blue-700">Package Price</label>
-              <p class="mt-1 text-sm text-blue-900">{{ selectedCustomerDetail.customer.product?.price ? `Rp ${selectedCustomerDetail.customer.product.price.toLocaleString()}` : 'No price' }}</p>
+               <p class="mt-1 text-sm text-blue-900">{{ selectedCustomerDetail.customer.product?.price ? `Rp ${selectedCustomerDetail.customer.product.price.toLocaleString()}` : 'No price' }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-blue-700">Installation Date</label>
@@ -270,7 +331,7 @@ watch(
           <UInput v-model="state.amount" type="number" />
         </UFormGroup>
         <div v-for="(item, index) in state.invoice_items" :key="index" class="space-y-4">
-          <UFormGroup :label="`Product ${index + 1} Name`" :name="`item-name-${index}`">
+           <UFormGroup :label="`Product ${index + 1} Name`" :name="`item-name-${index}`">
             <div class="relative">
               <!-- For first item (index 0), show as read-only input when customer is selected -->
               <UInput 
@@ -322,7 +383,9 @@ watch(
         <UFormGroup>
           <UButton @click="addItem" variant="outline">Tambah Item</UButton>
         </UFormGroup>
-        <UButton type="submit"> Submit </UButton>
+        <UButton type="submit" :loading="isSubmitting" :disabled="isSubmitting">
+          {{ isSubmitting ? 'Submitting...' : 'Submit' }}
+        </UButton>
       </UForm>
     </div>
   </UModal>

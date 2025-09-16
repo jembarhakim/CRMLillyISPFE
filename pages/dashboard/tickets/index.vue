@@ -536,11 +536,54 @@ async function nocPhysicalFromModal() {
   }
 }
 
+// Compress an image file to target max size using canvas
+async function compressImageFile(file: File, maxBytes: number): Promise<File> {
+  try {
+    // Skip compression for non-images
+    if (!file.type.startsWith('image/')) return file
+    // Already small enough
+    if (file.size <= maxBytes) return file
+
+    const bitmap = await createImageBitmap(file)
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')!
+
+    // Scale down if image is huge; keep aspect ratio
+    const maxDim = 2000 // cap the longest side to limit memory
+    let { width, height } = bitmap
+    const ratio = Math.min(1, maxDim / Math.max(width, height))
+    width = Math.round(width * ratio)
+    height = Math.round(height * ratio)
+    canvas.width = width
+    canvas.height = height
+    ctx.drawImage(bitmap, 0, 0, width, height)
+
+    // Binary search quality to fit under maxBytes
+    let low = 0.5, high = 0.92, bestBlob: Blob | null = null
+    for (let i = 0; i < 6; i++) {
+      const q = (low + high) / 2
+      const blob = await new Promise<Blob>(res => canvas.toBlob(b => res(b || new Blob()), 'image/jpeg', q))
+      if (blob.size > 0 && blob.size <= maxBytes) { bestBlob = blob; high = q } else { low = q }
+    }
+    const out = bestBlob || await new Promise<Blob>(res => canvas.toBlob(b => res(b || new Blob()), 'image/jpeg', 0.85))
+    // If still larger, accept and let backend reject
+    if (out.size >= file.size) return file
+    return new File([out], file.name.replace(/\.(png|jpeg|jpg|webp)$/i, '.jpg'), { type: 'image/jpeg' })
+  } catch {
+    return file
+  }
+}
+
 async function sendTechnicianNoteFromModal() {
   if (!selectedId.value) return;
   try {
     technicianNoteSubmitting.value = true
-    await ticketsApi().addTechnicianNote(selectedId.value, technicianNote.value, imgTechBfFile.value || undefined, imgTechAfFile.value || undefined)
+    // Compress files to <= 9.5MB to stay below backend 10MB/file
+    const limit = 9.5 * 1024 * 1024
+    const bf = imgTechBfFile.value ? await compressImageFile(imgTechBfFile.value, limit) : undefined
+    const af = imgTechAfFile.value ? await compressImageFile(imgTechAfFile.value, limit) : undefined
+
+    await ticketsApi().addTechnicianNote(selectedId.value, technicianNote.value, bf, af)
     showTechnicianNoteModal.value = false
     // feedback
     notification.success('Technician Note Added', 'Note has been added successfully.', 3000)
@@ -653,7 +696,7 @@ const getTicketActions = (ticket: any) => {
         color: 'bg-orange-600',
         action: () => { actPrepareTechnicianNote(ticket) },
         show: isTechnician.value && 
-          (ticket.current_assignee_name === 'TECHNICIAN' || ticket.current_assignee_name === authStore.user?.user_id) &&
+          (ticket.current_assignee_name === 'TECHNICIAN' || ticket.current_assignee_name === 'ADMIN' || ticket.current_assignee_name === authStore.user?.user_id) &&
           ticket.status !== 'finished',
         tooltip: 'Add technician note and upload before/after images'
       },
@@ -842,15 +885,18 @@ const saveNewType = async () => {
   }
 }
 
+let selectedCSFile: File | undefined
+
 async function handleImageUpload(event: Event) {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   if (file) {
     try {
+      selectedCSFile = file
       // Upload file using existing API
       const uploadData = {
         name: `ticket_cs_${Date.now()}`,
-        path: 'tickets/cs',
+        path: 'cs-images',
         file: file
       }
       
@@ -893,13 +939,23 @@ async function createTicket() {
       classifiedType = classifyTroubleType(textToAnalyze)
     }
     
-    await ticketsApi().create({
+    const created: any = await ticketsApi().create({
       customer_id: String(form.value.customer_id),
       title: form.value.title,
       description: form.value.description,
       type: classifiedType,
       img_cs: form.value.img_cs,
     })
+
+    // Immediately send to NOC with description as note and attached image file
+    try {
+      const newId = created?.data?.id || created?.id
+      if (newId) {
+        await ticketsApi().sendToNOC(Number(newId), form.value.description || form.value.title || '', selectedCSFile)
+      }
+    } catch (e) {
+      console.warn('sendToNOC after create failed:', e)
+    }
     showAdd.value = false
     form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', img_cs: '' }
     notification.success('Success!', 'Ticket created successfully', 3000)
@@ -994,7 +1050,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                <colgroup>
                  <col class="w-16">
                  <col class="w-32">
-                 <col class="w-48">
+                 <col class="w-64">
                  <col class="w-24">
                  <col class="w-24">
                  <col class="w-32">
@@ -1006,11 +1062,12 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                 <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
                     <th class="p-2 w-16">ID</th>
                     <th class="p-2 w-32">Customer</th>
-                    <th class="p-2 w-48">Title</th>
+                    <th class="p-2 w-64">Title</th>
+                    <th class="p-2 w-64">Description</th>
                     <th class="p-2 w-24">Type</th>
                     <th class="p-2 w-24">Status</th>
                     <th class="p-2 w-32">Assignee</th>
-                    <th class="p-2 w-64">Notes</th>
+                    <th class="p-2 w-32">Notes</th>
                     <th class="p-2 w-32">Images</th>
                     <th class="p-2 w-32">Actions</th>
                 </tr>
@@ -1020,7 +1077,8 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                   <td class="p-2">{{ r.id }}</td>
                     <td class="p-2 font-medium text-blue-600">{{ r.customer_name || 'Unknown Customer' }}</td>
                   <td class="p-2">{{ r.title }}</td>
-                    <td class="p-2 capitalize">{{ r.type_name || r.type }}</td>
+                    <td class="p-2 text-gray-700 max-w-xs truncate" :title="r.description || ''">{{ r.description || '-' }}</td>
+                  <td class="p-2 capitalize">{{ r.type_name || r.type }}</td>
                   <td class="p-2 capitalize">{{ r.status }}</td>
                     <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
                                      <td class="p-2 max-w-xs">
@@ -1156,7 +1214,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
               <input type="file" @change="handleImageUpload" accept="image/*"
                 class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none" />
                              <div v-if="form.img_cs" class="mt-2">
-                 <img :src="`${useApiHost()}/uploads/tickets/cs/${form.img_cs}`" alt="Preview" class="w-32 h-32 object-cover rounded border" />
+                 <img :src="`${useApiHost()}/uploads/cs-images/${form.img_cs}`" alt="Preview" class="w-32 h-32 object-cover rounded border" />
                </div>
             </div>
           </div>
@@ -1261,12 +1319,12 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
       <!-- Modal Technician Note -->
       <div v-if="showTechnicianNoteModal" class="fixed inset-0 z-50 flex items-center justify-center">
         <div class="absolute inset-0 bg-black/60" @click="showTechnicianNoteModal = false"></div>
-        <div class="relative w-full max-w-lg mx-4 rounded-xl shadow-xl bg-white p-6">
-          <div class="flex items-center justify-between mb-4">
+        <div class="relative w-full max-w-lg mx-4 rounded-xl shadow-xl bg-white p-0 max-h-[90vh] overflow-hidden">
+          <div class="flex items-center justify-between px-6 py-4 border-b">
             <h2 class="text-xl font-semibold text-gray-900">Add Technician Note & Images</h2>
             <button class="text-gray-400 hover:text-gray-600" @click="showTechnicianNoteModal = false">✕</button>
           </div>
-          <div class="space-y-4">
+          <div class="space-y-4 px-6 py-4 overflow-y-auto" style="max-height: calc(90vh - 120px)">
             <div class="p-3 rounded bg-gray-50 border">
               <div class="text-sm text-gray-700"><span class="font-medium">Customer:</span> {{ selectedTicket?.customer_name || '-' }}</div>
               <div class="text-xs text-gray-600 mt-1">
@@ -1323,7 +1381,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
               </div>
             </div>
           </div>
-          <div class="mt-6 flex justify-end gap-2">
+          <div class="px-6 py-4 border-t flex justify-end gap-2">
             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700"
               @click="showTechnicianNoteModal = false">Cancel</button>
             <button class="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50"

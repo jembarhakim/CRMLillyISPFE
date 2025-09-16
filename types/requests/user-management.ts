@@ -10,4 +10,5 @@ export type CreateUserRequest = {
 
   export type CreateRoleRequest = {
   name: String,
+  permissions: String[]
   }
