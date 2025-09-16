@@ -95,24 +95,72 @@ function onSuccess() {
   emit("success");
 }
 
+const isSubmitting = ref(false);
+
 async function onSubmit(event: FormSubmitEvent<Schema>) {
-  // Do something with event.data
-  if (props.isEdit) {
-    invoiceAdminApi()
-      .editInvoice(props.data.id, state)
-      .then((response) => {
-        useToast().add({ title: response.message });
-        onSuccess();
-      })
-      .catch((error) => { });
-  } else {
-    invoiceAdminApi()
-      .createInvoice(state)
-      .then((response) => {
-        useToast().add({ title: response.message });
-        onSuccess();
-      })
-      .catch((error) => { });
+  if (isSubmitting.value) {
+    return; // Prevent double submission
+  }
+  
+  isSubmitting.value = true;
+  
+  try {
+    // Validate required fields
+    if (!state.customer_id) {
+      throw new Error("Customer is required");
+    }
+    if (!state.invoice_items || state.invoice_items.length === 0) {
+      throw new Error("At least one invoice item is required");
+    }
+    
+    // Validate invoice items
+    for (let i = 0; i < state.invoice_items.length; i++) {
+      const item = state.invoice_items[i];
+      if (!item.name || !item.price || !item.qty) {
+        throw new Error(`Item ${i + 1} is missing required fields (name, price, or quantity)`);
+      }
+    }
+    
+    // Prepare data for API
+    const submitData = {
+      customer_id: state.customer_id,
+      amount: state.amount,
+      invoice_items: state.invoice_items.map(item => ({
+        name: item.name,
+        price: item.price,
+        qty: item.qty,
+        total: item.total
+      }))
+    };
+    
+    console.log("Submitting invoice data:", submitData);
+    
+    if (props.isEdit) {
+      const response = await invoiceAdminApi().editInvoice(props.data.id, submitData);
+      useToast().add({ 
+        title: "Success", 
+        description: response.message || "Invoice updated successfully",
+        color: "green"
+      });
+    } else {
+      const response = await invoiceAdminApi().createInvoice(submitData);
+      useToast().add({ 
+        title: "Success", 
+        description: response.message || "Invoice created successfully",
+        color: "green"
+      });
+    }
+    
+    onSuccess();
+  } catch (error: any) {
+    console.error("Invoice submission error:", error);
+    useToast().add({
+      title: "Error",
+      description: error.message || "Failed to save invoice",
+      color: "red"
+    });
+  } finally {
+    isSubmitting.value = false;
   }
 }
 
@@ -197,11 +245,12 @@ watch(
           // Update total amount
           state.amount = state.invoice_items.reduce((acc, item) => acc + item.total, 0);
           
-          // Show success message
+          // Show success message with timeout to prevent UI blocking
           useToast().add({
             title: 'Success',
             description: `Product "${product.name}" auto-filled from customer's package`,
-            color: 'green'
+            color: 'green',
+            timeout: 3000
           });
         } else {
           // If customer has no product, reset to empty
@@ -216,7 +265,8 @@ watch(
           useToast().add({
             title: 'Warning',
             description: 'Customer has no product package assigned',
-            color: 'yellow'
+            color: 'yellow',
+            timeout: 3000
           });
         }
       } catch (error) {
@@ -224,7 +274,8 @@ watch(
         useToast().add({
           title: 'Error',
           description: 'Failed to load customer product information',
-          color: 'red'
+          color: 'red',
+          timeout: 3000
         });
       }
     } else {
@@ -332,7 +383,9 @@ watch(
         <UFormGroup>
           <UButton @click="addItem" variant="outline">Tambah Item</UButton>
         </UFormGroup>
-        <UButton type="submit"> Submit </UButton>
+        <UButton type="submit" :loading="isSubmitting" :disabled="isSubmitting">
+          {{ isSubmitting ? 'Submitting...' : 'Submit' }}
+        </UButton>
       </UForm>
     </div>
   </UModal>
