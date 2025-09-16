@@ -2,6 +2,11 @@
 import type { FormError, FormErrorEvent, FormSubmitEvent } from '#ui/types'
 import { authApi } from '@/api/auth'
 
+// Set page title
+useHead({
+  title: 'Customer Login - CRM System'
+})
+
 const state = reactive({
   email: '',
   password: ''

@@ -42,6 +42,11 @@ import { useRolePermissions } from '@/composables/useRolePermissions'
 const authStore = useAuthStore()
 const { userRole, isAdmin, isCustomerService, isNOC, isTechnician } = useRolePermissions()
 
+// Set page title
+useHead({
+  title: 'Trouble Tickets - CRM System'
+})
+
 // Debug logging for role detection
 console.log('Auth store user role:', authStore.user?.role)
 console.log('Normalized user role:', userRole.value)

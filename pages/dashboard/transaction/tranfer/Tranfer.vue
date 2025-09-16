@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { formatIDR } from "@/helper/currency";
+// Set page title
+useHead({
+  title: 'Transfer Transaction - CRM System'
+})
+
 const props = defineProps<{
   data: { name: string; amount: number }[]
 }>()

@@ -243,6 +243,11 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useApiHost } from '~/composables/useApiHost'
 import { useAuthStore } from '~/stores/auth'
 
+// Set page title
+useHead({
+  title: 'MikroTik Monitoring - CRM System'
+})
+
 // API configuration
 const apiHost = useApiHost()
 const authStore = useAuthStore()

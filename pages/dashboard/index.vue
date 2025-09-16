@@ -9,6 +9,11 @@ definePageMeta({
   middleware: 'auth'
 })
 
+// Set page title
+useHead({
+  title: 'Dashboard - CRM System'
+})
+
 
 let invoices = ref<any[]>([]);
 const latestDeposites = ref<any[]>([]);

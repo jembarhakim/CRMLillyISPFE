@@ -6,6 +6,11 @@ import Expense from "./expense/Expense.vue";
 import Tranfer from "./tranfer/Tranfer.vue";
 import ViewTransaction from "./view-transaction/ViewTransaction.vue";
 import { accountAdminApi } from "@/api/admin/account";
+// Set page title
+useHead({
+  title: 'Transaction Management - CRM System'
+})
+
 const activeTab = ref(0);
 
 let transaction: any[] = [];

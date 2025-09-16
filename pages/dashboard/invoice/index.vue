@@ -5,6 +5,11 @@ import PartialPaymentModal from "./PartialPaymentModal.vue";
 import * as currency from "@/helper/currency";
 import type { UpdateStatusInvoiceRequest } from "@/types/requests/invoice";
 import { WhatsappApi } from "@/api/admin/wa";
+// Set page title
+useHead({
+  title: 'Invoice Management - CRM System'
+})
+
 let customer = ref<any[]>([]);
 
 // Partial payment modal state

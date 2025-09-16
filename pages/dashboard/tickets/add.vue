@@ -4,6 +4,11 @@ import { ticketsApi } from '@/api/tickets'
 import { customerAdminApi } from '@/api/admin/customer'
 import { areaAdminApi } from '@/api/admin/area'
 
+// Set page title
+useHead({
+  title: 'Add Trouble Ticket - CRM System'
+})
+
 const loading = ref(true)
 const customers = ref<{id:string, name:string, area?:{id:string, name_city:string, name_subdistrict:string, name_village:string}, area_id?:string, areaId?:string}[]>([])
 const allCustomers = ref<{id:string, name:string, area?:{id:string, name_city:string, name_subdistrict:string, name_village:string}, area_id?:string, areaId?:string}[]>([])

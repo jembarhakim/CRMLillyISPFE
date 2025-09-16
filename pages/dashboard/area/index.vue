@@ -4,6 +4,11 @@ import AddAreaFrom from "./AddAreaForm.vue";
 import { areaAdminApi } from "@/api/admin/area";
 import AddAreaForm from "./AddAreaForm.vue";
 
+// Set page title
+useHead({
+  title: 'Area Management - CRM System'
+})
+
 const area = ref<any[]>([]);
 const areaList = computed(()=>{
     if (!q.value) {

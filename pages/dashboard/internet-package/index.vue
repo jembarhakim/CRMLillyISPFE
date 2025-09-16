@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import FormAddComponent from './FormAddComponent.vue'
 import { internetPackageAdminApi } from '@/api/admin/internet-package'
+// Set page title
+useHead({
+  title: 'Internet Package Management - CRM System'
+})
+
 const internetPackages = ref<any[]>([]); // Use ref for reactivity
 const internetPackageList = computed(() => {
     if (!q.value) {

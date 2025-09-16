@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { userManagementAdminApi } from "@/api/admin/user-management";
 import AddRoleForm from "./AddRoleForm.vue";
+// Set page title
+useHead({
+  title: 'Role Management - CRM System'
+})
+
 let role: any[] = [];
 const page = ref(1);
 const pageCount = 5;

@@ -14,6 +14,11 @@ import {
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
+// Set page title
+useHead({
+  title: 'Trouble Report - CRM System'
+})
+
 const rows = ref<any[]>([])
 const seriesData = ref<any[]>([])
 const loading = ref(true)

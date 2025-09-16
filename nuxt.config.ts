@@ -27,8 +27,10 @@ export default defineNuxtConfig({
   // Middleware will be applied manually in each page that needs it
   app: {
     head: {
+      title: "CRM System",
       meta: [
         { name: "viewport", content: "width=device-width, initial-scale=1.0" },
+        { name: "description", content: "Customer Relationship Management System" },
       ],
     },
   },

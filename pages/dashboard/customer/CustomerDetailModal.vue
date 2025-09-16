@@ -157,6 +157,172 @@
           </div>
         </div>
 
+        <!-- Connection Status Tab -->
+        <div v-if="activeTab === 'connection'" class="space-y-6">
+          <!-- Overall Connection Status -->
+          <div class="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Overall Connection Status</h3>
+            <div class="flex items-center justify-center">
+              <div class="text-center">
+                <div 
+                  :class="[
+                    'w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center',
+                    getOverallConnectionStatus() === 'up' ? 'bg-green-100' : 
+                    getOverallConnectionStatus() === 'down' ? 'bg-red-100' : 'bg-gray-100'
+                  ]"
+                >
+                  <UIcon 
+                    :name="getOverallConnectionStatus() === 'up' ? 'i-heroicons-check-circle' : 
+                           getOverallConnectionStatus() === 'down' ? 'i-heroicons-x-circle' : 'i-heroicons-power'"
+                    :class="[
+                      'w-12 h-12',
+                      getOverallConnectionStatus() === 'up' ? 'text-green-600' : 
+                      getOverallConnectionStatus() === 'down' ? 'text-red-600' : 'text-gray-600'
+                    ]"
+                  />
+                </div>
+                <h4 class="text-xl font-semibold text-gray-900">Connection Status</h4>
+                <p 
+                  :class="[
+                    'text-2xl font-bold mt-2',
+                    getOverallConnectionStatus() === 'up' ? 'text-green-600' : 
+                    getOverallConnectionStatus() === 'down' ? 'text-red-600' : 'text-gray-600'
+                  ]"
+                >
+                  {{ getOverallConnectionStatus().toUpperCase() }}
+                </p>
+                <p class="text-sm text-gray-600 mt-2">
+                  {{ getOverallConnectionStatus() === 'up' ? 'All systems operational' : 
+                     getOverallConnectionStatus() === 'down' ? 'Connection issues detected' : 
+                     'No active connection' }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Customer Status -->
+          <div class="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Customer Account Status</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="text-center">
+                <div 
+                  :class="[
+                    'w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center',
+                    customerDetail.customer.status_user === 'active' ? 'bg-green-100' : 'bg-red-100'
+                  ]"
+                >
+                  <UIcon 
+                    :name="customerDetail.customer.status_user === 'active' ? 'i-heroicons-user-check' : 'i-heroicons-user-x-mark'"
+                    :class="[
+                      'w-8 h-8',
+                      customerDetail.customer.status_user === 'active' ? 'text-green-600' : 'text-red-600'
+                    ]"
+                  />
+                </div>
+                <h4 class="text-sm font-semibold text-gray-900">Account Status</h4>
+                <p 
+                  :class="[
+                    'text-sm font-medium',
+                    customerDetail.customer.status_user === 'active' ? 'text-green-600' : 'text-red-600'
+                  ]"
+                >
+                  {{ customerDetail.customer.status_user?.toUpperCase() || 'UNKNOWN' }}
+                </p>
+              </div>
+              <div class="text-center">
+                <div class="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center bg-blue-100">
+                  <UIcon name="i-heroicons-calendar" class="w-8 h-8 text-blue-600" />
+                </div>
+                <h4 class="text-sm font-semibold text-gray-900">Next Payment</h4>
+                <p class="text-sm text-gray-600">{{ formatDate(customerDetail.customer.next_payment_date) }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Network Devices Status -->
+          <div v-if="customerDetail.network_devices && customerDetail.network_devices.length > 0" class="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Network Devices Status</h3>
+            <div class="space-y-4">
+              <div 
+                v-for="device in customerDetail.network_devices" 
+                :key="device.id"
+                class="border border-gray-200 rounded-lg p-4"
+              >
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="text-sm font-semibold text-gray-900">Device {{ device.id }}</h4>
+                  <div class="flex items-center space-x-2">
+                    <div 
+                      :class="[
+                        'w-3 h-3 rounded-full',
+                        getDeviceConnectionStatus(device) === 'up' ? 'bg-green-500' : 
+                        getDeviceConnectionStatus(device) === 'down' ? 'bg-red-500' : 'bg-gray-500'
+                      ]"
+                    ></div>
+                    <span 
+                      :class="[
+                        'text-sm font-medium',
+                        getDeviceConnectionStatus(device) === 'up' ? 'text-green-600' : 
+                        getDeviceConnectionStatus(device) === 'down' ? 'text-red-600' : 'text-gray-600'
+                      ]"
+                    >
+                      {{ getDeviceConnectionStatus(device).toUpperCase() }}
+                    </span>
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700">IP Address</label>
+                    <p class="text-sm text-gray-900">{{ device.ip_static || 'N/A' }}</p>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700">MAC Address</label>
+                    <p class="text-sm text-gray-900">{{ device.mac_address || 'N/A' }}</p>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700">Last Ping</label>
+                    <p class="text-sm text-gray-900">{{ device.last_ping_time ? formatDate(device.last_ping_time) : 'N/A' }}</p>
+                  </div>
+                </div>
+                <div class="mt-3 pt-3 border-t border-gray-200">
+                  <div class="flex justify-between items-center">
+                    <div class="flex space-x-4">
+                      <span 
+                        :class="[
+                          'inline-flex px-2 py-1 text-xs font-medium rounded-full',
+                          device.status_perangkat === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        ]"
+                      >
+                        Device: {{ device.status_perangkat?.toUpperCase() }}
+                      </span>
+                      <span 
+                        :class="[
+                          'inline-flex px-2 py-1 text-xs font-medium rounded-full',
+                          device.last_ping_status === 'up' ? 'bg-green-100 text-green-800' : 
+                          device.last_ping_status === 'down' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                        ]"
+                      >
+                        Ping: {{ device.last_ping_status?.toUpperCase() }}
+                      </span>
+                    </div>
+                    <span v-if="device.ping_response_time" class="text-xs text-gray-500">
+                      Response: {{ device.ping_response_time }}ms
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- No Devices Message -->
+          <div v-else class="bg-white border border-gray-200 rounded-lg p-6">
+            <div class="text-center">
+              <UIcon name="i-heroicons-wifi" class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 class="text-lg font-semibold text-gray-900 mb-2">No Network Devices</h3>
+              <p class="text-gray-600">This customer doesn't have any network devices configured yet.</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Activity Tab -->
         <div v-if="activeTab === 'activity'" class="space-y-6">
           <div class="bg-white border border-gray-200 rounded-lg p-6">
@@ -437,6 +603,79 @@
           </div>
         </div>
 
+        <!-- Connection Status -->
+        <div class="bg-blue-50 rounded-lg p-4">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Connection Status</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Overall Status -->
+            <div class="text-center">
+              <div 
+                :class="[
+                  'w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center',
+                  getOverallConnectionStatus() === 'up' ? 'bg-green-100' : 
+                  getOverallConnectionStatus() === 'down' ? 'bg-red-100' : 'bg-gray-100'
+                ]"
+              >
+                <UIcon 
+                  :name="getOverallConnectionStatus() === 'up' ? 'i-heroicons-check-circle' : 
+                         getOverallConnectionStatus() === 'down' ? 'i-heroicons-x-circle' : 'i-heroicons-power'"
+                  :class="[
+                    'w-8 h-8',
+                    getOverallConnectionStatus() === 'up' ? 'text-green-600' : 
+                    getOverallConnectionStatus() === 'down' ? 'text-red-600' : 'text-gray-600'
+                  ]"
+                />
+              </div>
+              <h4 class="text-sm font-semibold text-gray-900">Overall Status</h4>
+              <p 
+                :class="[
+                  'text-sm font-medium',
+                  getOverallConnectionStatus() === 'up' ? 'text-green-600' : 
+                  getOverallConnectionStatus() === 'down' ? 'text-red-600' : 'text-gray-600'
+                ]"
+              >
+                {{ getOverallConnectionStatus().toUpperCase() }}
+              </p>
+            </div>
+
+            <!-- Customer Status -->
+            <div class="text-center">
+              <div 
+                :class="[
+                  'w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center',
+                  customerDetail.customer.status_user === 'active' ? 'bg-green-100' : 'bg-red-100'
+                ]"
+              >
+                <UIcon 
+                  :name="customerDetail.customer.status_user === 'active' ? 'i-heroicons-user-check' : 'i-heroicons-user-x-mark'"
+                  :class="[
+                    'w-8 h-8',
+                    customerDetail.customer.status_user === 'active' ? 'text-green-600' : 'text-red-600'
+                  ]"
+                />
+              </div>
+              <h4 class="text-sm font-semibold text-gray-900">Customer Status</h4>
+              <p 
+                :class="[
+                  'text-sm font-medium',
+                  customerDetail.customer.status_user === 'active' ? 'text-green-600' : 'text-red-600'
+                ]"
+              >
+                {{ customerDetail.customer.status_user?.toUpperCase() || 'UNKNOWN' }}
+              </p>
+            </div>
+
+            <!-- Last Activity -->
+            <div class="text-center">
+              <div class="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center bg-blue-100">
+                <UIcon name="i-heroicons-clock" class="w-8 h-8 text-blue-600" />
+              </div>
+              <h4 class="text-sm font-semibold text-gray-900">Last Activity</h4>
+              <p class="text-sm text-gray-600">{{ formatDate(customerDetail.customer.updated_at) }}</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Network Devices -->
         <div v-if="customerDetail.network_devices && customerDetail.network_devices.length > 0" class="bg-purple-50 rounded-lg p-4">
           <h3 class="text-lg font-medium text-gray-900 mb-4">Network Devices</h3>
@@ -444,8 +683,29 @@
             <div 
               v-for="device in customerDetail.network_devices" 
               :key="device.id"
-              class="bg-white rounded-lg p-3 border"
+              class="bg-white rounded-lg p-4 border"
             >
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-sm font-semibold text-gray-900">Device {{ device.id }}</h4>
+                <div class="flex items-center space-x-2">
+                  <div 
+                    :class="[
+                      'w-3 h-3 rounded-full',
+                      getDeviceConnectionStatus(device) === 'up' ? 'bg-green-500' : 
+                      getDeviceConnectionStatus(device) === 'down' ? 'bg-red-500' : 'bg-gray-500'
+                    ]"
+                  ></div>
+                  <span 
+                    :class="[
+                      'text-xs font-medium',
+                      getDeviceConnectionStatus(device) === 'up' ? 'text-green-600' : 
+                      getDeviceConnectionStatus(device) === 'down' ? 'text-red-600' : 'text-gray-600'
+                    ]"
+                  >
+                    {{ getDeviceConnectionStatus(device).toUpperCase() }}
+                  </span>
+                </div>
+              </div>
               <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label class="block text-xs font-medium text-gray-700">IP Static</label>
@@ -472,6 +732,12 @@
                   >
                     {{ device.last_ping_status?.toUpperCase() }}
                   </span>
+                </div>
+              </div>
+              <div v-if="device.last_ping_time" class="mt-3 pt-3 border-t border-gray-200">
+                <div class="flex justify-between items-center text-xs text-gray-500">
+                  <span>Last Ping: {{ formatDate(device.last_ping_time) }}</span>
+                  <span v-if="device.ping_response_time">Response Time: {{ device.ping_response_time }}ms</span>
                 </div>
               </div>
             </div>
@@ -571,6 +837,7 @@ const activeTab = ref('summary')
 // Tab configuration
 const tabs = computed(() => [
   { id: 'summary', name: 'Summary', icon: 'i-heroicons-chart-bar' },
+  { id: 'connection', name: 'Connection Status', icon: 'i-heroicons-signal' },
   { id: 'activity', name: 'Activity', icon: 'i-heroicons-clock' },
   { id: 'invoices', name: 'Invoices', icon: 'i-heroicons-document-text', count: customerInvoices.value.length },
   { id: 'quotes', name: 'Quotes', icon: 'i-heroicons-document-duplicate', count: 0 },
@@ -719,6 +986,52 @@ const getNetworkDeviceMACs = () => {
   return customerDetail.value.network_devices
     .filter((device: any) => device.mac_address)
     .map((device: any) => device.mac_address)
+}
+
+// Get overall connection status for the customer
+const getOverallConnectionStatus = () => {
+  if (!customerDetail.value?.customer) return 'off'
+  
+  // Check customer status first
+  if (customerDetail.value.customer.status_user !== 'active') {
+    return 'off'
+  }
+  
+  // Check if customer has network devices
+  if (!customerDetail.value.network_devices || customerDetail.value.network_devices.length === 0) {
+    return 'off'
+  }
+  
+  // Check device statuses
+  const devices = customerDetail.value.network_devices
+  const activeDevices = devices.filter((device: any) => 
+    device.status_perangkat === 'active' && device.last_ping_status === 'up'
+  )
+  
+  if (activeDevices.length === 0) {
+    return 'down'
+  }
+  
+  return 'up'
+}
+
+// Get device connection status
+const getDeviceConnectionStatus = (device: any) => {
+  if (!device) return 'off'
+  
+  // Check device status
+  if (device.status_perangkat !== 'active') {
+    return 'off'
+  }
+  
+  // Check ping status
+  if (device.last_ping_status === 'up') {
+    return 'up'
+  } else if (device.last_ping_status === 'down') {
+    return 'down'
+  }
+  
+  return 'off'
 }
 
 const fetchCustomerDetail = async () => {

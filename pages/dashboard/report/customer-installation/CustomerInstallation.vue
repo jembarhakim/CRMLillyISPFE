@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { archiveInstallationAdminApi } from '@/api/admin/archive-installation';
+import { customerAdminApi } from '@/api/admin/customer';
 import FormCustomerInstallation from './FormCustomerInstallation.vue';
 import ImageViewComponent from './ImageViewComponent.vue';
+import CustomerSelectionModal from './CustomerSelectionModal.vue';
 
 
 const dataList = ref([]);
@@ -19,6 +21,10 @@ const page = ref(1);
 const pageCount = 5;
 
 const modal = useModal()
+const customerModal = useModal()
+const allCustomers = ref<any[]>([]);
+const selectedCustomer = ref<any>(null);
+
 function handleClick(row:any) {
   modal.open(ImageViewComponent, {
     image: row.images.map((item:any) => useApiHost()+"/"+item.full_path),
@@ -26,6 +32,37 @@ function handleClick(row:any) {
       modal.close();
     },
   });
+}
+
+// Function to open customer selection modal
+async function openCustomerSelection() {
+  try {
+    const response = await customerAdminApi().getAllCustomers();
+    allCustomers.value = response.data;
+    customerModal.open(CustomerSelectionModal, {
+      customers: allCustomers.value,
+      onSelect: (customer: any) => {
+        selectedCustomer.value = customer;
+        customerModal.close();
+        // Open installation form with selected customer
+        modal.open(FormCustomerInstallation, {
+          data: customer,
+          onClose: () => {
+            modal.close();
+          },
+        });
+      },
+      onClose: () => {
+        customerModal.close();
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching customers:", error);
+    useToast().add({
+      title: "Failed to load customers",
+      color: "red",
+    });
+  }
 }
 
 
@@ -67,9 +104,17 @@ getData();
 
 <template>
         <div
-          class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700"
+          class="flex justify-between items-center px-3 py-3.5 border-b border-gray-200 dark:border-gray-700"
         >
-          <UInput v-model="q" placeholder="Search" />
+          <UInput v-model="q" placeholder="Search" class="flex-1 max-w-md" />
+          <UButton 
+            @click="openCustomerSelection" 
+            color="green" 
+            icon="i-heroicons-plus"
+            class="ml-4"
+          >
+            Add New Installation
+          </UButton>
         </div>
         <UTable :rows="rows" :columns="columns">
 
