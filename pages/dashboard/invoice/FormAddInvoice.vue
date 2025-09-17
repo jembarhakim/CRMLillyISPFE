@@ -4,6 +4,7 @@ import type { FormSubmitEvent } from "#ui/types";
 import { customerAdminApi } from "@/api/admin/customer";
 import { invoiceAdminApi } from "@/api/admin/invoice";
 import { internetPackageAdminApi } from "@/api/admin/internet-package";
+import { useNotification } from '@/composables/useNotification';
 
 const props = defineProps({
   isEdit: {
@@ -24,6 +25,7 @@ const props = defineProps({
     }),
   },
 });
+const notification = useNotification();
 const loadingProduct = ref(false);
 
 const schema = object({
@@ -162,6 +164,25 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   } finally {
     isSubmitting.value = false;
   }
+  
+  // Do something with event.data
+  if (props.isEdit) {
+    invoiceAdminApi()
+      .editInvoice(props.data.id, state)
+      .then((response) => {
+        notification.success('Success', response.message);
+        onSuccess();
+      })
+      .catch((error) => { });
+  } else {
+    invoiceAdminApi()
+      .createInvoice(state)
+      .then((response) => {
+        notification.success('Success', response.message);
+        onSuccess();
+      })
+      .catch((error) => { });
+  }
 }
 
 const customer = ref([]);
@@ -193,7 +214,7 @@ function search(q: any) {
   return [q]
 }
 
-await internetPackageAdminApi()
+internetPackageAdminApi()
   .getAllInternetPacket()
   .then((response) => {
     productOptions.value = response.data.map((value: any, index: number) => value.name);
@@ -207,7 +228,7 @@ await internetPackageAdminApi()
   .finally(() => {
     loadingProduct.value = false;
   });
-await getDataOptions();
+getDataOptions();
 
 function checkProductIsExist(name: string, index: number) {
   const product = productOptionsD.value.find((option: any) => option.label === name);
@@ -252,6 +273,8 @@ watch(
             color: 'green',
             timeout: 3000
           });
+          // Show success message
+          notification.success('Success', `Product "${product.name}" auto-filled from customer's package`);
         } else {
           // If customer has no product, reset to empty
           state.invoice_items = [{
@@ -262,6 +285,7 @@ watch(
           }];
           state.amount = 0;
           
+          notification.warning('Warning', 'Customer has no product package assigned');
           useToast().add({
             title: 'Warning',
             description: 'Customer has no product package assigned',
@@ -277,6 +301,7 @@ watch(
           color: 'red',
           timeout: 3000
         });
+        notification.error('Error', 'Failed to load customer product information');
       }
     } else {
       // Reset when no customer is selected
@@ -319,7 +344,7 @@ watch(
             </div>
             <div>
               <label class="block text-sm font-medium text-blue-700">Package Price</label>
-              <p class="mt-1 text-sm text-blue-900">{{ selectedCustomerDetail.customer.product?.price ? `Rp ${selectedCustomerDetail.customer.product.price.toLocaleString()}` : 'No price' }}</p>
+               <p class="mt-1 text-sm text-blue-900">{{ selectedCustomerDetail.customer.product?.price ? `Rp ${selectedCustomerDetail.customer.product.price.toLocaleString()}` : 'No price' }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-blue-700">Installation Date</label>
@@ -331,7 +356,7 @@ watch(
           <UInput v-model="state.amount" type="number" />
         </UFormGroup>
         <div v-for="(item, index) in state.invoice_items" :key="index" class="space-y-4">
-          <UFormGroup :label="`Product ${index + 1} Name`" :name="`item-name-${index}`">
+           <UFormGroup :label="`Product ${index + 1} Name`" :name="`item-name-${index}`">
             <div class="relative">
               <!-- For first item (index 0), show as read-only input when customer is selected -->
               <UInput 

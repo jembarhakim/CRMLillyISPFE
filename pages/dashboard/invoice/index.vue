@@ -5,6 +5,7 @@ import PartialPaymentModal from "./PartialPaymentModal.vue";
 import * as currency from "@/helper/currency";
 import type { UpdateStatusInvoiceRequest } from "@/types/requests/invoice";
 import { WhatsappApi } from "@/api/admin/wa";
+import { useNotification } from '@/composables/useNotification';
 // Set page title
 useHead({
   title: 'Invoice Management - CRM System'
@@ -77,6 +78,7 @@ async function getData() {
         title: message,
         color: "red",
       });
+      notification.error('Error', err);
     });
 }
 
@@ -107,10 +109,7 @@ async function proceedWithStatusUpdate(id: string, status: string, currentStatus
   try {
     const response = await invoiceAdminApi().updateStatusInvoice(id, { status });
     
-    useToast().add({
-      title: response.message,
-      color: "green",
-    });
+    notification.success('Success', response.message);
     
     // Update the specific invoice in the local array instead of refreshing all data
     const invoiceIndex = customer.value.findIndex(inv => inv.id === id);
@@ -167,11 +166,7 @@ async function confirmStatusChange() {
             await handlePdfView(invoiceId, true);
           } catch (error) {
             console.error('Error opening PDF automatically:', error);
-            useToast().add({
-              title: 'Error',
-              description: 'Gagal membuka PDF otomatis. Silakan klik "Download PDF" secara manual.',
-              color: 'red'
-            });
+            notification.error('Error', 'Gagal membuka PDF otomatis. Silakan klik "Download PDF" secara manual.', 5000);
           }
         }, 1000);
       }
@@ -209,11 +204,7 @@ async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
     
     if (invoice?.pdf_viewed) {
       console.log('PDF already viewed, showing error message');
-      useToast().add({
-        title: 'PDF Sudah Dilihat',
-        description: 'PDF invoice ini sudah pernah dilihat dan tidak dapat diakses lagi untuk mencegah duplikasi pembayaran.',
-        color: 'red'
-      });
+      notification.error('PDF Sudah Dilihat', 'PDF invoice ini sudah pernah dilihat dan tidak dapat diakses lagi untuk mencegah duplikasi pembayaran.', 5000);
       return;
     }
 
@@ -225,11 +216,7 @@ async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
     } catch (markError) {
       console.error('Failed to mark PDF as viewed:', markError);
       // Continue anyway - we'll still open the PDF
-      useToast().add({
-        title: 'Warning',
-        description: 'Gagal menandai PDF sebagai dilihat, tetapi PDF tetap akan dibuka.',
-        color: 'yellow'
-      });
+      notification.warning('Warning', 'Gagal menandai PDF sebagai dilihat, tetapi PDF tetap akan dibuka.', 3000);
     }
     
     // Add to tracking set
@@ -261,17 +248,9 @@ async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
     
     // Different messages for manual vs auto open
     if (isAutoOpen) {
-      useToast().add({
-        title: 'Status Diubah ke PAID',
-        description: 'PDF invoice dibuka otomatis. PDF ini tidak dapat dibuka lagi untuk mencegah duplikasi pembayaran.',
-        color: 'green'
-      });
+      notification.success('Status Diubah ke PAID', 'PDF invoice dibuka otomatis. PDF ini tidak dapat dibuka lagi untuk mencegah duplikasi pembayaran.', 5000);
     } else {
-      useToast().add({
-        title: 'PDF Dibuka',
-        description: 'PDF invoice telah dibuka. PDF ini tidak dapat dibuka lagi untuk mencegah duplikasi pembayaran.',
-        color: 'yellow'
-      });
+      notification.info('PDF Dibuka', 'PDF invoice telah dibuka. PDF ini tidak dapat dibuka lagi untuk mencegah duplikasi pembayaran.', 5000);
     }
     
   } catch (error: any) {
@@ -280,17 +259,9 @@ async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
     // Check if it's a JSON parsing error
     if (error.message && error.message.includes('Unexpected token')) {
       console.error('JSON parsing error - server returned HTML instead of JSON');
-      useToast().add({
-        title: 'Error',
-        description: 'Server error: PDF tidak dapat dibuka. Silakan coba lagi.',
-        color: 'red'
-      });
+      notification.error('Error', 'Server error: PDF tidak dapat dibuka. Silakan coba lagi.', 5000);
     } else {
-      useToast().add({
-        title: 'Error',
-        description: error.message || 'Gagal membuka PDF',
-        color: 'red'
-      });
+      notification.error('Error', error.message || 'Gagal membuka PDF', 5000);
     }
   }
 }
@@ -327,10 +298,7 @@ async function sendWhatsapp(number: string, id: string) {
         `berikut invoice yang harus anda bayarkan sekarang \n\nKami berikan Link untuk melihat invoice \n\nhttps://skripsi.rtrsite.com/invoice/${id} \n\nSilahkan menuju dashboard login customer kami https://skripsi.rtrsite.com/login \n\nTerimakasih`,
     })
     .then((response) => {
-      useToast().add({
-        title: response.message,
-        color: "green",
-      });
+      notification.success('Success', response.message);
     })
     .catch((err) => {
       const message = typeof err === 'string' ? err : err?.message || 'Gagal mengirim WhatsApp';
@@ -338,6 +306,7 @@ async function sendWhatsapp(number: string, id: string) {
         title: message,
         color: "red",
       });
+      notification.error('Error', err);
     });
 }
 
@@ -346,15 +315,10 @@ async function deleteData(id: string) {
     .deleteInvoice(id)
     .then((response) => {
       getData();
-      useToast().add({
-        title: response.message,
-      });
+      notification.success('Success', response.message);
     })
     .catch((err) => {
-      useToast().add({
-        title: err,
-        color: "red",
-      });
+      notification.error('Error', err);
     });
 }
 
@@ -484,7 +448,7 @@ const items = (row: any) => [
   ],
 ];
 
-const toast = useToast();
+const notification = useNotification();
 const modal = useModal();
 
 function OpenModalAddCustomer(isEdit: boolean, data: any) {

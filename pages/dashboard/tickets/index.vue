@@ -38,9 +38,11 @@ import { uploadFileAdminApi } from '@/api/admin/file-upload'
 import { areaAdminApi } from '@/api/admin/area'
 import { useAuthStore } from '@/stores/auth'
 import { useRolePermissions } from '@/composables/useRolePermissions'
+import { useNotification } from '@/composables/useNotification'
 
 const authStore = useAuthStore()
 const { userRole, isAdmin, isCustomerService, isNOC, isTechnician } = useRolePermissions()
+const notification = useNotification()
 
 // Set page title
 useHead({
@@ -435,15 +437,12 @@ async function sendToNOCFromModal() {
     nocActionSubmitting.value = true
     await ticketsApi().sendToNOC(selectedId.value, nocNote.value, nocImageFile.value || undefined)
     showNOCNoteModal.value = false
-    try { const toast = useToast(); toast.add({ title: 'Sent to NOC', description: 'Ticket sent to NOC.', color: 'primary', timeout: 3000 }) } catch {}
+    notification.success('Sent to NOC', 'Ticket sent to NOC.', 3000)
     await refresh()
   } catch (e:any) {
     console.error('sendToNOC error:', e)
-    try {
-      const toast = useToast();
-      const msg = e?.data?.message || e?.message || 'Failed to send to NOC'
-      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
-    } catch {}
+    const msg = e?.data?.message || e?.message || 'Failed to send to NOC'
+    notification.error('Action failed', String(msg), 5000)
   } finally {
     nocActionSubmitting.value = false
   }
@@ -459,11 +458,8 @@ async function nocSolved() {
     await refresh()
   } catch (e: any) {
     console.error('nocSolved error:', e)
-    try {
-      const toast = useToast();
-      const msg = e?.data?.message || e?.message || 'Failed to mark as NOC solved'
-      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
-    } catch {}
+    const msg = e?.data?.message || e?.message || 'Failed to mark as NOC solved'
+    notification.error('Action failed', String(msg), 5000)
   } finally {
     actionLoading.value[actionKey] = false
   }
@@ -479,11 +475,8 @@ async function nocPhysical() {
     await refresh()
   } catch (e: any) {
     console.error('nocPhysical error:', e)
-    try {
-      const toast = useToast();
-      const msg = e?.data?.message || e?.message || 'Failed to mark as physical'
-      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
-    } catch {}
+    const msg = e?.data?.message || e?.message || 'Failed to mark as physical'
+    notification.error('Action failed', String(msg), 5000)
   } finally {
     actionLoading.value[actionKey] = false
   }
@@ -496,15 +489,12 @@ async function assignTechnician() {
   try {
     actionLoading.value[actionKey] = true
     await ticketsApi().assignTechnician(selectedId.value);
-    try { const toast = useToast(); toast.add({ title: 'Assigned to Technician', description: 'Ticket assigned to technician role.', color: 'primary', timeout: 3000 }) } catch {}
+    notification.success('Assigned to Technician', 'Ticket assigned to technician role.', 3000)
     await refresh()
   } catch (e: any) {
     console.error('assignTechnician error:', e)
-    try {
-      const toast = useToast();
-      const msg = e?.data?.message || e?.message || 'Failed to assign technician'
-      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
-    } catch {}
+    const msg = e?.data?.message || e?.message || 'Failed to assign technician'
+    notification.error('Action failed', String(msg), 5000)
   } finally {
     actionLoading.value[actionKey] = false
   }
@@ -521,11 +511,8 @@ async function nocSolvedFromModal() {
   await refresh()
   } catch (e: any) {
     console.error('nocSolvedFromModal error:', e)
-    try {
-      const toast = useToast();
-      const msg = e?.data?.message || e?.message || 'Failed to mark as NOC solved'
-      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
-    } catch {}
+    const msg = e?.data?.message || e?.message || 'Failed to mark as NOC solved'
+    notification.error('Action failed', String(msg), 5000)
   } finally {
     nocActionSubmitting.value = false
   }
@@ -542,11 +529,8 @@ async function nocPhysicalFromModal() {
   await refresh()
   } catch (e: any) {
     console.error('nocPhysicalFromModal error:', e)
-    try {
-      const toast = useToast();
-      const msg = e?.data?.message || e?.message || 'Failed to mark as physical'
-      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
-    } catch {}
+    const msg = e?.data?.message || e?.message || 'Failed to mark as physical'
+    notification.error('Action failed', String(msg), 5000)
   } finally {
     nocActionSubmitting.value = false
   }
@@ -602,15 +586,12 @@ async function sendTechnicianNoteFromModal() {
     await ticketsApi().addTechnicianNote(selectedId.value, technicianNote.value, bf, af)
     showTechnicianNoteModal.value = false
     // feedback
-    try { const toast = useToast(); toast.add({ title: 'Technician Note Added', description: 'Note has been added successfully.', color: 'primary', timeout: 3000 }) } catch {}
+    notification.success('Technician Note Added', 'Note has been added successfully.', 3000)
     await refresh()
   } catch (e:any) {
     console.error('sendTechnicianNote error:', e)
-    try {
-      const toast = useToast();
-      const msg = e?.data?.message || e?.message || 'Failed to add technician note'
-      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
-    } catch {}
+    const msg = e?.data?.message || e?.message || 'Failed to add technician note'
+    notification.error('Action failed', String(msg), 5000)
   } finally {
     technicianNoteSubmitting.value = false
   }
@@ -624,15 +605,12 @@ async function sendToCSFromModal() {
     await ticketsApi().sendToCS(selectedId.value, nocNote.value, nocSelectedType.value || undefined, nocImageFile.value || undefined)
     showNOCNoteModal.value = false
     // feedback
-    try { const toast = useToast(); toast.add({ title: 'Sent to CS', description: 'Ticket returned to Customer Service.', color: 'primary', timeout: 3000 }) } catch {}
+    notification.success('Sent to CS', 'Ticket returned to Customer Service.', 3000)
     await refresh()
   } catch (e:any) {
     console.error('sendToCS error:', e)
-    try {
-      const toast = useToast();
-      const msg = e?.data?.message || e?.message || 'Failed to send to CS'
-      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
-    } catch {}
+    const msg = e?.data?.message || e?.message || 'Failed to send to CS'
+    notification.error('Action failed', String(msg), 5000)
   } finally {
     nocActionSubmitting.value = false
   }
@@ -648,11 +626,8 @@ async function resolve() {
   await refresh()
   } catch (e: any) {
     console.error('resolve error:', e)
-    try {
-      const toast = useToast();
-      const msg = e?.data?.message || e?.message || 'Failed to resolve ticket'
-      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
-    } catch {}
+    const msg = e?.data?.message || e?.message || 'Failed to resolve ticket'
+    notification.error('Action failed', String(msg), 5000)
   } finally {
     actionLoading.value[actionKey] = false
   }
@@ -664,15 +639,12 @@ async function resolveFromModal() {
     resolveSubmitting.value = true
     await ticketsApi().resolve(selectedId.value, resolveNote.value)
     showResolveModal.value = false
-    try { const toast = useToast(); toast.add({ title: 'Ticket Resolved', description: 'Ticket has been marked as resolved.', color: 'primary', timeout: 3000 }) } catch {}
+    notification.success('Ticket Resolved', 'Ticket has been marked as resolved.', 3000)
     await refresh()
   } catch (e: any) {
     console.error('resolve error:', e)
-    try {
-      const toast = useToast();
-      const msg = e?.data?.message || e?.message || 'Failed to resolve ticket'
-      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
-    } catch {}
+    const msg = e?.data?.message || e?.message || 'Failed to resolve ticket'
+    notification.error('Action failed', String(msg), 5000)
   } finally {
     resolveSubmitting.value = false
   }
@@ -807,25 +779,14 @@ async function deleteTicket(id: number) {
   try {
     deleteTicketSubmitting.value = true
     await ticketsApi().delete(id)
-    useToast().add({ 
-      title: 'Success!', 
-      description: 'Ticket deleted successfully', 
-      color: 'green', 
-      timeout: 3000 
-    })
+    notification.success('Success!', 'Ticket deleted successfully', 3000)
     showDeleteModal.value = false
     ticketToDelete.value = null
     await refresh()
   } catch (error: any) {
     console.error('Error deleting ticket:', error)
     const msg = error?.data?.message || error?.message || 'Failed to delete ticket'
-    useToast().add({ 
-      title: 'Delete failed', 
-      description: String(msg), 
-      color: 'red', 
-      icon: 'i-heroicons-exclamation-triangle', 
-      timeout: 5000 
-    })
+    notification.error('Delete failed', String(msg), 5000)
   } finally {
     deleteTicketSubmitting.value = false
   }
@@ -916,28 +877,11 @@ const saveNewType = async () => {
   showNewType.value = false
     
     // Show success message
-    try { 
-      const toast = useToast(); 
-      toast.add({ 
-        title: 'Success!', 
-        description: 'New trouble type created successfully', 
-        color: 'green', 
-        timeout: 3000 
-      }) 
-    } catch {}
+    notification.success('Success!', 'New trouble type created successfully', 3000)
   } catch (error: any) {
     console.error('Error creating trouble type:', error)
     const msg = error?.data?.message || error?.message || 'Failed to create trouble type'
-    try {
-      const toast = useToast();
-      toast.add({ 
-        title: 'Create failed', 
-        description: String(msg), 
-        color: 'red', 
-        icon: 'i-heroicons-exclamation-triangle', 
-        timeout: 5000 
-      })
-    } catch {}
+    notification.error('Create failed', String(msg), 5000)
   }
 }
 
@@ -1014,23 +958,12 @@ async function createTicket() {
     }
     showAdd.value = false
     form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', img_cs: '' }
-    useToast().add({ 
-      title: 'Success!', 
-      description: 'Ticket created successfully', 
-      color: 'green', 
-      timeout: 3000 
-    })
+    notification.success('Success!', 'Ticket created successfully', 3000)
     await refresh()
   } catch (error: any) {
     console.error('Error creating ticket:', error) // Debug log
     const msg = error?.data?.message || error?.message || 'Failed to create ticket'
-    useToast().add({ 
-      title: 'Create failed', 
-      description: String(msg), 
-      color: 'red', 
-      icon: 'i-heroicons-exclamation-triangle', 
-      timeout: 5000 
-    })
+    notification.error('Create failed', String(msg), 5000)
   } finally {
     createTicketSubmitting.value = false
   }

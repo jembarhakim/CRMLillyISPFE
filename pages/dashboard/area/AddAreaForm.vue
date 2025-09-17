@@ -2,6 +2,7 @@
 import { object, string, type InferType } from "yup";
 import type { FormSubmitEvent } from "#ui/types";
 import { areaAdminApi } from "@/api/admin/area";
+import { useNotification } from '@/composables/useNotification';
 
 const schema = object({
   name_city: string().required("Name is required").min(3, "min 3 words"),
@@ -38,6 +39,8 @@ const props = defineProps({
     })
   }
 })
+const notification = useNotification();
+
 const state = reactive({
   name_city: "",
   name_subdistrict: "",
@@ -72,18 +75,18 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   // Do something with event.data
   if (props.isEdit) {
     areaAdminApi().editArea(props.data.id, state).then((response) => {
-      useToast().add({ title: response.message, color: "green" })
+      notification.success('Success', response.message)
       onSuccess()
     }).catch((error) => {
-      useToast().add({ title: "Failed Create Area", color: "red" })
+      notification.error('Error', 'Failed to update area')
     })
   } else {
 
     areaAdminApi().createArea(state).then((response) => {
-      useToast().add({ title: response.message, color: "green" })
+      notification.success('Success Create Area', response.message)
       onSuccess()
     }).catch((error) => {
-      useToast().add({ title: "Failed Create Area", color: "red" })
+      notification.error('Error', 'Failed to create area')
     })
   }
 }

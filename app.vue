@@ -2,9 +2,12 @@
 const route = useRoute()
 
 import LoadingComponent from '@/components/LoadingComponent.vue'
+import NotificationModal from '@/components/NotificationModal.vue'
 import { useLoading } from '@/composables/useLoading'
+import { useNotification } from '@/composables/useNotification'
 
 const { isLoading } = useLoading()
+const { isVisible, currentTitle, currentMessage, currentType, currentDuration, close } = useNotification()
 </script>
 
 <template>
@@ -20,6 +23,16 @@ const { isLoading } = useLoading()
     </NuxtLayout>
     <UModals />
     <UNotifications />
+    
+    <!-- Custom Notification Modal -->
+    <NotificationModal
+      :is-visible="isVisible"
+      :title="currentTitle"
+      :message="currentMessage"
+      :type="currentType"
+      :duration="currentDuration"
+      @close="close"
+    />
 
     <!-- </NuxtUIProvider> -->
   </div>
