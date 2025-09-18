@@ -116,5 +116,81 @@ export const dashboardAdminApi = () => {
       }
       return response.json();
     },
+
+    // New dashboard endpoints
+    getDashboardStats: async () => {
+      const response = await fetch(`${api}/api/admin/dashboard/stats`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get dashboard stats');
+      }
+      return response.json();
+    },
+
+    getRecentInvoices: async () => {
+      const response = await fetch(`${api}/api/admin/dashboard/recent-invoices`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get recent invoices');
+      }
+      return response.json();
+    },
+
+    getRecentTransactions: async () => {
+      const response = await fetch(`${api}/api/admin/dashboard/recent-transactions`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get recent transactions');
+      }
+      return response.json();
+    },
+
+    getCustomerGrowth: async () => {
+      const response = await fetch(`${api}/api/admin/dashboard/customer-growth`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get customer growth');
+      }
+      return response.json();
+    },
+
+    getRevenueChart: async () => {
+      const response = await fetch(`${api}/api/admin/dashboard/revenue-chart`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get revenue chart');
+      }
+      return response.json();
+    },
   };
 };

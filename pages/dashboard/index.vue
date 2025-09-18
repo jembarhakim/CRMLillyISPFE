@@ -22,6 +22,13 @@ let totalIncome = ref<any>(0);
 let totalExpenses = ref<any>(0);
 let totalNetWorth = ref<any>(0);
 let totalSales = ref<any>(0);
+
+// New dashboard data
+const dashboardStats = ref<any>({});
+const recentInvoices = ref<any[]>([]);
+const recentTransactions = ref<any[]>([]);
+const customerGrowth = ref<any>({});
+const revenueChart = ref<any>({});
 const optionCardCustomer = ref();
 const optionCardPacketPopular = ref();
 const optionCardArea = ref();
@@ -325,16 +332,51 @@ import { number } from "yup";
 
 const { show, hide } = useLoading()
 
+// Function to get new dashboard data
+const getNewDashboardData = async () => {
+  try {
+    // Get dashboard stats
+    const statsResponse = await dashboardAdminApi().getDashboardStats();
+    dashboardStats.value = statsResponse.data;
+
+    // Get recent invoices
+    const invoicesResponse = await dashboardAdminApi().getRecentInvoices();
+    recentInvoices.value = invoicesResponse.data.invoices;
+
+    // Get recent transactions
+    const transactionsResponse = await dashboardAdminApi().getRecentTransactions();
+    recentTransactions.value = transactionsResponse.data.transactions;
+
+    // Get customer growth
+    const growthResponse = await dashboardAdminApi().getCustomerGrowth();
+    customerGrowth.value = growthResponse.data;
+
+    // Get revenue chart
+    const revenueResponse = await dashboardAdminApi().getRevenueChart();
+    revenueChart.value = revenueResponse.data;
+
+  } catch (error) {
+    console.error('Error fetching dashboard data:', error);
+    useToast().add({
+      title: 'Error',
+      description: 'Failed to load dashboard data',
+      color: 'red',
+    });
+  }
+};
+
 onMounted(async () => {
   show()
+  await getNewDashboardData()
+  hide()
 })
 
 
 </script>
 
 <template>
+  <!-- Main Stats Cards -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 py-6">
-
     <div
       class="w-full p-6 bg-gradient-to-br from-green-400 via-emerald-500 to-teal-500 text-white rounded-2xl shadow-xl transition-transform hover:scale-[1.03] duration-300">
       <div class="flex items-center justify-between mb-6">
@@ -342,39 +384,82 @@ onMounted(async () => {
         <span class="text-lg font-semibold">$</span>
       </div>
       <div class="text-center">
-        <h1 class="text-3xl font-bold">{{ formatIDR(totalIncome) }}</h1>
+        <h1 class="text-3xl font-bold">{{ formatIDR(dashboardStats.total_income || 0) }}</h1>
       </div>
     </div>
 
     <div
-      class="w-full p-6 bg-gradient-to-br from-green-400 via-emerald-500 to-teal-500 text-white rounded-2xl shadow-xl transition-transform hover:scale-[1.03] duration-300">
+      class="w-full p-6 bg-gradient-to-br from-red-400 via-red-500 to-red-600 text-white rounded-2xl shadow-xl transition-transform hover:scale-[1.03] duration-300">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-base font-medium uppercase tracking-wider opacity-90">Total Expenses</h1>
         <span class="text-lg font-semibold">$</span>
       </div>
       <div class="text-center">
-        <h1 class="text-3xl font-bold">{{ formatIDR(totalExpenses) }}</h1>
+        <h1 class="text-3xl font-bold">{{ formatIDR(dashboardStats.total_expenses || 0) }}</h1>
       </div>
     </div>
 
     <div
-      class="w-full p-6 bg-gradient-to-br from-green-400 via-emerald-500 to-teal-500 text-white rounded-2xl shadow-xl transition-transform hover:scale-[1.03] duration-300">
+      class="w-full p-6 bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 text-white rounded-2xl shadow-xl transition-transform hover:scale-[1.03] duration-300">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-base font-medium uppercase tracking-wider opacity-90">Net Worth</h1>
         <span class="text-lg font-semibold">$</span>
       </div>
       <div class="text-center">
-        <h1 class="text-3xl font-bold">{{ formatIDR(totalNetWorth) }}</h1>
+        <h1 class="text-3xl font-bold">{{ formatIDR(dashboardStats.net_worth || 0) }}</h1>
       </div>
     </div>
 
     <div
-      class="w-full p-6 bg-gradient-to-br from-green-400 via-emerald-500 to-teal-500 text-white rounded-2xl shadow-xl transition-transform hover:scale-[1.03] duration-300">
+      class="w-full p-6 bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600 text-white rounded-2xl shadow-xl transition-transform hover:scale-[1.03] duration-300">
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-base font-medium uppercase tracking-wider opacity-90">Sales</h1>
+        <h1 class="text-base font-medium uppercase tracking-wider opacity-90">Total Customers</h1>
       </div>
       <div class="text-center">
-        <h1 class="text-3xl font-bold">{{ totalSales }}</h1>
+        <h1 class="text-3xl font-bold">{{ dashboardStats.total_customers || 0 }}</h1>
+      </div>
+    </div>
+  </div>
+
+  <!-- Additional Stats Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+    <div
+      class="w-full p-6 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 text-white rounded-2xl shadow-xl transition-transform hover:scale-[1.03] duration-300">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-base font-medium uppercase tracking-wider opacity-90">Total Invoices</h1>
+      </div>
+      <div class="text-center">
+        <h1 class="text-3xl font-bold">{{ dashboardStats.total_invoices || 0 }}</h1>
+      </div>
+    </div>
+
+    <div
+      class="w-full p-6 bg-gradient-to-br from-indigo-400 via-indigo-500 to-indigo-600 text-white rounded-2xl shadow-xl transition-transform hover:scale-[1.03] duration-300">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-base font-medium uppercase tracking-wider opacity-90">Total Areas</h1>
+      </div>
+      <div class="text-center">
+        <h1 class="text-3xl font-bold">{{ dashboardStats.total_areas || 0 }}</h1>
+      </div>
+    </div>
+
+    <div
+      class="w-full p-6 bg-gradient-to-br from-pink-400 via-pink-500 to-pink-600 text-white rounded-2xl shadow-xl transition-transform hover:scale-[1.03] duration-300">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-base font-medium uppercase tracking-wider opacity-90">Total Products</h1>
+      </div>
+      <div class="text-center">
+        <h1 class="text-3xl font-bold">{{ dashboardStats.total_products || 0 }}</h1>
+      </div>
+    </div>
+
+    <div
+      class="w-full p-6 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 text-white rounded-2xl shadow-xl transition-transform hover:scale-[1.03] duration-300">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-base font-medium uppercase tracking-wider opacity-90">Total Tickets</h1>
+      </div>
+      <div class="text-center">
+        <h1 class="text-3xl font-bold">{{ dashboardStats.total_tickets || 0 }}</h1>
       </div>
     </div>
   </div>
@@ -391,27 +476,97 @@ onMounted(async () => {
     <VChart :option="optionCardReportCash" autoresize style="height: 400px;" />
   </div>
 
+  <!-- Recent Data Section -->
   <div class="grid gap-6 md:grid-cols-2 sm:grid-cols-1 mb-10">
     <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg">
-      <h1 class="text-xl font-semibold text-slate-800 mb-4">Latest Deposites</h1>
-      <UTable v-if="latestDeposites.length > 0" :rows="latestDeposites" :page-size="5"></UTable>
+      <h1 class="text-xl font-semibold text-slate-800 mb-4">Recent Invoices</h1>
+      <div v-if="recentInvoices.length > 0" class="space-y-3">
+        <div v-for="invoice in recentInvoices.slice(0, 5)" :key="invoice.id" 
+             class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+          <div>
+            <p class="font-medium text-gray-900">{{ invoice.invoice_no }}</p>
+            <p class="text-sm text-gray-600">{{ invoice.customer }}</p>
+          </div>
+          <div class="text-right">
+            <p class="font-semibold text-green-600">{{ formatIDR(invoice.amount) }}</p>
+            <p class="text-xs text-gray-500">{{ formatDateToYMD(invoice.created_at) }}</p>
+          </div>
+        </div>
+      </div>
+      <div v-else class="text-center py-8 text-gray-500">
+        <p>No recent invoices found</p>
+      </div>
     </div>
+
     <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg">
-      <h1 class="text-xl font-semibold text-slate-800 mb-4">Latest Expenses</h1>
-      <UTable v-if="latestExpenses.length > 0" :rows="latestExpenses" :page-size="5"></UTable>
+      <h1 class="text-xl font-semibold text-slate-800 mb-4">Recent Transactions</h1>
+      <div v-if="recentTransactions.length > 0" class="space-y-3">
+        <div v-for="transaction in recentTransactions.slice(0, 5)" :key="transaction.id" 
+             class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+          <div>
+            <p class="font-medium text-gray-900">{{ transaction.description }}</p>
+            <p class="text-sm text-gray-600">{{ transaction.type_in_out }}</p>
+          </div>
+          <div class="text-right">
+            <p class="font-semibold" :class="transaction.type_in_out === 'IN' ? 'text-green-600' : 'text-red-600'">
+              {{ formatIDR(transaction.amount) }}
+            </p>
+            <p class="text-xs text-gray-500">{{ formatDateToYMD(transaction.date) }}</p>
+          </div>
+        </div>
+      </div>
+      <div v-else class="text-center py-8 text-gray-500">
+        <p>No recent transactions found</p>
+      </div>
     </div>
   </div>
 
 
+  <!-- Charts Section -->
   <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg">
-    <h1 class="text-xl font-semibold text-slate-800 mb-4">Recent Invoices</h1>
-    <UTable :columns="columns" :rows="invoices" :page-size="5">
-      <template #amount-data="{ row }">
-        <p class=" font-medium">{{ formatIDR(row.amount) }}</p>
-      </template>
-      <template #created_at-data="{ row }">
-        <p class="text-slate-500">{{ formatDateToYMD(row.created_at) }}</p>
-      </template>
-    </UTable>
+    <h1 class="text-xl font-semibold text-slate-800 mb-4">Analytics Charts</h1>
+    <div class="grid gap-6 md:grid-cols-2 sm:grid-cols-1">
+      <div>
+        <h2 class="text-lg font-medium text-gray-700 mb-3">Customer Growth (30 days)</h2>
+        <div v-if="customerGrowth.customer_growth" class="h-64">
+          <VChart :option="{
+            title: { text: 'Customer Growth' },
+            tooltip: {},
+            xAxis: { 
+              data: customerGrowth.customer_growth.map((item: any) => item.date),
+              type: 'category'
+            },
+            yAxis: {},
+            series: [{
+              name: 'New Customers',
+              type: 'line',
+              data: customerGrowth.customer_growth.map((item: any) => item.count),
+              smooth: true
+            }]
+          }" autoresize style="height: 100%;" />
+        </div>
+      </div>
+      
+      <div>
+        <h2 class="text-lg font-medium text-gray-700 mb-3">Revenue Chart (30 days)</h2>
+        <div v-if="revenueChart.revenue_chart" class="h-64">
+          <VChart :option="{
+            title: { text: 'Daily Revenue' },
+            tooltip: {},
+            xAxis: { 
+              data: revenueChart.revenue_chart.map((item: any) => item.date),
+              type: 'category'
+            },
+            yAxis: {},
+            series: [{
+              name: 'Revenue',
+              type: 'bar',
+              data: revenueChart.revenue_chart.map((item: any) => item.amount),
+              itemStyle: { color: '#10B981' }
+            }]
+          }" autoresize style="height: 100%;" />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
