@@ -164,25 +164,6 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   } finally {
     isSubmitting.value = false;
   }
-  
-  // Do something with event.data
-  if (props.isEdit) {
-    invoiceAdminApi()
-      .editInvoice(props.data.id, state)
-      .then((response) => {
-        notification.success('Success', response.message);
-        onSuccess();
-      })
-      .catch((error) => { });
-  } else {
-    invoiceAdminApi()
-      .createInvoice(state)
-      .then((response) => {
-        notification.success('Success', response.message);
-        onSuccess();
-      })
-      .catch((error) => { });
-  }
 }
 
 const customer = ref([]);

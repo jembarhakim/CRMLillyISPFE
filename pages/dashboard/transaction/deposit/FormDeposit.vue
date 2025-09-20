@@ -3,6 +3,7 @@ import { object, string, type InferType } from "yup";
 import type { FormSubmitEvent } from "#ui/types";
 import { transactionAdminApi } from "@/api/admin/transaction";
 import { accountAdminApi } from "@/api/admin/account";
+import { formatIDR } from '@/helper/currency';
 
 const props = defineProps<{
   id?: string;
@@ -25,6 +26,26 @@ const state = reactive({
   payer_id: "",
   method: "",
   ref: "",
+});
+
+// Computed property untuk menampilkan format mata uang
+const formattedAmount = computed({
+  get: () => {
+    // Format dengan separator ribuan
+    const numericAmount = parseFloat(state.amount) || 0;
+    return numericAmount > 0 ? numericAmount.toLocaleString('id-ID') : '';
+  },
+  set: (value) => {
+    // Remove non-numeric characters
+    const numericValue = value.toString().replace(/[^\d]/g, '');
+    state.amount = numericValue;
+  }
+});
+
+// Function untuk format display
+const displayAmount = computed(() => {
+  const numericAmount = parseFloat(state.amount) || 0;
+  return numericAmount > 0 ? formatIDR(numericAmount) : 'Rp 0,00';
 });
 if (props.id) {
   await transactionAdminApi()
@@ -150,7 +171,20 @@ const methodOptions = [
               <UInput v-model="state.description" />
             </UFormGroup>
             <UFormGroup label="Amount" name="amount">
-              <UInput v-model="state.amount" type="number"/>
+              <div class="relative">
+                <UInput 
+                  type="text" 
+                  v-model="formattedAmount" 
+                  placeholder="Enter amount"
+                  class="pl-12"
+                />
+                <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm font-medium">
+                  Rp
+                </div>
+              </div>
+              <div class="text-sm text-gray-600 mt-1">
+                Current value: {{ displayAmount }}
+              </div>
             </UFormGroup>
             <UFormGroup label="Category" name="category">
               <USelectMenu v-model="state.category" :options="categoryOptions" value-attribute="value"

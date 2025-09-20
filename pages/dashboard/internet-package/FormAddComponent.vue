@@ -2,6 +2,7 @@
 import { object, string, type InferType } from 'yup'
 import type { FormSubmitEvent } from '#ui/types'
 import { internetPackageAdminApi } from '@/api/admin/internet-package'
+import { formatIDR } from '@/helper/currency'
 
 const schema = object({
     name: string()
@@ -42,6 +43,24 @@ const state = reactive({
     name: '',
     price: 0,
     description: ''
+})
+
+// Computed property untuk menampilkan format mata uang
+const formattedPrice = computed({
+    get: () => {
+        // Format dengan separator ribuan
+        return state.price > 0 ? state.price.toLocaleString('id-ID') : ''
+    },
+    set: (value) => {
+        // Remove non-numeric characters
+        const numericValue = value.toString().replace(/[^\d]/g, '')
+        state.price = numericValue ? parseInt(numericValue) : 0
+    }
+})
+
+// Function untuk format display
+const displayPrice = computed(() => {
+    return state.price > 0 ? formatIDR(state.price) : 'Rp 0,00'
 })
 
 watch(
@@ -95,7 +114,20 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                     <UInput v-model="state.name" />
                 </UFormGroup>
                 <UFormGroup label="Price" name="price">
-                    <UInput type="number" v-model="state.price" />
+                    <div class="relative">
+                        <UInput 
+                            type="text" 
+                            v-model="formattedPrice" 
+                            placeholder="Enter price amount"
+                            class="pl-12"
+                        />
+                        <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm font-medium">
+                            Rp
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-600 mt-1">
+                        Current value: {{ displayPrice }}
+                    </div>
                 </UFormGroup>
                 <UFormGroup label="Description" name="description">
                     <UTextarea type="text" v-model="state.description" />

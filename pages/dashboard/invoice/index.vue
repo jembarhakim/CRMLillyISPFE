@@ -12,6 +12,7 @@ useHead({
 })
 
 let customer = ref<any[]>([]);
+const isLoading = ref(false);
 
 // Partial payment modal state
 const showPartialPaymentModal = ref(false)
@@ -44,42 +45,48 @@ type Customer = {
 };
 
 async function getData() {
-  invoiceAdminApi()
-    .getAllInvoices()
-    .then((response) => {
-      response.data.forEach((invoice: any) => {
-        invoice.number = response.data.indexOf(invoice) + 1;
-        invoice.created_at = invoice.created_at.split("T")[0];
-        
-        // Calculate total_paid from transaction data
-        invoice.total_paid = invoice.transaction?.amount || 0;
-        
-        // Calculate amount_due
-        invoice.amount_due = invoice.amount - invoice.total_paid;
-        
-        // Only auto-update status if it's not manually set to 'paid' or 'pending'
-        // This prevents overriding manual status changes
-        if (invoice.status === 'unpaid' || !invoice.status) {
-          if (invoice.total_paid >= invoice.amount) {
-            invoice.status = 'paid';
-          } else if (invoice.total_paid > 0) {
-            invoice.status = 'pending';
-          } else {
-            invoice.status = 'unpaid';
-          }
+  console.log("Fetching invoice data...");
+  isLoading.value = true;
+  try {
+    const response = await invoiceAdminApi().getAllInvoices();
+    console.log("Invoice data received:", response.data);
+    
+    response.data.forEach((invoice: any) => {
+      invoice.number = response.data.indexOf(invoice) + 1;
+      invoice.created_at = invoice.created_at.split("T")[0];
+      
+      // Calculate total_paid from transaction data
+      invoice.total_paid = invoice.transaction?.amount || 0;
+      
+      // Calculate amount_due
+      invoice.amount_due = invoice.amount - invoice.total_paid;
+      
+      // Only auto-update status if it's not manually set to 'paid' or 'pending'
+      // This prevents overriding manual status changes
+      if (invoice.status === 'unpaid' || !invoice.status) {
+        if (invoice.total_paid >= invoice.amount) {
+          invoice.status = 'paid';
+        } else if (invoice.total_paid > 0) {
+          invoice.status = 'pending';
+        } else {
+          invoice.status = 'unpaid';
         }
-      });
-
-      customer.value = [...response.data];
-    })
-    .catch((err) => {
-      const message = typeof err === 'string' ? err : err?.message || 'Terjadi kesalahan';
-      useToast().add({
-        title: message,
-        color: "red",
-      });
-      notification.error('Error', err);
+      }
     });
+
+    customer.value = [...response.data];
+    console.log("Invoice data updated in customer.value:", customer.value.length, "invoices");
+  } catch (err: any) {
+    console.error("Error fetching invoice data:", err);
+    const message = typeof err === 'string' ? err : err?.message || 'Terjadi kesalahan';
+    useToast().add({
+      title: message,
+      color: "red",
+    });
+    notification.error('Error', err);
+  } finally {
+    isLoading.value = false;
+  }
 }
 
 async function updateStatus(id: string, status: string, currentStatus: string) {
@@ -457,8 +464,15 @@ function OpenModalAddCustomer(isEdit: boolean, data: any) {
     isEdit,
     data,
     async onSuccess() {
-      await getData();
-      modal.close();
+      console.log("Modal onSuccess called, refreshing data...");
+      try {
+        await getData();
+        console.log("Data refreshed successfully");
+        modal.close();
+        console.log("Modal closed successfully");
+      } catch (error) {
+        console.error("Error refreshing data:", error);
+      }
     },
   });
 }
@@ -487,7 +501,17 @@ function handlePaymentSuccess() {
 </script>
 
 <template>
-  <UButton label="Add Invoice" @click="OpenModalAddCustomer(false, null)" />
+  <div class="flex justify-between items-center mb-4">
+    <UButton label="Add Invoice" @click="OpenModalAddCustomer(false, null)" />
+    <UButton 
+      icon="i-heroicons-arrow-path" 
+      color="gray" 
+      variant="soft"
+      :loading="isLoading"
+      @click="getData"
+      title="Refresh Data"
+    />
+  </div>
   
   <!-- Filter Section -->
   <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 dark:border-gray-700 mb-4">
@@ -535,7 +559,7 @@ function handlePaymentSuccess() {
     </div>
   </div>
 
-  <UTable :rows="filteredRows" :columns="columns">
+  <UTable :rows="filteredRows" :columns="columns" :loading="isLoading">
     <template #actions-data="{ row }">
       <UDropdown :items="items(row)">
         <UButton

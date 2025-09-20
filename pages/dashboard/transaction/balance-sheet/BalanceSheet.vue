@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { formatIDR } from '@/helper/currency';
+
 const props = defineProps<{
   data: any[];
   onRefresh: () => Promise<void>;
@@ -71,6 +73,9 @@ const items = (row: User) => [
           icon="i-heroicons-ellipsis-horizontal-20-solid"
         />
       </UDropdown>
+    </template>
+    <template #saldo-data="{ row }">
+      <p class="font-medium text-gray-900">{{ formatIDR(row.saldo) }}</p>
     </template>
   </UTable>
 

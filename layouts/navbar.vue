@@ -72,10 +72,22 @@
           <div class="flex-1 p-2 overflow-auto no-scrollbar">
             <ul class="space-y-2">
               <li v-for="(item, index) in filterMenu" :key="index"
-                class="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-100 text-gray-700"
-                :class="[showSidebar ? 'justify-center' : '']" @click="navigateTo(item.link)">
-                <UIcon :name="item.icon" class="w-6 h-6" style="color: black !important; fill: black !important; stroke: black !important;" />
-                <span class="font-medium text-gray-800">{{ item.label }}</span>
+                class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200"
+                :class="[
+                  showSidebar ? 'justify-center' : '',
+                  isActiveMenuItem(item.link) 
+                    ? 'active-menu-item' 
+                    : 'hover:bg-gray-100 text-gray-700'
+                ]" 
+                @click="navigateTo(item.link)">
+                <UIcon :name="item.icon" class="w-6 h-6 transition-colors duration-200" 
+                  :style="isActiveMenuItem(item.link) 
+                    ? 'color: #1d4ed8 !important; fill: #1d4ed8 !important; stroke: #1d4ed8 !important;' 
+                    : 'color: black !important; fill: black !important; stroke: black !important;'" />
+                <span class="font-medium transition-colors duration-200"
+                  :class="isActiveMenuItem(item.link) ? 'text-blue-800' : 'text-gray-800'">
+                  {{ item.label }}
+                </span>
               </li>
             </ul>
 
@@ -117,7 +129,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { getMenuForRole, getRoleDisplayName } from '@/utilities/rolePermissions'
 
 // Type definitions
@@ -128,6 +140,7 @@ interface ProfileDropdownItem {
 
 // Reactive state
 const router = useRouter()
+const route = useRoute()
 const showSidebar = ref(true)
 const showMobileSidebar = ref(false)
 const authStore = useAuthStore()
@@ -157,6 +170,20 @@ const filterMenu = computed(() => {
 
   return getMenuForRole(authStore.user.role)
 })
+
+// Function to check if a menu item is active
+const isActiveMenuItem = (menuLink: string): boolean => {
+  const currentPath = route.path
+  // Exact match for dashboard root
+  if (menuLink === '/dashboard' && currentPath === '/dashboard') {
+    return true
+  }
+  // For other routes, check if current path starts with the menu link
+  if (menuLink !== '/dashboard' && currentPath.startsWith(menuLink)) {
+    return true
+  }
+  return false
+}
 
 // Methods
 const toggleSidebar = () => {
@@ -288,6 +315,32 @@ const navigateTo = (link: string) => {
 
 .sidebar-fix .toggle-header:hover {
   background-color: #f3f4f6 !important;
+}
+
+/* Active menu item styles */
+.sidebar-fix .active-menu-item {
+  background-color: #eff6ff !important;
+  border-left: 4px solid #3b82f6 !important;
+  color: #1e40af !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+}
+
+.sidebar-fix .active-menu-item:hover {
+  background-color: #dbeafe !important;
+}
+
+/* Ensure active state is visible in collapsed mode */
+@media (min-width: 1024px) {
+  .sidebar-fix.w-16 .active-menu-item {
+    border-left: 4px solid #3b82f6 !important;
+    background-color: #eff6ff !important;
+  }
+  
+  .sidebar-fix.w-16 .active-menu-item .w-6 {
+    color: #1d4ed8 !important;
+    fill: #1d4ed8 !important;
+    stroke: #1d4ed8 !important;
+  }
 }
 
 /* Keep sticky behavior on all sizes */
