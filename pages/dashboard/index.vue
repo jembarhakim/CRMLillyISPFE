@@ -340,12 +340,52 @@ const getNewDashboardData = async () => {
     dashboardStats.value = statsResponse.data;
 
     // Get recent invoices
-    const invoicesResponse = await dashboardAdminApi().getRecentInvoices();
-    recentInvoices.value = invoicesResponse.data.invoices;
+    try {
+      const invoicesResponse = await dashboardAdminApi().getRecentInvoices();
+      console.log('Recent invoices response:', invoicesResponse);
+      recentInvoices.value = invoicesResponse.data.invoices || [];
+    } catch (invoiceError) {
+      console.error('Error fetching recent invoices:', invoiceError);
+      // Fallback: get invoices from existing data
+      if (invoices.value && invoices.value.length > 0) {
+        recentInvoices.value = invoices.value.slice(0, 5).map((invoice: any) => ({
+          id: invoice.id,
+          invoice_no: invoice.id,
+          amount: invoice.amount,
+          status: invoice.status,
+          customer: invoice.customer?.name || 'Unknown Customer',
+          created_at: invoice.created_at
+        }));
+      }
+    }
 
     // Get recent transactions
-    const transactionsResponse = await dashboardAdminApi().getRecentTransactions();
-    recentTransactions.value = transactionsResponse.data.transactions;
+    try {
+      const transactionsResponse = await dashboardAdminApi().getRecentTransactions();
+      console.log('Recent transactions response:', transactionsResponse);
+      recentTransactions.value = transactionsResponse.data.transactions || [];
+    } catch (transactionError) {
+      console.error('Error fetching recent transactions:', transactionError);
+      // Fallback: get transactions from existing data
+      if (latestDeposites.value && latestDeposites.value.length > 0) {
+        recentTransactions.value = [
+          ...latestDeposites.value.slice(0, 3).map((deposit: any) => ({
+            id: deposit.number,
+            amount: deposit.amount,
+            type_in_out: 'debit',
+            description: deposit.description,
+            date: new Date().toISOString()
+          })),
+          ...latestExpenses.value.slice(0, 2).map((expense: any) => ({
+            id: expense.number,
+            amount: expense.amount,
+            type_in_out: 'credit',
+            description: expense.description,
+            date: new Date().toISOString()
+          }))
+        ];
+      }
+    }
 
     // Get customer growth
     const growthResponse = await dashboardAdminApi().getCustomerGrowth();
@@ -479,16 +519,36 @@ onMounted(async () => {
   <!-- Recent Data Section -->
   <div class="grid gap-6 md:grid-cols-2 sm:grid-cols-1 mb-10">
     <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg">
-      <h1 class="text-xl font-semibold text-slate-800 mb-4">Recent Invoices</h1>
+      <div class="flex justify-between items-center mb-4">
+        <h1 class="text-xl font-semibold text-slate-800">Recent Invoices</h1>
+        <UButton 
+          icon="i-heroicons-arrow-path" 
+          color="gray" 
+          variant="soft"
+          size="sm"
+          @click="getNewDashboardData"
+          title="Refresh Recent Invoices"
+        />
+      </div>
       <div v-if="recentInvoices.length > 0" class="space-y-3">
         <div v-for="invoice in recentInvoices.slice(0, 5)" :key="invoice.id" 
-             class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-          <div>
-            <p class="font-medium text-gray-900">{{ invoice.invoice_no }}</p>
-            <p class="text-sm text-gray-600">{{ invoice.customer }}</p>
+             class="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <p class="font-medium text-gray-900">{{ invoice.invoice_no || invoice.id }}</p>
+              <span class="px-2 py-1 text-xs rounded-full font-medium"
+                    :class="{
+                      'bg-green-100 text-green-800': invoice.status === 'paid',
+                      'bg-red-100 text-red-800': invoice.status === 'unpaid',
+                      'bg-yellow-100 text-yellow-800': invoice.status === 'pending'
+                    }">
+                {{ invoice.status?.toUpperCase() || 'UNKNOWN' }}
+              </span>
+            </div>
+            <p class="text-sm text-gray-600">{{ invoice.customer || 'Unknown Customer' }}</p>
           </div>
           <div class="text-right">
-            <p class="font-semibold text-green-600">{{ formatIDR(invoice.amount) }}</p>
+            <p class="font-semibold text-green-600">{{ formatIDR(invoice.amount || 0) }}</p>
             <p class="text-xs text-gray-500">{{ formatDateToYMD(invoice.created_at) }}</p>
           </div>
         </div>
@@ -499,19 +559,38 @@ onMounted(async () => {
     </div>
 
     <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg">
-      <h1 class="text-xl font-semibold text-slate-800 mb-4">Recent Transactions</h1>
+      <div class="flex justify-between items-center mb-4">
+        <h1 class="text-xl font-semibold text-slate-800">Recent Transactions</h1>
+        <UButton 
+          icon="i-heroicons-arrow-path" 
+          color="gray" 
+          variant="soft"
+          size="sm"
+          @click="getNewDashboardData"
+          title="Refresh Recent Transactions"
+        />
+      </div>
       <div v-if="recentTransactions.length > 0" class="space-y-3">
         <div v-for="transaction in recentTransactions.slice(0, 5)" :key="transaction.id" 
-             class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-          <div>
-            <p class="font-medium text-gray-900">{{ transaction.description }}</p>
-            <p class="text-sm text-gray-600">{{ transaction.type_in_out }}</p>
+             class="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <p class="font-medium text-gray-900">{{ transaction.description || 'No Description' }}</p>
+              <span class="px-2 py-1 text-xs rounded-full font-medium"
+                    :class="{
+                      'bg-green-100 text-green-800': transaction.type_in_out === 'debit',
+                      'bg-red-100 text-red-800': transaction.type_in_out === 'credit'
+                    }">
+                {{ transaction.type_in_out?.toUpperCase() || 'UNKNOWN' }}
+              </span>
+            </div>
+            <p class="text-sm text-gray-600">{{ transaction.category || 'General Transaction' }}</p>
           </div>
           <div class="text-right">
-            <p class="font-semibold" :class="transaction.type_in_out === 'IN' ? 'text-green-600' : 'text-red-600'">
-              {{ formatIDR(transaction.amount) }}
+            <p class="font-semibold" :class="transaction.type_in_out === 'debit' ? 'text-green-600' : 'text-red-600'">
+              {{ formatIDR(transaction.amount || 0) }}
             </p>
-            <p class="text-xs text-gray-500">{{ formatDateToYMD(transaction.date) }}</p>
+            <p class="text-xs text-gray-500">{{ formatDateToYMD(transaction.date || transaction.created_at) }}</p>
           </div>
         </div>
       </div>
