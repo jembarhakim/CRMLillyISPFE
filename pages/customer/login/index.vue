@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { FormError, FormErrorEvent, FormSubmitEvent } from '#ui/types'
 import { authApi } from '@/api/auth'
+import LoginNotification from '@/components/LoginNotification.vue'
 
 // Set page title
 useHead({
@@ -11,6 +12,9 @@ const state = reactive({
   email: '',
   password: ''
 })
+
+const showError = ref(false)
+const errorMessage = ref('')
 
 const validate = (state: any): FormError[] => {
   const errors = []
@@ -30,10 +34,10 @@ async function onSubmit(event: FormSubmitEvent<any>) {
       navigateTo('/dashboard')
     })
     .catch((error) => {
-      useToast().add({
-        title: error,
-        color: "red"
-      })
+      // Show generic error message for all login errors
+      errorMessage.value = 'Wrong email or password'
+      
+      showError.value = true
     })
 
   console.log(event.data)
@@ -44,11 +48,21 @@ async function onError(event: FormErrorEvent) {
   element?.focus()
   element?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
+
+function closeError() {
+  showError.value = false
+  errorMessage.value = ''
+}
 </script>
 
 <template>
   <div class="flex items-center justify-center min-h-screen">
     <div class="p-4 m-4 bg-white rounded-lg shadow">
+      <LoginNotification 
+        :show="showError" 
+        :message="errorMessage" 
+        @close="closeError" 
+      />
       <UForm :validate="validate" :state="state" class="space-y-4" @submit="onSubmit" @error="onError">
         <UFormGroup label="Email" name="email">
           <UInput v-model="state.email" />

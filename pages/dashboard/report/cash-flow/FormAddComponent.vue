@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { boolean, object, string, type InferType } from 'yup'
 import type { FormSubmitEvent } from '#ui/types'
+import { formatIDR } from '@/helper/currency'
 
 const schema = object({
     // email: string().email('Invalid email').required('Required'),
@@ -29,6 +30,24 @@ const state = reactive({
     description: '',
     type_use_of_money: '',
     type_transaction: '',
+})
+
+// Computed property untuk menampilkan format mata uang
+const formattedNominal = computed({
+    get: () => {
+        // Format dengan separator ribuan
+        return state.nominal > 0 ? state.nominal.toLocaleString('id-ID') : ''
+    },
+    set: (value) => {
+        // Remove non-numeric characters
+        const numericValue = value.toString().replace(/[^\d]/g, '')
+        state.nominal = numericValue ? parseInt(numericValue) : 0
+    }
+})
+
+// Function untuk format display
+const displayNominal = computed(() => {
+    return state.nominal > 0 ? formatIDR(state.nominal) : 'Rp 0,00'
 })
 const type_cash = [
     { label: 'Cash', value: 'cash' },
@@ -101,7 +120,20 @@ function clearState() {
                         option-attribute="label" />
                 </UFormGroup>
                 <UFormGroup label="Nominal" name="nominal">
-                    <UInput type="number" v-model="state.nominal" />
+                    <div class="relative">
+                        <UInput 
+                            type="text" 
+                            v-model="formattedNominal" 
+                            placeholder="Enter nominal amount"
+                            class="pl-12"
+                        />
+                        <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm font-medium">
+                            Rp
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-600 mt-1">
+                        Current value: {{ displayNominal }}
+                    </div>
                 </UFormGroup>
                 <UFormGroup label="Description" name="description">
                     <UTextarea v-model="state.description" />

@@ -6,12 +6,14 @@ import PartialPaymentModal from "./PartialPaymentModal.vue";
 import * as currency from "@/helper/currency";
 import type { UpdateStatusInvoiceRequest } from "@/types/requests/invoice";
 import { WhatsappApi } from "@/api/admin/wa";
+import { useNotification } from '@/composables/useNotification';
 // Set page title
 useHead({
   title: 'Invoice Management - CRM System'
 })
 
 let customer = ref<any[]>([]);
+const isLoading = ref(false);
 
 // Partial payment modal state
 const showPartialPaymentModal = ref(false)
@@ -48,41 +50,48 @@ type Customer = {
 };
 
 async function getData() {
-  invoiceAdminApi()
-    .getAllInvoices()
-    .then((response) => {
-      response.data.forEach((invoice: any) => {
-        invoice.number = response.data.indexOf(invoice) + 1;
-        invoice.created_at = invoice.created_at.split("T")[0];
-        
-        // Calculate total_paid from transaction data
-        invoice.total_paid = invoice.transaction?.amount || 0;
-        
-        // Calculate amount_due
-        invoice.amount_due = invoice.amount - invoice.total_paid;
-        
-        // Only auto-update status if it's not manually set to 'paid' or 'pending'
-        // This prevents overriding manual status changes
-        if (invoice.status === 'unpaid' || !invoice.status) {
-          if (invoice.total_paid >= invoice.amount) {
-            invoice.status = 'paid';
-          } else if (invoice.total_paid > 0) {
-            invoice.status = 'pending';
-          } else {
-            invoice.status = 'unpaid';
-          }
+  console.log("Fetching invoice data...");
+  isLoading.value = true;
+  try {
+    const response = await invoiceAdminApi().getAllInvoices();
+    console.log("Invoice data received:", response.data);
+    
+    response.data.forEach((invoice: any) => {
+      invoice.number = response.data.indexOf(invoice) + 1;
+      invoice.created_at = invoice.created_at.split("T")[0];
+      
+      // Calculate total_paid from transaction data
+      invoice.total_paid = invoice.transaction?.amount || 0;
+      
+      // Calculate amount_due
+      invoice.amount_due = invoice.amount - invoice.total_paid;
+      
+      // Only auto-update status if it's not manually set to 'paid' or 'pending'
+      // This prevents overriding manual status changes
+      if (invoice.status === 'unpaid' || !invoice.status) {
+        if (invoice.total_paid >= invoice.amount) {
+          invoice.status = 'paid';
+        } else if (invoice.total_paid > 0) {
+          invoice.status = 'pending';
+        } else {
+          invoice.status = 'unpaid';
         }
-      });
-
-      customer.value = [...response.data];
-    })
-    .catch((err) => {
-      const message = typeof err === 'string' ? err : err?.message || 'Terjadi kesalahan';
-      useToast().add({
-        title: message,
-        color: "red",
-      });
+      }
     });
+
+    customer.value = [...response.data];
+    console.log("Invoice data updated in customer.value:", customer.value.length, "invoices");
+  } catch (err: any) {
+    console.error("Error fetching invoice data:", err);
+    const message = typeof err === 'string' ? err : err?.message || 'Terjadi kesalahan';
+    useToast().add({
+      title: message,
+      color: "red",
+    });
+    notification.error('Error', err);
+  } finally {
+    isLoading.value = false;
+  }
 }
 
 async function updateStatus(id: string, status: string, currentStatus: string) {
@@ -112,10 +121,7 @@ async function proceedWithStatusUpdate(id: string, status: string, currentStatus
   try {
     const response = await invoiceAdminApi().updateStatusInvoice(id, { status });
     
-    useToast().add({
-      title: response.message,
-      color: "green",
-    });
+    notification.success('Success', response.message);
     
     // Update the specific invoice in the local array instead of refreshing all data
     const invoiceIndex = customer.value.findIndex(inv => inv.id === id);
@@ -172,11 +178,7 @@ async function confirmStatusChange() {
             await handlePdfView(invoiceId, true);
           } catch (error) {
             console.error('Error opening PDF automatically:', error);
-            useToast().add({
-              title: 'Error',
-              description: 'Gagal membuka PDF otomatis. Silakan klik "Download PDF" secara manual.',
-              color: 'red'
-            });
+            notification.error('Error', 'Gagal membuka PDF otomatis. Silakan klik "Download PDF" secara manual.', 5000);
           }
         }, 1000);
       }
@@ -214,11 +216,7 @@ async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
     
     if (invoice?.pdf_viewed) {
       console.log('PDF already viewed, showing error message');
-      useToast().add({
-        title: 'PDF Sudah Dilihat',
-        description: 'PDF invoice ini sudah pernah dilihat dan tidak dapat diakses lagi untuk mencegah duplikasi pembayaran.',
-        color: 'red'
-      });
+      notification.error('PDF Sudah Dilihat', 'PDF invoice ini sudah pernah dilihat dan tidak dapat diakses lagi untuk mencegah duplikasi pembayaran.', 5000);
       return;
     }
 
@@ -230,11 +228,7 @@ async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
     } catch (markError) {
       console.error('Failed to mark PDF as viewed:', markError);
       // Continue anyway - we'll still open the PDF
-      useToast().add({
-        title: 'Warning',
-        description: 'Gagal menandai PDF sebagai dilihat, tetapi PDF tetap akan dibuka.',
-        color: 'yellow'
-      });
+      notification.warning('Warning', 'Gagal menandai PDF sebagai dilihat, tetapi PDF tetap akan dibuka.', 3000);
     }
     
     // Add to tracking set
@@ -266,17 +260,9 @@ async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
     
     // Different messages for manual vs auto open
     if (isAutoOpen) {
-      useToast().add({
-        title: 'Status Diubah ke PAID',
-        description: 'PDF invoice dibuka otomatis. PDF ini tidak dapat dibuka lagi untuk mencegah duplikasi pembayaran.',
-        color: 'green'
-      });
+      notification.success('Status Diubah ke PAID', 'PDF invoice dibuka otomatis. PDF ini tidak dapat dibuka lagi untuk mencegah duplikasi pembayaran.', 5000);
     } else {
-      useToast().add({
-        title: 'PDF Dibuka',
-        description: 'PDF invoice telah dibuka. PDF ini tidak dapat dibuka lagi untuk mencegah duplikasi pembayaran.',
-        color: 'yellow'
-      });
+      notification.info('PDF Dibuka', 'PDF invoice telah dibuka. PDF ini tidak dapat dibuka lagi untuk mencegah duplikasi pembayaran.', 5000);
     }
     
   } catch (error: any) {
@@ -285,17 +271,9 @@ async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
     // Check if it's a JSON parsing error
     if (error.message && error.message.includes('Unexpected token')) {
       console.error('JSON parsing error - server returned HTML instead of JSON');
-      useToast().add({
-        title: 'Error',
-        description: 'Server error: PDF tidak dapat dibuka. Silakan coba lagi.',
-        color: 'red'
-      });
+      notification.error('Error', 'Server error: PDF tidak dapat dibuka. Silakan coba lagi.', 5000);
     } else {
-      useToast().add({
-        title: 'Error',
-        description: error.message || 'Gagal membuka PDF',
-        color: 'red'
-      });
+      notification.error('Error', error.message || 'Gagal membuka PDF', 5000);
     }
   }
 }
@@ -332,10 +310,7 @@ async function sendWhatsapp(number: string, id: string) {
         `berikut invoice yang harus anda bayarkan sekarang \n\nKami berikan Link untuk melihat invoice \n\nhttps://skripsi.rtrsite.com/invoice/${id} \n\nSilahkan menuju dashboard login customer kami https://skripsi.rtrsite.com/login \n\nTerimakasih`,
     })
     .then((response) => {
-      useToast().add({
-        title: response.message,
-        color: "green",
-      });
+      notification.success('Success', response.message);
     })
     .catch((err) => {
       const message = typeof err === 'string' ? err : err?.message || 'Gagal mengirim WhatsApp';
@@ -420,15 +395,10 @@ async function deleteData(id: string) {
     .deleteInvoice(id)
     .then((response) => {
       getData();
-      useToast().add({
-        title: response.message,
-      });
+      notification.success('Success', response.message);
     })
     .catch((err) => {
-      useToast().add({
-        title: err,
-        color: "red",
-      });
+      notification.error('Error', err);
     });
 }
 
@@ -568,7 +538,7 @@ const items = (row: any) => [
   ],
 ];
 
-const toast = useToast();
+const notification = useNotification();
 const modal = useModal();
 
 function OpenModalAddCustomer(isEdit: boolean, data: any) {
@@ -577,8 +547,15 @@ function OpenModalAddCustomer(isEdit: boolean, data: any) {
     isEdit,
     data,
     async onSuccess() {
-      await getData();
-      modal.close();
+      console.log("Modal onSuccess called, refreshing data...");
+      try {
+        await getData();
+        console.log("Data refreshed successfully");
+        modal.close();
+        console.log("Modal closed successfully");
+      } catch (error) {
+        console.error("Error refreshing data:", error);
+      }
     },
   });
 }
@@ -669,8 +646,18 @@ async function printAllUnpaidInvoices() {
 </script>
 
 <template>
-  <div class="flex gap-2 mb-4">
+  <div class="flex justify-between items-center mb-4">
+    <div class="flex gap-2 mb-4">
     <UButton label="Add Invoice" @click="OpenModalAddCustomer(false, null)" />
+    <UButton 
+      icon="i-heroicons-arrow-path" 
+      color="gray" 
+      variant="soft"
+      :loading="isLoading"
+      @click="getData"
+      title="Refresh Data"
+    />
+  </div>
     <UButton 
       label="Print All Unpaid" 
       color="orange" 
@@ -726,7 +713,7 @@ async function printAllUnpaidInvoices() {
     </div>
   </div>
 
-  <UTable :rows="filteredRows" :columns="columns">
+  <UTable :rows="filteredRows" :columns="columns" :loading="isLoading">
     <template #actions-data="{ row }">
       <UDropdown :items="items(row)">
         <UButton

@@ -7,6 +7,7 @@ import { companyAdminApi } from "@/api/admin/company";
 import { internetPackageAdminApi } from "@/api/admin/internet-package";
 import { networkDeviceAdminApi } from "@/api/admin/network-device";
 import { assetAdminApi } from "@/api/admin/asset";
+import { useNotification } from '@/composables/useNotification';
 
 const props = defineProps({
   isEdit: {
@@ -109,6 +110,8 @@ const schema = object({
 });
 
 type Schema = InferType<typeof schema>;
+
+const notification = useNotification();
 
 const state = reactive({
   type_of_service: "",
@@ -231,13 +234,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         }
       }
       
-      useToast().add({ title: response.message });
+      notification.success('Success', response.message);
       onSuccess();
     } catch (error: any) {
-      useToast().add({ 
-        title: error.message || 'Failed to update customer', 
-        color: 'red' 
-      });
+      notification.error('Error', error.message || 'Failed to update customer');
     }
   } else {
     try {
@@ -262,13 +262,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         await networkDeviceAdminApi().createNetworkDevice(networkDeviceData);
       }
       
-      useToast().add({ title: customerResponse.message });
+      notification.success('Success', customerResponse.message);
       onSuccess();
     } catch (error: any) {
-      useToast().add({ 
-        title: error.message || 'Failed to create customer', 
-        color: 'red' 
-      });
+      notification.error('Error', error.message || 'Failed to create customer');
     }
   }
 

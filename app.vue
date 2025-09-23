@@ -2,9 +2,12 @@
 const route = useRoute()
 
 import LoadingComponent from '@/components/LoadingComponent.vue'
+import NotificationModal from '@/components/NotificationModal.vue'
 import { useLoading } from '@/composables/useLoading'
+import { useNotification } from '@/composables/useNotification'
 
 const { isLoading } = useLoading()
+const { isVisible, currentTitle, currentMessage, currentType, currentDuration, close } = useNotification()
 </script>
 
 <template>
@@ -19,14 +22,21 @@ const { isLoading } = useLoading()
       <NuxtPage v-if="route.path == '/login' || route.path == '/customer' || route.path.startsWith('/invoice')" />
     </NuxtLayout>
     <UModals />
-    <div class="pointer-events-none">
-      <UNotifications />
-    </div>
+    <UNotifications />
+    
+    <!-- Custom Notification Modal -->
+    <NotificationModal
+      :is-visible="isVisible"
+      :title="currentTitle"
+      :message="currentMessage"
+      :type="currentType"
+      :duration="currentDuration"
+      @close="close"
+    />
 
     <!-- </NuxtUIProvider> -->
   </div>
 </template>
-
 <style>
 /* Allow clicks to pass through the notifications container, but keep the toasts clickable */
 [aria-live="assertive"],
