@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { invoiceAdminApi } from "@/api/admin/invoice";
+import { recurringInvoiceAdminApi } from "@/api/admin/recurring-invoice";
 import FormAddComponent from "./FormAddInvoice.vue";
 import PartialPaymentModal from "./PartialPaymentModal.vue";
 import * as currency from "@/helper/currency";
@@ -27,6 +28,10 @@ const statusConfirmationData = ref<{
 
 // PDF view tracking state
 const pdfViewingInvoices = ref<Set<string>>(new Set())
+const activeRecurringCustomerIds = ref<Set<string>>(new Set())
+
+// Print state
+const printing = ref(false)
 
 const router = useRouter();
 type Customer = {
@@ -341,6 +346,75 @@ async function sendWhatsapp(number: string, id: string) {
     });
 }
 
+// Load active recurring index for conditional action visibility
+async function loadActiveRecurringCustomers() {
+  try {
+    const res = await recurringInvoiceAdminApi().getAllRecurringInvoices()
+    const ids = new Set<string>()
+    ;(res.data || []).forEach((r: any) => {
+      if ((r.status || '').toLowerCase() === 'active') ids.add(r.customer_id)
+    })
+    activeRecurringCustomerIds.value = ids
+  } catch (e) {
+    // ignore silently; action will still be available
+  }
+}
+
+// --- Start Recurring from Invoice ---
+const showStartRecurringModal = ref(false)
+const selectedInvoiceForRecurring = ref<any>(null)
+const recurringForm = reactive({
+  invoice_date: '',
+  due_date: '',
+  frequency: 'monthly' as 'monthly' | 'quarterly' | 'yearly',
+  description: ''
+})
+
+function openStartRecurringModal(row: any) {
+  selectedInvoiceForRecurring.value = row
+  // default dates: today and +30 days
+  const today = new Date()
+  const due = new Date()
+  due.setDate(today.getDate() + 30)
+  recurringForm.invoice_date = today.toISOString().split('T')[0]
+  recurringForm.due_date = due.toISOString().split('T')[0]
+  recurringForm.frequency = 'monthly'
+  recurringForm.description = `Recurring from invoice ${row.id}`
+  showStartRecurringModal.value = true
+}
+
+async function createRecurringFromInvoice() {
+  if (!selectedInvoiceForRecurring.value) return
+  const base = await invoiceAdminApi().getInvoice(selectedInvoiceForRecurring.value.id)
+  const inv = base.data || selectedInvoiceForRecurring.value
+  const items = (inv.invoice_items || []).map((it: any) => ({
+    name: it.name,
+    price: Number(it.price || 0),
+    qty: Number(it.qty || 1),
+    total: Number(it.total || (Number(it.price || 0) * Number(it.qty || 1)))
+  }))
+  try {
+    await recurringInvoiceAdminApi().createRecurringInvoice({
+      customer_id: inv.customer_id || inv.customer?.id,
+      amount: Number(inv.amount || 0),
+      invoice_date: new Date(recurringForm.invoice_date + 'T00:00:00.000Z').toISOString(),
+      due_date: new Date(recurringForm.due_date + 'T00:00:00.000Z').toISOString(),
+      frequency: recurringForm.frequency,
+      description: recurringForm.description,
+      invoice_items: items
+    })
+    useToast().add({ title: 'Recurring invoice started', color: 'green' })
+    showStartRecurringModal.value = false
+  } catch (err: any) {
+    useToast().add({ title: err?.message || 'Failed to start recurring', color: 'red' })
+  }
+}
+
+function closeStartRecurringModal() {
+  showStartRecurringModal.value = false
+  selectedInvoiceForRecurring.value = null
+}
+
 async function deleteData(id: string) {
   await invoiceAdminApi()
     .deleteInvoice(id)
@@ -358,7 +432,7 @@ async function deleteData(id: string) {
     });
 }
 
-await getData();
+await Promise.all([getData(), loadActiveRecurringCustomers()]);
 
 const columns = [
   {
@@ -469,6 +543,16 @@ const items = (row: any) => [
       disabled: isPdfViewed(row.id),
       click: () => handlePdfView(row.id),
     },
+    (() => {
+      const cid = row.customer_id || row.customer?.id
+      const available = cid && !activeRecurringCustomerIds.value.has(cid)
+      return {
+        label: available ? "Start Recurring" : "Already Recurring",
+        icon: "i-heroicons-arrow-path-20-solid",
+        disabled: !available,
+        click: () => available && openStartRecurringModal(row),
+      }
+    })(),
     {
       label: "Edit",
       icon: "i-heroicons-pencil-20-solid",
@@ -520,10 +604,81 @@ function handlePaymentSuccess() {
   getData() // Refresh the invoice list
   closePartialPaymentModal()
 }
+
+// Print all unpaid invoices
+async function printAllUnpaidInvoices() {
+  try {
+    printing.value = true
+    const response = await invoiceAdminApi().printAllUnpaidInvoices()
+    
+    // Create a new window with the thermal printer data
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Unpaid Invoices Report</title>
+            <style>
+              body { 
+                font-family: 'Courier New', monospace; 
+                font-size: 12px; 
+                line-height: 1.2;
+                margin: 0;
+                padding: 10px;
+                white-space: pre-line;
+              }
+              @media print {
+                body { margin: 0; padding: 5px; }
+              }
+            </style>
+          </head>
+          <body>
+            ${response.data.thermal_data}
+          </body>
+        </html>
+      `)
+      printWindow.document.close()
+      
+      // Auto print after a short delay
+      setTimeout(() => {
+        printWindow.print()
+        printWindow.close()
+      }, 500)
+    }
+    
+    // Show success notification
+    const toast = useToast()
+    toast.add({
+      title: 'Print Successful',
+      description: `Printed ${response.data.total_invoices} unpaid invoices`,
+      color: 'green'
+    })
+    
+  } catch (error: any) {
+    console.error('Print error:', error)
+    const toast = useToast()
+    toast.add({
+      title: 'Print Failed',
+      description: error.message || 'Failed to print invoices',
+      color: 'red'
+    })
+  } finally {
+    printing.value = false
+  }
+}
 </script>
 
 <template>
-  <UButton label="Add Invoice" @click="OpenModalAddCustomer(false, null)" />
+  <div class="flex gap-2 mb-4">
+    <UButton label="Add Invoice" @click="OpenModalAddCustomer(false, null)" />
+    <UButton 
+      label="Print All Unpaid" 
+      color="orange" 
+      icon="i-heroicons-printer"
+      @click="printAllUnpaidInvoices"
+      :loading="printing"
+    />
+  </div>
   
   <!-- Filter Section -->
   <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 dark:border-gray-700 mb-4">
@@ -773,6 +928,40 @@ function handlePaymentSuccess() {
             </svg>
             Ya, Ubah Status
           </UButton>
+        </div>
+      </template>
+    </UCard>
+  </UModal>
+
+  <!-- Start Recurring Modal -->
+  <UModal v-model="showStartRecurringModal">
+    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+      <template #header>
+        <h3 class="text-lg font-semibold">Start Recurring Invoice</h3>
+      </template>
+      <div class="space-y-4 p-2">
+        <UFormGroup label="Invoice Date" required>
+          <UInput v-model="recurringForm.invoice_date" type="date" />
+        </UFormGroup>
+        <UFormGroup label="Due Date" required>
+          <UInput v-model="recurringForm.due_date" type="date" />
+        </UFormGroup>
+        <UFormGroup label="Frequency" required>
+          <USelectMenu v-model="recurringForm.frequency"
+            :options="[
+              { label: 'Monthly', value: 'monthly' },
+              { label: 'Quarterly', value: 'quarterly' },
+              { label: 'Yearly', value: 'yearly' }
+            ]" option-attribute="label" value-attribute="value" />
+        </UFormGroup>
+        <UFormGroup label="Description">
+          <UTextarea v-model="recurringForm.description" :rows="3" />
+        </UFormGroup>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UButton color="gray" variant="soft" @click="closeStartRecurringModal">Cancel</UButton>
+          <UButton color="green" @click="createRecurringFromInvoice">Start</UButton>
         </div>
       </template>
     </UCard>

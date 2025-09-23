@@ -200,6 +200,78 @@
             </div>
           </div>
 
+          <!-- Connection Control -->
+          <div class="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Connection Control</h3>
+            <div class="space-y-4">
+              <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div>
+                  <h4 class="text-sm font-medium text-gray-900">Customer Isolation</h4>
+                  <p class="text-sm text-gray-600">Control customer's hotspot access for payment enforcement</p>
+                </div>
+                <div class="flex space-x-2">
+                  <UButton 
+                    v-if="getCustomerMacAddresses().length > 0"
+                    :loading="isConnecting"
+                    :disabled="isConnecting"
+                    @click="isolateCustomer"
+                    color="red"
+                    variant="outline"
+                    size="sm"
+                  >
+                    <UIcon name="i-heroicons-lock-closed" class="w-4 h-4 mr-1" />
+                    Isolate Customer
+                  </UButton>
+                  <UButton 
+                    v-if="getCustomerMacAddresses().length > 0"
+                    :loading="isConnecting"
+                    :disabled="isConnecting"
+                    @click="restoreCustomer"
+                    color="green"
+                    variant="outline"
+                    size="sm"
+                  >
+                    <UIcon name="i-heroicons-lock-open" class="w-4 h-4 mr-1" />
+                    Restore Access
+                  </UButton>
+                </div>
+              </div>
+              
+              <!-- MAC Address Display -->
+              <div v-if="getCustomerMacAddresses().length > 0" class="p-3 bg-blue-50 rounded-lg">
+                <div class="space-y-2">
+                  <p class="text-sm font-medium text-blue-900">Network Device MAC Addresses</p>
+                  <div v-for="(device, index) in getNetworkDevicesWithMac()" :key="device.id" class="flex items-center justify-between p-2 bg-white rounded border">
+                    <div>
+                      <p class="text-xs text-gray-600">Device {{ index + 1 }}</p>
+                      <p class="text-sm text-blue-700 font-mono">{{ device.mac_address }}</p>
+                      <p v-if="device.ip_static" class="text-xs text-gray-500">IP: {{ device.ip_static }}</p>
+                    </div>
+                    <UButton 
+                      @click="copyMacAddress(device.mac_address)"
+                      variant="ghost"
+                      size="sm"
+                      color="blue"
+                    >
+                      <UIcon name="i-heroicons-clipboard-document" class="w-4 h-4" />
+                    </UButton>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- No MAC Address Warning -->
+              <div v-else class="p-3 bg-yellow-50 rounded-lg">
+                <div class="flex items-center">
+                  <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-yellow-600 mr-2" />
+                  <div>
+                    <p class="text-sm font-medium text-yellow-900">No MAC Addresses Found</p>
+                    <p class="text-sm text-yellow-700">Customer network devices with MAC addresses are required for connection control</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Customer Status -->
           <div class="bg-white border border-gray-200 rounded-lg p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Customer Account Status</h3>
@@ -817,6 +889,7 @@
 
 <script setup lang="ts">
 import { customerAdminApi } from '@/api/admin/customer'
+import { mikrotikAdminApi } from '@/api/admin/mikrotik'
 import { formatIDR } from '@/helper/currency'
 import LoadingComponent from '@/components/LoadingComponent.vue'
 
@@ -833,6 +906,9 @@ const customerInvoices = ref<any[]>([])
 const loading = ref(true)
 const error = ref<string | undefined>(undefined)
 const activeTab = ref('summary')
+
+// Connection control state
+const isConnecting = ref(false)
 
 // Tab configuration
 const tabs = computed(() => [
@@ -1032,6 +1108,125 @@ const getDeviceConnectionStatus = (device: any) => {
   }
   
   return 'off'
+}
+
+// Helper functions for network devices
+const getCustomerMacAddresses = () => {
+  if (!customerDetail.value?.network_devices) return []
+  return customerDetail.value.network_devices
+    .filter((device: any) => device.mac_address && device.mac_address.trim() !== '')
+    .map((device: any) => device.mac_address)
+}
+
+const getNetworkDevicesWithMac = () => {
+  if (!customerDetail.value?.network_devices) return []
+  return customerDetail.value.network_devices
+    .filter((device: any) => device.mac_address && device.mac_address.trim() !== '')
+}
+
+// Connection control functions
+const isolateCustomer = async () => {
+  const macAddresses = getCustomerMacAddresses()
+  if (macAddresses.length === 0) {
+    useToast().add({
+      title: 'Error',
+      description: 'Customer network devices with MAC addresses are required for isolation',
+      color: 'red'
+    })
+    return
+  }
+
+  try {
+    isConnecting.value = true
+    
+    // Apply isolation to all MAC addresses
+    const promises = macAddresses.map((macAddress: string) => 
+      mikrotikAdminApi().setHotspotIPBindingType(macAddress, 'regular')
+    )
+    
+    await Promise.all(promises)
+    
+    useToast().add({
+      title: 'Success',
+      description: `Customer has been isolated - hotspot access restricted for ${macAddresses.length} device(s)`,
+      color: 'green'
+    })
+    
+    // Refresh customer data to reflect changes
+    await fetchCustomerDetail()
+    
+  } catch (error: any) {
+    console.error('Failed to isolate customer:', error)
+    useToast().add({
+      title: 'Error',
+      description: error.message || 'Failed to isolate customer',
+      color: 'red'
+    })
+  } finally {
+    isConnecting.value = false
+  }
+}
+
+const restoreCustomer = async () => {
+  const macAddresses = getCustomerMacAddresses()
+  if (macAddresses.length === 0) {
+    useToast().add({
+      title: 'Error',
+      description: 'Customer network devices with MAC addresses are required for restoration',
+      color: 'red'
+    })
+    return
+  }
+
+  try {
+    isConnecting.value = true
+    
+    // Restore access for all MAC addresses
+    const promises = macAddresses.map((macAddress: string) => 
+      mikrotikAdminApi().setHotspotIPBindingType(macAddress, 'bypassed')
+    )
+    
+    await Promise.all(promises)
+    
+    useToast().add({
+      title: 'Success',
+      description: `Customer access has been restored - hotspot access enabled for ${macAddresses.length} device(s)`,
+      color: 'green'
+    })
+    
+    // Refresh customer data to reflect changes
+    await fetchCustomerDetail()
+    
+  } catch (error: any) {
+    console.error('Failed to restore customer:', error)
+    useToast().add({
+      title: 'Error',
+      description: error.message || 'Failed to restore customer access',
+      color: 'red'
+    })
+  } finally {
+    isConnecting.value = false
+  }
+}
+
+const copyMacAddress = async (macAddress: string) => {
+  if (!macAddress) return
+  
+  try {
+    await navigator.clipboard.writeText(macAddress)
+    useToast().add({
+      title: 'Copied',
+      description: 'MAC address copied to clipboard',
+      color: 'green'
+    })
+  } catch (error) {
+    console.error('Failed to copy MAC address:', error)
+    useToast().add({
+      title: 'Error',
+      description: 'Failed to copy MAC address',
+      color: 'red'
+    })
+  }
 }
 
 const fetchCustomerDetail = async () => {

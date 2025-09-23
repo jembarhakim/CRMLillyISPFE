@@ -171,6 +171,13 @@ export const MAIN_MENU: MenuItem[] = [
     description: 'Invoice management'
   },
   {
+    label: 'Recurring Invoices',
+    icon: 'i-heroicons-arrow-path-16-solid',
+    link: '/dashboard/recurring-invoice',
+    roles: [ROLES.ADMIN, ROLES.CUSTOMER_SERVICE, ROLES.FINANCE],
+    description: 'Recurring invoice management'
+  },
+  {
     label: 'Transaction',
     icon: 'i-heroicons-document-currency-dollar-16-solid',
     link: '/dashboard/transaction',

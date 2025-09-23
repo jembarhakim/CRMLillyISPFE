@@ -145,5 +145,20 @@ export const invoiceAdminApi = () => {
       }
       return response.json();
     },
+
+    printAllUnpaidInvoices: async () => {
+      const response = await fetch(`${api}/api/admin/invoice/print-all-unpaid`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Print failed');
+      }
+      return response.json();
+    },
   };
 };

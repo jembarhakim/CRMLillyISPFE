@@ -1,118 +1,118 @@
-import { useApiHost } from '@/composables/useApiHost'
-
-const apiHost = useApiHost()
-
-export interface MikroTikConnectionConfig {
-  host: string
-  port: number
-  username: string
-  password: string
-}
-
-export interface MikroTikLog {
-  host: string
-  comment: string
-  status: string
-  timestamp: string
-  type: string
-  category: string
-  raw?: string
-}
-
-export interface MikroTikConnectionStatus {
-  status: string
-  message: string
-  host: string
-  port: number
-}
-
-export interface MikroTikSystemInfo {
-  cpu_load?: string
-  memory?: string
-  uptime?: string
-  version?: string
-}
-
-// Connect to MikroTik device
-export const connectToMikroTik = async (config: MikroTikConnectionConfig, token: string) => {
-  const response = await fetch(`${apiHost}/api/admin/mikrotik/connect`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+export const mikrotikAdminApi = () => {
+  const api = useApiHost();
+  return {
+    // Connection management
+    connect: async (config: { host: string; port: number; username: string; password: string }) => {
+      const response = await fetch(`${api}/api/admin/mikrotik/connect`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+        body: JSON.stringify(config),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Connection failed');
+      }
+      return response.json();
     },
-    body: JSON.stringify(config)
-  })
-  
-  return await response.json()
-}
 
-// Disconnect from MikroTik device
-export const disconnectFromMikroTik = async (token: string) => {
-  const response = await fetch(`${apiHost}/api/admin/mikrotik/disconnect`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  })
-  
-  return await response.json()
-}
-
-// Get connection status
-export const getMikroTikStatus = async (token: string) => {
-  const response = await fetch(`${apiHost}/api/admin/mikrotik/status`, {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  })
-  
-  return await response.json()
-}
-
-// Get MikroTik logs
-export const getMikroTikLogs = async (timeRange: string, token: string) => {
-  const response = await fetch(`${apiHost}/api/admin/mikrotik/logs?timeRange=${timeRange}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  })
-  
-  return await response.json()
-}
-
-// Get real-time logs
-export const getMikroTikRealTimeLogs = async (timeRange: string, token: string) => {
-  const response = await fetch(`${apiHost}/api/admin/mikrotik/logs/realtime?timeRange=${timeRange}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  })
-  
-  return await response.json()
-}
-
-// Get system information
-export const getMikroTikSystemInfo = async (token: string) => {
-  const response = await fetch(`${apiHost}/api/admin/mikrotik/system/info`, {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  })
-  
-  return await response.json()
-}
-
-// Execute custom command
-export const executeMikroTikCommand = async (command: string, token: string) => {
-  const response = await fetch(`${apiHost}/api/admin/mikrotik/execute`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+    disconnect: async () => {
+      const response = await fetch(`${api}/api/admin/mikrotik/disconnect`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Disconnection failed');
+      }
+      return response.json();
     },
-    body: JSON.stringify({ command })
-  })
-  
-  return await response.json()
-}
+
+    getStatus: async () => {
+      const response = await fetch(`${api}/api/admin/mikrotik/status`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get status');
+      }
+      return response.json();
+    },
+
+    // Hotspot IP binding management
+    setHotspotIPBindingType: async (macAddress: string, type: 'regular' | 'bypassed') => {
+      const response = await fetch(`${api}/api/admin/mikrotik/hotspot/ip-binding/set-type`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+        body: JSON.stringify({
+          mac_address: macAddress,
+          type: type
+        }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to set IP binding type');
+      }
+      return response.json();
+    },
+
+    getHotspotIPBindings: async () => {
+      const response = await fetch(`${api}/api/admin/mikrotik/hotspot/ip-bindings`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get IP bindings');
+      }
+      return response.json();
+    },
+
+    getHotspotIPBindingByMAC: async (macAddress: string) => {
+      const response = await fetch(`${api}/api/admin/mikrotik/hotspot/ip-binding/${macAddress}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get IP binding');
+      }
+      return response.json();
+    },
+
+    // Execute custom command
+    executeCommand: async (command: string) => {
+      const response = await fetch(`${api}/api/admin/mikrotik/execute`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+        body: JSON.stringify({ command }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Command execution failed');
+      }
+      return response.json();
+    },
+  };
+};
