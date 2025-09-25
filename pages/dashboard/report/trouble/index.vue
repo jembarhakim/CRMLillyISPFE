@@ -79,9 +79,9 @@ async function fetchSnapshot() {
     ticketsApi().byType(dateRange.start, dateRange.end) as any,
     ticketsApi().troubleTypes() as any,
   ])
-  rows.value = (list?.data || list) as any[]
-  troubleTypes.value = (types?.data || types) as any[]
-  const s = (byType?.data || byType) as any[]
+  rows.value = Array.isArray(list?.data || list) ? (list?.data || list) as any[] : []
+  troubleTypes.value = Array.isArray(types?.data || types) ? (types?.data || types) as any[] : []
+  const s = Array.isArray(byType?.data || byType) ? (byType?.data || byType) as any[] : []
   seriesData.value = s.map((r:any) => {
     const typeName = typeNameMap.value[r.type] || r.type || 'Unknown'
     return {
@@ -131,7 +131,7 @@ const barOption = computed(() => ({
   },
   xAxis: {
     type: 'category',
-    data: seriesData.value.map(item => item.name),
+    data: Array.isArray(seriesData.value) ? seriesData.value.map(item => item.name) : [],
     axisLabel: {
       rotate: 45,
       color: '#374151'
@@ -144,7 +144,7 @@ const barOption = computed(() => ({
   series: [{
     name: 'Ticket Count',
     type: 'bar',
-    data: seriesData.value.map(item => item.value),
+    data: Array.isArray(seriesData.value) ? seriesData.value.map(item => item.value) : [],
     itemStyle: {
       color: function(params: any) {
         const colors = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899']
@@ -161,7 +161,8 @@ const barOption = computed(() => ({
 
 // Trouble frequency chart (most to least frequent) — realtime via polling
 const troubleFrequencyOption = computed(() => {
-  const sortedData = [...seriesData.value].sort((a, b) => b.value - a.value)
+  const safeSeries = Array.isArray(seriesData.value) ? seriesData.value : []
+  const sortedData = [...safeSeries].sort((a, b) => b.value - a.value)
   return {
     tooltip: {
       trigger: 'axis',
@@ -227,7 +228,8 @@ const accumulationOption = computed(() => {
   ]
   
   const data = ranges.map(range => {
-    const count = rows.value.filter(ticket => {
+    const safeRows = Array.isArray(rows.value) ? rows.value : []
+    const count = safeRows.filter(ticket => {
       const accumulation = ticket.accumulation || 1
       return accumulation >= range.min && accumulation <= range.max
     }).length
@@ -269,14 +271,16 @@ const hotspots = ref<any[]>([])
 
 // Summary statistics
 const summaryStats = computed(() => {
-  const total = rows.value.length
-  const byType = seriesData.value.reduce((acc, item) => acc + item.value, 0)
-  const avgPerType = byType > 0 ? (byType / seriesData.value.length).toFixed(1) : 0
+  const safeRows = Array.isArray(rows.value) ? rows.value : []
+  const safeSeries = Array.isArray(seriesData.value) ? seriesData.value : []
+  const total = safeRows.length
+  const byType = safeSeries.reduce((acc, item) => acc + item.value, 0)
+  const avgPerType = byType > 0 && safeSeries.length > 0 ? (byType / safeSeries.length).toFixed(1) : 0
   
-  // Accumulation statistics
-  const totalCustomersAffected = rows.value.reduce((acc, ticket) => acc + (ticket.accumulation || 1), 0)
-  const highAccumulationTickets = rows.value.filter(ticket => (ticket.accumulation || 1) > 1).length
-  const maxAccumulation = Math.max(...rows.value.map(ticket => ticket.accumulation || 1), 0)
+  // Accumulation statistics (reuse safeRows from above)
+  const totalCustomersAffected = safeRows.reduce((acc, ticket) => acc + (ticket.accumulation || 1), 0)
+  const highAccumulationTickets = safeRows.filter(ticket => (ticket.accumulation || 1) > 1).length
+  const maxAccumulation = safeRows.length > 0 ? Math.max(...safeRows.map(ticket => ticket.accumulation || 1), 0) : 0
   
   return { 
     total, 
@@ -291,19 +295,24 @@ const summaryStats = computed(() => {
 
 // Chart data for inline display
 const byTypeModalRows = computed(() => {
-  return [...seriesData.value]
+  const safeSeries = Array.isArray(seriesData.value) ? seriesData.value : []
+  return [...safeSeries]
     .map((r:any)=>({ type: r.type, name: r.name, count: r.value }))
     .sort((a,b)=> b.count - a.count)
 })
-const byTypeModalTotal = computed(()=> byTypeModalRows.value.reduce((a:any,b:any)=> a + (b.count||0), 0))
+const byTypeModalTotal = computed(() => {
+  const safeModalRows = Array.isArray(byTypeModalRows.value) ? byTypeModalRows.value : []
+  return safeModalRows.reduce((a:any,b:any)=> a + (b.count||0), 0)
+})
 
 const byTypeChartData = computed(() => {
+  const safeModalRows = Array.isArray(byTypeModalRows.value) ? byTypeModalRows.value : []
   return {
-    labels: byTypeModalRows.value.map(r => r.name),
+    labels: safeModalRows.map(r => r.name),
     datasets: [
       {
         label: 'Ticket Count',
-        data: byTypeModalRows.value.map(r => r.count),
+        data: safeModalRows.map(r => r.count),
         backgroundColor: '#4F46E5', // biru indigo
       },
     ],
@@ -613,7 +622,7 @@ export default {
         const map = L.map('map').setView([-6.2,106.8], 11)
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM' }).addTo(map)
         const res = await (ticketsApi() as any).hotspots()
-        const data = (res.data || res) as any[]
+        const data = Array.isArray(res.data || res) ? (res.data || res) as any[] : []
         data.forEach((p:any)=>{
           if (p.gps_lat && p.gps_lng) {
             L.circleMarker([p.gps_lat, p.gps_lng], { radius: 4 + Math.min(p.count, 12), color:'#ef4444'}).addTo(map)
