@@ -185,6 +185,36 @@ export const ticketsApi = () => {
       })
     },
     
+    // Accumulation management APIs
+    getSimilarTroubles: (id: number, timeWindow?: number) => {
+      const params = new URLSearchParams()
+      if (timeWindow) params.append('time_window', timeWindow.toString())
+      
+      const queryString = params.toString()
+      const url = queryString ? `${base}/api/tickets/${id}/similar?${queryString}` : `${base}/api/tickets/${id}/similar`
+      
+      return $fetch(url, { headers: authHeader() })
+    },
+    updateAccumulation: (ticketIds: number[], accumulation: number) => $fetch(`${base}/api/tickets/accumulation`, {
+      method: 'POST',
+      body: { ticket_ids: ticketIds, accumulation },
+      headers: authHeader()
+    }),
+    autoDetectAndGroup: () => $fetch(`${base}/api/tickets/accumulation/auto-detect`, {
+      method: 'POST',
+      headers: authHeader()
+    }),
+    getAccumulationStats: () => $fetch(`${base}/api/tickets/accumulation/stats`, { headers: authHeader() }),
+    getHighAccumulationTickets: (minAccumulation?: number) => {
+      const params = new URLSearchParams()
+      if (minAccumulation) params.append('min_accumulation', minAccumulation.toString())
+      
+      const queryString = params.toString()
+      const url = queryString ? `${base}/api/tickets/accumulation/high?${queryString}` : `${base}/api/tickets/accumulation/high`
+      
+      return $fetch(url, { headers: authHeader() })
+    },
+    
   }
 }
 

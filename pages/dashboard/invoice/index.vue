@@ -54,10 +54,14 @@ async function getData() {
   isLoading.value = true;
   try {
     const response = await invoiceAdminApi().getAllInvoices();
-    console.log("Invoice data received:", response.data);
-    
-    response.data.forEach((invoice: any) => {
-      invoice.number = response.data.indexOf(invoice) + 1;
+    console.log("Invoice data received:", response?.data);
+
+    // Ensure we always work with an array
+    const data: any[] = Array.isArray(response?.data) ? response.data : [];
+
+    data.forEach((invoice: any, idx: number) => {
+      // Use local index instead of indexOf to avoid issues with non-strict equality
+      invoice.number = idx + 1;
       invoice.created_at = invoice.created_at.split("T")[0];
       
       // Calculate total_paid from transaction data
@@ -79,8 +83,8 @@ async function getData() {
       }
     });
 
-    customer.value = [...response.data];
-    console.log("Invoice data updated in customer.value:", customer.value.length, "invoices");
+    customer.value = [...data];
+    console.log("Invoice data updated in customer.value:", (customer.value?.length || 0), "invoices");
   } catch (err: any) {
     console.error("Error fetching invoice data:", err);
     const message = typeof err === 'string' ? err : err?.message || 'Terjadi kesalahan';
@@ -793,7 +797,7 @@ async function printAllUnpaidInvoices() {
     <UPagination
       v-model="page"
       :page-count="pageCount"
-      :total="customer.length"
+      :total="(customer && customer.length) ? customer.length : 0"
     />
   </div>
 

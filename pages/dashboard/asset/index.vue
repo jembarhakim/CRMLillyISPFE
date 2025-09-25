@@ -3,6 +3,7 @@ import { assetAdminApi } from '@/api/admin/asset'
 import FormAddComponent from './AddAssetForm.vue'
 import { defaultAssets } from './asset.model'
 import { tableColumns } from './table'
+import { format } from 'date-fns'
 
 // Set page title
 useHead({
@@ -28,6 +29,16 @@ const filteredRows = computed(() => {
     })
     return newData.slice((page.value - 1) * pageCount, (page.value) * pageCount)
 })
+
+function formatDate(dateString: string) {
+    if (!dateString) return 'No Date'
+    try {
+        const date = new Date(dateString)
+        return format(date, 'MMM dd, yyyy')
+    } catch (error) {
+        return 'Invalid Date'
+    }
+}
 
 async function getData() {
     await assetAdminApi().getAllAssets().then((response) => {
@@ -97,6 +108,12 @@ const items = (row: any) => [
     <div class="table-scroll-container">
         <div class="table-scroll-content">
             <UTable :columns="tableColumns" :rows="filteredRows" class="dashboard-table">
+                <template #date-data="{ row }">
+                    <span>{{ formatDate(row.date) }}</span>
+                </template>
+                <template #company-data="{ row }">
+                    <span>{{ row.company?.name || 'No Company' }}</span>
+                </template>
                 <template #actions-data="{ row }">
                     <UDropdown :items="items(row)">
                         <UButton color="gray" variant="ghost" icon="i-heroicons-ellipsis-horizontal-20-solid" />

@@ -64,36 +64,36 @@ onMounted(load)
       </template>
       <div v-if="invoice" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
         <div>
-          <div class="text-gray-500">Customer</div>
-          <div class="font-medium">{{ invoice.customer?.name }}</div>
+          <div class="text-gray-600 font-medium">Customer</div>
+          <div class="font-semibold text-gray-900">{{ invoice.customer?.name }}</div>
         </div>
         <div>
-          <div class="text-gray-500">Amount</div>
-          <div class="font-medium">Rp {{ (invoice.amount || 0).toLocaleString() }}</div>
+          <div class="text-gray-600 font-medium">Amount</div>
+          <div class="font-semibold text-gray-900">Rp {{ (invoice.amount || 0).toLocaleString() }}</div>
         </div>
         <div>
-          <div class="text-gray-500">Frequency</div>
-          <div class="font-medium">{{ invoice.frequency }}</div>
+          <div class="text-gray-600 font-medium">Frequency</div>
+          <div class="font-semibold text-gray-900">{{ invoice.frequency }}</div>
         </div>
         <div>
-          <div class="text-gray-500">Status</div>
-          <div class="font-medium capitalize">{{ invoice.status }}</div>
+          <div class="text-gray-600 font-medium">Status</div>
+          <div class="font-semibold text-gray-900 capitalize">{{ invoice.status }}</div>
         </div>
         <div>
-          <div class="text-gray-500">Invoice Date</div>
-          <div class="font-medium">{{ new Date(invoice.invoice_date).toLocaleDateString() }}</div>
+          <div class="text-gray-600 font-medium">Invoice Date</div>
+          <div class="font-semibold text-gray-900">{{ new Date(invoice.invoice_date).toLocaleDateString() }}</div>
         </div>
         <div>
-          <div class="text-gray-500">Due Date</div>
-          <div class="font-medium">{{ new Date(invoice.due_date).toLocaleDateString() }}</div>
+          <div class="text-gray-600 font-medium">Due Date</div>
+          <div class="font-semibold text-gray-900">{{ new Date(invoice.due_date).toLocaleDateString() }}</div>
         </div>
         <div>
-          <div class="text-gray-500">Next Invoice</div>
-          <div class="font-medium">{{ new Date(invoice.next_invoice_date).toLocaleDateString() }}</div>
+          <div class="text-gray-600 font-medium">Next Invoice</div>
+          <div class="font-semibold text-blue-700">{{ new Date(invoice.next_invoice_date).toLocaleDateString() }}</div>
         </div>
         <div v-if="invoice.description">
-          <div class="text-gray-500">Description</div>
-          <div class="font-medium">{{ invoice.description }}</div>
+          <div class="text-gray-600 font-medium">Description</div>
+          <div class="font-semibold text-gray-900">{{ invoice.description }}</div>
         </div>
       </div>
       <div v-else class="text-gray-500">Loading...</div>
@@ -105,14 +105,22 @@ onMounted(load)
       </template>
       <div class="divide-y">
         <div v-if="history.length === 0" class="p-4 text-gray-500 text-sm">No history yet.</div>
-        <div v-for="h in history" :key="h.id" class="p-4 flex items-center justify-between">
+        <div v-for="h in history" :key="h.id" class="p-4 flex items-center justify-between hover:bg-gray-50">
           <div>
-            <div class="font-medium">Invoice: {{ h.generated_invoice_id }}</div>
-            <div class="text-xs text-gray-500">Generated: {{ new Date(h.generated_at).toLocaleString() }}</div>
-            <div class="text-xs text-gray-500">Invoice Date: {{ new Date(h.invoice_date).toLocaleDateString() }} • Due: {{ new Date(h.due_date).toLocaleDateString() }}</div>
+            <div class="font-semibold text-gray-900">Invoice: {{ h.generated_invoice_id }}</div>
+            <div class="text-sm text-gray-600 font-medium">Generated: {{ new Date(h.generated_at).toLocaleString() }}</div>
+            <div class="text-sm text-gray-600 font-medium">Invoice Date: {{ new Date(h.invoice_date).toLocaleDateString() }} • Due: {{ new Date(h.due_date).toLocaleDateString() }}</div>
           </div>
           <div class="flex gap-2">
-            <UButton size="xs" color="gray" variant="outline" @click="router.push(`/invoice/${h.generated_invoice_id}`)">Open</UButton>
+            <UButton 
+              size="sm" 
+              color="blue" 
+              variant="solid" 
+              @click="router.push(`/invoice/${h.generated_invoice_id}`)"
+              class="shadow-sm"
+            >
+              Open
+            </UButton>
           </div>
         </div>
       </div>

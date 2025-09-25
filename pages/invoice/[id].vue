@@ -82,7 +82,7 @@ function format(amount: number) {
   });
 }
 const pdfContentRef = ref(null);
-const invoiceNumber = computed(() => `#${props.invoice.id}`);
+const invoiceId = computed(() => `#${props.invoice.id}`);
 
 // Computed properties for invoice calculations
 const invoiceTotal = computed(() => {

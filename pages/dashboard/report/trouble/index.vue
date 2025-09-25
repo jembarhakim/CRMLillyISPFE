@@ -213,6 +213,58 @@ const troubleFrequencyOption = computed(() => {
   }
 })
 
+// Accumulation analysis chart
+const accumulationOption = computed(() => {
+  // Group tickets by accumulation ranges - Enhanced for massive scale outages
+  const ranges = [
+    { name: 'Single Customer', min: 1, max: 1, color: '#3B82F6' },
+    { name: '2-5 Customers', min: 2, max: 5, color: '#F59E0B' },
+    { name: '6-10 Customers', min: 6, max: 10, color: '#EF4444' },
+    { name: '11-50 Customers', min: 11, max: 50, color: '#DC2626' },
+    { name: '51-100 Customers', min: 51, max: 100, color: '#991B1B' },
+    { name: '101-500 Customers', min: 101, max: 500, color: '#7F1D1D' },
+    { name: '500+ Customers', min: 501, max: Infinity, color: '#450A0A' }
+  ]
+  
+  const data = ranges.map(range => {
+    const count = rows.value.filter(ticket => {
+      const accumulation = ticket.accumulation || 1
+      return accumulation >= range.min && accumulation <= range.max
+    }).length
+    
+    return {
+      name: range.name,
+      value: count,
+      itemStyle: { color: range.color }
+    }
+  })
+  
+  return {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{a} <br/>{b}: {c} ({d}%)'
+    },
+    legend: {
+      orient: 'vertical',
+      left: 'left',
+      data: data.map(item => item.name)
+    },
+    series: [{
+      name: 'Accumulation Distribution',
+      type: 'pie',
+      radius: '50%',
+      data: data,
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 10,
+          shadowOffsetX: 0,
+          shadowColor: 'rgba(0, 0, 0, 0.5)'
+        }
+      }
+    }]
+  }
+})
+
 const hotspots = ref<any[]>([])
 
 // Summary statistics
@@ -220,7 +272,21 @@ const summaryStats = computed(() => {
   const total = rows.value.length
   const byType = seriesData.value.reduce((acc, item) => acc + item.value, 0)
   const avgPerType = byType > 0 ? (byType / seriesData.value.length).toFixed(1) : 0
-  return { total, byType, avgPerType, typesCount: seriesData.value.length }
+  
+  // Accumulation statistics
+  const totalCustomersAffected = rows.value.reduce((acc, ticket) => acc + (ticket.accumulation || 1), 0)
+  const highAccumulationTickets = rows.value.filter(ticket => (ticket.accumulation || 1) > 1).length
+  const maxAccumulation = Math.max(...rows.value.map(ticket => ticket.accumulation || 1), 0)
+  
+  return { 
+    total, 
+    byType, 
+    avgPerType, 
+    typesCount: seriesData.value.length,
+    totalCustomersAffected,
+    highAccumulationTickets,
+    maxAccumulation
+  }
 })
 
 // Chart data for inline display
@@ -254,14 +320,108 @@ onMounted(async () => {
   const res:any = await ticketsApi().hotspots()
   hotspots.value = res.data || res
 })
+
+// Auto-detection function
+// Format accumulation numbers for display
+function formatAccumulation(accumulation: number): string {
+  if (accumulation === 1) {
+    return '1 customer'
+  } else if (accumulation < 1000) {
+    return `${accumulation} customers`
+  } else if (accumulation < 1000000) {
+    return `${(accumulation / 1000).toFixed(1)}K customers`
+  } else {
+    return `${(accumulation / 1000000).toFixed(1)}M customers`
+  }
+}
+
+async function triggerAutoDetection() {
+  loading.value = true
+  try {
+    await ticketsApi().autoDetectAndGroup()
+    // Refresh data after auto-detection
+    await fetchSnapshot()
+    alert('Auto-detection completed successfully!')
+  } catch (error: any) {
+    console.error('Auto-detection failed:', error)
+    alert('Auto-detection failed: ' + (error.message || 'Unknown error'))
+  } finally {
+    loading.value = false
+  }
+}
+
+// Edit accumulation manually
+function editAccumulation(ticket: any) {
+  const newAccumulation = prompt(`Edit accumulation for ticket #${ticket.id}:\n"${ticket.title}"\n\nCurrent: ${ticket.accumulation || 1} customers\nEnter new accumulation:`, (ticket.accumulation || 1).toString())
+  
+  if (newAccumulation !== null) {
+    const accumulation = parseInt(newAccumulation)
+    if (isNaN(accumulation) || accumulation < 1) {
+      alert('Please enter a valid number greater than 0')
+      return
+    }
+    
+    // Update accumulation for this specific ticket
+    updateTicketAccumulation(ticket.id, accumulation)
+  }
+}
+
+// Update accumulation for a single ticket
+async function updateTicketAccumulation(ticketId: number, accumulation: number) {
+  try {
+    await ticketsApi().updateAccumulation([ticketId], accumulation)
+    alert(`Accumulation updated to ${accumulation} customers`)
+    // Refresh data
+    await fetchSnapshot()
+  } catch (error: any) {
+    console.error('Failed to update accumulation:', error)
+    alert('Failed to update accumulation: ' + (error.message || 'Unknown error'))
+  }
+}
+
+// Send ticket to Customer Service
+async function sendToCS(ticket: any) {
+  const note = prompt(`Send ticket #${ticket.id} to Customer Service:\n"${ticket.title}"\n\nEnter note (optional):`)
+  
+  if (note !== null) {
+    try {
+      await ticketsApi().sendToCS(ticket.id, note || '')
+      alert('Ticket sent to Customer Service successfully!')
+      // Refresh data
+      await fetchSnapshot()
+    } catch (error: any) {
+      console.error('Failed to send to CS:', error)
+      alert('Failed to send to CS: ' + (error.message || 'Unknown error'))
+    }
+  }
+}
 </script>
 
 <template>
   <div class="space-y-6 text-gray-900">
     <h1 class="text-2xl font-semibold text-gray-900">Trouble Reports</h1>
 
+    <!-- Action Buttons -->
+    <div class="flex justify-between items-center">
+      <div class="flex gap-2">
+        <button 
+          @click="triggerAutoDetection"
+          :disabled="loading"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {{ loading ? 'Processing...' : 'Auto-Detect Groups' }}
+        </button>
+        <button 
+          @click="fetchSnapshot"
+          class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+        >
+          Refresh Data
+        </button>
+      </div>
+    </div>
+
     <!-- Summary Statistics -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
       <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
         <div class="text-blue-600 text-sm font-medium">Total Tickets</div>
         <div class="text-2xl font-bold text-blue-900">{{ summaryStats.total }}</div>
@@ -277,6 +437,34 @@ onMounted(async () => {
       <div class="p-4 bg-orange-50 rounded-lg border border-orange-200">
         <div class="text-orange-600 text-sm font-medium">Avg per Type</div>
         <div class="text-2xl font-bold text-orange-900">{{ summaryStats.avgPerType }}</div>
+      </div>
+      <div class="p-4 bg-red-50 rounded-lg border border-red-200">
+        <div class="text-red-600 text-sm font-medium">Customers Affected</div>
+        <div class="text-2xl font-bold text-red-900">{{ summaryStats.totalCustomersAffected }}</div>
+      </div>
+      <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+        <div class="text-yellow-600 text-sm font-medium">High Accumulation</div>
+        <div class="text-2xl font-bold text-yellow-900">{{ summaryStats.highAccumulationTickets }}</div>
+        <div class="text-xs text-yellow-700">Max: {{ summaryStats.maxAccumulation }}</div>
+      </div>
+    </div>
+
+    <!-- Emergency Alert for Massive Outages -->
+    <div v-if="summaryStats.maxAccumulation > 100" class="bg-gradient-to-r from-red-600 to-red-800 text-white p-6 rounded-lg border-4 border-red-300 shadow-lg mb-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <div class="text-4xl">🚨</div>
+          <div>
+            <h3 class="text-xl font-bold">CRITICAL OUTAGE DETECTED</h3>
+            <p class="text-red-100">Maximum accumulation: {{ formatAccumulation(summaryStats.maxAccumulation) }}</p>
+            <p class="text-sm text-red-200">This appears to be a datacenter or server-level issue affecting multiple customers.</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <button class="bg-white text-red-600 px-4 py-2 rounded-lg font-bold hover:bg-red-50 transition-colors">
+            EMERGENCY RESPONSE
+          </button>
+        </div>
       </div>
     </div>
 
@@ -314,14 +502,22 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- Trouble Frequency -->
-    <div class="grid grid-cols-1 gap-6">
+    <!-- Trouble Frequency and Accumulation -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div class="p-4 bg-white rounded-lg shadow border border-gray-100">
         <div class="flex items-center justify-between mb-3">
           <h2 class="font-semibold text-gray-800">Trouble Frequency (Most to Least)</h2>
         </div>
         <p class="text-sm text-gray-600 mb-3">Realtime updates every 10s</p>
         <ECharts :option="troubleFrequencyOption" style="height:320px" />
+      </div>
+      
+      <div class="p-4 bg-white rounded-lg shadow border border-gray-100">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-semibold text-gray-800">Accumulation Analysis</h2>
+        </div>
+        <p class="text-sm text-gray-600 mb-3">Customers affected by similar problems</p>
+        <ECharts :option="accumulationOption" style="height:320px" />
       </div>
     </div>
 
@@ -337,8 +533,10 @@ onMounted(async () => {
                 <th class="p-2">Title</th>
                 <th class="p-2">Type</th>
                 <th class="p-2">Status</th>
+                <th class="p-2">Accumulation</th>
                 <th class="p-2">Assignee</th>
                 <th class="p-2">Created</th>
+                <th class="p-2">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -357,8 +555,39 @@ onMounted(async () => {
                     {{ r.status }}
                   </span>
                 </td>
+                <td class="p-2">
+                  <div class="flex items-center space-x-2">
+                    <span :class="{
+                      'px-2 py-1 rounded-full text-xs font-medium': true,
+                      'bg-blue-100 text-blue-800': r.accumulation === 1,
+                      'bg-orange-100 text-orange-800': r.accumulation > 1 && r.accumulation <= 5,
+                      'bg-red-100 text-red-800': r.accumulation > 5 && r.accumulation <= 50,
+                      'bg-red-200 text-red-900': r.accumulation > 50 && r.accumulation <= 100,
+                      'bg-red-300 text-red-950': r.accumulation > 100 && r.accumulation <= 500,
+                      'bg-red-400 text-white font-bold': r.accumulation > 500
+                    }">
+                      {{ formatAccumulation(r.accumulation || 1) }}
+                    </span>
+                    <button 
+                      @click="editAccumulation(r)"
+                      class="text-blue-600 hover:text-blue-800 text-xs underline"
+                      title="Edit accumulation"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </td>
                 <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
                 <td class="p-2">{{ r.created_at?.slice?.(0,10) }}</td>
+                <td class="p-2">
+                  <button 
+                    @click="sendToCS(r)"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs"
+                    title="Send to Customer Service"
+                  >
+                    To CS
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>

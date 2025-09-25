@@ -120,6 +120,7 @@ const selectedTicket = ref<any | null>(null)
 const showResolveModal = ref(false)
 // Removed duplicate declarations - these are declared later
 const nocNote = ref('')
+const nocAccumulation = ref<number>(1)
 const technicianNote = ref('')
 const resolveNote = ref('')
 const nocActionSubmitting = ref(false)
@@ -335,12 +336,18 @@ async function saveNetworkArchitecture() {
 
 // Filtered tickets based on search query
 const filteredRows = computed(() => {
+  // Ensure rows.value is always an array
+  const safeRows = Array.isArray(rows.value) ? rows.value : []
+  
   if (!searchQuery.value.trim()) {
-    return rows.value
+    return safeRows
   }
 
   const query = searchQuery.value.toLowerCase().trim()
-  return rows.value.filter(ticket => {
+  return safeRows.filter(ticket => {
+    // Add null checks for ticket object
+    if (!ticket) return false
+    
     return (
       ticket.id?.toString().includes(query) ||
       ticket.customer_name?.toLowerCase().includes(query) ||
@@ -437,14 +444,24 @@ function actPrepareResolve(id: number) {
 function actPrepareNOC(id: number) {
   console.log('actPrepareNOC called with id:', id)
   selectedId.value = id;
+  
+  // Find and set the selected ticket
+  const ticket = rows.value.find(t => t.id === id)
+  selectedTicket.value = ticket
+  
   nocNote.value = '';
   nocSelectedType.value = troubleTypes.value[0]?.id || ''
   nocImageFile.value = null;
   nocImagePreview.value = '';
   showNewType.value = false; // Reset new type form
   newTypeName.value = ''; // Clear new type name
+  
+  // Initialize accumulation with current ticket value
+  nocAccumulation.value = ticket?.accumulation || 1
+  
   showNOCNoteModal.value = true
   console.log('showNOCNoteModal set to:', showNOCNoteModal.value)
+  console.log('selectedTicket set to:', selectedTicket.value)
 }
 
 function handleNOCImageUpload(event: Event) {
@@ -674,6 +691,32 @@ async function nocPhysicalFromModal() {
   }
 }
 
+// Update accumulation from NOC modal
+async function updateAccumulationFromModal() {
+  if (!selectedTicket.value || nocAccumulation.value === null || nocAccumulation.value === undefined || nocAccumulation.value < 1) {
+    notification.error('Invalid Input', 'Please enter a valid accumulation number (1 or more)', 3000)
+    return
+  }
+
+  try {
+    nocActionSubmitting.value = true
+    await ticketsApi().updateAccumulation([selectedTicket.value.id], nocAccumulation.value)
+    
+    // Update the ticket in the local data
+    const ticketIndex = rows.value.findIndex(t => t.id === selectedTicket.value.id)
+    if (ticketIndex !== -1) {
+      rows.value[ticketIndex].accumulation = nocAccumulation.value
+    }
+    
+    notification.success('Success', `Accumulation updated to ${nocAccumulation.value} customers`, 3000)
+  } catch (error: any) {
+    console.error('updateAccumulationFromModal error:', error)
+    notification.error('Update failed', `Failed to update accumulation: ${error?.data?.message || error?.message || 'Unknown error'}`, 3000)
+  } finally {
+    nocActionSubmitting.value = false
+  }
+}
+
 // Compress an image file to target max size using canvas
 async function compressImageFile(file: File, maxBytes: number): Promise<File> {
   try {
@@ -808,16 +851,21 @@ const getTicketActions = (ticket: any) => {
     tooltip?: string
   }> = []
 
-  // Finished tickets: still allow read-only progress view
+  // Finished tickets: allow read-only progress view ONLY if it's a real trouble ticket.
+  // If classification indicates Information (verified_by_cs true/1 or classification === 'info'),
+  // then hide the View Progress button because no technician workflow exists.
   if (ticket.status === 'finished') {
-    if ((isAdmin.value || isCustomerService.value) && ticket.assigned_to) {
-      actions.push({
-        label: 'View Progress (Finished)',
-        color: 'bg-emerald-700',
-        action: () => openTechnicianChecklist(ticket.id, ticket.assigned_to, true),
-        show: true,
-        tooltip: 'View technician progress (ticket finished)'
-      })
+    const isInformation = ticket.verified_by_cs === true || ticket.verified_by_cs === 1 || ticket.classification === 'info'
+    if (!isInformation) {
+      if ((isAdmin.value || isCustomerService.value) && ticket.assigned_to) {
+        actions.push({
+          label: 'View Progress (Finished)',
+          color: 'bg-emerald-700',
+          action: () => openTechnicianChecklist(ticket.id, ticket.assigned_to, true),
+          show: true,
+          tooltip: 'View technician progress (ticket finished)'
+        })
+      }
     }
     return actions
   }
@@ -1201,7 +1249,7 @@ async function createTicket() {
       console.warn('sendToNOC after create failed:', e)
     }
     showAdd.value = false
-    form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', img_cs: '' }
+    form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', img_cs: '', classification: '' }
     notification.success('Success!', 'Ticket created successfully', 3000)
     await refresh()
   } catch (error: any) {
@@ -1222,13 +1270,23 @@ async function fetchAllTickets(params: any) {
     .list()
     .then((response: any) => {
       const data = response.data || response
-      data.forEach((t: any, idx: number) => {
-        t.number = idx + 1
-      })
-      rows.value = data
+      
+      // Check if data is an array and not null/undefined
+      if (Array.isArray(data)) {
+        data.forEach((t: any, idx: number) => {
+          t.number = idx + 1
+        })
+        rows.value = data
+      } else {
+        // If data is not an array, set empty array
+        console.warn('Tickets data is not an array:', data)
+        rows.value = []
+      }
     })
     .catch((err: any) => {
       console.error('Error fetching tickets:', err)
+      // Set empty array on error
+      rows.value = []
     })
     .finally(() => {
       isLoading.value = false
@@ -1319,8 +1377,8 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="r in filteredRows" :key="r.id"
-                  class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70 transition-colors">
+                <template v-for="(r, index) in filteredRows" :key="r?.id || index">
+                  <tr v-if="r" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70 transition-colors">
                   <td class="p-2">{{ r.id }}</td>
                   <td class="p-2 font-medium text-blue-600">{{ r.customer_name || 'Unknown Customer' }}</td>
                   <td class="p-2">{{ r.title }}</td>
@@ -1402,6 +1460,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                     </div>
                   </td>
                 </tr>
+                </template>
               </tbody>
             </table>
           </div>
@@ -1550,6 +1609,28 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                     @click="showNewType = false">Cancel</button>
                 </div>
               </div>
+            </div>
+            <div v-if="isAdmin || isCustomerService">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Accumulation (Customers Affected)</label>
+              <div class="flex items-center space-x-2">
+                <input 
+                  v-model.number="nocAccumulation" 
+                  type="number" 
+                  min="1" 
+                  placeholder="Enter number of customers affected"
+                  class="flex-1 rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                />
+                <button 
+                  @click="updateAccumulationFromModal"
+                  class="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                  :disabled="nocAccumulation === null || nocAccumulation === undefined || nocAccumulation < 1"
+                >
+                  Update
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">
+                Current: {{ selectedTicket?.accumulation || 1 }} customers affected
+              </p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Upload Image (Optional)</label>

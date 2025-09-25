@@ -479,3 +479,47 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Clean, visible table headers like the reference */
+:deep(table thead th) {
+  color: #374151 !important;
+  font-weight: 500 !important;
+  font-size: 0.875rem !important;
+  background-color: #f9fafb !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  padding: 12px 16px !important;
+}
+
+/* Ensure header text is visible */
+:deep(table thead th *) {
+  color: #374151 !important;
+  opacity: 1 !important;
+}
+
+/* Override any UTable default header styling */
+:deep(.table th) {
+  color: #374151 !important;
+  font-weight: 500 !important;
+  background-color: #f9fafb !important;
+}
+
+/* Target UTable component headers specifically */
+:deep(.u-table th),
+:deep(.u-table thead th),
+:deep([data-headlessui-state] th),
+:deep(th) {
+  color: #374151 !important;
+  font-weight: 500 !important;
+  font-size: 0.875rem !important;
+  background-color: #f9fafb !important;
+}
+
+/* Force visibility on any header content */
+:deep(th span),
+:deep(th div),
+:deep(th button) {
+  color: #374151 !important;
+  font-weight: 500 !important;
+}
+</style>

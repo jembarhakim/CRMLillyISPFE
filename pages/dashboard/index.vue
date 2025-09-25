@@ -1,8 +1,13 @@
 <script setup lang="ts">
+import { onUnmounted } from 'vue';
 import { dashboardAdminApi } from "@/api/admin/dashboard";
 import { invoiceAdminApi } from "@/api/admin/invoice";
+import { ticketsApi } from "@/api/tickets";
 import { formatIDR } from "@/helper/currency";
 import { formatDateToYMD } from "@/helper/date";
+import { useNotification } from "@/composables/useNotification";
+
+const notification = useNotification();
 
 // Apply auth middleware
 definePageMeta({
@@ -27,8 +32,123 @@ let totalSales = ref<any>(0);
 const dashboardStats = ref<any>({});
 const recentInvoices = ref<any[]>([]);
 const recentTransactions = ref<any[]>([]);
+const recentTickets = ref<any[]>([]);
 const customerGrowth = ref<any>({});
 const revenueChart = ref<any>({});
+
+// Modal state for accumulation editing
+const showAccumulationModal = ref(false);
+const selectedTicket = ref<any>(null);
+const newAccumulationValue = ref<string>('');
+
+// Filter variables
+const selectedDateRange = ref<number>(30);
+
+// Computed properties for filtered data
+const filteredCustomerGrowth = computed(() => {
+  if (!customerGrowth.value.customer_growth) return [];
+  const days = selectedDateRange.value;
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+
+  return customerGrowth.value.customer_growth.filter((item: any) => {
+    const itemDate = new Date(item.date);
+    return itemDate >= cutoffDate;
+  });
+});
+
+const filteredRevenueChart = computed(() => {
+  if (!revenueChart.value.revenue_chart) return [];
+  const days = selectedDateRange.value;
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+
+  return revenueChart.value.revenue_chart.filter((item: any) => {
+    const itemDate = new Date(item.date);
+    return itemDate >= cutoffDate;
+  });
+});
+
+// Chart options computed properties
+const customerGrowthChartOption = computed(() => ({
+  title: { 
+    text: 'Customer Growth', 
+    textStyle: { fontSize: 12 },
+    left: 'center'
+  },
+  tooltip: { 
+    trigger: 'axis',
+    formatter: '{b}: {c} new customers'
+  },
+  xAxis: { 
+    data: filteredCustomerGrowth.value.map((item: any) => item.date),
+    type: 'category',
+    axisLabel: { 
+      rotate: 45, 
+      fontSize: 8,
+      interval: 'auto'
+    }
+  },
+  yAxis: { 
+    type: 'value',
+    axisLabel: { fontSize: 8 }
+  },
+  series: [{
+    name: 'New Customers',
+    type: 'line',
+    data: filteredCustomerGrowth.value.map((item: any) => item.count),
+    smooth: true,
+    itemStyle: { color: '#3B82F6' },
+    lineStyle: { color: '#3B82F6', width: 2 }
+  }],
+  grid: { 
+    left: '15%', 
+    right: '10%', 
+    bottom: '20%', 
+    top: '20%',
+    containLabel: true
+  }
+}));
+
+const revenueChartOption = computed(() => ({
+  title: { 
+    text: 'Daily Revenue', 
+    textStyle: { fontSize: 12 },
+    left: 'center'
+  },
+  tooltip: { 
+    trigger: 'axis',
+    formatter: '{b}: ${c}'
+  },
+  xAxis: { 
+    data: filteredRevenueChart.value.map((item: any) => item.date),
+    type: 'category',
+    axisLabel: { 
+      rotate: 45, 
+      fontSize: 8,
+      interval: 'auto'
+    }
+  },
+  yAxis: { 
+    type: 'value',
+    axisLabel: { fontSize: 8 }
+  },
+  series: [{
+    name: 'Revenue',
+    type: 'line',
+    data: filteredRevenueChart.value.map((item: any) => item.amount),
+    smooth: true,
+    itemStyle: { color: '#10B981' },
+    lineStyle: { color: '#10B981', width: 2 }
+  }],
+  grid: { 
+    left: '15%', 
+    right: '10%', 
+    bottom: '20%', 
+    top: '20%',
+    containLabel: true
+  }
+}));
 const optionCardCustomer = ref();
 const optionCardPacketPopular = ref();
 const optionCardArea = ref();
@@ -108,10 +228,7 @@ for (const card of CardList) {
 
 
     } catch (err: any) {
-      useToast().add({
-        title: err.message || "Failed to load customer data",
-        color: "red",
-      });
+      notification.error('Load Error', err.message || "Failed to load customer data", 3000);
     }
   }
 
@@ -137,10 +254,7 @@ for (const card of CardList) {
 
 
     } catch (err: any) {
-      useToast().add({
-        title: err.message || "Failed to load customer data",
-        color: "red",
-      });
+      notification.error('Load Error', err.message || "Failed to load customer data", 3000);
     }
   }
 
@@ -159,17 +273,14 @@ for (const card of CardList) {
 
       (option.xAxis as any).data =
         graph.map((item: any) => {
-          return item.name_city+ " - " + item.name_subdistrict + " - " + item.name_village;
+          return item.name_city + " - " + item.name_subdistrict + " - " + item.name_village;
         })
 
       optionCardArea.value = option
 
 
     } catch (err: any) {
-      useToast().add({
-        title: err.message || "Failed to load customer data",
-        color: "red",
-      });
+      notification.error('Load Error', err.message || "Failed to load customer data", 3000);
     }
   }
 
@@ -197,10 +308,7 @@ for (const card of CardList) {
 
 
     } catch (err: any) {
-      useToast().add({
-        title: err.message || "Failed to load customer data",
-        color: "red",
-      });
+      notification.error('Load Error', err.message || "Failed to load customer data", 3000);
     }
   }
 }
@@ -242,15 +350,15 @@ async function getData() {
       invoices.value = [...response.data];
     })
     .catch((err) => {
-      useToast().add({
-        title: err,
-        color: "red",
-      });
+      // Don't show notification for auth errors (401) - let auth middleware handle it
+      if (err?.status !== 401) {
+        notification.error('Error', err?.message || 'Failed to load invoices', 3000);
+      }
     });
 
   transactionAdminApi()
     .getAllTransactions(null).then((response) => {
-      latestDeposites.value = response.data.filter((item: any) => item.type_in_out == "debit").map((transaction: any,index: number) => {
+      latestDeposites.value = response.data.filter((item: any) => item.type_in_out == "debit").map((transaction: any, index: number) => {
         return {
           number: index + 1,
           type_cash: transaction.type_cash.split("_")[0] + " " + (transaction.type_cash.split("_")[1] ? transaction.type_cash.split("_")[1] : ""),
@@ -258,7 +366,7 @@ async function getData() {
           description: transaction.description
         }
       }).slice((1 - 1) * 5, (1) * 5);
-      latestExpenses.value = response.data.filter((item: any) => item.type_in_out == "credit").map((transaction: any,index: number) => {
+      latestExpenses.value = response.data.filter((item: any) => item.type_in_out == "credit").map((transaction: any, index: number) => {
         return {
           number: index + 1,
           type_cash: transaction.type_cash.split("_")[0] + " " + (transaction.type_cash.split("_")[1] ? transaction.type_cash.split("_")[1] : ""),
@@ -267,10 +375,10 @@ async function getData() {
         }
       }).slice((1 - 1) * 5, (1) * 5);
     }).catch((err) => {
-      useToast().add({
-        title: err,
-        color: "red",
-      });
+      // Don't show notification for auth errors (401) - let auth middleware handle it
+      if (err?.status !== 401) {
+        notification.error('Error', err?.message || 'Failed to load transactions', 3000);
+      }
     });
 
   dashboardAdminApi()
@@ -279,10 +387,10 @@ async function getData() {
       totalIncome.value = response.data.total_income;
     })
     .catch((err) => {
-      useToast().add({
-        title: err,
-        color: "red",
-      });
+      // Don't show notification for auth errors (401) - let auth middleware handle it
+      if (err?.status !== 401) {
+        notification.error('Error', err?.message || 'Failed to load total income', 3000);
+      }
     });
 
   dashboardAdminApi()
@@ -291,10 +399,10 @@ async function getData() {
       totalExpenses.value = response.data.total_expenses;
     })
     .catch((err) => {
-      useToast().add({
-        title: err,
-        color: "red",
-      });
+      // Don't show notification for auth errors (401) - let auth middleware handle it
+      if (err?.status !== 401) {
+        notification.error('Error', err?.message || 'Failed to load total expenses', 3000);
+      }
     });
 
   dashboardAdminApi()
@@ -303,10 +411,10 @@ async function getData() {
       totalNetWorth.value = response.data.total_net_worth;
     })
     .catch((err) => {
-      useToast().add({
-        title: err,
-        color: "red",
-      });
+      // Don't show notification for auth errors (401) - let auth middleware handle it
+      if (err?.status !== 401) {
+        notification.error('Error', err?.message || 'Failed to load net worth', 3000);
+      }
     });
 
   dashboardAdminApi()
@@ -315,10 +423,10 @@ async function getData() {
       totalSales.value = response.data.total_sales;
     })
     .catch((err) => {
-      useToast().add({
-        title: err,
-        color: "red",
-      });
+      // Don't show notification for auth errors (401) - let auth middleware handle it
+      if (err?.status !== 401) {
+        notification.error('Error', err?.message || 'Failed to load total sales', 3000);
+      }
     });
 
 
@@ -397,18 +505,115 @@ const getNewDashboardData = async () => {
 
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
-    useToast().add({
-      title: 'Error',
-      description: 'Failed to load dashboard data',
-      color: 'red',
-    });
+    notification.error('Dashboard Error', 'Failed to load dashboard data', 3000);
   }
 };
+
+// Get recent tickets
+const getRecentTickets = async () => {
+  try {
+    const response = await ticketsApi().list();
+    recentTickets.value = (response as any)?.data || response || [];
+  } catch (error: any) {
+    console.error('Error fetching recent tickets:', error);
+    // Don't show notification for auth errors (401) - let auth middleware handle it
+    if (error?.status !== 401) {
+      notification.error('Error', error?.message || 'Failed to load recent tickets', 3000);
+    }
+    recentTickets.value = [];
+  }
+}
+
+// Format accumulation numbers for display
+function formatAccumulation(accumulation: number): string {
+  if (accumulation === 1) {
+    return '1 customer'
+  } else if (accumulation < 1000) {
+    return `${accumulation} customers`
+  } else if (accumulation < 1000000) {
+    return `${(accumulation / 1000).toFixed(1)}K customers`
+  } else {
+    return `${(accumulation / 1000000).toFixed(1)}M customers`
+  }
+}
+
+// Edit accumulation for a ticket
+function editTicketAccumulation(ticket: any) {
+  selectedTicket.value = ticket
+  newAccumulationValue.value = (ticket.accumulation || 1).toString()
+  showAccumulationModal.value = true
+}
+
+// Handle modal save
+async function saveAccumulation() {
+  if (!selectedTicket.value) return
+  
+  const accumulation = parseInt(newAccumulationValue.value)
+  if (isNaN(accumulation) || accumulation < 1) {
+    notification.error('Invalid Input', 'Please enter a valid number greater than 0', 3000)
+    return
+  }
+
+  try {
+    await ticketsApi().updateAccumulation([selectedTicket.value.id], accumulation)
+
+    // Update the ticket in the local data
+    const ticketIndex = recentTickets.value.findIndex(t => t.id === selectedTicket.value.id)
+    if (ticketIndex !== -1) {
+      recentTickets.value[ticketIndex].accumulation = accumulation
+    }
+
+    notification.success('Success', `Accumulation updated to ${accumulation} customers`, 3000)
+    closeAccumulationModal()
+  } catch (error: any) {
+    console.error('Failed to update accumulation:', error)
+    notification.error('Update failed', `Failed to update accumulation: ${error?.data?.message || error?.message || 'Unknown error'}`, 3000)
+  }
+}
+
+// Close modal
+function closeAccumulationModal() {
+  showAccumulationModal.value = false
+  selectedTicket.value = null
+  newAccumulationValue.value = ''
+}
+
+// Handle escape key
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && showAccumulationModal.value) {
+    closeAccumulationModal()
+  }
+}
+
+// Filter functions
+function applyDateFilter() {
+  // Data is automatically filtered through computed properties
+  console.log(`Date range changed to ${selectedDateRange.value} days`)
+}
+
+
+
+
+
+function refreshCharts() {
+  // Refresh the analytics charts data
+  getNewDashboardData()
+}
+
 
 onMounted(async () => {
   show()
   await getNewDashboardData()
+  await getRecentTickets()
   hide()
+  
+  // Add keyboard event listener
+  document.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  // Remove keyboard event listener
+  document.removeEventListener('keydown', handleKeydown)
 })
 
 
@@ -521,27 +726,20 @@ onMounted(async () => {
     <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg">
       <div class="flex justify-between items-center mb-4">
         <h1 class="text-xl font-semibold text-slate-800">Recent Invoices</h1>
-        <UButton 
-          icon="i-heroicons-arrow-path" 
-          color="gray" 
-          variant="soft"
-          size="sm"
-          @click="getNewDashboardData"
-          title="Refresh Recent Invoices"
-        />
+        <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="getNewDashboardData"
+          title="Refresh Recent Invoices" />
       </div>
       <div v-if="recentInvoices.length > 0" class="space-y-3">
-        <div v-for="invoice in recentInvoices.slice(0, 5)" :key="invoice.id" 
-             class="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+        <div v-for="invoice in recentInvoices.slice(0, 5)" :key="invoice.id"
+          class="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
           <div class="flex-1">
             <div class="flex items-center gap-2 mb-1">
               <p class="font-medium text-gray-900">{{ invoice.invoice_no || invoice.id }}</p>
-              <span class="px-2 py-1 text-xs rounded-full font-medium"
-                    :class="{
-                      'bg-green-100 text-green-800': invoice.status === 'paid',
-                      'bg-red-100 text-red-800': invoice.status === 'unpaid',
-                      'bg-yellow-100 text-yellow-800': invoice.status === 'pending'
-                    }">
+              <span class="px-2 py-1 text-xs rounded-full font-medium" :class="{
+                'bg-green-100 text-green-800': invoice.status === 'paid',
+                'bg-red-100 text-red-800': invoice.status === 'unpaid',
+                'bg-yellow-100 text-yellow-800': invoice.status === 'pending'
+              }">
                 {{ invoice.status?.toUpperCase() || 'UNKNOWN' }}
               </span>
             </div>
@@ -561,26 +759,19 @@ onMounted(async () => {
     <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg">
       <div class="flex justify-between items-center mb-4">
         <h1 class="text-xl font-semibold text-slate-800">Recent Transactions</h1>
-        <UButton 
-          icon="i-heroicons-arrow-path" 
-          color="gray" 
-          variant="soft"
-          size="sm"
-          @click="getNewDashboardData"
-          title="Refresh Recent Transactions"
-        />
+        <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="getNewDashboardData"
+          title="Refresh Recent Transactions" />
       </div>
       <div v-if="recentTransactions.length > 0" class="space-y-3">
-        <div v-for="transaction in recentTransactions.slice(0, 5)" :key="transaction.id" 
-             class="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+        <div v-for="transaction in recentTransactions.slice(0, 5)" :key="transaction.id"
+          class="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
           <div class="flex-1">
             <div class="flex items-center gap-2 mb-1">
               <p class="font-medium text-gray-900">{{ transaction.description || 'No Description' }}</p>
-              <span class="px-2 py-1 text-xs rounded-full font-medium"
-                    :class="{
-                      'bg-green-100 text-green-800': transaction.type_in_out === 'debit',
-                      'bg-red-100 text-red-800': transaction.type_in_out === 'credit'
-                    }">
+              <span class="px-2 py-1 text-xs rounded-full font-medium" :class="{
+                'bg-green-100 text-green-800': transaction.type_in_out === 'debit',
+                'bg-red-100 text-red-800': transaction.type_in_out === 'credit'
+              }">
                 {{ transaction.type_in_out?.toUpperCase() || 'UNKNOWN' }}
               </span>
             </div>
@@ -600,51 +791,172 @@ onMounted(async () => {
     </div>
   </div>
 
+  <!-- Recent Tickets Section -->
+  <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg mb-10">
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-xl font-semibold text-slate-800">Recent Trouble Tickets</h1>
+      <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="getRecentTickets"
+        title="Refresh Recent Tickets" />
+    </div>
+    <div v-if="recentTickets.length > 0" class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left font-medium text-gray-700">ID</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-700">Title</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-700">Type</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-700">Status</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-700">Accumulation</th>
+            <th class="px-4 py-3 text-left font-medium text-gray-700">Created</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <tr v-for="ticket in recentTickets.slice(0, 10)" :key="ticket.id" class="hover:bg-gray-50">
+            <td class="px-4 py-3 font-medium text-gray-900">{{ ticket.id }}</td>
+            <td class="px-4 py-3 text-gray-900 max-w-xs truncate">{{ ticket.title }}</td>
+            <td class="px-4 py-3 text-gray-700 capitalize">{{ ticket.type || 'Other' }}</td>
+            <td class="px-4 py-3">
+              <span :class="{
+                'px-2 py-1 rounded-full text-xs font-medium': true,
+                'bg-red-100 text-red-800': ticket.status === 'unfinished',
+                'bg-yellow-100 text-yellow-800': ticket.status === 'ongoing',
+                'bg-green-100 text-green-800': ticket.status === 'finished',
+                'bg-gray-100 text-gray-800': !['unfinished', 'ongoing', 'finished'].includes(ticket.status)
+              }">
+                {{ ticket.status }}
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center space-x-2">
+                <span :class="{
+                  'px-2 py-1 rounded-full text-xs font-medium': true,
+                  'bg-blue-100 text-blue-800': ticket.accumulation === 1,
+                  'bg-orange-100 text-orange-800': ticket.accumulation > 1 && ticket.accumulation <= 5,
+                  'bg-red-100 text-red-800': ticket.accumulation > 5 && ticket.accumulation <= 50,
+                  'bg-red-200 text-red-900': ticket.accumulation > 50 && ticket.accumulation <= 100,
+                  'bg-red-300 text-red-950': ticket.accumulation > 100 && ticket.accumulation <= 500,
+                  'bg-red-400 text-white font-bold': ticket.accumulation > 500
+                }">
+                  {{ formatAccumulation(ticket.accumulation || 1) }}
+                </span>
+                <button @click="editTicketAccumulation(ticket)"
+                  class="text-blue-600 hover:text-blue-800 text-xs underline" title="Edit accumulation">
+                  Edit
+                </button>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-gray-600">{{ formatDateToYMD(ticket.created_at) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div v-else class="text-center py-8 text-gray-500">
+      <p>No recent tickets found</p>
+    </div>
+  </div>
 
   <!-- Charts Section -->
   <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg">
-    <h1 class="text-xl font-semibold text-slate-800 mb-4">Analytics Charts</h1>
-    <div class="grid gap-6 md:grid-cols-2 sm:grid-cols-1">
-      <div>
-        <h2 class="text-lg font-medium text-gray-700 mb-3">Customer Growth (30 days)</h2>
-        <div v-if="customerGrowth.customer_growth" class="h-64">
-          <VChart :option="{
-            title: { text: 'Customer Growth' },
-            tooltip: {},
-            xAxis: { 
-              data: customerGrowth.customer_growth.map((item: any) => item.date),
-              type: 'category'
-            },
-            yAxis: {},
-            series: [{
-              name: 'New Customers',
-              type: 'line',
-              data: customerGrowth.customer_growth.map((item: any) => item.count),
-              smooth: true
-            }]
-          }" autoresize style="height: 100%;" />
+    <div class="flex flex-col justify-start items-start mb-6 gap-4">
+      <h1 class="text-xl font-semibold text-slate-800">Analytics Charts</h1>
+      
+      <!-- Chart Filters -->
+      <div class="flex flex-col sm:flex-row flex-wrap gap-3 w-full sm:w-auto">
+        <!-- Date Range Filter -->
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">Date Range:</label>
+          <select v-model="selectedDateRange" @change="applyDateFilter"
+            class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="365">Last year</option>
+          </select>
+        </div>
+
+
+        <!-- Refresh Button -->
+        <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="refreshCharts"
+          title="Refresh Charts">
+          Refresh
+        </UButton>
+      </div>
+    </div>
+    <div class="grid gap-6 grid-cols-1">
+      <!-- Customer Growth Chart -->
+      <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div class="mb-3">
+          <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">Customer Growth ({{ selectedDateRange }} days)</h2>
+        </div>
+        <div v-if="filteredCustomerGrowth && filteredCustomerGrowth.length > 0" class="h-80 w-full overflow-hidden">
+          <VChart :option="customerGrowthChartOption" autoresize style="height: 100%; width: 100%;" />
+        </div>
+        <div v-else class="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
+          <p class="text-gray-500">No customer growth data available for selected period</p>
         </div>
       </div>
-      
-      <div>
-        <h2 class="text-lg font-medium text-gray-700 mb-3">Revenue Chart (30 days)</h2>
-        <div v-if="revenueChart.revenue_chart" class="h-64">
-          <VChart :option="{
-            title: { text: 'Daily Revenue' },
-            tooltip: {},
-            xAxis: { 
-              data: revenueChart.revenue_chart.map((item: any) => item.date),
-              type: 'category'
-            },
-            yAxis: {},
-            series: [{
-              name: 'Revenue',
-              type: 'bar',
-              data: revenueChart.revenue_chart.map((item: any) => item.amount),
-              itemStyle: { color: '#10B981' }
-            }]
-          }" autoresize style="height: 100%;" />
+
+      <!-- Revenue Chart -->
+      <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div class="mb-3">
+          <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">Revenue Chart ({{ selectedDateRange }} days)</h2>
         </div>
+        <div v-if="filteredRevenueChart && filteredRevenueChart.length > 0" class="h-80 w-full overflow-hidden">
+          <VChart :option="revenueChartOption" autoresize style="height: 100%; width: 100%;" />
+        </div>
+        <div v-else class="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
+          <p class="text-gray-500">No revenue data available for selected period</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accumulation Edit Modal -->
+  <div v-if="showAccumulationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click="closeAccumulationModal">
+    <div class="bg-white rounded-lg p-6 w-96 max-w-md mx-4" @click.stop>
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">Edit Accumulation</h3>
+        <button @click="closeAccumulationModal" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      
+      <div v-if="selectedTicket" class="mb-4">
+        <p class="text-sm text-gray-600 mb-2">
+          <strong>Ticket #{{ selectedTicket.id }}:</strong> {{ selectedTicket.title }}
+        </p>
+        <p class="text-sm text-gray-500 mb-4">
+          Current: {{ formatAccumulation(selectedTicket.accumulation || 1) }}
+        </p>
+        
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          Enter new accumulation:
+        </label>
+        <input 
+          v-model="newAccumulationValue" 
+          type="number" 
+          min="1"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Enter number of customers"
+          @keyup.enter="saveAccumulation"
+        />
+      </div>
+      
+      <div class="flex justify-end space-x-3">
+        <button 
+          @click="closeAccumulationModal"
+          class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+        >
+          Cancel
+        </button>
+        <button 
+          @click="saveAccumulation"
+          class="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+        >
+          Save
+        </button>
       </div>
     </div>
   </div>

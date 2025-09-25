@@ -22,16 +22,12 @@ export const tableColumns = [
     label: "Serial Number",
   },
   {
-    key: "mac_address",
-    label: "Mac Address",
-  },
-  {
     key: "date",
     label: "Date",
   },
   {
-    key: "site",
-    label: "Site",
+    key: "company",
+    label: "Company",
   },
   {
     key: "description",

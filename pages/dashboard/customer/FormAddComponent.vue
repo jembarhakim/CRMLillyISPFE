@@ -359,7 +359,7 @@ const type_of_services = [
   },
 ];
 
-const companies = ref([]);
+const companies = ref<{label: string, value: any}[]>([]);
 const internet_packages = ref([]);
 const areas = ref([]);
 const assets = ref([]);
