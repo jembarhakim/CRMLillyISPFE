@@ -3,10 +3,9 @@ import { object, string, type InferType } from "yup";
 import type { FormSubmitEvent } from "#ui/types";
 import { customerAdminApi } from "@/api/admin/customer";
 import { areaAdminApi } from "@/api/admin/area";
-import { companyAdminApi } from "@/api/admin/company";
 import { internetPackageAdminApi } from "@/api/admin/internet-package";
 import { networkDeviceAdminApi } from "@/api/admin/network-device";
-import { assetAdminApi } from "@/api/admin/asset";
+import { userManagementAdminApi } from "@/api/admin/user-management";
 import { useNotification } from '@/composables/useNotification';
 
 const props = defineProps({
@@ -90,23 +89,17 @@ const props = defineProps({
 
 
 const schema = object({
-  type_of_service: string().required(),
-  // email: string().required(),
-  // name: string().required(),
-  // company: string().required(),
-  // gender: string().required(),
-  // card_identition: string().required(),
-  // no_identition: string().required(),
-  // area_code: string().required(),
-  // phone: string().required(),
-  // address: string().required(),
-  // latitude: string().required(),
-  // longitude: string().required(),
-  // password: string().required(),
-  // internet_package: string().required(),
-  // ip_static: string().required(),
-  // mac_address: string().required(),
-  // job: string().required(),
+  name: string().required(),
+  alias: string().optional(),
+  address: string().required(),
+  area_id: string().required(),
+  phone: string().required(),
+  latitude: string().required(),
+  longitude: string().required(),
+  service_request_date: string().required(),
+  proposed_package: string().required(),
+  bandwidth_capacity: string().required(),
+  sales_representative_id: string().optional(),
 });
 
 type Schema = InferType<typeof schema>;
@@ -114,52 +107,41 @@ type Schema = InferType<typeof schema>;
 const notification = useNotification();
 
 const state = reactive({
-  type_of_service: "",
-  email: "",
   name: "",
-  company_id: "",
-  gender: "",
-  card_identition: "",
-  no_identition: 0,
+  alias: "",
+  address: "",
   area_id: "",
   phone: "",
-  address: "",
   latitude: 0,
   longitude: 0,
-  password: "",
-  product_id: "",
-  job: "",
-  ip_static: "",
-  mac_address: "",
+  service_request_date: "",
+  proposed_package: "",
+  bandwidth_capacity: "",
+  sales_representative_id: "",
 });
 
 const networkDeviceState = reactive({
   ip_static: "",
   mac_address: "",
   assets_id: "",
+  product_id: "",
 });
 
 watch(
   () => props.isEdit,
   async (newValue) => {
     if (newValue) {
-      state.type_of_service = props.data.type_of_service,
-        state.email = props.data.email,
-        state.name = props.data.name,
-        state.company_id = props.data.company_id,
-        state.gender = props.data.gender,
-        state.card_identition = props.data.card_identition,
-        state.no_identition = props.data.no_identition,
+      state.name = props.data.name,
+        state.alias = props.data.alias || "",
+        state.address = props.data.address,
         state.area_id = props.data.area_id,
         state.phone = props.data.phone,
-        state.address = props.data.address,
         state.latitude = props.data.latitude,
         state.longitude = props.data.longitude,
-        state.password = props.data.password,
-        state.product_id = props.data.product_id,
-        state.job = props.data.job,
-        state.ip_static = props.data.ip_static || "",
-        state.mac_address = props.data.mac_address || ""
+        state.service_request_date = props.data.service_request_date || "",
+        state.proposed_package = props.data.proposed_package || "",
+        state.bandwidth_capacity = props.data.bandwidth_capacity || "",
+        state.sales_representative_id = props.data.sales_representative_id || ""
       
       // Load existing network device data if available
       try {
@@ -185,13 +167,14 @@ function onSuccess() {
 }
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
+  console.log("Form submitted with data:", state);
   // Do something with event.data
   if (props.isEdit) {
     try {
       const response = await customerAdminApi().editCustomer(props.data.id, state);
       
       // Update or create network device if data is provided
-      if (response.success && (state.ip_static || state.mac_address || networkDeviceState.assets_id)) {
+      if (response.success && (networkDeviceState.assets_id || networkDeviceState.product_id)) {
         try {
           const networkDevices = await networkDeviceAdminApi().getNetworkDevicesByCustomer(props.data.id);
           if (networkDevices.data && networkDevices.data.length > 0) {
@@ -199,10 +182,11 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
             const device = networkDevices.data[0];
             const networkDeviceData: any = {
               customer_id: props.data.id,
-              ip_static: state.ip_static || device.ip_static || "",
-              mac_address: state.mac_address || device.mac_address || "",
+              ip_static: device.ip_static || "",
+              mac_address: device.mac_address || "",
               status_perangkat: device.status_perangkat || "active",
-              last_ping_status: device.last_ping_status || "unknown"
+              last_ping_status: device.last_ping_status || "unknown",
+              product_id: networkDeviceState.product_id || device.product_id || ""
             };
             
             // Only add assets_id if it has a value
@@ -216,10 +200,11 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
             // Create new network device
             const networkDeviceData: any = {
               customer_id: props.data.id,
-              ip_static: state.ip_static || "",
-              mac_address: state.mac_address || "",
+              ip_static: "",
+              mac_address: "",
               status_perangkat: "active",
-              last_ping_status: "unknown"
+              last_ping_status: "unknown",
+              product_id: networkDeviceState.product_id || ""
             };
             
             // Only add assets_id if it has a value
@@ -245,13 +230,14 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       const customerResponse = await customerAdminApi().createCustomer(state);
       
       // If customer creation is successful and network device data is provided, create network device
-      if (customerResponse.success && (state.ip_static || state.mac_address || networkDeviceState.assets_id)) {
+      if (customerResponse.success && (networkDeviceState.assets_id || networkDeviceState.product_id)) {
         const networkDeviceData: any = {
           customer_id: customerResponse.data.id,
-          ip_static: state.ip_static || "",
-          mac_address: state.mac_address || "",
+          ip_static: "",
+          mac_address: "",
           status_perangkat: "active",
-          last_ping_status: "unknown"
+          last_ping_status: "unknown",
+          product_id: networkDeviceState.product_id || ""
         };
         
         // Only add assets_id if it has a value
@@ -309,69 +295,12 @@ async function moveToMyLocation() {
   }
 }
 
-const genders = [
-  {
-    label: "Male",
-    value: "male",
-  },
-  {
-    label: "Female",
-    value: "female",
-  },
-];
 
-const card_identitions = [
-  {
-    label: "KTP",
-    value: "ktp",
-  },
-  {
-    label: "SIM",
-    value: "sim",
-  },
-  {
-    label: "PASPOR",
-    value: "paspor",
-  },
-];
-
-
-
-// const submission_types = [
-//   {
-//     label: "New",
-//     value: "new",
-//   },
-//   {
-//     label: "Upgrade",
-//     value: "upgrade",
-//   },
-// ];
-
-const type_of_services = [
-  {
-    label: "Internet",
-    value: "internet",
-  },
-  {
-    label: "IPTV",
-    value: "iptv",
-  },
-];
-
-const companies = ref([]);
 const internet_packages = ref([]);
 const areas = ref([]);
-const assets = ref([]);
+const salesRepresentatives = ref([]);
 
 async function getDataOptions() {
-  companyAdminApi().getAllCompanies().then((response) => {
-    companies.value = response.data.map((value: any, index: number) => ({
-      label: value.name,
-      value: value.id
-    }))
-  })
-
   internetPackageAdminApi().getAllInternetPacket().then((response) => {
     internet_packages.value = response.data.map((value: any, index: number) => ({
       label: value.name,
@@ -386,9 +315,10 @@ async function getDataOptions() {
     }))
   })
 
-  assetAdminApi().getAllAssets().then((response) => {
-    assets.value = response.data.map((value: any, index: number) => ({
-      label: `${value.brand} - ${value.model}`,
+  // Get sales representatives (users with specific role)
+  userManagementAdminApi().getAllUsers({ query: { role: "ADMIN" } }).then((response) => {
+    salesRepresentatives.value = response.data.map((value: any, index: number) => ({
+      label: value.name,
       value: value.id
     }))
   })
@@ -411,37 +341,38 @@ await getDataOptions()
         <div class="flex gap-4 flex-row-2">
 
           <div class="w-full">
-
-            <URadioGroup v-model="state.type_of_service" legend="Type Of Service" :options="type_of_services" />
-
-            <UFormGroup label="Email" name="email">
-              <UInput v-model="state.email" />
+            <UFormGroup label="Nama Pelanggan" name="name">
+              <UInput v-model="state.name" placeholder="Masukkan nama lengkap pelanggan" />
             </UFormGroup>
-            <UFormGroup label="Name" name="name">
-              <UInput v-model="state.name" />
-            </UFormGroup>
-            <UFormGroup label="Company" name="company">
-              <USelectMenu v-model="state.company_id" :options="companies" value-attribute="value"
-                option-attribute="label" />
-            </UFormGroup>
-            <UFormGroup label="Gender" name="gender">
-              <USelectMenu v-model="state.gender" :options="genders" value-attribute="value" option-attribute="label" />
-            </UFormGroup>
-            <UFormGroup label="Card Identition" name="card_identition">
-              <USelectMenu v-model="state.card_identition" :options="card_identitions" value-attribute="value"
-                option-attribute="label" />
-            </UFormGroup>
-            <UFormGroup label="No Indetition" name="no_identition">
-              <UInput v-model="state.no_identition" type="number" />
+            <UFormGroup label="Panggilan / Samaran" name="alias">
+              <UInput v-model="state.alias" placeholder="Optional nickname" />
             </UFormGroup>
             <UFormGroup label="Area Code" name="area_code">
-              <USelectMenu v-model="state.area_id" :options="areas" value-attribute="value" />
+              <USelectMenu v-model="state.area_id" :options="areas" value-attribute="value" 
+                option-attribute="label" placeholder="Pilih area" />
             </UFormGroup>
-            <UFormGroup label="Phone" name="phone">
-              <UInput v-model="state.phone" />
+            <UFormGroup label="No.HP Pelanggan" name="phone">
+              <UInput v-model="state.phone" placeholder="Masukkan nomor HP pelanggan" />
             </UFormGroup>
-            
-            
+            <UFormGroup label="Tgl. Permintaan PSB" name="service_request_date">
+              <UInput v-model="state.service_request_date" type="date" />
+            </UFormGroup>
+            <UFormGroup label="Paket yg Diajukan" name="proposed_package">
+              <USelectMenu v-model="state.proposed_package" :options="internet_packages" value-attribute="value"
+                option-attribute="label" placeholder="Pilih paket internet" />
+            </UFormGroup>
+            <UFormGroup label="Kapasitas" name="bandwidth_capacity">
+              <UInput v-model="state.bandwidth_capacity" placeholder="Contoh: 100 Mbps" />
+            </UFormGroup>
+            <UFormGroup label="Sales Representative" name="sales_representative_id">
+              <USelectMenu 
+                v-model="state.sales_representative_id" 
+                :options="salesRepresentatives" 
+                value-attribute="value"
+                option-attribute="label"
+                placeholder="Pilih sales representative"
+              />
+            </UFormGroup>
           </div>
           <div class="w-full">
 
@@ -468,34 +399,7 @@ await getDataOptions()
                 </div>
               </div>
             </UFormGroup>
-            <UFormGroup label="Packet Internet" name="internet_package">
-              <USelectMenu v-model="state.product_id" :options="internet_packages" value-attribute="value"
-                option-attribute="label" />
-            </UFormGroup>
 
-            <UFormGroup label="Job" name="job">
-              <UInput v-model="state.job" />
-            </UFormGroup>
-
-            <!-- Network Device Fields -->
-            <div class="border-t pt-4 mt-4">
-              <h3 class="text-lg font-semibold mb-3">Network Device Information</h3>
-              <UFormGroup label="IP Static" name="ip_static">
-                <UInput v-model="state.ip_static" placeholder="192.168.1.100" />
-              </UFormGroup>
-              <UFormGroup label="MAC Address" name="mac_address">
-                <UInput v-model="state.mac_address" placeholder="00:11:22:33:44:55" />
-              </UFormGroup>
-              <UFormGroup label="Asset" name="assets_id">
-                <USelectMenu 
-                  v-model="networkDeviceState.assets_id" 
-                  :options="assets" 
-                  value-attribute="value"
-                  option-attribute="label"
-                  placeholder="Select an asset"
-                />
-              </UFormGroup>
-            </div>
 
             <div class="flex justify-end mt-4">
               <UButton type="submit"> Submit </UButton>

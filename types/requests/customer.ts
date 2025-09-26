@@ -1,19 +1,15 @@
 export type CreateCustomerRequest = {
-  type_of_service: String
-  email: String
   name: String
-  company_id: String
-  gender: String
-  card_identition: String
-  no_identition: Number
+  alias?: String
+  address: String
   area_id: String
   phone: String
-  address: String
   latitude: Number
   longitude: Number
-  password: String
-  product_id: String
-  job: String
+  service_request_date: String
+  proposed_package: String
+  bandwidth_capacity: String
+  sales_representative_id?: String
 }
 
 export type UpdateCustomerRequest = {
@@ -27,12 +23,12 @@ export type UpdateCustomerRequest = {
 export type CreateCustomerInstallationRequest = {
   customer_id: String,
   technician_id: String,
-  date: String,
-  description:  String,
-  image_ids: string[] ,
-  previews: String[] ,
-  selectedImage: String,
-  showModal: boolean,
+  status?: String,
+  notes?: String,
+  document_type?: String,
+  document_photo?: String,
+  image_ids: string[],
+  on_air_date?: String,
 }
 
 export type CreateNetworkDeviceRequest = {

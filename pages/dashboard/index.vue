@@ -131,7 +131,7 @@ for (const card of CardList) {
 
     } catch (err: any) {
       useToast().add({
-        title: err.message || "Failed to load customer data",
+        title: err.message || "Failed to load packet popular data",
         color: "red",
       });
     }
@@ -219,7 +219,7 @@ const columns = [
     label: "Status",
   },
   {
-    key: "customer.product.name",
+    key: "product_name",
     label: "Plan",
   },
 ];
