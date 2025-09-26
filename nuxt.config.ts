@@ -19,8 +19,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      API_HOST: process.env.NUXT_PUBLIC_API_HOST, // Memastikan API_HOST tersedia
-      WA_HOST: process.env.NUXT_PUBLIC_WA_HOST, // Memastikan API_HOST tersedia
+      API_HOST: process.env.NUXT_PUBLIC_API_HOST || 'http://localhost:3001', // Default to localhost:3001
+      WA_HOST: process.env.NUXT_PUBLIC_WA_HOST || 'http://localhost:3001', // Default to localhost:3001
     },
   },
   // Remove automatic middleware assignment to prevent race conditions
@@ -47,6 +47,9 @@ export default defineNuxtConfig({
     "@i2d/nuxt-pdf-frame",
     "nuxt-echarts",
   ],
+  imports: {
+    dirs: ["composables", "stores"],
+  },
   // tailwindcss: {
   //   cssPath: ["~/assets/css/tailwind.css", { injectPosition: "first" }],
   //   config: {},
@@ -63,4 +66,9 @@ export default defineNuxtConfig({
       pathPrefix: false,
     },
   ],
+  // Allow external connections for mobile development
+  devServer: {
+    host: '0.0.0.0', // Allow connections from any IP
+    port: 3000
+  },
 });

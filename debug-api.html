@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Debug Test</title>
+</head>
+<body>
+    <h1>API Debug Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Simulate the useApiHost logic
+        function getApiHost() {
+            const apiFromEnv = 'http://192.168.1.11:3001'; // Your env variable
+            
+            if (!apiFromEnv || apiFromEnv.trim() === '') {
+                const proto = window.location.protocol === 'https:' ? 'https' : 'http';
+                const host = window.location.hostname;
+                const port = '3001';
+                return `${proto}://${host}:${port}`;
+            }
+            
+            // Force localhost for development
+            if (window.location.hostname === 'localhost') {
+                return 'http://localhost:3001';
+            }
+            
+            return apiFromEnv;
+        }
+        
+        const apiHost = getApiHost();
+        
+        document.getElementById('results').innerHTML = `
+            <p><strong>Current URL:</strong> ${window.location.href}</p>
+            <p><strong>Hostname:</strong> ${window.location.hostname}</p>
+            <p><strong>API Host:</strong> ${apiHost}</p>
+            <p><strong>Test API URL:</strong> ${apiHost}/api/auth/login</p>
+        `;
+        
+        // Test the API call
+        async function testLogin() {
+            try {
+                const response = await fetch(`${apiHost}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@email.com',
+                        password: 'password'
+                    })
+                });
+                
+                const result = await response.json();
+                document.getElementById('results').innerHTML += `
+                    <h3>API Test Result:</h3>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Success:</strong> ${result.success}</p>
+                    <p><strong>Message:</strong> ${result.message}</p>
+                `;
+            } catch (error) {
+                document.getElementById('results').innerHTML += `
+                    <h3>API Test Error:</h3>
+                    <p style="color: red;">${error.message}</p>
+                `;
+            }
+        }
+        
+        // Auto-test after 1 second
+        setTimeout(testLogin, 1000);
+    </script>
+</body>
+</html>
+
+
+

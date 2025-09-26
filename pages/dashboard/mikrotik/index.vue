@@ -194,6 +194,56 @@
         </div>
       </div>
 
+      <!-- Netwatch Devices Panel -->
+      <div v-if="connectionStatus === 'connected'" class="mt-8 bg-white rounded-lg shadow-sm border">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex justify-between items-center">
+            <h3 class="text-lg font-medium text-gray-900">Netwatch Devices</h3>
+            <button
+              @click="getNetwatchDevices"
+              :disabled="connectionStatus !== 'connected'"
+              class="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              <i class="fas fa-sync-alt mr-1"></i>
+              Refresh
+            </button>
+          </div>
+        </div>
+        <div class="p-6">
+          <div v-if="netwatchDevices.length === 0" class="text-center py-8 text-gray-500">
+            <i class="fas fa-network-wired text-4xl mb-4"></i>
+            <p>No Netwatch devices found. Connect to MikroTik to view devices.</p>
+          </div>
+          <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div 
+              v-for="device in netwatchDevices" 
+              :key="device.host"
+              :class="[
+                'p-4 rounded-lg border-2',
+                device.status === 'UP' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+              ]"
+            >
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-medium text-gray-900">{{ device.host }}</h4>
+                <span 
+                  :class="[
+                    'px-2 py-1 rounded-full text-xs font-medium',
+                    device.status === 'UP' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  ]"
+                >
+                  {{ device.status }}
+                </span>
+              </div>
+              <div class="text-sm text-gray-600 space-y-1">
+                <p><span class="font-medium">Interval:</span> {{ device.interval || 'N/A' }}</p>
+                <p><span class="font-medium">Timeout:</span> {{ device.timeout || 'N/A' }}</p>
+                <p v-if="device.comment"><span class="font-medium">Comment:</span> {{ device.comment }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- System Info Panel -->
       <div v-if="connectionStatus === 'connected'" class="mt-8 bg-white rounded-lg shadow-sm border">
         <div class="px-6 py-4 border-b border-gray-200">
@@ -256,10 +306,27 @@ const authStore = useAuthStore()
 const getAuthHeaders = () => {
   const token = authStore.getToken
   if (!token || token === '' || token === 'null' || token === 'undefined') {
+    // Try to redirect to login if no token
+    navigateTo('/login')
     throw new Error('No valid authentication token available')
   }
   return {
     'Authorization': `Bearer ${token}`
+  }
+}
+
+// Helper function to handle token expiration
+const handleTokenExpiration = (error) => {
+  if (error.message && error.message.includes('Invalid Token')) {
+    // Use global token expiration handler with modal confirmation
+    if (window.handleTokenExpiration) {
+      window.handleTokenExpiration()
+    } else {
+      // Fallback if global handler not available
+      showAlert('Session expired. Please login again.', 'error')
+      authStore.logout()
+      navigateTo('/login')
+    }
   }
 }
 
@@ -274,6 +341,7 @@ const connectionConfig = ref({
 
 const logs = ref([])
 const systemInfo = ref({})
+const netwatchDevices = ref([])
 const selectedTimeRange = ref('1d')
 const activeLogFilter = ref('all')
 const lastUpdateTime = ref('Never')
@@ -328,11 +396,14 @@ const connectToMikroTik = async () => {
       showAlert('Successfully connected to MikroTik', 'success')
       await refreshLogs()
       await getSystemInfo()
+      await getNetwatchDevices()
+      startAutoRefresh()
     } else {
       throw new Error(data.message || 'Failed to connect')
     }
   } catch (error) {
     connectionStatus.value = 'disconnected'
+    handleTokenExpiration(error)
     showAlert(`Connection failed: ${error.message}`, 'error')
   }
 }
@@ -350,11 +421,14 @@ const disconnectFromMikroTik = async () => {
       connectionStatus.value = 'disconnected'
       logs.value = []
       systemInfo.value = {}
+      netwatchDevices.value = []
+      stopAutoRefresh()
       showAlert('Successfully disconnected from MikroTik', 'success')
     } else {
       throw new Error(data.message || 'Failed to disconnect')
     }
   } catch (error) {
+    handleTokenExpiration(error)
     showAlert(`Disconnect failed: ${error.message}`, 'error')
   }
 }
@@ -376,7 +450,34 @@ const refreshLogs = async () => {
       throw new Error(data.message || 'Failed to get logs')
     }
   } catch (error) {
+    handleTokenExpiration(error)
     showAlert(`Failed to refresh logs: ${error.message}`, 'error')
+  }
+}
+
+const getNetwatchDevices = async () => {
+  if (connectionStatus.value !== 'connected') return
+  
+  try {
+    const response = await fetch(`${apiHost}/api/admin/mikrotik/netwatch/devices`, {
+      headers: getAuthHeaders()
+    })
+    
+    const data = await response.json()
+    
+    // Debug logging
+    console.log('Netwatch devices API response:', data)
+    
+    if (data.success) {
+      netwatchDevices.value = data.data.devices || []
+      console.log('Netwatch devices set to:', netwatchDevices.value)
+    } else {
+      throw new Error(data.message || 'Failed to get netwatch devices')
+    }
+  } catch (error) {
+    console.error('Error getting netwatch devices:', error)
+    handleTokenExpiration(error)
+    showAlert(`Failed to get netwatch devices: ${error.message}`, 'error')
   }
 }
 
@@ -395,6 +496,7 @@ const getSystemInfo = async () => {
     }
   } catch (error) {
     console.error('Failed to get system info:', error)
+    handleTokenExpiration(error)
   }
 }
 
@@ -438,6 +540,7 @@ const startAutoRefresh = () => {
   refreshInterval = setInterval(() => {
     if (connectionStatus.value === 'connected') {
       refreshLogs()
+      getNetwatchDevices()
     }
   }, 30000)
 }

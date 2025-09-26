@@ -12,7 +12,25 @@ import 'v-calendar/dist/style.css'
 import { format } from 'date-fns'
 import AddAreaForm from "../area/AddAreaForm.vue";
 import { assetAdminApi } from "@/api/admin/asset";
+import { companyAdminApi } from "@/api/admin/company";
+
 const state = reactive(asset);
+const companies = ref<Array<{label: string, value: string}>>([]);
+
+// Fetch companies for dropdown
+onMounted(async () => {
+  try {
+    const response = await companyAdminApi().getAllCompanies();
+    if (response.success) {
+      companies.value = response.data.map((company) => ({
+        label: company.name,
+        value: company.id
+      }));
+    }
+  } catch (error) {
+    console.error('Failed to fetch companies:', error);
+  }
+});
 
 const props = defineProps({
   isEdit: {
@@ -42,15 +60,11 @@ const props = defineProps({
         type: String,
         default: ""
       },
-      mac_address: {
-        type: String,
-        default: ""
-      },
       date: {
         type: String,
         default: new Date()
       },
-      site: {
+      company_id: {
         type: String,
         default: ""
       },
@@ -87,9 +101,8 @@ watch(
       state.brand = props.data.brand
       state.model = props.data.model
       state.serial_number = props.data.serial_number
-      state.mac_address = props.data.mac_address
       state.date = props.data.date
-      state.site = props.data.site
+      state.company_id = props.data.company_id
       state.quantity = props.data.quantity
       state.status = props.data.status
       state.price = props.data.price
@@ -114,9 +127,8 @@ function clearState() {
   state.brand = ""
   state.model = ""
   state.serial_number = ""
-  state.mac_address = ""
   state.date = new Date()
-  state.site = ""
+  state.company_id = undefined
   state.quantity = 0
   state.status = ""
   state.price = 0
@@ -176,9 +188,6 @@ async function onSubmit(event: FormSubmitEvent<AssetSchema>) {
           <UInput v-model="state.serial_number" />
         </UFormGroup>
 
-        <UFormGroup label="Mac Address" name="mac_address">
-          <UInput v-model="state.mac_address" />
-        </UFormGroup>
 
         <UFormGroup label="Date" name="date">
           <UPopover :popper="{ placement: 'bottom-start' }">
@@ -191,8 +200,12 @@ async function onSubmit(event: FormSubmitEvent<AssetSchema>) {
           </UPopover>
         </UFormGroup>
 
-        <UFormGroup label="Site" name="site">
-          <UInput v-model="state.site" />
+        <UFormGroup label="Company" name="company_id">
+          <USelect 
+            v-model="state.company_id" 
+            :options="companies"
+            placeholder="Select a company"
+          />
         </UFormGroup>
 
         <UFormGroup label="Quantity" name="quantity">

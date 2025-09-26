@@ -1,24 +1,9 @@
-import type { CreateCompanyRequest } from "@/types/requests/company";
+import type { CreateCompanyRequest, UpdateCompanyRequest, Company, ApiResponse } from "@/types/requests/company";
 
 export const companyAdminApi = () => {
   const api = useApiHost();
   return {
-    getCompany: async (companyId: string) => {
-      const response = await fetch(`${api}/api/admin/company/${companyId}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${useCookie("token").value}`,
-        },
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
-      }
-      return response.json();
-    },
-
-    getAllCompanies: async () => {
+    getAllCompanies: async (): Promise<ApiResponse<Company[]>> => {
       const response = await fetch(`${api}/api/admin/company`, {
         method: "GET",
         headers: {
@@ -28,14 +13,27 @@ export const companyAdminApi = () => {
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
+        throw new Error(errorData.message || 'Failed to fetch companies');
       }
       return response.json();
     },
 
-    createCompanies: async (
-      data: CreateCompanyRequest
-    ) => {
+    getCompany: async (companyId: string): Promise<ApiResponse<Company>> => {
+      const response = await fetch(`${api}/api/admin/company/${companyId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch company');
+      }
+      return response.json();
+    },
+
+    createCompanies: async (data: CreateCompanyRequest): Promise<ApiResponse<Company>> => {
       const response = await fetch(`${api}/api/admin/company`, {
         method: "POST",
         headers: {
@@ -46,15 +44,12 @@ export const companyAdminApi = () => {
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
+        throw new Error(errorData.message || 'Failed to create company');
       }
       return response.json();
     },
 
-    editCompany: async (
-      companyId: string,
-      data: CreateCompanyRequest
-    ) => {
+    editCompany: async (companyId: string, data: UpdateCompanyRequest): Promise<ApiResponse<Company>> => {
       const response = await fetch(`${api}/api/admin/company/${companyId}`, {
         method: "PUT",
         headers: {
@@ -65,12 +60,12 @@ export const companyAdminApi = () => {
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
+        throw new Error(errorData.message || 'Failed to update company');
       }
       return response.json();
     },
 
-    deleteCompany: async (companyId: string) => {
+    deleteCompany: async (companyId: string): Promise<ApiResponse<null>> => {
       const response = await fetch(`${api}/api/admin/company/${companyId}`, {
         method: "DELETE",
         headers: {
@@ -80,7 +75,7 @@ export const companyAdminApi = () => {
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
+        throw new Error(errorData.message || 'Failed to delete company');
       }
       return response.json();
     },

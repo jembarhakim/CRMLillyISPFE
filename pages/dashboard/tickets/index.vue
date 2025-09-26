@@ -1,32 +1,33 @@
 import { Bar } from 'vue-chartjs'
 import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
-  BarElement,
-  CategoryScale,
-  LinearScale,
+Chart as ChartJS,
+Title,
+Tooltip,
+Legend,
+BarElement,
+CategoryScale,
+LinearScale,
 } from 'chart.js'
+import TechnicianChecklist from '@/components/TechnicianChecklist.vue'
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 const byTypeChartData = computed(() => {
-  return {
-    labels: byTypeRows.value.map(r => r.name),
-    datasets: [
-      {
-        label: 'Ticket Count',
-        data: byTypeRows.value.map(r => r.count),
-        backgroundColor: '#4F46E5', // biru indigo
-      },
-    ],
-  }
+return {
+labels: byTypeRows.value.map(r => r.name),
+datasets: [
+{
+label: 'Ticket Count',
+data: byTypeRows.value.map(r => r.count),
+backgroundColor: '#4F46E5', // biru indigo
+},
+],
+}
 })
 
 const byTypeChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
+responsive: true,
+maintainAspectRatio: false,
 }
 
 <script setup lang="ts">
@@ -39,6 +40,7 @@ import { areaAdminApi } from '@/api/admin/area'
 import { useAuthStore } from '@/stores/auth'
 import { useRolePermissions } from '@/composables/useRolePermissions'
 import { useNotification } from '@/composables/useNotification'
+import TechnicianChecklist from '@/components/TechnicianChecklist.vue'
 
 const authStore = useAuthStore()
 const { userRole, isAdmin, isCustomerService, isNOC, isTechnician } = useRolePermissions()
@@ -118,6 +120,7 @@ const selectedTicket = ref<any | null>(null)
 const showResolveModal = ref(false)
 // Removed duplicate declarations - these are declared later
 const nocNote = ref('')
+const nocAccumulation = ref<number>(1)
 const technicianNote = ref('')
 const resolveNote = ref('')
 const nocActionSubmitting = ref(false)
@@ -195,29 +198,171 @@ const afterImageUrl = computed(() => {
   return undefined
 })
 
+// Technician workflow state
+const showAcceptConfirm = ref(false)
+const showTeamModal = ref(false)
+const showStepModal = ref(false)
+const showNetworkArchModal = ref(false)
+const teamMembers = ref<Array<{ user_id: string; role: 'senior' | 'junior' | 'helper' }>>([])
+const teamSubmitting = ref(false)
+const stepDescription = ref('')
+const stepImages = ref<File[]>([])
+const stepSubmitting = ref(false)
+const networkArchitecture = ref('')
+const networkArchSubmitting = ref(false)
+
+function openAccept(ticketId: number) {
+  selectedId.value = ticketId
+  showAcceptConfirm.value = true
+}
+
+async function acceptTicket() {
+  if (!selectedId.value) return
+  try {
+    await ticketsApi().accept(selectedId.value)
+    showAcceptConfirm.value = false
+    useToast().add({ title: 'Accepted', description: 'Ticket accepted.', color: 'primary', timeout: 2500 })
+    await refresh()
+  } catch (e: any) {
+    useToast().add({ title: 'Failed', description: String(e?.data?.message || e?.message || 'Failed to accept'), color: 'red' })
+  }
+}
+
+function openTeam(ticketId: number) {
+  selectedId.value = ticketId
+  if (teamMembers.value.length === 0) teamMembers.value = []
+  showTeamModal.value = true
+}
+
+function addTeamMember() {
+  teamMembers.value.push({ user_id: '', role: 'junior' })
+}
+function removeTeamMember(idx: number) {
+  teamMembers.value.splice(idx, 1)
+}
+
+async function saveTeam() {
+  if (!selectedId.value) return
+  try {
+    teamSubmitting.value = true
+    await ticketsApi().setTeam(selectedId.value, teamMembers.value)
+    showTeamModal.value = false
+    useToast().add({ title: 'Team saved', description: 'Technician team updated.', color: 'primary', timeout: 2500 })
+  } catch (e: any) {
+    useToast().add({ title: 'Failed', description: String(e?.data?.message || e?.message || 'Failed to save team'), color: 'red' })
+  } finally { teamSubmitting.value = false }
+}
+
+function openStep(ticketId: number) {
+  selectedId.value = ticketId
+  stepDescription.value = ''
+  stepImages.value = []
+  showStepModal.value = true
+}
+
+function onSelectStepImages(e: Event) {
+  const input = e.target as HTMLInputElement
+  const files = input.files
+  if (!files) return
+  stepImages.value = Array.from(files)
+}
+
+async function saveStep() {
+  if (!selectedId.value) return
+  try {
+    stepSubmitting.value = true
+    await ticketsApi().addStep(selectedId.value, stepDescription.value, stepImages.value)
+    showStepModal.value = false
+    useToast().add({ title: 'Step added', description: 'Troubleshooting step saved.', color: 'primary', timeout: 2500 })
+    await refresh()
+  } catch (e: any) {
+    useToast().add({ title: 'Failed', description: String(e?.data?.message || e?.message || 'Failed to add step'), color: 'red' })
+  } finally { stepSubmitting.value = false }
+}
+
+async function verifyClose(id?: number) {
+  const tid = id || selectedId.value
+  if (!tid) return
+  try {
+    await ticketsApi().verifyClose(tid)
+    useToast().add({ title: 'Closed', description: 'Ticket verified & closed by CS.', color: 'primary', timeout: 2500 })
+    await refresh()
+  } catch (e: any) {
+    useToast().add({ title: 'Failed', description: String(e?.data?.message || e?.message || 'Failed to verify & close'), color: 'red' })
+  }
+}
+
+// New function for technician to mark work as completed
+async function markTechnicianCompleted(id?: number) {
+  const tid = id || selectedId.value
+  if (!tid) return
+  try {
+    // This will be implemented in the backend
+    await ticketsApi().markTechnicianJobCompleted(tid)
+    useToast().add({ title: 'Work Completed', description: 'Technician work has been marked as completed.', color: 'green', timeout: 3000 })
+    await refresh()
+  } catch (e: any) {
+    useToast().add({ title: 'Failed', description: String(e?.data?.message || e?.message || 'Failed to mark work as completed'), color: 'red' })
+  }
+}
+
+// Network architecture selection
+function openNetworkArch(ticketId: number) {
+  selectedId.value = ticketId
+  networkArchitecture.value = ''
+  showNetworkArchModal.value = true
+}
+
+// Technician checklist
+const showTechnicianChecklist = ref(false)
+const selectedTicketForChecklist = ref<number | null>(null)
+const selectedTechnicianForChecklist = ref<string>('')
+const selectedChecklistReadOnly = ref(false)
+
+async function saveNetworkArchitecture() {
+  if (!selectedId.value || !networkArchitecture.value) return
+  try {
+    networkArchSubmitting.value = true
+    await ticketsApi().setNetworkArchitecture(selectedId.value, networkArchitecture.value)
+    showNetworkArchModal.value = false
+    useToast().add({ title: 'Architecture Set', description: 'Network architecture selected successfully.', color: 'primary', timeout: 2500 })
+    await refresh()
+  } catch (e: any) {
+    useToast().add({ title: 'Failed', description: String(e?.data?.message || e?.message || 'Failed to set architecture'), color: 'red' })
+  } finally {
+    networkArchSubmitting.value = false
+  }
+}
+
 // Filtered tickets based on search query
-  const filteredRows = computed(() => {
-    if (!searchQuery.value.trim()) {
-      return rows.value
-    }
+const filteredRows = computed(() => {
+  // Ensure rows.value is always an array
+  const safeRows = Array.isArray(rows.value) ? rows.value : []
+  
+  if (!searchQuery.value.trim()) {
+    return safeRows
+  }
+
+  const query = searchQuery.value.toLowerCase().trim()
+  return safeRows.filter(ticket => {
+    // Add null checks for ticket object
+    if (!ticket) return false
     
-    const query = searchQuery.value.toLowerCase().trim()
-    return rows.value.filter(ticket => {
-      return (
-        ticket.id?.toString().includes(query) ||
-        ticket.customer_name?.toLowerCase().includes(query) ||
-        ticket.title?.toLowerCase().includes(query) ||
-        ticket.type?.toLowerCase().includes(query) ||
-        ticket.type_name?.toLowerCase().includes(query) ||
-        ticket.status?.toLowerCase().includes(query) ||
-        ticket.current_assignee_name?.toLowerCase().includes(query) ||
-        ticket.current_assignee_role?.toLowerCase().includes(query) ||
-        ticket.customer_note?.toLowerCase().includes(query) ||
-        ticket.technician_note?.toLowerCase().includes(query) ||
-        ticket.noc_note?.toLowerCase().includes(query)
-      )
-    })
+    return (
+      ticket.id?.toString().includes(query) ||
+      ticket.customer_name?.toLowerCase().includes(query) ||
+      ticket.title?.toLowerCase().includes(query) ||
+      ticket.type?.toLowerCase().includes(query) ||
+      ticket.type_name?.toLowerCase().includes(query) ||
+      ticket.status?.toLowerCase().includes(query) ||
+      ticket.current_assignee_name?.toLowerCase().includes(query) ||
+      ticket.current_assignee_role?.toLowerCase().includes(query) ||
+      ticket.customer_note?.toLowerCase().includes(query) ||
+      ticket.technician_note?.toLowerCase().includes(query) ||
+      ticket.noc_note?.toLowerCase().includes(query)
+    )
   })
+})
 
 const nocImageFile = ref<File | null>(null)
 const nocImagePreview = ref<string>('')
@@ -299,35 +444,45 @@ function actPrepareResolve(id: number) {
 function actPrepareNOC(id: number) {
   console.log('actPrepareNOC called with id:', id)
   selectedId.value = id;
+  
+  // Find and set the selected ticket
+  const ticket = rows.value.find(t => t.id === id)
+  selectedTicket.value = ticket
+  
   nocNote.value = '';
   nocSelectedType.value = troubleTypes.value[0]?.id || ''
   nocImageFile.value = null;
   nocImagePreview.value = '';
   showNewType.value = false; // Reset new type form
   newTypeName.value = ''; // Clear new type name
+  
+  // Initialize accumulation with current ticket value
+  nocAccumulation.value = ticket?.accumulation || 1
+  
   showNOCNoteModal.value = true
   console.log('showNOCNoteModal set to:', showNOCNoteModal.value)
+  console.log('selectedTicket set to:', selectedTicket.value)
 }
 
 function handleNOCImageUpload(event: Event) {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
-  
+
   if (file) {
     // Validate file type
     if (!file.type.startsWith('image/')) {
       alert('Please select an image file');
       return;
     }
-    
+
     // Validate file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
       alert('File size must be less than 10MB');
       return;
     }
-    
+
     nocImageFile.value = file;
-    
+
     // Create preview
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -362,15 +517,15 @@ function actPrepareTechnicianNote(ticket: any) {
 function validateFile(file: File): { isValid: boolean; message: string } {
   const maxSize = 10 * 1024 * 1024; // 10MB
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-  
+
   if (file.size > maxSize) {
     return { isValid: false, message: 'File size exceeds 10MB limit' };
   }
-  
+
   if (!allowedTypes.includes(file.type)) {
     return { isValid: false, message: 'File type not supported. Please use JPG, PNG, or GIF' };
   }
-  
+
   return { isValid: true, message: 'File is valid' };
 }
 
@@ -378,7 +533,7 @@ function validateFile(file: File): { isValid: boolean; message: string } {
 function handleBeforeImageChange(event: Event) {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
-  
+
   if (file) {
     const validation = validateFile(file);
     if (validation.isValid) {
@@ -395,7 +550,7 @@ function handleBeforeImageChange(event: Event) {
 function handleAfterImageChange(event: Event) {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
-  
+
   if (file) {
     const validation = validateFile(file);
     if (validation.isValid) {
@@ -409,22 +564,22 @@ function handleAfterImageChange(event: Event) {
   }
 }
 
-async function sendToNOC() { 
-  if (!selectedId.value) return; 
+async function sendToNOC() {
+  if (!selectedId.value) return;
   const actionKey = `tonoc_${selectedId.value}`
   if (actionLoading.value[actionKey]) return; // Prevent duplicate requests
-  
+
   try {
     actionLoading.value[actionKey] = true
-    await ticketsApi().sendToNOC(selectedId.value, note.value); 
-  await refresh()
+    await ticketsApi().sendToNOC(selectedId.value, note.value);
+    await refresh()
   } catch (e: any) {
     console.error('sendToNOC error:', e)
     try {
       const toast = useToast();
       const msg = e?.data?.message || e?.message || 'Failed to send to NOC'
       toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-heroicons-exclamation-triangle', timeout: 5000 })
-    } catch {}
+    } catch { }
   } finally {
     actionLoading.value[actionKey] = false
   }
@@ -439,7 +594,7 @@ async function sendToNOCFromModal() {
     showNOCNoteModal.value = false
     notification.success('Sent to NOC', 'Ticket sent to NOC.', 3000)
     await refresh()
-  } catch (e:any) {
+  } catch (e: any) {
     console.error('sendToNOC error:', e)
     const msg = e?.data?.message || e?.message || 'Failed to send to NOC'
     notification.error('Action failed', String(msg), 5000)
@@ -447,14 +602,14 @@ async function sendToNOCFromModal() {
     nocActionSubmitting.value = false
   }
 }
-async function nocSolved() { 
-  if (!selectedId.value) return; 
+async function nocSolved() {
+  if (!selectedId.value) return;
   const actionKey = `nocsolved_${selectedId.value}`
   if (actionLoading.value[actionKey]) return; // Prevent duplicate requests
-  
+
   try {
     actionLoading.value[actionKey] = true
-    await ticketsApi().nocSolved(selectedId.value, note.value); 
+    await ticketsApi().nocSolved(selectedId.value, note.value);
     await refresh()
   } catch (e: any) {
     console.error('nocSolved error:', e)
@@ -464,14 +619,14 @@ async function nocSolved() {
     actionLoading.value[actionKey] = false
   }
 }
-async function nocPhysical() { 
-  if (!selectedId.value) return; 
+async function nocPhysical() {
+  if (!selectedId.value) return;
   const actionKey = `nocphysical_${selectedId.value}`
   if (actionLoading.value[actionKey]) return; // Prevent duplicate requests
-  
+
   try {
     actionLoading.value[actionKey] = true
-    await ticketsApi().nocPhysical(selectedId.value, note.value); 
+    await ticketsApi().nocPhysical(selectedId.value, note.value);
     await refresh()
   } catch (e: any) {
     console.error('nocPhysical error:', e)
@@ -481,11 +636,11 @@ async function nocPhysical() {
     actionLoading.value[actionKey] = false
   }
 }
-async function assignTechnician() { 
-  if (!selectedId.value) return; 
+async function assignTechnician() {
+  if (!selectedId.value) return;
   const actionKey = `assigntech_${selectedId.value}`
   if (actionLoading.value[actionKey]) return; // Prevent duplicate requests
-  
+
   try {
     actionLoading.value[actionKey] = true
     await ticketsApi().assignTechnician(selectedId.value);
@@ -503,12 +658,12 @@ async function assignTechnician() {
 async function nocSolvedFromModal() {
   if (!selectedId.value) return;
   if (nocActionSubmitting.value) return; // Prevent duplicate requests
-  
+
   try {
     nocActionSubmitting.value = true
-  await ticketsApi().nocSolved(selectedId.value, nocNote.value);
-  showNOCNoteModal.value = false;
-  await refresh()
+    await ticketsApi().nocSolved(selectedId.value, nocNote.value);
+    showNOCNoteModal.value = false;
+    await refresh()
   } catch (e: any) {
     console.error('nocSolvedFromModal error:', e)
     const msg = e?.data?.message || e?.message || 'Failed to mark as NOC solved'
@@ -521,16 +676,42 @@ async function nocSolvedFromModal() {
 async function nocPhysicalFromModal() {
   if (!selectedId.value) return;
   if (nocActionSubmitting.value) return; // Prevent duplicate requests
-  
+
   try {
     nocActionSubmitting.value = true
-  await ticketsApi().nocPhysical(selectedId.value, nocNote.value);
-  showNOCNoteModal.value = false;
-  await refresh()
+    await ticketsApi().nocPhysical(selectedId.value, nocNote.value);
+    showNOCNoteModal.value = false;
+    await refresh()
   } catch (e: any) {
     console.error('nocPhysicalFromModal error:', e)
     const msg = e?.data?.message || e?.message || 'Failed to mark as physical'
     notification.error('Action failed', String(msg), 5000)
+  } finally {
+    nocActionSubmitting.value = false
+  }
+}
+
+// Update accumulation from NOC modal
+async function updateAccumulationFromModal() {
+  if (!selectedTicket.value || nocAccumulation.value === null || nocAccumulation.value === undefined || nocAccumulation.value < 1) {
+    notification.error('Invalid Input', 'Please enter a valid accumulation number (1 or more)', 3000)
+    return
+  }
+
+  try {
+    nocActionSubmitting.value = true
+    await ticketsApi().updateAccumulation([selectedTicket.value.id], nocAccumulation.value)
+    
+    // Update the ticket in the local data
+    const ticketIndex = rows.value.findIndex(t => t.id === selectedTicket.value.id)
+    if (ticketIndex !== -1) {
+      rows.value[ticketIndex].accumulation = nocAccumulation.value
+    }
+    
+    notification.success('Success', `Accumulation updated to ${nocAccumulation.value} customers`, 3000)
+  } catch (error: any) {
+    console.error('updateAccumulationFromModal error:', error)
+    notification.error('Update failed', `Failed to update accumulation: ${error?.data?.message || error?.message || 'Unknown error'}`, 3000)
   } finally {
     nocActionSubmitting.value = false
   }
@@ -588,7 +769,7 @@ async function sendTechnicianNoteFromModal() {
     // feedback
     notification.success('Technician Note Added', 'Note has been added successfully.', 3000)
     await refresh()
-  } catch (e:any) {
+  } catch (e: any) {
     console.error('sendTechnicianNote error:', e)
     const msg = e?.data?.message || e?.message || 'Failed to add technician note'
     notification.error('Action failed', String(msg), 5000)
@@ -601,13 +782,13 @@ async function sendToCSFromModal() {
   if (!selectedId.value) return;
   try {
     nocActionSubmitting.value = true
-    
+
     await ticketsApi().sendToCS(selectedId.value, nocNote.value, nocSelectedType.value || undefined, nocImageFile.value || undefined)
     showNOCNoteModal.value = false
     // feedback
     notification.success('Sent to CS', 'Ticket returned to Customer Service.', 3000)
     await refresh()
-  } catch (e:any) {
+  } catch (e: any) {
     console.error('sendToCS error:', e)
     const msg = e?.data?.message || e?.message || 'Failed to send to CS'
     notification.error('Action failed', String(msg), 5000)
@@ -615,15 +796,15 @@ async function sendToCSFromModal() {
     nocActionSubmitting.value = false
   }
 }
-async function resolve() { 
-  if (!selectedId.value) return; 
+async function resolve() {
+  if (!selectedId.value) return;
   const actionKey = `resolve_${selectedId.value}`
   if (actionLoading.value[actionKey]) return; // Prevent duplicate requests
 
   try {
     actionLoading.value[actionKey] = true
-    await ticketsApi().resolve(selectedId.value, note.value); 
-  await refresh()
+    await ticketsApi().resolve(selectedId.value, note.value);
+    await refresh()
   } catch (e: any) {
     console.error('resolve error:', e)
     const msg = e?.data?.message || e?.message || 'Failed to resolve ticket'
@@ -656,67 +837,166 @@ const getTicketActions = (ticket: any) => {
   console.log('Current user role:', userRole.value)
   console.log('Ticket assignee:', ticket.current_assignee_name)
   console.log('Ticket status:', ticket.status)
-  
+  console.log('Ticket assigned_to:', ticket.assigned_to)
+  console.log('Current user ID:', authStore.user?.user_id)
+  console.log('Current user ID (alt):', authStore.user?.user_id)
+  console.log('Is technician:', isTechnician.value)
+  console.log('Full ticket object:', ticket)
+
   const actions: Array<{
     label: string
     color: string
     action: () => void
     show: boolean
     tooltip?: string
-  }> = [
-      {
-        label: 'To NOC',
+  }> = []
+
+  // Finished tickets: allow read-only progress view ONLY if it's a real trouble ticket.
+  // If classification indicates Information (verified_by_cs true/1 or classification === 'info'),
+  // then hide the View Progress button because no technician workflow exists.
+  if (ticket.status === 'finished') {
+    const isInformation = ticket.verified_by_cs === true || ticket.verified_by_cs === 1 || ticket.classification === 'info'
+    if (!isInformation) {
+      if ((isAdmin.value || isCustomerService.value) && ticket.assigned_to) {
+        actions.push({
+          label: 'View Progress (Finished)',
+          color: 'bg-emerald-700',
+          action: () => openTechnicianChecklist(ticket.id, ticket.assigned_to, true),
+          show: true,
+          tooltip: 'View technician progress (ticket finished)'
+        })
+      }
+    }
+    return actions
+  }
+
+  // Stage 1: CS creates ticket OR ticket is ongoing but no NOC action yet → Show NOC Action only
+  // Enforce: NOC must act BEFORE assigning a technician
+  const nocActionRecorded = !!(ticket.noc_note || ticket.img_noc)
+  const isCSLikeAssignee = (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN')
+
+  if ((ticket.status === 'unfinished' || (ticket.status === 'ongoing' && isCSLikeAssignee && !nocActionRecorded)) &&
+    isCSLikeAssignee) {
+
+    if (isAdmin.value || isCustomerService.value) {
+      actions.push({
+        label: 'NOC Action',
         color: 'bg-blue-600',
         action: () => { actPrepareNOC(ticket.id) },
-        show: (isAdmin.value || isCustomerService.value) &&
-          (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN') &&
-          ticket.status !== 'finished',
+        show: true,
         tooltip: 'Send ticket to Network Operations Center'
-      },
-      {
-        label: 'To CS',
-        color: 'bg-purple-600',
-        action: () => { actPrepareNOC(ticket.id) },
-        show: (isAdmin.value || isNOC.value) &&
-          ticket.current_assignee_name === 'NOC' &&
-          ticket.status !== 'finished',
-        tooltip: 'Return ticket to Customer Service'
-      },
-      {
-        label: 'Assign Tech',
+      })
+    }
+  }
+
+  // Stage 2: After NOC action (noc_note/img_noc present) → Show Assign Technician
+  else if (ticket.status === 'ongoing' && isCSLikeAssignee && nocActionRecorded) {
+
+    if (isAdmin.value || isCustomerService.value) {
+      actions.push({
+        label: 'Assign Technician',
         color: 'bg-cyan-600',
         action: () => { actPrepare(ticket.id); assignTechnician() },
-        show: (isAdmin.value || isCustomerService.value) &&
-          (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN') &&
-          ticket.status !== 'finished',
-        tooltip: 'Assign to technician role (all technicians can see it)'
-      },
-      {
-        label: 'Add Tech Note & Img',
-        color: 'bg-orange-600',
-        action: () => { actPrepareTechnicianNote(ticket) },
-        show: isTechnician.value && 
-          (ticket.current_assignee_name === 'TECHNICIAN' || ticket.current_assignee_name === 'ADMIN' || ticket.current_assignee_name === authStore.user?.user_id) &&
-          ticket.status !== 'finished',
-        tooltip: 'Add technician note and upload before/after images'
-      },
-      {
-        label: 'Detail Customer & Lokasi',
+        show: true,
+        tooltip: 'Assign ticket to a technician'
+      })
+    }
+  }
+
+  // Stage 3: Technician workflow
+  else if (ticket.current_assignee_name === 'TECHNICIAN') {
+
+    // Technician can accept ticket (if not already assigned to someone)
+    if (isTechnician.value && (!ticket.assigned_to || ticket.assigned_to === '' || ticket.assigned_to === null)) {
+      actions.push({
+        label: 'Accept',
+        color: 'bg-blue-700',
+        action: () => { openAccept(ticket.id) },
+        show: true,
+        tooltip: 'Accept and lock this ticket to you'
+      })
+    }
+
+    // If ticket is assigned to current technician, show all technician actions
+    // Only show workflow buttons if ticket is actually assigned to current technician
+    console.log('Checking technician workflow conditions:')
+    console.log('- isTechnician:', isTechnician.value)
+    console.log('- ticket.assigned_to:', ticket.assigned_to)
+    console.log('- authStore.user?.user_id:', authStore.user?.user_id)
+    console.log('- authStore.user?.user_id:', authStore.user?.user_id)
+    console.log('- user_id match:', ticket.assigned_to === authStore.user?.user_id)
+    console.log('- id match:', ticket.assigned_to === authStore.user?.user_id)
+
+    // Try to get actual user ID from JWT token
+    let actualUserID = null
+    if (process.client && authStore.token) {
+      try {
+        const tokenParts = authStore.token.split('.')
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]))
+          actualUserID = payload.sub || payload.user_id || payload.id
+          console.log('- JWT payload:', payload)
+          console.log('- actualUserID from JWT:', actualUserID)
+        }
+      } catch (e) {
+        console.log('- Error decoding JWT:', e)
+      }
+    }
+
+    if (isTechnician.value && ticket.assigned_to && (
+      ticket.assigned_to === authStore.user?.user_id ||
+      ticket.assigned_to === authStore.user?.user_id ||
+      ticket.assigned_to === actualUserID
+    )) {        
+
+      // For technicians who are assigned to the ticket
+      if (ticket.assigned_to && (ticket.assigned_to === actualUserID)) {
+        actions.push({
+          label: 'Technician Checklist',
+          color: 'bg-blue-600',
+          action: () => openTechnicianChecklist(ticket.id, actualUserID || authStore.user?.user_id || ''),
+          show: true,
+          tooltip: 'Open technician checklist'
+        })
+      }
+    }
+    if ((isAdmin.value || isCustomerService.value) && ticket.assigned_to) {
+      actions.push({
+        label: 'View Progress (Ongoing)',
+        color: 'bg-gray-700',
+        action: () => openTechnicianChecklist(ticket.id, ticket.assigned_to, true),
+        show: true,
+        tooltip: 'View technician progress (ticket ongoing)'
+      })
+    }
+
+    // Always show customer details for technicians
+    if (isTechnician.value) {
+      actions.push({
+        label: 'Customer Details',
         color: 'bg-sky-600',
         action: () => { openLocationDetail(ticket) },
-        show: isTechnician.value,
-        tooltip: 'Lihat detail customer dan koordinat (lat, lng)'
-      },
-      {
-        label: 'Resolve',
+        show: true,
+        tooltip: 'View customer details and location coordinates'
+      })
+    }
+  }
+
+  // Stage 4: After technician completes work → Show Resolve for CS
+  else if (ticket.status === 'ongoing' &&
+    (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN') &&
+    ticket.technician_completed) {
+
+    if (isAdmin.value || isCustomerService.value) {
+      actions.push({
+        label: 'Resolve Ticket',
         color: 'bg-emerald-600',
         action: () => { actPrepareResolve(ticket.id) },
-        show: (isAdmin.value || isCustomerService.value) &&
-          (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN') &&
-          ticket.status !== 'finished',
-        tooltip: 'Mark ticket as resolved with customer note'
-      }
-    ]
+        show: true,
+        tooltip: 'Resolve the ticket (final step)'
+      })
+    }
+  }
 
   const filteredActions = actions.filter(action => action.show)
   console.log('Filtered actions:', filteredActions.map(a => a.label))
@@ -730,9 +1010,9 @@ const items = (row: any) => {
     icon: getActionIcon(action.label),
     click: action.action
   }))
-  
+
   const actions = [workflowActions]
-  
+
   // Add delete action (for admin and CS)
   if (isAdmin.value || isCustomerService.value) {
     actions.push([{
@@ -741,7 +1021,7 @@ const items = (row: any) => {
       click: () => showDeleteConfirmation(row)
     }])
   }
-  
+
   return actions
 }
 
@@ -755,6 +1035,13 @@ function getActionIcon(actionLabel: string): string {
     case 'Resolve': return 'i-heroicons-check-circle-20-solid'
     default: return 'i-heroicons-cog-6-tooth-20-solid'
   }
+}
+
+function openTechnicianChecklist(ticketId: number, technicianId?: string, readOnly?: boolean) {
+  selectedTicketForChecklist.value = ticketId
+  selectedTechnicianForChecklist.value = technicianId || ''
+  selectedChecklistReadOnly.value = !!readOnly
+  showTechnicianChecklist.value = true
 }
 
 // Add sendToCS function for NOC users
@@ -775,7 +1062,7 @@ function showDeleteConfirmation(ticket: any) {
 // Delete ticket function
 async function deleteTicket(id: number) {
   if (deleteTicketSubmitting.value) return; // Prevent duplicate requests
-  
+
   try {
     deleteTicketSubmitting.value = true
     await ticketsApi().delete(id)
@@ -793,12 +1080,12 @@ async function deleteTicket(id: number) {
 }
 
 const showAdd = ref(false)
-const form = ref({ customer_id: '', title: '', description: '', img_cs: '' })
+const form = ref({ customer_id: '', title: '', description: '', img_cs: '', classification: 'gangguan' })
 
 // Keyword-based trouble type classification
 const classifyTroubleType = (text: string): string => {
   const lowerText = text.toLowerCase()
-  
+
   // Define keywords for each trouble type (using new database IDs)
   const keywords = {
     '1': ['kabel', 'terputus', 'putus', 'cable', 'broken', 'cut', 'terpotong', 'damage'],
@@ -808,7 +1095,7 @@ const classifyTroubleType = (text: string): string => {
     '5': ['server', 'konfigurasi', 'config', 'setting', 'setup', 'configuration', 'koneksi server'],
     '6': ['batas', 'limit', 'terlampaui', 'exceeded', 'over', 'quota', 'bandwidth', 'pengguna terlampaui']
   }
-  
+
   // Check for keyword matches
   for (const [troubleType, keywordList] of Object.entries(keywords)) {
     for (const keyword of keywordList) {
@@ -817,7 +1104,7 @@ const classifyTroubleType = (text: string): string => {
       }
     }
   }
-  
+
   return '1' // Default fallback to 'Kabel Terputus'
 }
 
@@ -831,9 +1118,9 @@ const filteredCustomers = computed(() => {
     // Check if customer has area and if it matches selected area
     if (!customer.area) return false
     // Try different possible area ID properties
-    return (customer.area as any)?.id === selectedAreaId.value || 
-           (customer as any).area_id === selectedAreaId.value ||
-           (customer as any).areaId === selectedAreaId.value
+    return (customer.area as any)?.id === selectedAreaId.value ||
+      (customer as any).area_id === selectedAreaId.value ||
+      (customer as any).areaId === selectedAreaId.value
   })
 })
 
@@ -844,12 +1131,12 @@ async function loadLookups() {
     customers.value = customerData
     allCustomers.value = customerData
   } catch (e) { console.error('load customers', e) }
-  
+
   try {
     const areaRes: any = await areaAdminApi().getAllAreas()
     areas.value = (areaRes.data || areaRes) || []
   } catch (e) { console.error('load areas', e) }
-  
+
   try {
     const tt: any = await ticketsApi().troubleTypes()
     troubleTypes.value = tt.data || tt || []
@@ -867,15 +1154,15 @@ function generateTypeId(): string {
 
 const saveNewType = async () => {
   try {
-  const id = generateTypeId()
-  await ticketsApi().createTroubleType(id, newTypeName.value || undefined)
-  const tt: any = await ticketsApi().troubleTypes()
-  troubleTypes.value = tt.data || tt || []
+    const id = generateTypeId()
+    await ticketsApi().createTroubleType(id, newTypeName.value || undefined)
+    const tt: any = await ticketsApi().troubleTypes()
+    troubleTypes.value = tt.data || tt || []
     // Set the newly created type as selected
     nocSelectedType.value = id
-  newTypeName.value = ''
-  showNewType.value = false
-    
+    newTypeName.value = ''
+    showNewType.value = false
+
     // Show success message
     notification.success('Success!', 'New trouble type created successfully', 3000)
   } catch (error: any) {
@@ -899,7 +1186,7 @@ async function handleImageUpload(event: Event) {
         path: 'cs-images',
         file: file
       }
-      
+
       const response = await uploadFileAdminApi().createUploadFile(uploadData)
       if (response.data) {
         // Store filename only, URL will be constructed in backend
@@ -925,27 +1212,35 @@ function openImageModal(imageSrc: string) {
 
 async function createTicket() {
   if (createTicketSubmitting.value) return; // Prevent duplicate requests
-  
+
   try {
     createTicketSubmitting.value = true
     console.log('Auth store token:', authStore.getToken) // Debug log
     console.log('Creating ticket with data:', form.value) // Debug log
-    
+
     // Auto-classify trouble type based on title/description
     const textToAnalyze = form.value.title || form.value.description || ''
     let classifiedType = ''
-    
+
     if (textToAnalyze.trim()) {
       classifiedType = classifyTroubleType(textToAnalyze)
     }
-    
-    const created: any = await ticketsApi().create({
+
+    // Only include img_cs if there's actually an image
+    const ticketData: any = {
       customer_id: String(form.value.customer_id),
       title: form.value.title,
       description: form.value.description,
       type: classifiedType,
-      img_cs: form.value.img_cs,
-    })
+      classification: form.value.classification,
+    }
+
+    // Only add img_cs if there's a valid image filename
+    if (form.value.img_cs && form.value.img_cs.trim() !== '') {
+      ticketData.img_cs = form.value.img_cs
+    }
+
+    const created: any = await ticketsApi().create(ticketData)
 
     // Immediately send to NOC with description as note and attached image file
     try {
@@ -957,7 +1252,7 @@ async function createTicket() {
       console.warn('sendToNOC after create failed:', e)
     }
     showAdd.value = false
-    form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', img_cs: '' }
+    form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', img_cs: '', classification: '' }
     notification.success('Success!', 'Ticket created successfully', 3000)
     await refresh()
   } catch (error: any) {
@@ -978,13 +1273,23 @@ async function fetchAllTickets(params: any) {
     .list()
     .then((response: any) => {
       const data = response.data || response
-      data.forEach((t: any, idx: number) => {
-        t.number = idx + 1
-      })
-      rows.value = data
+      
+      // Check if data is an array and not null/undefined
+      if (Array.isArray(data)) {
+        data.forEach((t: any, idx: number) => {
+          t.number = idx + 1
+        })
+        rows.value = data
+      } else {
+        // If data is not an array, set empty array
+        console.warn('Tickets data is not an array:', data)
+        rows.value = []
+      }
     })
     .catch((err: any) => {
       console.error('Error fetching tickets:', err)
+      // Set empty array on error
+      rows.value = []
     })
     .finally(() => {
       isLoading.value = false
@@ -1025,18 +1330,18 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
       <div class="p-4 bg-white rounded-lg shadow border border-gray-100">
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center gap-4">
-            <button v-if="isAdmin || isCustomerService" class="px-3 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700" @click="showAdd = true">Add Ticket</button>
+            <button v-if="isAdmin || isCustomerService"
+              class="px-3 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700" @click="showAdd = true">Add
+              Ticket</button>
           </div>
           <div class="flex items-center gap-2">
             <div class="relative">
-              <input 
-                v-model="searchQuery"
-                type="text" 
-                placeholder="Search tickets..." 
-                class="pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-64 text-gray-900 bg-white "
-              />
-              <svg class="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              <input v-model="searchQuery" type="text" placeholder="Search tickets..."
+                class="pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-64 text-gray-900 bg-white " />
+              <svg class="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
             </div>
             <span v-if="searchQuery" class="text-sm text-gray-500">
@@ -1047,102 +1352,124 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         <div class="table-scroll-container">
           <div class="table-scroll-content">
             <table class="min-w-full text-sm text-gray-900">
-               <colgroup>
-                 <col class="w-16">
-                 <col class="w-32">
-                 <col class="w-64">
-                 <col class="w-24">
-                 <col class="w-24">
-                 <col class="w-32">
-                 <col class="w-64">
-                 <col class="w-32">
-                 <col class="w-32">
-               </colgroup>
+              <colgroup>
+                <col class="w-16">
+                <col class="w-32">
+                <col class="w-64">
+                <col class="w-24">
+                <col class="w-24">
+                <col class="w-24">
+                <col class="w-32">
+                <col class="w-64">
+                <col class="w-32">
+                <col class="w-32">
+              </colgroup>
               <thead class="bg-gray-100">
                 <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
-                    <th class="p-2 w-16">ID</th>
-                    <th class="p-2 w-32">Customer</th>
-                    <th class="p-2 w-64">Title</th>
-                    <th class="p-2 w-64">Description</th>
-                    <th class="p-2 w-24">Type</th>
-                    <th class="p-2 w-24">Status</th>
-                    <th class="p-2 w-32">Assignee</th>
-                    <th class="p-2 w-32">Notes</th>
-                    <th class="p-2 w-32">Images</th>
-                    <th class="p-2 w-32">Actions</th>
+                  <th class="p-2 w-16">ID</th>
+                  <th class="p-2 w-32">Customer</th>
+                  <th class="p-2 w-64">Title</th>
+                  <th class="p-2 w-64">Description</th>
+                  <th class="p-2 w-24">Type</th>
+                  <th class="p-2 w-24">Classification</th>
+                  <th class="p-2 w-24">Status</th>
+                  <th class="p-2 w-32">Assignee</th>
+                  <th class="p-2 w-32">Notes</th>
+                  <th class="p-2 w-32">Network</th>
+                  <th class="p-2 w-32">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                  <tr v-for="r in filteredRows" :key="r.id" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70 transition-colors">
+                <template v-for="(r, index) in filteredRows" :key="r?.id || index">
+                  <tr v-if="r" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70 transition-colors">
                   <td class="p-2">{{ r.id }}</td>
-                    <td class="p-2 font-medium text-blue-600">{{ r.customer_name || 'Unknown Customer' }}</td>
+                  <td class="p-2 font-medium text-blue-600">{{ r.customer_name || 'Unknown Customer' }}</td>
                   <td class="p-2">{{ r.title }}</td>
-                    <td class="p-2 text-gray-700 max-w-xs truncate" :title="r.description || ''">{{ r.description || '-' }}</td>
+                  <td class="p-2 text-gray-700 max-w-xs truncate" :title="r.description || ''">{{ r.description || '-'
+                  }}</td>
                   <td class="p-2 capitalize">{{ r.type_name || r.type }}</td>
-                  <td class="p-2 capitalize">{{ r.status }}</td>
-                    <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
-                                     <td class="p-2 max-w-xs">
-                     <div class="flex flex-col gap-1 max-w-xs">
-                       <div v-if="r.customer_note" class="text-xs">
-                         <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">CS:</span>
-                         <span class="ml-1 text-gray-700 break-words">{{ r.customer_note }}</span>
-                       </div>
-                       <div v-if="r.technician_note" class="text-xs">
-                         <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">Tech:</span>
-                         <span class="ml-1 text-gray-700 break-words">{{ r.technician_note }}</span>
-                       </div>
-                       <div v-if="r.noc_note" class="text-xs">
-                         <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">NOC:</span>
-                         <span class="ml-1 text-gray-700 break-words">{{ r.noc_note }}</span>
-                       </div>
-                       <span v-if="!r.customer_note && !r.technician_note && !r.noc_note" class="text-gray-400 text-xs">No notes</span>
-                     </div>
-                   </td>
                   <td class="p-2">
-                     <div class="flex flex-col gap-1">
-                       <div v-if="r.img_cs" class="flex items-center gap-1">
-                         <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">CS</span>
-                         <img :src="`${useApiHost()}/uploads/cs-images/${r.img_cs}`" alt="CS Image" class="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity" @click="openImageModal(`${useApiHost()}/uploads/cs-images/${r.img_cs}`)" />
-                    </div>
-                       <div v-if="r.img_noc" class="flex items-center gap-1">
-                         <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">NOC</span>
-                         <img :src="`${useApiHost()}/uploads/noc-images/${r.img_noc}`" alt="NOC Image" class="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity" @click="openImageModal(`${useApiHost()}/uploads/noc-images/${r.img_noc}`)" />
-                       </div>
-                       <div v-if="r.img_tech_bf" class="flex items-center gap-1">
-                         <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">Tech BF</span>
-                         <img :src="`${useApiHost()}/uploads/technician-images/${r.img_tech_bf}`" alt="Tech Before" class="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity" @click="openImageModal(`${useApiHost()}/uploads/technician-images/${r.img_tech_bf}`)" />
-                       </div>
-                       <div v-if="r.img_tech_af" class="flex items-center gap-1">
-                         <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Tech AF</span>
-                         <img :src="`${useApiHost()}/uploads/technician-images/${r.img_tech_af}`" alt="Tech After" class="w-8 h-8 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity" @click="openImageModal(`${useApiHost()}/uploads/technician-images/${r.img_tech_af}`)" />
-                       </div>
-                       <span v-if="!r.img_cs && !r.img_noc && !r.img_tech_bf && !r.img_tech_af" class="text-gray-400 text-xs text-center">No images</span>
-                     </div>
+                    <span v-if="r.verified_by_cs === true || r.verified_by_cs === 1"
+                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Information
+                    </span>
+                    <span v-else
+                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      Trouble
+                    </span>
                   </td>
                   <td class="p-2">
-                     <div class="flex flex-col gap-1 min-w-[120px]">
-                       <button v-for="action in getTicketActions(r)" :key="action.label"
-                         :class="['px-3 py-1.5 text-white rounded text-xs font-medium hover:opacity-80 transition-opacity w-full text-center flex items-center justify-center gap-2', action.color]"
-                         @click="action.action" :title="action.tooltip"
-                         :disabled="actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting">
-                         <svg v-if="actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting" 
-                              class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
-                           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                         </svg>
-                         {{ actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting ? 'Loading...' : action.label }}
+                    <span v-if="r.status === 'finished'"
+                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Finished
+                    </span>
+                    <span v-else-if="r.status === 'ongoing'"
+                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                      Ongoing
+                    </span>
+                    <span v-else
+                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 capitalize">
+                      {{ r.status || 'unknown' }}
+                    </span>
+                  </td>
+                  <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
+                  <td class="p-2 max-w-xs">
+                    <div class="flex flex-col gap-1 max-w-xs">
+                      <div v-if="r.customer_note" class="text-xs">
+                        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">CS:</span>
+                        <span class="ml-1 text-gray-700 break-words">{{ r.customer_note }}</span>
+                      </div>
+                      <div v-if="r.technician_note" class="text-xs">
+                        <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">Tech:</span>
+                        <span class="ml-1 text-gray-700 break-words">{{ r.technician_note }}</span>
+                      </div>
+                      <div v-if="r.noc_note" class="text-xs">
+                        <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">NOC:</span>
+                        <span class="ml-1 text-gray-700 break-words">{{ r.noc_note }}</span>
+                      </div>
+                      <span v-if="!r.customer_note && !r.technician_note && !r.noc_note"
+                        class="text-gray-400 text-xs">No notes</span>
+                    </div>
+                  </td>
+                  <td class="p-2">
+                    <span v-if="r.network_architecture"
+                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {{ r.network_architecture }}
+                    </span>
+                    <span v-else class="text-gray-400 text-xs">-</span>
+                  </td>
+                  <td class="p-2">
+                    <div class="flex flex-col gap-1 min-w-[120px]">
+                      <button v-for="action in getTicketActions(r)" :key="action.label"
+                        :class="['px-3 py-1.5 text-white rounded text-xs font-medium hover:opacity-80 transition-opacity w-full text-center flex items-center justify-center gap-2', action.color]"
+                        @click="action.action" :title="action.tooltip"
+                        :disabled="actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting">
+                        <svg
+                          v-if="actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting"
+                          class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                          </circle>
+                          <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                          </path>
+                        </svg>
+                        {{ actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] ||
+                          nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting ? 'Loading...' :
+                          action.label }}
                       </button>
-                       <span v-if="getTicketActions(r).length === 0" class="text-gray-400 text-xs text-center py-1">
-                         No actions available
-                       </span>
+                      <span v-if="getTicketActions(r).length === 0" class="text-gray-400 text-xs text-center py-1">
+                        No actions available
+                      </span>
                     </div>
                   </td>
                 </tr>
+                </template>
               </tbody>
             </table>
           </div>
           <div class="table-scroll-footer">
-            <span class="scroll-hint">↔ Scroll horizontally to see more columns | ↕ Scroll vertically for more rows</span>
+            <span class="scroll-hint">↔ Scroll horizontally to see more columns | ↕ Scroll vertically for more
+              rows</span>
           </div>
         </div>
       </div>
@@ -1156,16 +1483,22 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
             <button class="text-gray-400 hover:text-gray-600" @click="showLocationModal = false">✕</button>
           </div>
           <div class="space-y-2 text-gray-900">
-            <div class="text-sm"><span class="font-medium">Customer:</span> {{ selectedLocation?.customer_name || '-' }}</div>
-            <div class="text-sm"><span class="font-medium">Customer ID:</span> {{ selectedLocation?.customer_id || '-' }}</div>
-            <div class="text-sm"><span class="font-medium">Address:</span> {{ selectedLocation?.customer_address || '-' }}</div>
-            <div class="text-sm"><span class="font-medium">Phone:</span> {{ selectedLocation?.customer_phone || '-' }}</div>
+            <div class="text-sm"><span class="font-medium">Customer:</span> {{ selectedLocation?.customer_name || '-' }}
+            </div>
+            <div class="text-sm"><span class="font-medium">Customer ID:</span> {{ selectedLocation?.customer_id || '-'
+            }}</div>
+            <div class="text-sm"><span class="font-medium">Address:</span> {{ selectedLocation?.customer_address || '-'
+            }}</div>
+            <div class="text-sm"><span class="font-medium">Phone:</span> {{ selectedLocation?.customer_phone || '-' }}
+            </div>
             <div class="text-sm"><span class="font-medium">Latitude:</span> {{ selectedLocation?.lat ?? '-' }}</div>
             <div class="text-sm"><span class="font-medium">Longitude:</span> {{ selectedLocation?.lng ?? '-' }}</div>
           </div>
           <div class="mt-4 flex justify-end gap-2">
-            <a v-if="googleMapsUrl" :href="googleMapsUrl" target="_blank" rel="noopener" class="px-4 py-2 rounded bg-sky-600 text-white hover:bg-sky-700">Buka di Google Maps</a>
-            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700 hover:bg-gray-400" @click="showLocationModal = false">Tutup</button>
+            <a v-if="googleMapsUrl" :href="googleMapsUrl" target="_blank" rel="noopener"
+              class="px-4 py-2 rounded bg-sky-600 text-white hover:bg-sky-700">Buka di Google Maps</a>
+            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700 hover:bg-gray-400"
+              @click="showLocationModal = false">Tutup</button>
           </div>
         </div>
       </div>
@@ -1201,8 +1534,8 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
             <div class="md:col-span-2">
               <label class="block text-sm text-slate-300 mb-1">Title</label>
               <input v-model="form.title"
-                  class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none" 
-                  placeholder="Enter trouble description..." />
+                class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none"
+                placeholder="Enter trouble description..." />
             </div>
             <div class="md:col-span-2">
               <label class="block text-sm text-slate-300 mb-1">Description</label>
@@ -1210,25 +1543,36 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                 class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none"></textarea>
             </div>
             <div class="md:col-span-2">
+              <label class="block text-sm text-slate-300 mb-1">Classification</label>
+              <select v-model="form.classification"
+                class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none">
+                <option value="gangguan">Gangguan (Trouble)</option>
+                <option value="info">Info (Information)</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
               <label class="block text-sm text-slate-300 mb-1">Upload Image (CS)</label>
               <input type="file" @change="handleImageUpload" accept="image/*"
                 class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none" />
-                             <div v-if="form.img_cs" class="mt-2">
-                 <img :src="`${useApiHost()}/uploads/cs-images/${form.img_cs}`" alt="Preview" class="w-32 h-32 object-cover rounded border" />
-               </div>
+              <div v-if="form.img_cs" class="mt-2">
+                <img :src="`${useApiHost()}/uploads/cs-images/${form.img_cs}`" alt="Preview"
+                  class="w-32 h-32 object-cover rounded border" />
+              </div>
             </div>
           </div>
           <div v-else class="text-slate-300">Loading options...</div>
           <div class="mt-4 flex justify-end gap-2">
-            <button class="px-4 py-2 rounded bg-gray-600 text-white" @click="showAdd = false" :disabled="createTicketSubmitting">Cancel</button>
-            <button class="px-4 py-2 rounded bg-emerald-600 text-white disabled:opacity-50" @click="createTicket" :disabled="createTicketSubmitting">
+            <button class="px-4 py-2 rounded bg-gray-600 text-white" @click="showAdd = false"
+              :disabled="createTicketSubmitting">Cancel</button>
+            <button class="px-4 py-2 rounded bg-emerald-600 text-white disabled:opacity-50" @click="createTicket"
+              :disabled="createTicketSubmitting">
               {{ createTicketSubmitting ? 'Creating...' : 'Submit' }}
             </button>
           </div>
         </div>
       </div>
 
-      
+
 
 
 
@@ -1249,33 +1593,63 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
             <div v-if="isNOC || isAdmin">
               <label class="block text-sm font-medium text-gray-700 mb-1">Diagnosed Trouble Type</label>
               <div class="flex gap-2" v-if="!showNewType">
-                <select v-model="nocSelectedType" class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900">
+                <select v-model="nocSelectedType"
+                  class="w-full rounded px-3 py-2 border border-gray-300 focus:outline.none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900">
                   <option value="" class="text-gray-500">-- Select trouble type (optional) --</option>
-                  <option v-for="t in troubleTypes" :key="t.id" :value="t.id" class="text-gray-900 bg-white">{{ t.name || t.id }}</option>
-              </select>
-                <button type="button" class="px-3 py-2 rounded bg-blue-600 text-white text-sm" @click="showNewType = true">Add New Type</button>
+                  <option v-for="t in troubleTypes" :key="t.id" :value="t.id" class="text-gray-900 bg-white">{{ t.name
+                    || t.id }}</option>
+                </select>
+                <button type="button" class="px-3 py-2 rounded bg-blue-600 text-white text-sm"
+                  @click="showNewType = true">Add New Type</button>
               </div>
               <div v-else class="space-y-2">
                 <input v-model="newTypeName" placeholder="Display Name (optional)"
                   class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900" />
                 <div class="flex gap-2">
-                  <button type="button" class="px-3 py-2 bg-emerald-600 text-white rounded text-sm" @click="saveNewType">Save Type</button>
+                  <button type="button" class="px-3 py-2 bg-emerald-600 text-white rounded text-sm"
+                    @click="saveNewType">Save Type</button>
                   <button type="button" class="px-3 py-2 bg-gray-300 text-gray-700 rounded text-sm"
                     @click="showNewType = false">Cancel</button>
                 </div>
               </div>
+            </div>
+            <div v-if="isAdmin || isCustomerService">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Accumulation (Customers Affected)</label>
+              <div class="flex items-center space-x-2">
+                <input 
+                  v-model.number="nocAccumulation" 
+                  type="number" 
+                  min="1" 
+                  placeholder="Enter number of customers affected"
+                  class="flex-1 rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                />
+                <button 
+                  @click="updateAccumulationFromModal"
+                  class="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                  :disabled="nocAccumulation === null || nocAccumulation === undefined || nocAccumulation < 1"
+                >
+                  Update
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">
+                Current: {{ selectedTicket?.accumulation || 1 }} customers affected
+              </p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Upload Image (Optional)</label>
               <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                 <div class="space-y-1 text-center">
                   <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    <path
+                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
                   <div class="flex text-sm text-gray-600">
-                    <label for="noc-image-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                    <label for="noc-image-upload"
+                      class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline.none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
                       <span>Upload a file</span>
-                      <input id="noc-image-upload" name="noc-image-upload" type="file" class="sr-only" accept="image/*" @change="handleNOCImageUpload" />
+                      <input id="noc-image-upload" name="noc-image-upload" type="file" class="sr-only" accept="image/*"
+                        @change="handleNOCImageUpload" />
                     </label>
                     <p class="pl-1">or drag and drop</p>
                   </div>
@@ -1294,22 +1668,22 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
             </div>
           </div>
           <div class="mt-6 flex justify-end gap-2">
-            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700"
-              @click="showNOCNoteModal = false" :disabled="nocActionSubmitting">Cancel</button>
+            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showNOCNoteModal = false"
+              :disabled="nocActionSubmitting">Cancel</button>
             <button class="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50" @click="sendToNOCFromModal"
               v-if="isAdmin || isCustomerService" :disabled="nocActionSubmitting">
               {{ nocActionSubmitting ? 'Sending...' : 'To NOC' }}
             </button>
             <button class="px-4 py-2 rounded bg-purple-600 text-white disabled:opacity-50" @click="sendToCSFromModal"
-              :disabled="nocActionSubmitting">
+              v-if="isAdmin || isCustomerService" :disabled="nocActionSubmitting">
               {{ nocActionSubmitting ? 'Sending...' : 'To CS' }}
             </button>
             <button class="px-4 py-2 rounded bg-green-600 text-white disabled:opacity-50" @click="nocSolvedFromModal"
-              :disabled="nocActionSubmitting">
+              v-if="isAdmin || isCustomerService" :disabled="nocActionSubmitting">
               {{ nocActionSubmitting ? 'Processing...' : 'NOC Solved' }}
             </button>
             <button class="px-4 py-2 rounded bg-amber-600 text-white disabled:opacity-50" @click="nocPhysicalFromModal"
-              :disabled="nocActionSubmitting">
+              v-if="isAdmin || isCustomerService" :disabled="nocActionSubmitting">
               {{ nocActionSubmitting ? 'Processing...' : 'Physical' }}
             </button>
           </div>
@@ -1326,7 +1700,8 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
           </div>
           <div class="space-y-4 px-6 py-4 overflow-y-auto" style="max-height: calc(90vh - 120px)">
             <div class="p-3 rounded bg-gray-50 border">
-              <div class="text-sm text-gray-700"><span class="font-medium">Customer:</span> {{ selectedTicket?.customer_name || '-' }}</div>
+              <div class="text-sm text-gray-700"><span class="font-medium">Customer:</span> {{
+                selectedTicket?.customer_name || '-' }}</div>
               <div class="text-xs text-gray-600 mt-1">
                 <span class="font-medium">GPS:</span>
                 <span>
@@ -1334,23 +1709,22 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                 </span>
               </div>
               <div class="mt-2">
-                <button
-                  class="px-3 py-1.5 rounded bg-sky-600 text-white text-xs hover:bg-sky-700 disabled:opacity-50"
+                <button class="px-3 py-1.5 rounded bg-sky-600 text-white text-xs hover:bg-sky-700 disabled:opacity-50"
                   :disabled="!(selectedTicket?.gps_lat && selectedTicket?.gps_lng)"
-                  @click="openLocationDetail(selectedTicket)"
-                >Detail Lokasi</button>
+                  @click="openLocationDetail(selectedTicket)">Detail Lokasi</button>
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Technician Note <span class="text-red-500">*</span></label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Technician Note <span
+                  class="text-red-500">*</span></label>
               <textarea v-model="technicianNote" placeholder="Enter your technician note..."
                 class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none text-gray-900 bg-white"></textarea>
             </div>
-            
+
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Before Image (Optional)</label>
-              <input type="file" @change="handleBeforeImageChange" 
-                accept="image/*" class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input type="file" @change="handleBeforeImageChange" accept="image/*"
+                class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <p class="text-xs text-gray-500 mt-1">Max size: 10MB. Supported: JPG, PNG, GIF</p>
               <!-- Preview Before Image -->
               <div v-if="imgTechBfFile" class="mt-2 p-2 border border-gray-200 rounded bg-gray-50">
@@ -1359,15 +1733,16 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                   <button @click="imgTechBfFile = null" class="text-red-500 hover:text-red-700 text-sm">✕</button>
                 </div>
                 <div class="mt-2">
-                  <img v-if="beforeImageUrl" :src="beforeImageUrl" alt="Before Preview" class="w-20 h-20 object-cover rounded border" />
+                  <img v-if="beforeImageUrl" :src="beforeImageUrl" alt="Before Preview"
+                    class="w-20 h-20 object-cover rounded border" />
                 </div>
               </div>
             </div>
-            
+
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">After Image (Optional)</label>
-              <input type="file" @change="handleAfterImageChange" 
-                accept="image/*" class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input type="file" @change="handleAfterImageChange" accept="image/*"
+                class="w-full rounded px-3 py-2 border border-gray-300 focus:outline.none focus:ring-2 focus:ring-blue-500" />
               <p class="text-xs text-gray-500 mt-1">Max size: 10MB. Supported: JPG, PNG, GIF</p>
               <!-- Preview After Image -->
               <div v-if="imgTechAfFile" class="mt-2 p-2 border border-gray-200 rounded bg-gray-50">
@@ -1376,7 +1751,8 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                   <button @click="imgTechAfFile = null" class="text-red-500 hover:text-red-700 text-sm">✕</button>
                 </div>
                 <div class="mt-2">
-                  <img v-if="afterImageUrl" :src="afterImageUrl" alt="After Preview" class="w-20 h-20 object-cover rounded border" />
+                  <img v-if="afterImageUrl" :src="afterImageUrl" alt="After Preview"
+                    class="w-20 h-20 object-cover rounded border" />
                 </div>
               </div>
             </div>
@@ -1393,18 +1769,18 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
       </div>
 
       <!-- Modal Image Viewer -->
-       <div v-if="showImageModal" class="fixed inset-0 z-50 flex items-center justify-center">
-         <div class="absolute inset-0 bg-black/80" @click="showImageModal = false"></div>
+      <div v-if="showImageModal" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/80" @click="showImageModal = false"></div>
         <div class="relative w-full max-w-4xl mx-4 rounded-xl shadow-xl bg-white p-6">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-xl font-semibold text-gray-900">CS Image</h2>
-             <button class="text-gray-400 hover:text-gray-600" @click="showImageModal = false">✕</button>
+            <button class="text-gray-400 hover:text-gray-600" @click="showImageModal = false">✕</button>
           </div>
           <div class="flex justify-center">
-             <img :src="selectedImageUrl" alt="CS Image" class="max-w-full max-h-96 object-contain rounded" />
+            <img :src="selectedImageUrl" alt="CS Image" class="max-w-full max-h-96 object-contain rounded" />
           </div>
           <div class="mt-4 flex justify-end">
-             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showImageModal = false">
+            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showImageModal = false">
               Close
             </button>
           </div>
@@ -1464,11 +1840,12 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Customer Note</label>
-              <textarea v-model="resolveNote" 
+              <textarea v-model="resolveNote"
                 placeholder="Add a note about the resolution to communicate with the customer..."
                 class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-gray-900 bg-white"
                 rows="4"></textarea>
-              <p class="text-xs text-gray-500 mt-1">This note will be saved as customer_note and the ticket status will be set to finished.</p>
+              <p class="text-xs text-gray-500 mt-1">This note will be saved as customer_note and the ticket status will
+                be set to finished.</p>
             </div>
           </div>
           <div class="mt-6 flex justify-end gap-2">
@@ -1482,13 +1859,91 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         </div>
       </div>
 
+      <!-- Modal Accept Ticket -->
+      <div v-if="showAcceptConfirm" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" @click="showAcceptConfirm = false"></div>
+        <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Accept Ticket</h2>
+            <button class="text-gray-400 hover:text-gray-600" @click="showAcceptConfirm = false">✕</button>
+          </div>
+          <p class="text-gray-700 mb-4">This will assign the ticket to you.</p>
+          <div class="flex justify-end gap-2">
+            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700"
+              @click="showAcceptConfirm = false">Cancel</button>
+            <button class="px-4 py-2 rounded bg-blue-700 text-white" @click="acceptTicket">Accept</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Set Team -->
+      <div v-if="showTeamModal" class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" @click="showTeamModal = false"></div>
+        <div class="relative w-full max-w-lg mx-4 rounded-xl shadow-xl bg-white p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Set Technician Team</h2>
+            <button class="text-gray-400 hover:text-gray-600" @click="showTeamModal = false">✕</button>
+          </div>
+          <div class="space-y-3">
+            <div v-for="(m, idx) in teamMembers" :key="idx" class="flex items-center gap-2">
+              <select v-model="m.role" class="border rounded px-2 py-1 text-gray-900 bg-white">
+                <option value="senior">Senior</option>
+                <option value="junior">Junior</option>
+                <option value="helper">Helper</option>
+              </select>
+              <input v-model="m.user_id" placeholder="Technician user_id"
+                class="flex-1 border rounded px-2 py-1 text-gray-900 bg-white" />
+              <button class="text-red-600 text-sm" @click="removeTeamMember(idx)">Remove</button>
+            </div>
+            <button class="px-3 py-1.5 rounded bg-gray-200 text-gray-800 text-sm" @click="addTeamMember">Add
+              Member</button>
+          </div>
+          <div class="mt-4 flex justify-end gap-2">
+            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showTeamModal = false">Cancel</button>
+            <button class="px-4 py-2 rounded bg-indigo-600 text-white disabled:opacity-50" @click="saveTeam"
+              :disabled="teamSubmitting">{{ teamSubmitting ? 'Saving...' : 'Save Team' }}</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Add Step -->
+      <div v-if="showStepModal" class="fixed inset-0 z-50 flex items-center justify.center">
+        <div class="absolute inset-0 bg-black/60" @click="showStepModal = false"></div>
+        <div class="relative w-full max-w-lg mx-4 rounded-xl shadow-xl bg-white p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-semibold text-gray-900">Add Troubleshooting Step</h2>
+            <button class="text-gray-400 hover:text-gray-600" @click="showStepModal = false">✕</button>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea v-model="stepDescription" rows="3"
+                class="w-full border rounded px-3 py-2 text-gray-900 bg-white"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Images (multiple)</label>
+              <input type="file" multiple accept="image/*" @change="onSelectStepImages"
+                class="w-full border rounded px-3 py-2 text-gray-900 bg-white" />
+              <div v-if="stepImages.length" class="mt-2 text-xs text-gray-600">{{ stepImages.length }} file(s) selected
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 flex justify-end gap-2">
+            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showStepModal = false">Cancel</button>
+            <button class="px-4 py-2 rounded bg-amber-600 text-white disabled:opacity-50" @click="saveStep"
+              :disabled="stepSubmitting || !stepDescription.trim()">{{ stepSubmitting ? 'Saving...' : 'Save Step'
+              }}</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Image Modal -->
       <div v-if="showImageModal" class="fixed inset-0 z-50 flex items-center justify-center">
         <div class="absolute inset-0 bg-black/80" @click="showImageModal = false"></div>
         <div class="relative max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden">
           <div class="flex items-center justify-between p-4 border-b">
             <h3 class="text-lg font-semibold">Image Preview</h3>
-            <button class="text-gray-400 hover:text-gray-600" @click="showImageModal = false">✕</button>
+            <button class="text-gray-400 hover.text-gray-600" @click="showImageModal = false">✕</button>
           </div>
           <div class="p-4">
             <img :src="selectedImageUrl" alt="Preview" class="max-w-full max-h-[70vh] object-contain mx-auto" />
@@ -1501,6 +1956,26 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
       <ClientOnly>
         <component :is="TroubleReport" />
       </ClientOnly>
+    </div>
+    <!-- Technician Checklist Modal -->
+    <div v-if="showTechnicianChecklist"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-semibold">Technician Checklist</h3>
+            <button @click="showTechnicianChecklist = false" class="text-gray-500 hover:text-gray-700">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          <TechnicianChecklist v-if="selectedTicketForChecklist" :ticket-id="selectedTicketForChecklist"
+            :technician-id="selectedTechnicianForChecklist"
+            :read-only="selectedChecklistReadOnly || !(isTechnician)"
+            @job-completed="() => { showTechnicianChecklist = false; refresh() }" />
+        </div>
+      </div>
     </div>
   </div>
 </template>

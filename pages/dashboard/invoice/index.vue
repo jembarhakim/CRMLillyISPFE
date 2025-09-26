@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { invoiceAdminApi } from "@/api/admin/invoice";
+import { recurringInvoiceAdminApi } from "@/api/admin/recurring-invoice";
 import FormAddComponent from "./FormAddInvoice.vue";
 import PartialPaymentModal from "./PartialPaymentModal.vue";
 import * as currency from "@/helper/currency";
@@ -12,6 +13,7 @@ useHead({
 })
 
 let customer = ref<any[]>([]);
+const isLoading = ref(false);
 
 // Partial payment modal state
 const showPartialPaymentModal = ref(false)
@@ -28,6 +30,10 @@ const statusConfirmationData = ref<{
 
 // PDF view tracking state
 const pdfViewingInvoices = ref<Set<string>>(new Set())
+const activeRecurringCustomerIds = ref<Set<string>>(new Set())
+
+// Print state
+const printing = ref(false)
 
 const router = useRouter();
 type Customer = {
@@ -44,42 +50,57 @@ type Customer = {
 };
 
 async function getData() {
-  invoiceAdminApi()
-    .getAllInvoices()
-    .then((response) => {
-      response.data.forEach((invoice: any) => {
-        invoice.number = response.data.indexOf(invoice) + 1;
-        invoice.created_at = invoice.created_at.split("T")[0];
-        
-        // Calculate total_paid from transaction data
-        invoice.total_paid = invoice.transaction?.amount || 0;
-        
-        // Calculate amount_due
-        invoice.amount_due = invoice.amount - invoice.total_paid;
-        
-        // Only auto-update status if it's not manually set to 'paid' or 'pending'
-        // This prevents overriding manual status changes
-        if (invoice.status === 'unpaid' || !invoice.status) {
-          if (invoice.total_paid >= invoice.amount) {
-            invoice.status = 'paid';
-          } else if (invoice.total_paid > 0) {
-            invoice.status = 'pending';
-          } else {
-            invoice.status = 'unpaid';
-          }
-        }
-      });
+  console.log("Fetching invoice data...");
+  isLoading.value = true;
+  try {
+    const response = await invoiceAdminApi().getAllInvoices();
+    console.log("Invoice data received:", response?.data);
 
-      customer.value = [...response.data];
-    })
-    .catch((err) => {
-      const message = typeof err === 'string' ? err : err?.message || 'Terjadi kesalahan';
-      useToast().add({
-        title: message,
-        color: "red",
-      });
-      notification.error('Error', err);
+    // Ensure we always work with an array
+    const data: any[] = Array.isArray(response?.data) ? response.data : [];
+
+    data.forEach((invoice: any, idx: number) => {
+      // Use local index instead of indexOf to avoid issues with non-strict equality
+      invoice.number = idx + 1;
+      // Normalize dates for display
+      if (invoice.invoice_date) {
+        invoice.invoice_date = String(invoice.invoice_date).split("T")[0];
+      } else if (invoice.created_at) {
+        // Fallback to created_at when backend doesn't send invoice_date
+        invoice.invoice_date = String(invoice.created_at).split("T")[0];
+      }
+      if (invoice.due_date) {
+        invoice.due_date = String(invoice.due_date).split("T")[0];
+      }
+      
+      // Calculate total_paid from transaction data
+      invoice.total_paid = invoice.transaction?.amount || 0;
+      
+      // Calculate amount_due
+      invoice.amount_due = invoice.amount - invoice.total_paid;
+      
+      // Only auto-update status if it's not manually set to 'paid' or 'pending'
+      // This prevents overriding manual status changes
+      if (invoice.status === 'unpaid' || !invoice.status) {
+        if (invoice.total_paid >= invoice.amount) {
+          invoice.status = 'paid';
+        } else if (invoice.total_paid > 0) {
+          invoice.status = 'pending';
+        } else {
+          invoice.status = 'unpaid';
+        }
+      }
     });
+
+    customer.value = [...data];
+    console.log("Invoice data updated in customer.value:", (customer.value?.length || 0), "invoices");
+  } catch (err: any) {
+    console.error("Error fetching invoice data:", err);
+    const message = typeof err === 'string' ? err : err?.message || 'Terjadi kesalahan';
+    notification.error('Error', String(message));
+  } finally {
+    isLoading.value = false;
+  }
 }
 
 async function updateStatus(id: string, status: string, currentStatus: string) {
@@ -120,10 +141,7 @@ async function proceedWithStatusUpdate(id: string, status: string, currentStatus
     return response;
   } catch (err: any) {
     const message = typeof err === 'string' ? err : err?.message || 'Terjadi kesalahan';
-    useToast().add({
-      title: message,
-      color: "red",
-    });
+    notification.error('Error', String(message));
     
     // Revert the status back to original on error
     const invoiceIndex = customer.value.findIndex(inv => inv.id === id);
@@ -306,8 +324,76 @@ async function sendWhatsapp(number: string, id: string) {
         title: message,
         color: "red",
       });
-      notification.error('Error', err);
     });
+}
+
+// Load active recurring index for conditional action visibility
+async function loadActiveRecurringCustomers() {
+  try {
+    const res = await recurringInvoiceAdminApi().getAllRecurringInvoices()
+    const ids = new Set<string>()
+    ;(res.data || []).forEach((r: any) => {
+      if ((r.status || '').toLowerCase() === 'active') ids.add(r.customer_id)
+    })
+    activeRecurringCustomerIds.value = ids
+  } catch (e) {
+    // ignore silently; action will still be available
+  }
+}
+
+// --- Start Recurring from Invoice ---
+const showStartRecurringModal = ref(false)
+const selectedInvoiceForRecurring = ref<any>(null)
+const recurringForm = reactive({
+  invoice_date: '',
+  due_date: '',
+  frequency: 'monthly' as 'monthly' | 'quarterly' | 'yearly',
+  description: ''
+})
+
+function openStartRecurringModal(row: any) {
+  selectedInvoiceForRecurring.value = row
+  // default dates: today and +30 days
+  const today = new Date()
+  const due = new Date()
+  due.setDate(today.getDate() + 30)
+  recurringForm.invoice_date = today.toISOString().split('T')[0]
+  recurringForm.due_date = due.toISOString().split('T')[0]
+  recurringForm.frequency = 'monthly'
+  recurringForm.description = `Recurring from invoice ${row.id}`
+  showStartRecurringModal.value = true
+}
+
+async function createRecurringFromInvoice() {
+  if (!selectedInvoiceForRecurring.value) return
+  const base = await invoiceAdminApi().getInvoice(selectedInvoiceForRecurring.value.id)
+  const inv = base.data || selectedInvoiceForRecurring.value
+  const items = (inv.invoice_items || []).map((it: any) => ({
+    name: it.name,
+    price: Number(it.price || 0),
+    qty: Number(it.qty || 1),
+    total: Number(it.total || (Number(it.price || 0) * Number(it.qty || 1)))
+  }))
+  try {
+    await recurringInvoiceAdminApi().createRecurringInvoice({
+      customer_id: inv.customer_id || inv.customer?.id,
+      amount: Number(inv.amount || 0),
+      invoice_date: new Date(recurringForm.invoice_date + 'T00:00:00.000Z').toISOString(),
+      due_date: new Date(recurringForm.due_date + 'T00:00:00.000Z').toISOString(),
+      frequency: recurringForm.frequency,
+      description: recurringForm.description,
+      invoice_items: items
+    })
+    useToast().add({ title: 'Recurring invoice started', color: 'green' })
+    showStartRecurringModal.value = false
+  } catch (err: any) {
+    notification.error('Failed to start recurring', err?.message || 'Failed to start recurring')
+  }
+}
+
+function closeStartRecurringModal() {
+  showStartRecurringModal.value = false
+  selectedInvoiceForRecurring.value = null
 }
 
 async function deleteData(id: string) {
@@ -322,7 +408,7 @@ async function deleteData(id: string) {
     });
 }
 
-await getData();
+await Promise.all([getData(), loadActiveRecurringCustomers()]);
 
 const columns = [
   {
@@ -350,8 +436,12 @@ const columns = [
     label: "Status",
   },
   {
-    key: "created_at",
-    label: "Date",
+    key: "invoice_date",
+    label: "Invoice Date",
+  },
+  {
+    key: "due_date",
+    label: "Due Date",
   },
   {
     key: "actions",
@@ -401,12 +491,16 @@ const filteredRows = computed(() => {
         })
     }
 
-    // Filter by date
+    // Filter by date (match either invoice_date or due_date)
     if (dateFilter.value) {
         filteredData = filteredData.filter((invoice) => {
-            const invoiceDate = new Date(invoice.created_at);
+            const invoiceDate = invoice.invoice_date ? new Date(invoice.invoice_date) : null;
+            const dueDate = invoice.due_date ? new Date(invoice.due_date) : null;
             const filterDate = new Date(dateFilter.value);
-            return invoiceDate.toDateString() === filterDate.toDateString();
+            return (
+              (invoiceDate && invoiceDate.toDateString() === filterDate.toDateString()) ||
+              (dueDate && dueDate.toDateString() === filterDate.toDateString())
+            );
         })
     }
 
@@ -433,6 +527,18 @@ const items = (row: any) => [
       disabled: isPdfViewed(row.id),
       click: () => handlePdfView(row.id),
     },
+    (() => {
+      const cid = row.customer_id || row.customer?.id
+      // Allow starting recurring when customer id is missing (new/partial rows)
+      // and only block when there is a known active recurring for this customer
+      const available = (!cid) || !activeRecurringCustomerIds.value.has(cid)
+      return {
+        label: available ? "Start Recurring" : "Already Recurring",
+        icon: "i-heroicons-arrow-path-20-solid",
+        disabled: !available,
+        click: () => available && openStartRecurringModal(row),
+      }
+    })(),
     {
       label: "Edit",
       icon: "i-heroicons-pencil-20-solid",
@@ -457,8 +563,15 @@ function OpenModalAddCustomer(isEdit: boolean, data: any) {
     isEdit,
     data,
     async onSuccess() {
-      await getData();
-      modal.close();
+      console.log("Modal onSuccess called, refreshing data...");
+      try {
+        await getData();
+        console.log("Data refreshed successfully");
+        modal.close();
+        console.log("Modal closed successfully");
+      } catch (error) {
+        console.error("Error refreshing data:", error);
+      }
     },
   });
 }
@@ -484,10 +597,86 @@ function handlePaymentSuccess() {
   getData() // Refresh the invoice list
   closePartialPaymentModal()
 }
+
+// Print all unpaid invoices
+async function printAllUnpaidInvoices() {
+  try {
+    printing.value = true
+    const response = await invoiceAdminApi().printAllUnpaidInvoices()
+    
+    // Create a new window with the thermal printer data
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Unpaid Invoices Report</title>
+            <style>
+              body { 
+                font-family: 'Courier New', monospace; 
+                font-size: 12px; 
+                line-height: 1.2;
+                margin: 0;
+                padding: 10px;
+                white-space: pre-line;
+              }
+              @media print {
+                body { margin: 0; padding: 5px; }
+              }
+            </style>
+          </head>
+          <body>
+            ${response.data.thermal_data}
+          </body>
+        </html>
+      `)
+      printWindow.document.close()
+      
+      // Auto print after a short delay
+      setTimeout(() => {
+        printWindow.print()
+        printWindow.close()
+      }, 500)
+    }
+    
+    // Show success notification
+    const toast = useToast()
+    toast.add({
+      title: 'Print Successful',
+      description: `Printed ${response.data.total_invoices} unpaid invoices`,
+      color: 'green'
+    })
+    
+  } catch (error: any) {
+    console.error('Print error:', error)
+    notification.error('Print Failed', error?.message || 'Failed to print invoices')
+  } finally {
+    printing.value = false
+  }
+}
 </script>
 
 <template>
-  <UButton label="Add Invoice" @click="OpenModalAddCustomer(false, null)" />
+  <div class="flex justify-between items-center mb-4">
+    <div class="flex gap-2 mb-4">
+    <UButton label="Add Invoice" @click="OpenModalAddCustomer(false, null)" />
+    <UButton 
+      icon="i-heroicons-arrow-path" 
+      color="gray" 
+      variant="soft"
+      :loading="isLoading"
+      @click="getData"
+      title="Refresh Data"
+    />
+  </div>
+    <UButton 
+      label="Print All Unpaid" 
+      color="orange" 
+      icon="i-heroicons-printer"
+      @click="printAllUnpaidInvoices"
+      :loading="printing"
+    />
+  </div>
   
   <!-- Filter Section -->
   <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 dark:border-gray-700 mb-4">
@@ -535,7 +724,7 @@ function handlePaymentSuccess() {
     </div>
   </div>
 
-  <UTable :rows="filteredRows" :columns="columns">
+  <UTable :rows="filteredRows" :columns="columns" :loading="isLoading">
     <template #actions-data="{ row }">
       <UDropdown :items="items(row)">
         <UButton
@@ -607,6 +796,12 @@ function handlePaymentSuccess() {
         </div>
       </div>
     </template>
+    <template #invoice_date-data="{ row }">
+      <span>{{ row.invoice_date ? row.invoice_date : '-' }}</span>
+    </template>
+    <template #due_date-data="{ row }">
+      <span>{{ row.due_date ? row.due_date : '-' }}</span>
+    </template>
   </UTable>
 
   <div
@@ -615,7 +810,7 @@ function handlePaymentSuccess() {
     <UPagination
       v-model="page"
       :page-count="pageCount"
-      :total="customer.length"
+      :total="(customer && customer.length) ? customer.length : 0"
     />
   </div>
 
@@ -737,6 +932,40 @@ function handlePaymentSuccess() {
             </svg>
             Ya, Ubah Status
           </UButton>
+        </div>
+      </template>
+    </UCard>
+  </UModal>
+
+  <!-- Start Recurring Modal -->
+  <UModal v-model="showStartRecurringModal">
+    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+      <template #header>
+        <h3 class="text-lg font-semibold">Start Recurring Invoice</h3>
+      </template>
+      <div class="space-y-4 p-2">
+        <UFormGroup label="Invoice Date" required>
+          <UInput v-model="recurringForm.invoice_date" type="date" />
+        </UFormGroup>
+        <UFormGroup label="Due Date" required>
+          <UInput v-model="recurringForm.due_date" type="date" />
+        </UFormGroup>
+        <UFormGroup label="Frequency" required>
+          <USelectMenu v-model="recurringForm.frequency"
+            :options="[
+              { label: 'Monthly', value: 'monthly' },
+              { label: 'Quarterly', value: 'quarterly' },
+              { label: 'Yearly', value: 'yearly' }
+            ]" option-attribute="label" value-attribute="value" />
+        </UFormGroup>
+        <UFormGroup label="Description">
+          <UTextarea v-model="recurringForm.description" :rows="3" />
+        </UFormGroup>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UButton color="gray" variant="soft" @click="closeStartRecurringModal">Cancel</UButton>
+          <UButton color="green" @click="createRecurringFromInvoice">Start</UButton>
         </div>
       </template>
     </UCard>

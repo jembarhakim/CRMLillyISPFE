@@ -151,11 +151,7 @@ const submitPayment = async () => {
   try {
     await invoiceAdminApi().processPartialPayment(props.invoice.id, paymentAmount.value)
     
-    useToast().add({
-      title: 'Success!',
-      description: `Payment of ${formatIDR(paymentAmount.value)} processed successfully`,
-      color: 'green'
-    })
+    // success kept silent here; parent refreshes and can notify if needed
     
     emit('success')
     emit('close')

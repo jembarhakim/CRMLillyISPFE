@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import FormAddComponent from './FormAddComponent.vue'
 import { internetPackageAdminApi } from '@/api/admin/internet-package'
+import { formatIDR } from '@/helper/currency'
 // Set page title
 useHead({
   title: 'Internet Package Management - CRM System'
@@ -130,6 +131,9 @@ const items = (row: any) => [
             <UDropdown :items="items(row)">
                 <UButton color="gray" variant="ghost" icon="i-heroicons-ellipsis-horizontal-20-solid" />
             </UDropdown>
+        </template>
+        <template #price-data="{ row }">
+            <p class="font-medium text-gray-900">{{ formatIDR(row.price) }}</p>
         </template>
     </UTable>
 
