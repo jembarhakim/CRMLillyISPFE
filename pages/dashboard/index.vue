@@ -41,6 +41,8 @@ const showAccumulationModal = ref(false);
 const selectedTicket = ref<any>(null);
 const newAccumulationValue = ref<string>('');
 
+// Removed logout confirmation modal state
+
 // Filter variables
 const selectedDateRange = ref<number>(30);
 
@@ -585,6 +587,10 @@ function handleKeydown(event: KeyboardEvent) {
   }
 }
 
+// Removed beforeunload and popstate handlers to allow free navigation
+
+// Removed logout confirmation handlers
+
 // Filter functions
 function applyDateFilter() {
   // Data is automatically filtered through computed properties
@@ -960,4 +966,6 @@ onUnmounted(() => {
       </div>
     </div>
   </div>
+
+  <!-- Removed logout confirmation modal -->
 </template>

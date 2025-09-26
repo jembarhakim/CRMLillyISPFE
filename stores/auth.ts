@@ -15,11 +15,23 @@ export const useAuthStore = defineStore('auth', {
     isLoggedIn: (state) => {
       // Wait for initialization and then check token
       if (!state.isInitialized) return false
-      return !!state.token && 
-             state.token !== '' && 
-             state.token !== 'null' && 
-             state.token !== 'undefined' &&
-             state.token.length > 10
+      
+      // Check both state token and cookie token for reliability
+      const stateToken = state.token
+      let cookieToken = ''
+      
+      if (process.client) {
+        const tokenCookie = useCookie('token', { default: () => '' })
+        cookieToken = tokenCookie.value || ''
+      }
+      
+      const validToken = stateToken || cookieToken
+      
+      return !!validToken && 
+             validToken !== '' && 
+             validToken !== 'null' && 
+             validToken !== 'undefined' &&
+             validToken.length > 10
     },
     getToken: (state) => {
       // Always get the most current token from cookie if available
@@ -42,10 +54,34 @@ export const useAuthStore = defineStore('auth', {
     // Initialize store from cookies (call this on app startup)
     initFromCookies() {
       if (process.client) {
-        const tokenCookie = useCookie('token', { default: () => '' })
-        const roleCookie = useCookie('role_id', { default: () => '' })
-        const nameCookie = useCookie('user_name', { default: () => '' })
-        const emailCookie = useCookie('user_email', { default: () => '' })
+        const tokenCookie = useCookie('token', { 
+          default: () => '',
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+          secure: false, // Set to true in production
+          sameSite: 'lax',
+          httpOnly: false
+        })
+        const roleCookie = useCookie('role_id', { 
+          default: () => '',
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+          secure: false,
+          sameSite: 'lax',
+          httpOnly: false
+        })
+        const nameCookie = useCookie('user_name', { 
+          default: () => '',
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+          secure: false,
+          sameSite: 'lax',
+          httpOnly: false
+        })
+        const emailCookie = useCookie('user_email', { 
+          default: () => '',
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+          secure: false,
+          sameSite: 'lax',
+          httpOnly: false
+        })
         
         const tokenValue = tokenCookie.value || ''
         const roleValue = roleCookie.value || ''
@@ -112,6 +148,16 @@ export const useAuthStore = defineStore('auth', {
         nameCookie.value = name || ''
         emailCookie.value = email || ''
         
+        // Also store in localStorage as backup
+        try {
+          localStorage.setItem('token', token)
+          localStorage.setItem('role_id', role_id || '')
+          localStorage.setItem('user_name', name || '')
+          localStorage.setItem('user_email', email || '')
+        } catch (e) {
+          // Ignore localStorage errors
+        }
+        
         console.log('Cookies set - token:', tokenCookie.value ? 'exists' : 'missing')
       }
       
@@ -132,10 +178,21 @@ export const useAuthStore = defineStore('auth', {
         const nameCookie = useCookie('user_name')
         const emailCookie = useCookie('user_email')
         
+        // Clear cookies by setting them to empty and removing them
         tokenCookie.value = ''
         roleCookie.value = ''
         nameCookie.value = ''
         emailCookie.value = ''
+        
+        // Also clear from localStorage as backup
+        try {
+          localStorage.removeItem('token')
+          localStorage.removeItem('role_id')
+          localStorage.removeItem('user_name')
+          localStorage.removeItem('user_email')
+        } catch (e) {
+          // Ignore localStorage errors
+        }
       }
       
       this.token = ''

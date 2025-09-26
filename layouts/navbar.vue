@@ -125,6 +125,15 @@
 
       </div>
     </div>
+
+    <!-- Logout Confirmation Modal -->
+    <LogoutConfirmationModal
+      :is-visible="showLogoutModal"
+      title="Konfirmasi Logout"
+      message="Apakah Anda yakin ingin logout? Anda akan keluar dari sistem."
+      @confirm="handleLogoutConfirm"
+      @cancel="handleLogoutCancel"
+    />
   </template>
 
 <script setup lang="ts">
@@ -145,18 +154,17 @@ const showSidebar = ref(true)
 const showMobileSidebar = ref(false)
 const authStore = useAuthStore()
 
+// Modal state for logout confirmation
+const showLogoutModal = ref(false)
+
 // Profile dropdown
 const ProfileDropdown: ProfileDropdownItem[][] = [
   [
     {
       label: 'Logout',
       click: async () => {
-        try {
-          await authStore.logout()
-          router.push('/login')
-        } catch (error) {
-          console.error('Logout failed:', error)
-        }
+        // Show logout confirmation modal
+        showLogoutModal.value = true
       },
     },
   ],
@@ -198,6 +206,18 @@ const navigateTo = (link: string) => {
   router.push(link)
   // Close mobile sidebar on navigation
   showMobileSidebar.value = false
+}
+
+// Handle logout confirmation
+function handleLogoutConfirm() {
+  authStore.logout()
+  showLogoutModal.value = false
+  router.push('/login')
+}
+
+// Handle logout cancel
+function handleLogoutCancel() {
+  showLogoutModal.value = false
 }
 </script>
 
