@@ -152,24 +152,35 @@ function calculateTotal() {
 }
 
 // Calculate next invoice date based on frequency
+function clampToMonth(base: Date, addMonths: number, preferredDay: number): Date {
+  const y = base.getFullYear();
+  const m = base.getMonth();
+  const target = new Date(y, m + addMonths, 1);
+  const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  const d = Math.min(preferredDay, lastDay);
+  target.setDate(d);
+  target.setHours(base.getHours(), base.getMinutes(), base.getSeconds(), base.getMilliseconds());
+  return target;
+}
+
 function calculateNextInvoiceDate() {
   if (!state.invoice_date) return;
-  
+
   const invoiceDate = new Date(state.invoice_date);
-  let nextDate = new Date(invoiceDate);
-  
+  const day = invoiceDate.getDate();
+  const preferred = day >= 30 ? 31 : day;
+
+  let monthsToAdd = 1;
   switch (state.frequency) {
-    case "monthly":
-      nextDate.setMonth(nextDate.getMonth() + 1);
-      break;
     case "quarterly":
-      nextDate.setMonth(nextDate.getMonth() + 3);
-      break;
+      monthsToAdd = 3; break;
     case "yearly":
-      nextDate.setFullYear(nextDate.getFullYear() + 1);
-      break;
+      monthsToAdd = 12; break;
+    default:
+      monthsToAdd = 1;
   }
-  
+
+  const nextDate = clampToMonth(invoiceDate, monthsToAdd, preferred);
   return nextDate.toISOString().split('T')[0];
 }
 

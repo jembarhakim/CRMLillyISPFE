@@ -870,9 +870,13 @@ const getTicketActions = (ticket: any) => {
     return actions
   }
 
-  // Stage 1: CS creates ticket → Show NOC Action only
-  if (ticket.status === 'unfinished' &&
-    (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN')) {
+  // Stage 1: CS creates ticket OR ticket is ongoing but no NOC action yet → Show NOC Action only
+  // Enforce: NOC must act BEFORE assigning a technician
+  const nocActionRecorded = !!(ticket.noc_note || ticket.img_noc)
+  const isCSLikeAssignee = (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN')
+
+  if ((ticket.status === 'unfinished' || (ticket.status === 'ongoing' && isCSLikeAssignee && !nocActionRecorded)) &&
+    isCSLikeAssignee) {
 
     if (isAdmin.value || isCustomerService.value) {
       actions.push({
@@ -885,9 +889,8 @@ const getTicketActions = (ticket: any) => {
     }
   }
 
-  // Stage 2: After NOC action → Show Assign Technician
-  else if (ticket.status === 'ongoing' &&
-    (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN')) {
+  // Stage 2: After NOC action (noc_note/img_noc present) → Show Assign Technician
+  else if (ticket.status === 'ongoing' && isCSLikeAssignee && nocActionRecorded) {
 
     if (isAdmin.value || isCustomerService.value) {
       actions.push({

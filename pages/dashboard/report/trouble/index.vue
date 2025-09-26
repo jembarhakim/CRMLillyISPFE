@@ -118,6 +118,29 @@ watch(selectedTimeFilter, () => {
 })
 
 // Keep a simple bar chart for "Tickets by Type" (still useful)
+// Aggregate accumulation per trouble type from current rows snapshot
+const accumulationByType = computed(() => {
+  const totals: Record<string, number> = {}
+  const list = Array.isArray(rows.value) ? rows.value : []
+
+  for (const t of list) {
+    const rawType = (t.type || t.type_name || 'unknown') as string
+    const key = rawType
+    // Coerce accumulation to number to handle string values like "2"
+    const rawAcc = (t as any).accumulation
+    const parsed = typeof rawAcc === 'number' ? rawAcc : Number(rawAcc)
+    const acc = Number.isFinite(parsed) && parsed > 0 ? parsed : 1
+    totals[key] = (totals[key] || 0) + acc
+  }
+
+  // Map to display objects with human-friendly names
+  return Object.entries(totals).map(([type, total]) => ({
+    type,
+    name: typeNameMap.value[type] || type,
+    value: total,
+  }))
+})
+
 const barOption = computed(() => ({
   tooltip: {
     trigger: 'axis',
@@ -131,7 +154,7 @@ const barOption = computed(() => ({
   },
   xAxis: {
     type: 'category',
-    data: Array.isArray(seriesData.value) ? seriesData.value.map(item => item.name) : [],
+    data: Array.isArray(accumulationByType.value) ? accumulationByType.value.map(item => item.name) : [],
     axisLabel: {
       rotate: 45,
       color: '#374151'
@@ -142,9 +165,9 @@ const barOption = computed(() => ({
     axisLabel: { color: '#374151' }
   },
   series: [{
-    name: 'Ticket Count',
+    name: 'Customers Affected',
     type: 'bar',
-    data: Array.isArray(seriesData.value) ? seriesData.value.map(item => item.value) : [],
+    data: Array.isArray(accumulationByType.value) ? accumulationByType.value.map(item => item.value) : [],
     itemStyle: {
       color: function(params: any) {
         const colors = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899']
@@ -295,8 +318,8 @@ const summaryStats = computed(() => {
 
 // Chart data for inline display
 const byTypeModalRows = computed(() => {
-  const safeSeries = Array.isArray(seriesData.value) ? seriesData.value : []
-  return [...safeSeries]
+  const safeAccum = Array.isArray(accumulationByType.value) ? accumulationByType.value : []
+  return [...safeAccum]
     .map((r:any)=>({ type: r.type, name: r.name, count: r.value }))
     .sort((a,b)=> b.count - a.count)
 })
@@ -311,7 +334,7 @@ const byTypeChartData = computed(() => {
     labels: safeModalRows.map(r => r.name),
     datasets: [
       {
-        label: 'Ticket Count',
+        label: 'Customers Affected',
         data: safeModalRows.map(r => r.count),
         backgroundColor: '#4F46E5', // biru indigo
       },
@@ -413,13 +436,13 @@ async function sendToCS(ticket: any) {
     <!-- Action Buttons -->
     <div class="flex justify-between items-center">
       <div class="flex gap-2">
-        <button 
+        <!-- <button 
           @click="triggerAutoDetection"
           :disabled="loading"
           class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {{ loading ? 'Processing...' : 'Auto-Detect Groups' }}
-        </button>
+        </button> -->
         <button 
           @click="fetchSnapshot"
           class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"

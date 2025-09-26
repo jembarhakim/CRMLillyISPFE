@@ -62,7 +62,16 @@ async function getData() {
     data.forEach((invoice: any, idx: number) => {
       // Use local index instead of indexOf to avoid issues with non-strict equality
       invoice.number = idx + 1;
-      invoice.created_at = invoice.created_at.split("T")[0];
+      // Normalize dates for display
+      if (invoice.invoice_date) {
+        invoice.invoice_date = String(invoice.invoice_date).split("T")[0];
+      } else if (invoice.created_at) {
+        // Fallback to created_at when backend doesn't send invoice_date
+        invoice.invoice_date = String(invoice.created_at).split("T")[0];
+      }
+      if (invoice.due_date) {
+        invoice.due_date = String(invoice.due_date).split("T")[0];
+      }
       
       // Calculate total_paid from transaction data
       invoice.total_paid = invoice.transaction?.amount || 0;
@@ -88,11 +97,7 @@ async function getData() {
   } catch (err: any) {
     console.error("Error fetching invoice data:", err);
     const message = typeof err === 'string' ? err : err?.message || 'Terjadi kesalahan';
-    useToast().add({
-      title: message,
-      color: "red",
-    });
-    notification.error('Error', err);
+    notification.error('Error', String(message));
   } finally {
     isLoading.value = false;
   }
@@ -136,10 +141,7 @@ async function proceedWithStatusUpdate(id: string, status: string, currentStatus
     return response;
   } catch (err: any) {
     const message = typeof err === 'string' ? err : err?.message || 'Terjadi kesalahan';
-    useToast().add({
-      title: message,
-      color: "red",
-    });
+    notification.error('Error', String(message));
     
     // Revert the status back to original on error
     const invoiceIndex = customer.value.findIndex(inv => inv.id === id);
@@ -385,7 +387,7 @@ async function createRecurringFromInvoice() {
     useToast().add({ title: 'Recurring invoice started', color: 'green' })
     showStartRecurringModal.value = false
   } catch (err: any) {
-    useToast().add({ title: err?.message || 'Failed to start recurring', color: 'red' })
+    notification.error('Failed to start recurring', err?.message || 'Failed to start recurring')
   }
 }
 
@@ -434,8 +436,12 @@ const columns = [
     label: "Status",
   },
   {
-    key: "created_at",
-    label: "Date",
+    key: "invoice_date",
+    label: "Invoice Date",
+  },
+  {
+    key: "due_date",
+    label: "Due Date",
   },
   {
     key: "actions",
@@ -485,12 +491,16 @@ const filteredRows = computed(() => {
         })
     }
 
-    // Filter by date
+    // Filter by date (match either invoice_date or due_date)
     if (dateFilter.value) {
         filteredData = filteredData.filter((invoice) => {
-            const invoiceDate = new Date(invoice.created_at);
+            const invoiceDate = invoice.invoice_date ? new Date(invoice.invoice_date) : null;
+            const dueDate = invoice.due_date ? new Date(invoice.due_date) : null;
             const filterDate = new Date(dateFilter.value);
-            return invoiceDate.toDateString() === filterDate.toDateString();
+            return (
+              (invoiceDate && invoiceDate.toDateString() === filterDate.toDateString()) ||
+              (dueDate && dueDate.toDateString() === filterDate.toDateString())
+            );
         })
     }
 
@@ -519,7 +529,9 @@ const items = (row: any) => [
     },
     (() => {
       const cid = row.customer_id || row.customer?.id
-      const available = cid && !activeRecurringCustomerIds.value.has(cid)
+      // Allow starting recurring when customer id is missing (new/partial rows)
+      // and only block when there is a known active recurring for this customer
+      const available = (!cid) || !activeRecurringCustomerIds.value.has(cid)
       return {
         label: available ? "Start Recurring" : "Already Recurring",
         icon: "i-heroicons-arrow-path-20-solid",
@@ -637,12 +649,7 @@ async function printAllUnpaidInvoices() {
     
   } catch (error: any) {
     console.error('Print error:', error)
-    const toast = useToast()
-    toast.add({
-      title: 'Print Failed',
-      description: error.message || 'Failed to print invoices',
-      color: 'red'
-    })
+    notification.error('Print Failed', error?.message || 'Failed to print invoices')
   } finally {
     printing.value = false
   }
@@ -788,6 +795,12 @@ async function printAllUnpaidInvoices() {
           PDF Sudah Dilihat
         </div>
       </div>
+    </template>
+    <template #invoice_date-data="{ row }">
+      <span>{{ row.invoice_date ? row.invoice_date : '-' }}</span>
+    </template>
+    <template #due_date-data="{ row }">
+      <span>{{ row.due_date ? row.due_date : '-' }}</span>
     </template>
   </UTable>
 

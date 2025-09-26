@@ -41,7 +41,7 @@ const state = reactive({
   invoice_items: [
     {
       name: "",
-      qty: 0,
+      qty: 1,
       price: 0,
       total: 0,
     },
@@ -51,7 +51,7 @@ const state = reactive({
 function addItem() {
   state.invoice_items.push({
     name: "",
-    qty: 0,
+    qty: 1,
     price: 0,
     total: 0,
   });
@@ -156,11 +156,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     onSuccess();
   } catch (error: any) {
     console.error("Invoice submission error:", error);
-    useToast().add({
-      title: "Error",
-      description: error.message || "Failed to save invoice",
-      color: "red"
-    });
+    notification.error('Error', error.message || 'Failed to save invoice');
   } finally {
     isSubmitting.value = false;
   }
@@ -240,20 +236,13 @@ watch(
           state.invoice_items = [{
             name: product.name,
             price: product.price,
-            qty: 1, // Default quantity to 1
+            qty: 1,
             total: product.price
           }];
           
           // Update total amount
           state.amount = state.invoice_items.reduce((acc, item) => acc + item.total, 0);
           
-          // Show success message with timeout to prevent UI blocking
-          useToast().add({
-            title: 'Success',
-            description: `Product "${product.name}" auto-filled from customer's package`,
-            color: 'green',
-            timeout: 3000
-          });
           // Show success message
           notification.success('Success', `Product "${product.name}" auto-filled from customer's package`);
         } else {
@@ -261,27 +250,15 @@ watch(
           state.invoice_items = [{
             name: "",
             price: 0,
-            qty: 0,
+            qty: 1,
             total: 0
           }];
           state.amount = 0;
           
           notification.warning('Warning', 'Customer has no product package assigned');
-          useToast().add({
-            title: 'Warning',
-            description: 'Customer has no product package assigned',
-            color: 'yellow',
-            timeout: 3000
-          });
         }
       } catch (error) {
         console.error('Failed to fetch customer detail:', error);
-        useToast().add({
-          title: 'Error',
-          description: 'Failed to load customer product information',
-          color: 'red',
-          timeout: 3000
-        });
         notification.error('Error', 'Failed to load customer product information');
       }
     } else {
@@ -372,7 +349,7 @@ watch(
 
           <div class="flex space-x-4">
             <UFormGroup label="Quantity">
-              <UInput v-model.number="item.qty" type="number" @update:modelValue="() => updateTotal(index)" />
+              <UInput v-model.number="item.qty" type="number" min="1" @update:modelValue="() => { if (item.qty < 1) item.qty = 1; updateTotal(index) }" />
             </UFormGroup>
             <UFormGroup label="Price">
               <UInput v-model.number="item.price" type="number" @update:modelValue="() => updateTotal(index)" />

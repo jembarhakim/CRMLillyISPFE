@@ -47,6 +47,9 @@ export default defineNuxtConfig({
     "@i2d/nuxt-pdf-frame",
     "nuxt-echarts",
   ],
+  imports: {
+    dirs: ["composables", "stores"],
+  },
   // tailwindcss: {
   //   cssPath: ["~/assets/css/tailwind.css", { injectPosition: "first" }],
   //   config: {},
