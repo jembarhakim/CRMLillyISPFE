@@ -3,7 +3,7 @@ import { formatIDR } from '@/helper/currency';
 
 const props = defineProps<{
   data: any[];
-  onRefresh: () => Promise<void>;
+  refresh?: () => Promise<void>;
 }>();
 const q = ref("");
 const page = ref(1);

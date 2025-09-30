@@ -139,18 +139,18 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     
     if (props.isEdit) {
       const response = await invoiceAdminApi().editInvoice(props.data.id, submitData);
-      useToast().add({ 
-        title: "Success", 
-        description: response.message || "Invoice updated successfully",
-        color: "green"
-      });
+      if (!response?.success) {
+        useToast().add({ title: 'MikroTik Error', description: response?.message || 'Scheduler update failed', color: 'red' })
+        return
+      }
+      useToast().add({ title: 'Success', description: response.message || 'Invoice updated successfully', color: 'green' })
     } else {
       const response = await invoiceAdminApi().createInvoice(submitData);
-      useToast().add({ 
-        title: "Success", 
-        description: response.message || "Invoice created successfully",
-        color: "green"
-      });
+      if (!response?.success) {
+        useToast().add({ title: 'MikroTik Error', description: response?.message || 'Scheduler update failed', color: 'red' })
+        return
+      }
+      useToast().add({ title: 'Success', description: response.message || 'Invoice created successfully', color: 'green' })
     }
     
     onSuccess();

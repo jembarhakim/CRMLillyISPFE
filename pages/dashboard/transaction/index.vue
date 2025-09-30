@@ -142,6 +142,7 @@ const tab_items = [
         <BalanceSheet
           v-if="!isLoading"
           :data="accounts"
+          :refresh="fetchAllAccount"
         />
       </div>
       <!-- <div v-if="item.value == 'report-customer'">

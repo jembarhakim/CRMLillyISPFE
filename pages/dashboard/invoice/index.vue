@@ -145,8 +145,15 @@ async function proceedWithStatusUpdate(id: string, status: string, currentStatus
     
     return response;
   } catch (err: any) {
-    const message = typeof err === 'string' ? err : err?.message || 'Terjadi kesalahan';
-    notification.error('Error', String(message));
+    const raw = typeof err === 'string' ? err : err?.message || ''
+    // Friendlier message for MikroTik scheduler not found
+    if (/mikrotik.*scheduler.*not\s*found/i.test(raw)) {
+      const pretty = 'Scheduler tidak ditemukan. Pastikan nama scheduler sesuai dengan kode area customer di MikroTik.'
+      notification.error('MikroTik Error', pretty + `\n(${raw})`)
+    } else {
+      const message = raw || 'Terjadi kesalahan';
+      notification.error('Error', String(message));
+    }
     
     // Revert the status back to original on error
     const invoiceIndex = customer.value.findIndex(inv => inv.id === id);
