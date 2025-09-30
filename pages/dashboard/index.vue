@@ -577,7 +577,7 @@ const columns = [
     label: "Status",
   },
   {
-    key: "customer.product.name",
+    key: "product_name",
     label: "Plan",
   },
 ];

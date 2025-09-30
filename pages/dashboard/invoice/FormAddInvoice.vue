@@ -302,7 +302,7 @@ watch(
             </div>
             <div>
               <label class="block text-sm font-medium text-blue-700">Package Price</label>
-               <p class="mt-1 text-sm text-blue-900">{{ selectedCustomerDetail.customer.product?.price ? `Rp ${selectedCustomerDetail.customer.product.price.toLocaleString()}` : 'No price' }}</p>
+               <p class="mt-1 text-sm text-blue-900">{{ selectedCustomerDetail.customer.product_name ? `Rp ${selectedCustomerDetail.customer.product_name.toLocaleString()}` : 'No price' }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-blue-700">Installation Date</label>
@@ -336,7 +336,7 @@ watch(
               />
               <div v-if="index === 0 && selectedCustomerDetail?.customer?.product" class="mt-1">
                 <p class="text-xs text-green-600">
-                  ✓ Auto-filled from customer's package: {{ selectedCustomerDetail.customer.product.name }}
+                  ✓ Auto-filled from customer's package: {{ selectedCustomerDetail.customer.product_name || 'No product assigned' }}
                 </p>
               </div>
               <div v-else-if="index === 0 && !selectedCustomerDetail" class="mt-1">

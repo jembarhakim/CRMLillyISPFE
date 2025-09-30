@@ -10,6 +10,7 @@ useHead({
 })
 
 let customer = ref<any[]>([])
+let installationReports = ref<any[]>([])
 
 type Customer = {
     id: string
@@ -20,23 +21,46 @@ type Customer = {
     area_code: string
     gmaps_link: string
     packet_internet: string
-
+    hasInstallationReport?: boolean
 }
 
 
 async function getData() {
-    await customerAdminApi().getAllCustomers().then((response) => {
+    await customerAdminApi().getAllCustomers().then(async (response) => {
         response.data.forEach((customer: any) => {
             customer.number = response.data.indexOf(customer) + 1;
             customer.area_name = customer.area.name_city + "-" + customer.area.name_subdistrict + "-" + customer.area.name_village
-            customer.product_name = customer.product.name
+            // customer.product_name = customer.product.name // Removed since product_id moved to network_devices
             customer.gmaps_link = "https://www.google.com/maps/place/" + customer.latitude + "," + customer.longitude
         })
 
         customer.value = [...response.data]
+        
+        // Load installation reports to check which customers already have reports
+        await loadInstallationReports()
     }).catch((err) => {
         notification.error('Error', err)
     })
+}
+
+async function loadInstallationReports() {
+    try {
+        const response = await customerAdminApi().getInstallationReportComplete()
+        installationReports.value = response.data || []
+        
+        // Update customer data with installation report status
+        customer.value.forEach((customerItem: any) => {
+            customerItem.hasInstallationReport = installationReports.value.some(
+                (report: any) => report.customer_id === customerItem.id
+            )
+        })
+    } catch (error) {
+        console.error("Failed to load installation reports:", error)
+        // Set all customers as not having installation reports if API fails
+        customer.value.forEach((customerItem: any) => {
+            customerItem.hasInstallationReport = false
+        })
+    }
 }
 
 async function deleteData(id: string) {
@@ -118,20 +142,29 @@ const isOpen = ref(false)
 const showDetailModal = ref(false)
 const selectedCustomerId = ref<string | null>(null)
 
-const items = (row: Customer) => [
-    [{
-        label: 'View Detail Customer',
-        icon: 'i-heroicons-eye-20-solid',
-        click: () => OpenCustomerDetailModal(row.id)
-    }, {
-        label: 'Edit',
-        icon: 'i-heroicons-pencil-square-20-solid',
-        click: () => OpenModalAddCustomer(true, row)
-    }], [{
-        label: 'Add Report Installation',
-        icon: 'i-heroicons-archive-box-20-solid',
-        click: () => OpenModalReportInstallation(true, row)
-    }, {
+const items = (row: Customer) => {
+    const baseItems = [
+        [{
+            label: 'View Detail Customer',
+            icon: 'i-heroicons-eye-20-solid',
+            click: () => OpenCustomerDetailModal(row.id)
+        }, {
+            label: 'Edit',
+            icon: 'i-heroicons-pencil-square-20-solid',
+            click: () => OpenModalAddCustomer(true, row)
+        }]
+    ]
+
+    // Only show "Add Report Installation" if customer doesn't have one yet
+    if (!row.hasInstallationReport) {
+        baseItems.push([{
+            label: 'Add Report Installation',
+            icon: 'i-heroicons-archive-box-20-solid',
+            click: () => OpenModalReportInstallation(true, row)
+        }])
+    }
+
+    baseItems.push([{
         label: 'View Maps',
         icon: 'i-heroicons-arrow-right-circle-20-solid',
         click: () => window.open(row.gmaps_link, '_blank')
@@ -139,8 +172,10 @@ const items = (row: Customer) => [
         label: 'Delete',
         icon: 'i-heroicons-trash-20-solid',
         click: () => deleteData(row.id)
-    }]
-]
+    }])
+
+    return baseItems
+}
 
 const notification = useNotification()
 const modal = useModal()
@@ -162,7 +197,7 @@ function OpenModalReportInstallation(isEdit: boolean, data: any) {
         data,
         async onSuccess() {
             await getData()
-            notification.success('Success!', 'Customer data updated successfully')
+            notification.success('Success!', 'Installation report created successfully')
             modal.close()
         }
     })
@@ -192,12 +227,20 @@ function closeDetailModal() {
             <UTable :rows="rows" :columns="columns" class="dashboard-table">
 
                 <template #name-data="{ row }">
-                    <button 
-                        @click="OpenCustomerDetailModal(row.id)"
-                        class="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-                    >
-                        {{ row.name }}
-                    </button>
+                    <div class="flex items-center space-x-2">
+                        <button 
+                            @click="OpenCustomerDetailModal(row.id)"
+                            class="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                        >
+                            {{ row.name }}
+                        </button>
+                        <span v-if="row.hasInstallationReport" 
+                              class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                              title="Has Installation Report">
+                            <UIcon name="i-heroicons-check-circle" class="w-3 h-3 mr-1" />
+                            Report
+                        </span>
+                    </div>
                 </template>
 
                 <template #actions-data="{ row }">

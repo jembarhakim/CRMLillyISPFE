@@ -17,7 +17,6 @@ interface Customer {
   company_id: string;
   email: string;
   gender: string;
-  product_id: string;
   ip_static: string;
   job: string;
   latitude: number;

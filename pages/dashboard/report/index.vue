@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import CashFlow from "./cash-flow/CashFlow.vue";
 import FormAddComponent from "./cash-flow/FormAddComponent.vue";
-import CustomerInstallation from "./customer-installation/CustomerInstallation.vue";
+import CustomerInstallation from "./customer-installation/index.vue";
 import Internet from "./internet/Internet.vue";
 
 // Set page title

@@ -147,7 +147,136 @@ export const customerAdminApi = () => {
       return response.json();
     },
 
+    // Installation Report APIs
+    getCompleteInstallationReport: async (installationId: string) => {
+      const response = await fetch(`${api}/api/admin/customer-installation/report/complete/${installationId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch installation report');
+      }
+      return response.json();
+    },
 
+    getInstallationSummaryPerCustomer: async () => {
+      const response = await fetch(`${api}/api/admin/customer-installation/report/summary/customer`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch installation summary');
+      }
+      return response.json();
+    },
+
+    getInstallationAssetReport: async (installationId: string) => {
+      const response = await fetch(`${api}/api/admin/customer-installation/report/asset/${installationId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch asset report');
+      }
+      return response.json();
+    },
+
+    getInstallationTechnicianReport: async () => {
+      const response = await fetch(`${api}/api/admin/customer-installation/report/technician`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch technician report');
+      }
+      return response.json();
+    },
+
+    createCompleteInstallationReport: async (data: any) => {
+      const response = await fetch(`${api}/api/admin/customer-installation/report/complete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create installation report');
+      }
+      return response.json();
+    },
+
+    createReportInstallation: async (formData: FormData) => {
+      const response = await fetch(`${api}/api/admin/customer-installation/report-installations`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+        body: formData,
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create installation report');
+      }
+      return response.json();
+    },
+
+    getInstallationReportComplete: async () => {
+      const response = await fetch(`${api}/api/admin/customer-installation/report-complete`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch installation reports');
+      }
+      return response.json();
+    },
+
+    // Check if customer has existing installation report
+    checkCustomerInstallationReport: async (customerId: string) => {
+      try {
+        const response = await fetch(`${api}/api/admin/customer-installation/report-complete`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${useCookie("token").value}`,
+          },
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch installation reports');
+        }
+        const data = await response.json();
+        // Check if any installation report exists for this customer
+        const hasInstallationReport = data.data && data.data.some((report: any) => report.customer_id === customerId);
+        return { hasInstallationReport };
+      } catch (error) {
+        console.error("Error checking customer installation report:", error);
+        return { hasInstallationReport: false };
+      }
+    },
 
   };
 };
