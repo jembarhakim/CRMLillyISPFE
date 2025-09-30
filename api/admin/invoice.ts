@@ -107,7 +107,8 @@ export const invoiceAdminApi = () => {
 
     processPartialPayment: async (
       invoiceId: string,
-      amount: number
+      amount: number,
+      reason?: string
     ) => {
       const response = await fetch(`${api}/api/admin/invoice/${invoiceId}/partial-payment`, {
         method: "POST",
@@ -115,7 +116,7 @@ export const invoiceAdminApi = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${useCookie("token").value}`,
         },
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({ amount, reason }),
       });
       if (!response.ok) {
         const errorData = await response.json();

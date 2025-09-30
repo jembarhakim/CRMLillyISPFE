@@ -4,7 +4,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 		onResponseError: async (ctx) => {
 			const status = ctx.response?.status
 			if (status === 401 && process.client) {
-				await handleTokenExpiration()
+				await window.handleTokenExpiration()
 			}
 		}
 	})
@@ -68,12 +68,9 @@ export default defineNuxtPlugin((nuxtApp) => {
 				auth.logout()
 			} catch {}
 			try {
-				const toast = useToast()
-				toast.add({
-					title: 'Logged out',
-					description: 'You have been logged out successfully.',
-					color: 'green'
-				})
+				const { useNotificationStore } = await import('@/stores/notification')
+				const notification = useNotificationStore()
+				notification.success('Logged out', 'You have been logged out successfully.', 3000)
 			} catch {}
 			try { 
 				await navigateTo('/login') 
@@ -92,12 +89,9 @@ export default defineNuxtPlugin((nuxtApp) => {
 					auth.logout()
 				} catch {}
 				try {
-					const toast = useToast()
-					toast.add({
-						title: 'Auto logged out',
-						description: 'You have been automatically logged out.',
-						color: 'amber'
-					})
+					const { useNotificationStore } = await import('@/stores/notification')
+					const notification = useNotificationStore()
+					notification.warning('Auto logged out', 'You have been automatically logged out.', 4000)
 				} catch {}
 				try { 
 					await navigateTo('/login') 
@@ -109,14 +103,17 @@ export default defineNuxtPlugin((nuxtApp) => {
 	// Override global fetch to handle 401 responses
 	const originalFetch = window.fetch
 	window.fetch = async (...args) => {
-		const response = await originalFetch(...args)
-		
-		// Check if response is 401 (Unauthorized)
-		if (response.status === 401 && process.client) {
-			await window.handleTokenExpiration()
+		try {
+			const response = await originalFetch(...args)
+			// Check if response is 401 (Unauthorized)
+			if (response.status === 401 && process.client) {
+				await window.handleTokenExpiration()
+			}
+			return response
+		} catch (error) {
+			// Surface network errors while keeping behavior the same
+			throw error
 		}
-		
-		return response
 	}
 })
 
@@ -128,12 +125,9 @@ async function handleTokenExpiration() {
 		auth.logout()
 	} catch {}
 	try {
-		const toast = useToast()
-		toast.add({
-			title: 'Session expired',
-			description: 'Your session has expired. Please log in again.',
-			color: 'amber'
-		})
+		const { useNotificationStore } = await import('@/stores/notification')
+		const notification = useNotificationStore()
+		notification.warning('Session expired', 'Please log in again.', 5000)
 	} catch {}
 	try { 
 		await navigateTo('/login') 

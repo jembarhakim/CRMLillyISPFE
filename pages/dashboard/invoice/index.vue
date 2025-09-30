@@ -749,7 +749,7 @@ async function printAllUnpaidInvoices() {
     <template #status-data="{ row }">
       <div class="space-y-1">
         <!-- Status Badge -->
-        <div v-if="row.status === 'pending'">
+        <div v-if="row.status === 'pending'" class="flex items-center gap-2">
           <button
             @click="openPartialPaymentModal(row)"
             class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition-colors cursor-pointer"
@@ -760,6 +760,14 @@ async function printAllUnpaidInvoices() {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
             </svg>
           </button>
+          <UButton size="xs" color="green" variant="soft"
+            @click="updateStatus(row.id, 'paid', row.status)">
+            Mark Paid
+          </UButton>
+          <UButton size="xs" color="gray" variant="outline"
+            @click="updateStatus(row.id, 'unpaid', row.status)">
+            Mark Unpaid
+          </UButton>
         </div>
         <div v-else-if="row.status === 'paid'">
           <!-- Show as disabled badge for paid status -->
@@ -770,21 +778,15 @@ async function printAllUnpaidInvoices() {
             {{ row.status }}
           </span>
         </div>
-        <div v-else>
-          <USelectMenu
-            :model-value="row.status"
-            :options="[
-              { label: 'Pending', value: 'pending' },
-              { label: 'Paid', value: 'paid' },
-              { label: 'Unpaid', value: 'unpaid' },
-            ]"
-            @update:model-value="(newStatus) => {
-              const originalStatus = row.status;
-              updateStatus(row.id, newStatus, originalStatus);
-            }"
-            value-attribute="value"
-            option-attribute="label"
-          />
+        <div v-else-if="row.status === 'unpaid'" class="flex items-center gap-2">
+          <UButton size="xs" color="green" variant="soft"
+            @click="updateStatus(row.id, 'paid', row.status)">
+            Mark Paid
+          </UButton>
+          <UButton size="xs" color="yellow" variant="soft"
+            @click="updateStatus(row.id, 'pending', row.status)">
+            Mark Pending
+          </UButton>
         </div>
         
         <!-- PDF Viewed Indicator -->

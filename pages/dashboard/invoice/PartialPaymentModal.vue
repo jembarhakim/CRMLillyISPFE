@@ -70,6 +70,21 @@
               </p>
             </div>
 
+            <!-- Optional reason -->
+            <div class="mb-4">
+              <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">
+                Reason (optional)
+              </label>
+              <textarea
+                id="reason"
+                v-model="reason"
+                rows="3"
+                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                placeholder="Add a note or customer reason"
+              />
+              <p class="mt-1 text-xs text-gray-500">This note will be sent with the payment.</p>
+            </div>
+
             <!-- Error Message -->
             <div v-if="errorMessage" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
               <p class="text-sm text-red-600">{{ errorMessage }}</p>
@@ -120,6 +135,7 @@ const props = defineProps<Props>()
 const emit = defineEmits(['close', 'success'])
 
 const paymentAmount = ref<number>()
+const reason = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
 
@@ -149,7 +165,7 @@ const submitPayment = async () => {
   errorMessage.value = ''
 
   try {
-    await invoiceAdminApi().processPartialPayment(props.invoice.id, paymentAmount.value)
+    await invoiceAdminApi().processPartialPayment(props.invoice.id, paymentAmount.value, reason.value || undefined)
     
     // success kept silent here; parent refreshes and can notify if needed
     

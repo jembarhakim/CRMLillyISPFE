@@ -167,8 +167,12 @@ function calculateNextInvoiceDate() {
   if (!state.invoice_date) return;
 
   const invoiceDate = new Date(state.invoice_date);
-  const day = invoiceDate.getDate();
-  const preferred = day >= 30 ? 31 : day;
+  // Always preserve the original day as preferred, even if it's 31
+  const originalDay = invoiceDate.getDate();
+  
+  // For end-of-month behavior: if the source day is near the month end (>=30),
+  // request day 31 so clampToMonth yields the last valid day of the target month
+  const preferredDay = originalDay >= 30 ? 31 : originalDay;
 
   let monthsToAdd = 1;
   switch (state.frequency) {
@@ -180,12 +184,20 @@ function calculateNextInvoiceDate() {
       monthsToAdd = 1;
   }
 
-  const nextDate = clampToMonth(invoiceDate, monthsToAdd, preferred);
+  const nextDate = clampToMonth(invoiceDate, monthsToAdd, preferredDay);
   return nextDate.toISOString().split('T')[0];
+}
+
+function calculateDueDate() {
+  // Due date should be the same as the next invoice date
+  return calculateNextInvoiceDate();
 }
 
 // Watch for changes to calculate next invoice date
 const nextInvoiceDate = computed(() => calculateNextInvoiceDate());
+
+// Watch for changes to calculate due date (same as next invoice date)
+const calculatedDueDate = computed(() => calculateDueDate());
 
 // Watch for customer selection changes to auto-populate invoice items
 watch(
@@ -193,6 +205,16 @@ watch(
   (newCustomerId) => {
     if (newCustomerId && !props.isEdit) {
       populateInvoiceItemsFromNetworkDevices(newCustomerId);
+    }
+  }
+);
+
+// Watch for invoice date and frequency changes to auto-populate due date
+watch(
+  [() => state.invoice_date, () => state.frequency],
+  () => {
+    if (state.invoice_date && !props.isEdit) {
+      state.due_date = calculatedDueDate.value || '';
     }
   }
 );
@@ -302,7 +324,13 @@ onMounted(() => {
               v-model="state.due_date" 
               type="date"
               placeholder="Select due date..."
+              :disabled="!props.isEdit"
             />
+            <template #help>
+              <span v-if="!props.isEdit" class="text-sm text-blue-600">
+                Automatically set to the same as the next invoice date
+              </span>
+            </template>
           </UFormGroup>
 
           <UFormGroup label="Frequency" name="frequency" required>
