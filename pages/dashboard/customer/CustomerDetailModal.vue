@@ -1,22 +1,25 @@
 <template>
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[95vh] overflow-y-auto m-4">
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
       <!-- Header -->
-      <div class="flex justify-between items-center p-6 border-b border-gray-200">
-        <div class="flex items-center gap-6">
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 sm:p-6 border-b border-gray-200">
+        <div class="flex items-center gap-4 mb-4 sm:mb-0">
           <div class="relative">
-            <div class="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center">
-              <span class="text-white text-3xl font-bold">
+            <div class="w-16 h-16 sm:w-20 sm:h-20 bg-orange-500 rounded-full flex items-center justify-center">
+              <span class="text-white text-2xl sm:text-3xl font-bold">
                 {{ customerDetail?.customer?.name?.charAt(0) || 'C' }}
               </span>
             </div>
-            <div class="absolute -bottom-2 -left-2 bg-black text-white px-2 py-1 text-xs font-medium rounded">
+            <div class="absolute -bottom-1 -left-1 sm:-bottom-2 sm:-left-2 bg-black text-white px-2 py-1 text-xs font-medium rounded">
               {{ customerDetail?.customer?.name || 'Customer' }}
             </div>
           </div>
-          <div>
-            <p class="text-sm text-gray-600">{{ customerDetail?.customer?.phone || 'No phone' }}</p>
-            <p class="text-xs text-gray-400">Customer ID: {{ props.customerId }}</p>
+          <div class="flex-1 min-w-0">
+            <h2 class="text-lg sm:text-xl font-semibold text-gray-900 truncate">
+              {{ customerDetail?.customer?.name || 'Customer' }}
+            </h2>
+            <p class="text-sm text-gray-600 truncate">{{ customerDetail?.customer?.phone || 'No phone' }}</p>
+            <p class="text-xs text-gray-400">ID: {{ props.customerId }}</p>
           </div>
         </div>
         <UButton
@@ -24,6 +27,7 @@
           variant="ghost"
           icon="i-heroicons-x-mark-20-solid"
           @click="$emit('close')"
+          class="absolute top-4 right-4 sm:relative sm:top-0 sm:right-0"
         />
       </div>
 
@@ -39,9 +43,32 @@
       </div>
 
       <!-- Navigation Tabs -->
-      <div v-else-if="customerDetail" class="flex">
-        <!-- Vertical Tab Navigation -->
-        <div class="w-64 bg-gray-50 border-r border-gray-200 p-4">
+      <div v-else-if="customerDetail" class="flex flex-col lg:flex-row flex-1 overflow-hidden">
+        <!-- Mobile Tab Navigation -->
+        <div class="lg:hidden border-b border-gray-200 bg-gray-50">
+          <div class="flex overflow-x-auto">
+            <button
+              v-for="tab in mobileTabs"
+              :key="tab.id"
+              @click="activeTab = tab.id"
+              :class="[
+                activeTab === tab.id
+                  ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-500'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
+                'flex-shrink-0 px-4 py-3 font-medium text-sm flex items-center gap-2 transition-colors'
+              ]"
+            >
+              <UIcon :name="tab.icon" class="w-4 h-4" />
+              <span>{{ tab.name }}</span>
+              <span v-if="tab.count !== undefined" class="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-full">
+                {{ tab.count }}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Desktop Vertical Tab Navigation -->
+        <div class="hidden lg:block w-64 bg-gray-50 border-r border-gray-200 p-4">
           <nav class="space-y-2" aria-label="Tabs">
             <button
               v-for="tab in tabs"
@@ -64,13 +91,13 @@
         </div>
 
         <!-- Content Area -->
-        <div class="flex-1 p-6">
+        <div class="flex-1 overflow-y-auto p-4 sm:p-6">
         <!-- Summary Tab -->
         <div v-if="activeTab === 'summary'" class="space-y-6">
           <!-- Contact Information -->
-          <div class="bg-white border border-gray-200 rounded-lg p-6">
+          <div class="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Full Name</label>
               <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.name }}</p>
@@ -78,10 +105,6 @@
               <div>
                 <label class="block text-sm font-medium text-gray-700">Company Name</label>
                 <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.company?.name || 'N/A' }}</p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Email</label>
-              <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.email || 'N/A' }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Phone</label>
@@ -116,6 +139,15 @@
                 <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.area?.name_city || 'N/A' }}</p>
               </div>
               <div>
+                <label class="block text-sm font-medium text-gray-700">Area Code</label>
+                <p class="mt-1">
+                  <span v-if="customerDetail.customer.area?.code_name" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {{ customerDetail.customer.area.code_name }}
+                  </span>
+                  <span v-else class="text-sm text-gray-500">No code assigned</span>
+                </p>
+              </div>
+              <div>
                 <label class="block text-sm font-medium text-gray-700">Location</label>
                 <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.latitude }}, {{ customerDetail.customer.longitude }}</p>
               </div>
@@ -123,23 +155,61 @@
           </div>
 
           <!-- Auto Login URL -->
-          <div class="bg-white border border-gray-200 rounded-lg p-6">
+          <div class="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Auto Login URL</h3>
-            <div class="space-y-3">
-              <div class="bg-gray-50 p-3 rounded-lg">
-                <p class="text-sm text-gray-600 break-all">
+            <div class="space-y-4">
+              <!-- URL Display -->
+              <div class="bg-gray-50 p-3 rounded-lg overflow-hidden">
+                <p class="text-xs sm:text-sm text-gray-600 break-all font-mono leading-relaxed">
                   {{ autoLoginUrl }}
                 </p>
               </div>
-              <div class="flex gap-2">
-                <UButton size="sm" color="blue" variant="outline" @click="loginAsCustomer">
+              
+              <!-- Action Buttons - Mobile Stacked, Desktop Horizontal -->
+              <div class="flex flex-col sm:flex-row gap-2 sm:gap-2">
+                <UButton 
+                  size="sm" 
+                  color="blue" 
+                  variant="outline" 
+                  @click="loginAsCustomer"
+                  class="w-full sm:w-auto flex-shrink-0"
+                >
+                  <UIcon name="i-heroicons-arrow-right-on-rectangle" class="w-4 h-4 mr-2" />
                   Login As Customer
                 </UButton>
-                <UButton size="sm" color="red" variant="outline" @click="revokeAutoLogin">
+                <UButton 
+                  size="sm" 
+                  color="red" 
+                  variant="outline" 
+                  @click="revokeAutoLogin"
+                  class="w-full sm:w-auto flex-shrink-0"
+                >
+                  <UIcon name="i-heroicons-x-mark" class="w-4 h-4 mr-2" />
                   Revoke Auto Login
                 </UButton>
-                <UButton size="sm" color="gray" variant="outline" @click="regenerateUrl">
-                  Re Generate URL
+                <UButton 
+                  size="sm" 
+                  color="gray" 
+                  variant="outline" 
+                  @click="regenerateUrl"
+                  class="w-full sm:w-auto flex-shrink-0"
+                >
+                  <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2" />
+                  Regenerate URL
+                </UButton>
+              </div>
+              
+              <!-- Copy URL Button for Mobile -->
+              <div class="block sm:hidden">
+                <UButton 
+                  size="sm" 
+                  color="green" 
+                  variant="outline" 
+                  @click="copyAutoLoginUrlToClipboard"
+                  class="w-full"
+                >
+                  <UIcon name="i-heroicons-clipboard-document" class="w-4 h-4 mr-2" />
+                  Copy URL
                 </UButton>
               </div>
             </div>
@@ -558,15 +628,6 @@
           </div>
         </div>
 
-        <!-- Email Tab -->
-        <div v-if="activeTab === 'email'" class="space-y-6">
-          <div class="bg-white border border-gray-200 rounded-lg p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Email History</h3>
-            <div class="text-center text-gray-500 py-8">
-              No email history found
-            </div>
-          </div>
-        </div>
 
         <!-- Edit Tab -->
         <div v-if="activeTab === 'edit'" class="space-y-6">
@@ -577,10 +638,6 @@
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                   <UInput v-model="editForm.name" placeholder="Enter full name" />
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <UInput v-model="editForm.email" type="email" placeholder="Enter email" />
                 </div>
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
@@ -610,7 +667,7 @@
         <!-- Location Information -->
         <div class="bg-blue-50 rounded-lg p-4">
           <h3 class="text-lg font-medium text-gray-900 mb-4">Location & Area</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700">Area</label>
               <p class="mt-1 text-sm text-gray-900">
@@ -620,16 +677,21 @@
               </p>
             </div>
             <div>
+              <label class="block text-sm font-medium text-gray-700">Area Code</label>
+              <p class="mt-1">
+                <span v-if="customerDetail.customer.area?.code_name" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  {{ customerDetail.customer.area.code_name }}
+                </span>
+                <span v-else class="text-sm text-gray-500">No code assigned</span>
+              </p>
+            </div>
+            <div>
               <label class="block text-sm font-medium text-gray-700">Company</label>
               <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.company?.name }}</p>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700">Latitude</label>
-              <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.latitude }}</p>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Longitude</label>
-              <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.longitude }}</p>
+              <label class="block text-sm font-medium text-gray-700">Coordinates</label>
+              <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.latitude }}, {{ customerDetail.customer.longitude }}</p>
             </div>
           </div>
         </div>
@@ -637,7 +699,7 @@
         <!-- Network Information -->
         <div class="bg-green-50 rounded-lg p-4">
           <h3 class="text-lg font-medium text-gray-900 mb-4">Network Information</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700">Internet Package</label>
               <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.product?.name }}</p>
@@ -678,7 +740,7 @@
         <!-- Connection Status -->
         <div class="bg-blue-50 rounded-lg p-4">
           <h3 class="text-lg font-medium text-gray-900 mb-4">Connection Status</h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <!-- Overall Status -->
             <div class="text-center">
               <div 
@@ -778,7 +840,7 @@
                   </span>
                 </div>
               </div>
-              <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <label class="block text-xs font-medium text-gray-700">IP Static</label>
                   <p class="text-sm text-gray-900">{{ device.ip_static || 'N/A' }}</p>
@@ -921,7 +983,16 @@ const tabs = computed(() => [
   { id: 'orders', name: 'Orders', icon: 'i-heroicons-shopping-bag' },
   { id: 'files', name: 'Files', icon: 'i-heroicons-document' },
   { id: 'transactions', name: 'Transactions', icon: 'i-heroicons-currency-dollar' },
-  { id: 'email', name: 'Email', icon: 'i-heroicons-envelope' },
+  { id: 'edit', name: 'Edit', icon: 'i-heroicons-pencil-square' }
+])
+
+// Mobile tab configuration (shorter names for mobile)
+const mobileTabs = computed(() => [
+  { id: 'summary', name: 'Summary', icon: 'i-heroicons-chart-bar' },
+  { id: 'connection', name: 'Connection', icon: 'i-heroicons-signal' },
+  { id: 'activity', name: 'Activity', icon: 'i-heroicons-clock' },
+  { id: 'invoices', name: 'Invoices', icon: 'i-heroicons-document-text', count: customerInvoices.value.length },
+  { id: 'tickets', name: 'Tickets', icon: 'i-heroicons-exclamation-triangle', count: customerTickets.value.length },
   { id: 'edit', name: 'Edit', icon: 'i-heroicons-pencil-square' }
 ])
 
@@ -935,13 +1006,11 @@ const recentActivity = ref([
 // Edit form data
 const editForm = ref<{
   name: string
-  email: string
   phone: string
   company: string
   address: string
 }>({
   name: '',
-  email: '',
   phone: '',
   company: '',
   address: ''
@@ -1017,6 +1086,26 @@ const regenerateUrl = () => {
   })
 }
 
+const copyAutoLoginUrlToClipboard = async () => {
+  if (!autoLoginUrl.value) return
+  
+  try {
+    await navigator.clipboard.writeText(autoLoginUrl.value)
+    useToast().add({
+      title: 'URL Copied',
+      description: 'Auto login URL copied to clipboard',
+      color: 'green'
+    })
+  } catch (error) {
+    console.error('Failed to copy URL:', error)
+    useToast().add({
+      title: 'Error',
+      description: 'Failed to copy URL to clipboard',
+      color: 'red'
+    })
+  }
+}
+
 // Edit form methods
 const saveCustomer = async () => {
   try {
@@ -1040,7 +1129,6 @@ const resetEditForm = () => {
   if (customerDetail.value?.customer) {
     editForm.value = {
       name: customerDetail.value.customer.name || '',
-      email: customerDetail.value.customer.email || '',
       phone: customerDetail.value.customer.phone || '',
       company: customerDetail.value.customer.company?.name || '',
       address: customerDetail.value.customer.address || ''
@@ -1308,7 +1396,6 @@ watch(customerDetail, (newDetail) => {
   if (newDetail?.customer) {
     editForm.value = {
       name: newDetail.customer.name || '',
-      email: newDetail.customer.email || '',
       phone: newDetail.customer.phone || '',
       company: newDetail.customer.company?.name || '',
       address: newDetail.customer.address || ''

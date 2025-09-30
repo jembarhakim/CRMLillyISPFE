@@ -747,12 +747,12 @@ async function printAllUnpaidInvoices() {
       }">{{ currency.formatIDR(getAmountDue(row)) }}</p>
     </template>
     <template #status-data="{ row }">
-      <div class="space-y-1">
+      <div class="space-y-2">
         <!-- Status Badge -->
-        <div v-if="row.status === 'pending'" class="flex items-center gap-2">
+        <div v-if="row.status === 'pending'" class="space-y-2">
           <button
             @click="openPartialPaymentModal(row)"
-            class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition-colors cursor-pointer"
+            class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition-colors cursor-pointer w-full justify-center"
             title="Click to make partial payment"
           >
             {{ row.status }}
@@ -760,37 +760,43 @@ async function printAllUnpaidInvoices() {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
             </svg>
           </button>
-          <UButton size="xs" color="green" variant="soft"
-            @click="updateStatus(row.id, 'paid', row.status)">
-            Mark Paid
-          </UButton>
-          <UButton size="xs" color="gray" variant="outline"
-            @click="updateStatus(row.id, 'unpaid', row.status)">
-            Mark Unpaid
-          </UButton>
+          <!-- Mobile-friendly stacked buttons -->
+          <div class="flex flex-col space-y-1 sm:flex-row sm:space-y-0 sm:space-x-1">
+            <UButton size="xs" color="green" variant="soft" class="w-full sm:w-auto"
+              @click="updateStatus(row.id, 'paid', row.status)">
+              Mark Paid
+            </UButton>
+            <UButton size="xs" color="gray" variant="outline" class="w-full sm:w-auto"
+              @click="updateStatus(row.id, 'unpaid', row.status)">
+              Mark Unpaid
+            </UButton>
+          </div>
         </div>
         <div v-else-if="row.status === 'paid'">
           <!-- Show as disabled badge for paid status -->
-          <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 cursor-not-allowed">
+          <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 cursor-not-allowed w-full justify-center">
             <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
             </svg>
             {{ row.status }}
           </span>
         </div>
-        <div v-else-if="row.status === 'unpaid'" class="flex items-center gap-2">
-          <UButton size="xs" color="green" variant="soft"
-            @click="updateStatus(row.id, 'paid', row.status)">
-            Mark Paid
-          </UButton>
-          <UButton size="xs" color="yellow" variant="soft"
-            @click="updateStatus(row.id, 'pending', row.status)">
-            Mark Pending
-          </UButton>
+        <div v-else-if="row.status === 'unpaid'" class="space-y-2">
+          <!-- Mobile-friendly stacked buttons -->
+          <div class="flex flex-col space-y-1 sm:flex-row sm:space-y-0 sm:space-x-1">
+            <UButton size="xs" color="green" variant="soft" class="w-full sm:w-auto"
+              @click="updateStatus(row.id, 'paid', row.status)">
+              Mark Paid
+            </UButton>
+            <UButton size="xs" color="yellow" variant="soft" class="w-full sm:w-auto"
+              @click="updateStatus(row.id, 'pending', row.status)">
+              Mark Pending
+            </UButton>
+          </div>
         </div>
         
         <!-- PDF Viewed Indicator -->
-        <div v-if="isPdfViewed(row.id)" class="flex items-center text-xs text-red-600">
+        <div v-if="isPdfViewed(row.id)" class="flex items-center text-xs text-red-600 justify-center">
           <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"></path>
           </svg>

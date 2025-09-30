@@ -3,6 +3,9 @@ import { object, string, type InferType } from "yup";
 import type { FormSubmitEvent } from "#ui/types";
 import { userManagementAdminApi } from "@/api/admin/user-management";
 import { customerAdminApi } from "@/api/admin/customer";
+import { useNotificationStore } from "@/stores/notification";
+
+const notification = useNotificationStore();
 
 const props = defineProps({
   isEdit: {
@@ -139,15 +142,37 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       formData.append('document_photo', state.document_photo);
     }
 
+    // Validate IP address format before submitting
+    if (state.ip_static && state.ip_static.trim() !== '') {
+      const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+      if (!ipRegex.test(state.ip_static.trim())) {
+        notification.error('Invalid IP Address', 'Please enter a valid IP address format (e.g., 192.168.1.1)');
+        return;
+      }
+    }
+
     // Submit using the new API endpoint
     const response = await customerAdminApi().createReportInstallation(formData);
     
     console.log("Success creating installation report", response);
+    
+    // Show success notification
+    notification.success('Success', 'Installation report created successfully');
+    
     onSuccess();
     
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating installation report:", error);
-    // You might want to show an error toast here
+    
+    // Show user-friendly error notification
+    const errorMessage = error.message || 'Failed to create installation report';
+    
+    // Check if it's an IP address format error
+    if (errorMessage.includes('IP address format') || errorMessage.includes('Invalid IP')) {
+      notification.error('Invalid IP Address', 'Please enter a valid IP address format (e.g., 192.168.1.1)');
+    } else {
+      notification.error('Error', errorMessage);
+    }
   } finally {
     state.loading = false;
   }

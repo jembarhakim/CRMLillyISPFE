@@ -15,7 +15,6 @@ let installationReports = ref<any[]>([])
 type Customer = {
     id: string
     name: string
-    email: string
     phone: string
     address: string
     area_code: string
@@ -81,9 +80,6 @@ const columns = [
     }, {
         key: 'name',
         label: 'Name'
-    }, {
-        key: 'email',
-        label: 'Email'
     }, {
         key: 'phone',
         label: 'Phone'
@@ -216,54 +212,135 @@ function closeDetailModal() {
 
 
 <template>
-
-    <UButton label="Add Customer" @click="OpenModalAddCustomer(false, null)" />
-    <div class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700">
-        <UInput v-model="q" placeholder="Filter customer..." />
+  <div class="space-y-6">
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Customer Management</h1>
+        <p class="text-sm text-gray-600">Manage your customer database</p>
+      </div>
+      <UButton 
+        label="Add Customer" 
+        icon="i-heroicons-plus"
+        @click="OpenModalAddCustomer(false, null)"
+        class="w-full sm:w-auto"
+      />
     </div>
 
-    <div class="table-scroll-container">
-        <div class="table-scroll-content">
-            <UTable :rows="rows" :columns="columns" class="dashboard-table">
-
-                <template #name-data="{ row }">
-                    <div class="flex items-center space-x-2">
-                        <button 
-                            @click="OpenCustomerDetailModal(row.id)"
-                            class="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-                        >
-                            {{ row.name }}
-                        </button>
-                        <span v-if="row.hasInstallationReport" 
-                              class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
-                              title="Has Installation Report">
-                            <UIcon name="i-heroicons-check-circle" class="w-3 h-3 mr-1" />
-                            Report
-                        </span>
-                    </div>
-                </template>
-
-                <template #actions-data="{ row }">
-                    <UDropdown :items="items(row)">
-                        <UButton color="gray" variant="ghost" icon="i-heroicons-ellipsis-horizontal-20-solid" />
-                    </UDropdown>
-                </template>
-            </UTable>
-        </div>
-        <div class="table-scroll-footer">
-          <span class="scroll-hint">↔ Scroll horizontally to see more columns | ↕ Scroll vertically for more rows</span>
-        </div>
+    <!-- Search and Filter -->
+    <div class="flex flex-col sm:flex-row gap-4">
+      <div class="flex-1">
+        <UInput 
+          v-model="q" 
+          placeholder="Search customers by name, email, phone..." 
+          icon="i-heroicons-magnifying-glass"
+          class="w-full"
+        />
+      </div>
     </div>
 
-    <div class="flex justify-end px-3 py-3.5 border-t border-gray-200 dark:border-gray-700">
-        <UPagination v-model="page" :page-count="pageCount" :total="customer.length" />
+    <!-- Mobile Card View -->
+    <div class="block sm:hidden space-y-4">
+      <div 
+        v-for="customer in rows" 
+        :key="customer.id"
+        class="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow"
+      >
+        <!-- Customer Header -->
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex-1">
+            <button 
+              @click="OpenCustomerDetailModal(customer.id)"
+              class="text-lg font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              {{ customer.name }}
+            </button>
+            <div class="flex items-center gap-2 mt-1">
+              <span v-if="customer.hasInstallationReport" 
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <UIcon name="i-heroicons-check-circle" class="w-3 h-3 mr-1" />
+                Report
+              </span>
+            </div>
+          </div>
+          <UDropdown :items="items(customer)">
+            <UButton color="gray" variant="ghost" icon="i-heroicons-ellipsis-horizontal-20-solid" />
+          </UDropdown>
+        </div>
+
+        <!-- Customer Details -->
+        <div class="space-y-2 text-sm">
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-phone" class="w-4 h-4 text-gray-400" />
+            <span class="text-gray-600">{{ customer.phone }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-map-pin" class="w-4 h-4 text-gray-400" />
+            <span class="text-gray-600">{{ customer.address }}</span>
+          </div>
+          <div v-if="customer.area" class="flex items-center gap-2">
+            <UIcon name="i-heroicons-building-office" class="w-4 h-4 text-gray-400" />
+            <span class="text-gray-600">{{ customer.area.name_city }}</span>
+            <span v-if="customer.area.code_name" 
+                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+              {{ customer.area.code_name }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop Table View -->
+    <div class="hidden sm:block">
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <UTable :rows="rows" :columns="columns" class="w-full">
+          <template #name-data="{ row }">
+            <div class="flex items-center space-x-2">
+              <button 
+                @click="OpenCustomerDetailModal(row.id)"
+                class="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+              >
+                {{ row.name }}
+              </button>
+              <span v-if="row.hasInstallationReport" 
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                    title="Has Installation Report">
+                <UIcon name="i-heroicons-check-circle" class="w-3 h-3 mr-1" />
+                Report
+              </span>
+            </div>
+          </template>
+
+
+          <template #area_name-data="{ row }">
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray-600">{{ row.area?.name_city || 'N/A' }}</span>
+              <span v-if="row.area?.code_name" 
+                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                {{ row.area.code_name }}
+              </span>
+            </div>
+          </template>
+
+          <template #actions-data="{ row }">
+            <UDropdown :items="items(row)">
+              <UButton color="gray" variant="ghost" icon="i-heroicons-ellipsis-horizontal-20-solid" />
+            </UDropdown>
+          </template>
+        </UTable>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex justify-center sm:justify-end">
+      <UPagination v-model="page" :page-count="pageCount" :total="customer.length" />
     </div>
 
     <!-- Customer Detail Modal -->
     <CustomerDetailModal 
-        v-if="showDetailModal && selectedCustomerId" 
-        :customer-id="selectedCustomerId" 
-        @close="closeDetailModal" 
+      v-if="showDetailModal && selectedCustomerId" 
+      :customer-id="selectedCustomerId" 
+      @close="closeDetailModal" 
     />
-
+  </div>
 </template>
