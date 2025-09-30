@@ -6,6 +6,7 @@ import { areaAdminApi } from "@/api/admin/area";
 import { internetPackageAdminApi } from "@/api/admin/internet-package";
 import { networkDeviceAdminApi } from "@/api/admin/network-device";
 import { userManagementAdminApi } from "@/api/admin/user-management";
+import { companyAdminApi } from "@/api/admin/company";
 import { useNotification } from '@/composables/useNotification';
 
 const props = defineProps({
@@ -21,10 +22,6 @@ const props = defineProps({
         default: "",
       },
       type_of_service: {
-        type: String,
-        default: ""
-      },
-      email: {
         type: String,
         default: ""
       },
@@ -98,8 +95,8 @@ const schema = object({
   longitude: string().required(),
   service_request_date: string().required(),
   proposed_package: string().required(),
-  bandwidth_capacity: string().required(),
   sales_representative_id: string().optional(),
+  company_id: string().optional(),
 });
 
 type Schema = InferType<typeof schema>;
@@ -116,8 +113,8 @@ const state = reactive({
   longitude: 0,
   service_request_date: "",
   proposed_package: "",
-  bandwidth_capacity: "",
   sales_representative_id: "",
+  company_id: "",
 });
 
 const networkDeviceState = reactive({
@@ -140,8 +137,8 @@ watch(
         state.longitude = props.data.longitude,
         state.service_request_date = props.data.service_request_date || "",
         state.proposed_package = props.data.proposed_package || "",
-        state.bandwidth_capacity = props.data.bandwidth_capacity || "",
-        state.sales_representative_id = props.data.sales_representative_id || ""
+        state.sales_representative_id = props.data.sales_representative_id || "",
+        state.company_id = props.data.company_id || ""
       
       // Load existing network device data if available
       try {
@@ -282,9 +279,10 @@ async function moveToMyLocation() {
 }
 
 
-const internet_packages = ref([]);
-const areas = ref([]);
-const salesRepresentatives = ref([]);
+const internet_packages = ref<{label: string, value: string}[]>([]);
+const areas = ref<{label: string, value: string}[]>([]);
+const salesRepresentatives = ref<{label: string, value: string}[]>([]);
+const companies = ref<{label: string, value: string}[]>([]);
 
 async function getDataOptions() {
   internetPackageAdminApi().getAllInternetPacket().then((response) => {
@@ -304,6 +302,14 @@ async function getDataOptions() {
   // Get sales representatives (users with specific role)
   userManagementAdminApi().getAllUsers({ query: { role: "ADMIN" } }).then((response) => {
     salesRepresentatives.value = response.data.map((value: any, index: number) => ({
+      label: value.name,
+      value: value.id
+    }))
+  })
+
+  // Get companies
+  companyAdminApi().getAllCompanies().then((response) => {
+    companies.value = response.data.map((value: any, index: number) => ({
       label: value.name,
       value: value.id
     }))
@@ -347,9 +353,6 @@ await getDataOptions()
               <USelectMenu v-model="state.proposed_package" :options="internet_packages" value-attribute="value"
                 option-attribute="label" placeholder="Pilih paket internet" />
             </UFormGroup>
-            <UFormGroup label="Kapasitas" name="bandwidth_capacity">
-              <UInput v-model="state.bandwidth_capacity" placeholder="Contoh: 100 Mbps" />
-            </UFormGroup>
             <UFormGroup label="Sales Representative" name="sales_representative_id">
               <USelectMenu 
                 v-model="state.sales_representative_id" 
@@ -357,6 +360,15 @@ await getDataOptions()
                 value-attribute="value"
                 option-attribute="label"
                 placeholder="Pilih sales representative"
+              />
+            </UFormGroup>
+            <UFormGroup label="Company" name="company_id">
+              <USelectMenu 
+                v-model="state.company_id" 
+                :options="companies" 
+                value-attribute="value"
+                option-attribute="label"
+                placeholder="Pilih company (optional)"
               />
             </UFormGroup>
           </div>

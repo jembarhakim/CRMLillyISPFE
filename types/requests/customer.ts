@@ -8,8 +8,8 @@ export type CreateCustomerRequest = {
   longitude: Number
   service_request_date: String
   proposed_package: String
-  bandwidth_capacity: String
   sales_representative_id?: String
+  company_id?: String
 }
 
 export type Customer = {
@@ -23,8 +23,8 @@ export type Customer = {
   longitude: number
   service_request_date?: string
   proposed_package?: string
-  bandwidth_capacity?: string
   sales_representative_id?: string
+  company_id?: string
   created_at?: string
   updated_at?: string
 }
