@@ -254,6 +254,21 @@ export const customerAdminApi = () => {
       return response.json();
     },
 
+    getInstallationReportCompleteByView: async (installationId: string) => {
+      const response = await fetch(`${api}/api/admin/customer-installation/report/complete-view/${installationId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch installation report');
+      }
+      return response.json();
+    },
+
     // Check if customer has existing installation report
     checkCustomerInstallationReport: async (customerId: string) => {
       try {

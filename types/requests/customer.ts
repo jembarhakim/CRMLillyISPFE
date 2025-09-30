@@ -12,6 +12,23 @@ export type CreateCustomerRequest = {
   sales_representative_id?: String
 }
 
+export type Customer = {
+  id: string
+  name: string
+  alias?: string
+  address: string
+  area_id: string
+  phone: string
+  latitude: number
+  longitude: number
+  service_request_date?: string
+  proposed_package?: string
+  bandwidth_capacity?: string
+  sales_representative_id?: string
+  created_at?: string
+  updated_at?: string
+}
+
 export type UpdateCustomerRequest = {
   name?: String
   email?: String

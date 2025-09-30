@@ -162,7 +162,16 @@
                 Status
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                On Air Date
+                Tgl. Permintaan PSB
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Tgl. Selesai Instalasi
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Durasi PSB
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status PSB
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Assets
@@ -174,14 +183,14 @@
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-if="loading" class="text-center">
-              <td colspan="7" class="px-6 py-4">
+              <td colspan="10" class="px-6 py-4">
                 <div class="flex justify-center">
                   <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl" />
                 </div>
               </td>
             </tr>
             <tr v-else-if="filteredReports.length === 0" class="text-center">
-              <td colspan="7" class="px-6 py-4 text-gray-500">
+              <td colspan="10" class="px-6 py-4 text-gray-500">
                 No installation reports found
               </td>
             </tr>
@@ -209,7 +218,24 @@
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ formatDate(report.on_air_date) }}
+                {{ formatDate(report.tgl_permintaan_psb) }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {{ formatDate(report.installation_completed_at) }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <span v-if="report.durasi_psb !== null && report.durasi_psb !== undefined" class="font-medium">
+                  {{ report.durasi_psb }} hari
+                </span>
+                <span v-else class="text-gray-400">-</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span v-if="report.status_psb" 
+                      :class="report.status_psb === 'Tepat Waktu' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                      class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
+                  {{ report.status_psb }}
+                </span>
+                <span v-else class="text-gray-400">-</span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm text-gray-900">{{ report.router_brand || '-' }} {{ report.router_model || '' }}</div>

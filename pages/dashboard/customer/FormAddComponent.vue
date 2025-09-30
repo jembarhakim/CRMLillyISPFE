@@ -186,15 +186,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
               mac_address: device.mac_address || "",
               status_perangkat: device.status_perangkat || "active",
               last_ping_status: device.last_ping_status || "unknown",
-              product_id: networkDeviceState.product_id || device.product_id || ""
+              product_id: state.proposed_package || networkDeviceState.product_id || device.product_id || "",
+              assets_id: networkDeviceState.assets_id || device.assets_id || null
             };
-            
-            // Only add assets_id if it has a value
-            if (networkDeviceState.assets_id) {
-              networkDeviceData.assets_id = networkDeviceState.assets_id;
-            } else if (device.assets_id) {
-              networkDeviceData.assets_id = device.assets_id;
-            }
             await networkDeviceAdminApi().editNetworkDevice(device.id, networkDeviceData);
           } else {
             // Create new network device
@@ -204,13 +198,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
               mac_address: "",
               status_perangkat: "active",
               last_ping_status: "unknown",
-              product_id: networkDeviceState.product_id || ""
+              product_id: state.proposed_package || networkDeviceState.product_id || "",
+              assets_id: networkDeviceState.assets_id || null
             };
-            
-            // Only add assets_id if it has a value
-            if (networkDeviceState.assets_id) {
-              networkDeviceData.assets_id = networkDeviceState.assets_id;
-            }
             await networkDeviceAdminApi().createNetworkDevice(networkDeviceData);
           }
         } catch (networkError: any) {
@@ -229,21 +219,17 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       // Create customer first
       const customerResponse = await customerAdminApi().createCustomer(state);
       
-      // If customer creation is successful and network device data is provided, create network device
-      if (customerResponse.success && (networkDeviceState.assets_id || networkDeviceState.product_id)) {
+      // If customer creation is successful, create network device with product information
+      if (customerResponse.success) {
         const networkDeviceData: any = {
           customer_id: customerResponse.data.id,
           ip_static: "",
           mac_address: "",
           status_perangkat: "active",
           last_ping_status: "unknown",
-          product_id: networkDeviceState.product_id || ""
+          product_id: state.proposed_package || networkDeviceState.product_id || "", // Use proposed_package as product_id
+          assets_id: networkDeviceState.assets_id || null // Set to null if empty to avoid foreign key constraint
         };
-        
-        // Only add assets_id if it has a value
-        if (networkDeviceState.assets_id) {
-          networkDeviceData.assets_id = networkDeviceState.assets_id;
-        }
         
         await networkDeviceAdminApi().createNetworkDevice(networkDeviceData);
       }

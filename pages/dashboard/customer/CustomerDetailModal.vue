@@ -341,7 +341,7 @@
                     </span>
                   </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <label class="block text-xs font-medium text-gray-700">IP Address</label>
                     <p class="text-sm text-gray-900">{{ device.ip_static || 'N/A' }}</p>
@@ -349,6 +349,10 @@
                   <div>
                     <label class="block text-xs font-medium text-gray-700">MAC Address</label>
                     <p class="text-sm text-gray-900">{{ device.mac_address || 'N/A' }}</p>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700">Internet Package</label>
+                    <p class="text-sm text-gray-900">{{ device.product?.name || 'No package' }}</p>
                   </div>
                   <div>
                     <label class="block text-xs font-medium text-gray-700">Last Ping</label>
@@ -640,11 +644,11 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700">Internet Package</label>
-              <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.product?.name }}</p>
+              <p class="mt-1 text-sm text-gray-900">{{ getCustomerProductInfo().name || 'No package assigned' }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">Package Price</label>
-              <p class="mt-1 text-sm text-gray-900">{{ formatIDR(customerDetail.customer.product?.price || 0) }}</p>
+              <p class="mt-1 text-sm text-gray-900">{{ formatIDR(getCustomerProductInfo().price || 0) }}</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700">IP Static</label>
@@ -778,7 +782,7 @@
                   </span>
                 </div>
               </div>
-              <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
                   <label class="block text-xs font-medium text-gray-700">IP Static</label>
                   <p class="text-sm text-gray-900">{{ device.ip_static || 'N/A' }}</p>
@@ -786,6 +790,10 @@
                 <div>
                   <label class="block text-xs font-medium text-gray-700">MAC Address</label>
                   <p class="text-sm text-gray-900">{{ device.mac_address || 'N/A' }}</p>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-700">Internet Package</label>
+                  <p class="text-sm text-gray-900">{{ device.product?.name || 'No package' }}</p>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-700">Device Status</label>
@@ -909,6 +917,25 @@ const activeTab = ref('summary')
 
 // Connection control state
 const isConnecting = ref(false)
+
+// Get customer product information from network devices
+const getCustomerProductInfo = () => {
+  if (!customerDetail.value?.network_devices || customerDetail.value.network_devices.length === 0) {
+    return { name: null, price: 0 }
+  }
+  
+  // Get the first network device with a product (most customers have one primary product)
+  const deviceWithProduct = customerDetail.value.network_devices.find((device: any) => device.product)
+  
+  if (deviceWithProduct?.product) {
+    return {
+      name: deviceWithProduct.product.name,
+      price: deviceWithProduct.product.price || 0
+    }
+  }
+  
+  return { name: null, price: 0 }
+}
 
 // Tab configuration
 const tabs = computed(() => [

@@ -62,10 +62,13 @@
                   <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tgl. Permintaan PSB</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Installations</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pending</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Latest On Air</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Durasi PSB</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tepat Waktu</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Terlambat</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
@@ -77,6 +80,9 @@
                     </td>
                     <td class="px-6 py-4">
                       <div class="text-sm text-gray-900">{{ summary.customer_address }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {{ summary.tgl_permintaan_psb ? formatDate(summary.tgl_permintaan_psb) : '-' }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -94,7 +100,20 @@
                       </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {{ summary.latest_on_air_date ? formatDate(summary.latest_on_air_date) : '-' }}
+                      <span v-if="summary.avg_durasi_psb !== null && summary.avg_durasi_psb !== undefined" class="font-medium">
+                        {{ Math.round(summary.avg_durasi_psb) }} hari
+                      </span>
+                      <span v-else class="text-gray-400">-</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        {{ summary.tepat_waktu_count || 0 }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        {{ summary.terlambat_count || 0 }}
+                      </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <UButton @click="viewCustomerDetails(summary.customer_id)" size="sm" color="blue" variant="outline">

@@ -149,6 +149,174 @@
                     <label class="text-sm font-medium text-green-600">Completed At</label>
                     <p class="text-lg text-gray-700">{{ formatDateTime(report.installation_completed_at) }}</p>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PSB Information -->
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6">
+            <h3 class="text-xl font-bold text-white flex items-center">
+              <UIcon name="i-heroicons-calendar-days" class="mr-3 text-xl" />
+              PSB (Pasang Baru) Information
+            </h3>
+          </div>
+          <div class="p-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <!-- PSB Request Date -->
+              <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200">
+                <div class="flex items-center mb-4">
+                  <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mr-3">
+                    <UIcon name="i-heroicons-calendar" class="text-white text-lg" />
+                  </div>
+                  <h4 class="text-lg font-semibold text-purple-800">PSB Request Date</h4>
+                </div>
+                <div>
+                  <p class="text-2xl font-bold text-gray-800">{{ formatDate(report.tgl_permintaan_psb) }}</p>
+                  <p class="text-sm text-purple-600 mt-1">Date when customer requested service</p>
+                </div>
+              </div>
+
+              <!-- Installation Completion Date -->
+              <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-xl border border-indigo-200">
+                <div class="flex items-center mb-4">
+                  <div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center mr-3">
+                    <UIcon name="i-heroicons-check-circle" class="text-white text-lg" />
+                  </div>
+                  <h4 class="text-lg font-semibold text-indigo-800">Installation Completed</h4>
+                </div>
+                <div>
+                  <p class="text-2xl font-bold text-gray-800">{{ formatDate(report.installation_completed_at) }}</p>
+                  <p class="text-sm text-indigo-600 mt-1">Date when installation was completed</p>
+                </div>
+              </div>
+
+              <!-- PSB Duration -->
+              <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-xl border border-emerald-200">
+                <div class="flex items-center mb-4">
+                  <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center mr-3">
+                    <UIcon name="i-heroicons-clock" class="text-white text-lg" />
+                  </div>
+                  <h4 class="text-lg font-semibold text-emerald-800">PSB Duration</h4>
+                </div>
+                <div>
+                  <p class="text-2xl font-bold text-gray-800">
+                    <span v-if="report.durasi_psb !== null && report.durasi_psb !== undefined">
+                      {{ report.durasi_psb }} hari
+                    </span>
+                    <span v-else class="text-gray-400">-</span>
+                  </p>
+                  <p class="text-sm text-emerald-600 mt-1">Days from request to completion</p>
+                </div>
+              </div>
+
+              <!-- PSB Status -->
+              <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl border border-orange-200">
+                <div class="flex items-center mb-4">
+                  <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center mr-3">
+                    <UIcon name="i-heroicons-flag" class="text-white text-lg" />
+                  </div>
+                  <h4 class="text-lg font-semibold text-orange-800">PSB Status</h4>
+                </div>
+                <div>
+                  <span v-if="report.status_psb" 
+                        :class="report.status_psb === 'Tepat Waktu' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                        class="px-3 py-1 rounded-full text-sm font-semibold">
+                    {{ report.status_psb }}
+                  </span>
+                  <span v-else class="text-gray-400 text-sm">-</span>
+                  <p class="text-sm text-orange-600 mt-1">SLA: ≤3 days = Tepat Waktu</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Basic Information -->
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
+            <h3 class="text-xl font-bold text-white flex items-center">
+              <UIcon name="i-heroicons-information-circle" class="mr-3 text-xl" />
+              Basic Installation Information
+            </h3>
+          </div>
+          <div class="p-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <!-- Customer Information -->
+              <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
+                <div class="flex items-center mb-4">
+                  <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
+                    <UIcon name="i-heroicons-user" class="text-white text-lg" />
+                  </div>
+                  <h4 class="text-lg font-semibold text-blue-800">Customer Information</h4>
+                </div>
+                <div class="space-y-3">
+                  <div>
+                    <label class="text-sm font-medium text-blue-600">Customer Name</label>
+                    <p class="text-lg font-semibold text-gray-800">{{ report.customer_name || '-' }}</p>
+                  </div>
+                  <div>
+                    <label class="text-sm font-medium text-blue-600">Phone Number</label>
+                    <p class="text-lg text-gray-700">{{ report.customer_phone || '-' }}</p>
+                  </div>
+                  <div>
+                    <label class="text-sm font-medium text-blue-600">Address</label>
+                    <p class="text-sm text-gray-600 leading-relaxed">{{ report.customer_address || '-' }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Technician Information -->
+              <div class="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
+                <div class="flex items-center mb-4">
+                  <div class="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center mr-3">
+                    <UIcon name="i-heroicons-wrench-screwdriver" class="text-white text-lg" />
+                  </div>
+                  <h4 class="text-lg font-semibold text-amber-800">Technician Information</h4>
+                </div>
+                <div class="space-y-3">
+                  <div>
+                    <label class="text-sm font-medium text-amber-600">Technician Name</label>
+                    <p class="text-lg font-semibold text-gray-800">{{ report.technician_name || '-' }}</p>
+                  </div>
+                  <div>
+                    <label class="text-sm font-medium text-amber-600">Phone Number</label>
+                    <p class="text-lg text-gray-700">{{ report.technician_phone || '-' }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Installation Details -->
+              <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl border border-green-200">
+                <div class="flex items-center mb-4">
+                  <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mr-3">
+                    <UIcon name="i-heroicons-cog-6-tooth" class="text-white text-lg" />
+                  </div>
+                  <h4 class="text-lg font-semibold text-green-800">Installation Details</h4>
+                </div>
+                <div class="space-y-3">
+                  <div>
+                    <label class="text-sm font-medium text-green-600">Installation Type</label>
+                    <p class="text-lg font-semibold text-gray-800">{{ report.installation_type || '-' }}</p>
+                  </div>
+                  <div>
+                    <label class="text-sm font-medium text-green-600">On Air Date</label>
+                    <p class="text-lg text-gray-700">{{ formatDate(report.on_air_date) }}</p>
+                  </div>
+                  <div>
+                    <label class="text-sm font-medium text-green-600">Trial End Date</label>
+                    <p class="text-lg text-gray-700">{{ formatDate(report.trial_end_date) }}</p>
+                  </div>
+                  <div>
+                    <label class="text-sm font-medium text-green-600">Service Ready Date</label>
+                    <p class="text-lg text-gray-700">{{ formatDate(report.service_ready_date) }}</p>
+                  </div>
+                  <div>
+                    <label class="text-sm font-medium text-green-600">Completed At</label>
+                    <p class="text-lg text-gray-700">{{ formatDateTime(report.installation_completed_at) }}</p>
+                  </div>
                   <div>
                     <label class="text-sm font-medium text-green-600">Total Assets</label>
                     <p class="text-lg font-semibold text-gray-800">{{ report.total_assets_out || 0 }} assets</p>
@@ -581,11 +749,9 @@ onMounted(async () => {
 async function loadReport() {
   loading.value = true;
   try {
-    // This would need to be implemented in the API
-    // For now, we'll use a mock response
-    const response = await customerAdminApi().getInstallationReportComplete();
-    const reports = response.data || [];
-    report.value = reports.find((r: any) => r.installation_id === installationId) || null;
+    // Use the new endpoint that returns PSB data
+    const response = await customerAdminApi().getInstallationReportCompleteByView(installationId);
+    report.value = response.data || null;
   } catch (error) {
     console.error("Failed to load report:", error);
     report.value = null;
