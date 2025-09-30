@@ -33,8 +33,11 @@ const dashboardStats = ref<any>({});
 const recentInvoices = ref<any[]>([]);
 const recentTransactions = ref<any[]>([]);
 const recentTickets = ref<any[]>([]);
+const troubleTypeMap = ref<Record<string, string>>({});
 const customerGrowth = ref<any>({});
 const revenueChart = ref<any>({});
+const expensesChart = ref<any>({});
+const unpaidCustomersChart = ref<any>({});
 
 // Modal state for accumulation editing
 const showAccumulationModal = ref(false);
@@ -44,12 +47,57 @@ const newAccumulationValue = ref<string>('');
 // Removed logout confirmation modal state
 
 // Filter variables
-const selectedDateRange = ref<number>(30);
+const selectedDateRange = ref<number>(0); // 0 = All time by default
+// Optional year-range filter (overrides day range when active and both years selected)
+const useYearRange = ref<boolean>(false);
+const yearStart = ref<number | null>(null);
+const yearEnd = ref<number | null>(null);
+
+// Derive available years from incoming datasets
+const availableYears = computed<number[]>(() => {
+  const dates: number[] = [];
+  const pushYears = (arr: any[], accessor: (x: any) => string) => {
+    for (const item of arr) {
+      const d = new Date(accessor(item));
+      if (!isNaN(d.getTime())) {
+        dates.push(d.getFullYear());
+      }
+    }
+  }
+  if (customerGrowth.value?.customer_growth) {
+    pushYears(customerGrowth.value.customer_growth, (x: any) => x.date)
+  }
+  if (revenueChart.value?.revenue_chart) {
+    pushYears(revenueChart.value.revenue_chart, (x: any) => x.date)
+  }
+  const unique = Array.from(new Set(dates));
+  unique.sort((a, b) => b - a);
+  if (unique.length === 0) {
+    const current = new Date().getFullYear();
+    const fallback: number[] = [];
+    for (let y = current; y >= current - 15; y--) fallback.push(y);
+    return fallback;
+  }
+  return unique;
+});
 
 // Computed properties for filtered data
 const filteredCustomerGrowth = computed(() => {
   if (!customerGrowth.value.customer_growth) return [];
-  const days = selectedDateRange.value;
+
+  // If year range mode and both years selected, filter by year interval
+  if (useYearRange.value && yearStart.value !== null && yearEnd.value !== null) {
+    const start = Math.min(yearStart.value, yearEnd.value);
+    const end = Math.max(yearStart.value, yearEnd.value);
+    return customerGrowth.value.customer_growth.filter((item: any) => {
+      const yr = new Date(item.date).getFullYear();
+      return yr >= start && yr <= end;
+    });
+  }
+
+  // Days-based filtering; 0 means all time
+  const days = Number(selectedDateRange.value || 0);
+  if (days <= 0) return customerGrowth.value.customer_growth;
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);
 
@@ -61,7 +109,18 @@ const filteredCustomerGrowth = computed(() => {
 
 const filteredRevenueChart = computed(() => {
   if (!revenueChart.value.revenue_chart) return [];
-  const days = selectedDateRange.value;
+
+  if (useYearRange.value && yearStart.value !== null && yearEnd.value !== null) {
+    const start = Math.min(yearStart.value, yearEnd.value);
+    const end = Math.max(yearStart.value, yearEnd.value);
+    return revenueChart.value.revenue_chart.filter((item: any) => {
+      const yr = new Date(item.date).getFullYear();
+      return yr >= start && yr <= end;
+    });
+  }
+
+  const days = Number(selectedDateRange.value || 0);
+  if (days <= 0) return revenueChart.value.revenue_chart;
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);
 
@@ -71,6 +130,40 @@ const filteredRevenueChart = computed(() => {
   });
 });
 
+const filteredExpensesChart = computed(() => {
+  if (!expensesChart.value.expenses_chart) return [];
+  if (useYearRange.value && yearStart.value !== null && yearEnd.value !== null) {
+    const start = Math.min(yearStart.value, yearEnd.value);
+    const end = Math.max(yearStart.value, yearEnd.value);
+    return expensesChart.value.expenses_chart.filter((item: any) => {
+      const yr = new Date(item.date).getFullYear();
+      return yr >= start && yr <= end;
+    });
+  }
+  const days = Number(selectedDateRange.value || 0);
+  if (days <= 0) return expensesChart.value.expenses_chart;
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+  return expensesChart.value.expenses_chart.filter((item: any) => new Date(item.date) >= cutoffDate);
+});
+
+const filteredUnpaidCustomersChart = computed(() => {
+  if (!unpaidCustomersChart.value.unpaid_customers_chart) return [];
+  if (useYearRange.value && yearStart.value !== null && yearEnd.value !== null) {
+    const start = Math.min(yearStart.value, yearEnd.value);
+    const end = Math.max(yearStart.value, yearEnd.value);
+    return unpaidCustomersChart.value.unpaid_customers_chart.filter((item: any) => {
+      const yr = new Date(item.date).getFullYear();
+      return yr >= start && yr <= end;
+    });
+  }
+  const days = Number(selectedDateRange.value || 0);
+  if (days <= 0) return unpaidCustomersChart.value.unpaid_customers_chart;
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+  return unpaidCustomersChart.value.unpaid_customers_chart.filter((item: any) => new Date(item.date) >= cutoffDate);
+});
+
 // Chart options computed properties
 const customerGrowthChartOption = computed(() => ({
   title: { 
@@ -78,9 +171,18 @@ const customerGrowthChartOption = computed(() => ({
     textStyle: { fontSize: 12 },
     left: 'center'
   },
+  axisPointer: { type: 'cross' },
   tooltip: { 
     trigger: 'axis',
     formatter: '{b}: {c} new customers'
+  },
+  toolbox: {
+    feature: {
+      dataZoom: { yAxisIndex: 'none' },
+      restore: {},
+      saveAsImage: {}
+    },
+    right: 10
   },
   xAxis: { 
     data: filteredCustomerGrowth.value.map((item: any) => item.date),
@@ -100,13 +202,78 @@ const customerGrowthChartOption = computed(() => ({
     type: 'line',
     data: filteredCustomerGrowth.value.map((item: any) => item.count),
     smooth: true,
+    sampling: 'lttb',
     itemStyle: { color: '#3B82F6' },
     lineStyle: { color: '#3B82F6', width: 2 }
   }],
+  dataZoom: [
+    { type: 'inside', throttle: 30 },
+    { type: 'slider', height: 20, bottom: 0 }
+  ],
   grid: { 
     left: '15%', 
     right: '10%', 
-    bottom: '20%', 
+    bottom: '22%', 
+    top: '20%',
+    containLabel: true
+  }
+}));
+
+const expensesChartOption = computed(() => ({
+  title: { 
+    text: 'Daily Expenses', 
+    textStyle: { fontSize: 12 },
+    left: 'center'
+  },
+  axisPointer: { type: 'cross' },
+  tooltip: { 
+    trigger: 'axis',
+    formatter: (params: any) => {
+      const p = Array.isArray(params) ? params[0] : params;
+      return `${p.axisValue}: ${formatIDR(Number(p.data) || 0)}`
+    }
+  },
+  toolbox: {
+    feature: {
+      dataZoom: { yAxisIndex: 'none' },
+      restore: {},
+      saveAsImage: {}
+    },
+    right: 10
+  },
+  xAxis: { 
+    data: filteredExpensesChart.value.map((item: any) => item.date),
+    type: 'category',
+    axisLabel: { 
+      rotate: 45, 
+      fontSize: 8,
+      interval: 'auto'
+    }
+  },
+  yAxis: { 
+    type: 'value',
+    axisLabel: { 
+      fontSize: 8,
+      formatter: (value: number) => formatIDR(Number(value) || 0)
+    }
+  },
+  series: [{
+    name: 'Expenses',
+    type: 'line',
+    data: filteredExpensesChart.value.map((item: any) => item.amount),
+    smooth: true,
+    sampling: 'lttb',
+    itemStyle: { color: '#EF4444' },
+    lineStyle: { color: '#EF4444', width: 2 }
+  }],
+  dataZoom: [
+    { type: 'inside', throttle: 30 },
+    { type: 'slider', height: 20, bottom: 0 }
+  ],
+  grid: { 
+    left: '15%', 
+    right: '10%', 
+    bottom: '22%', 
     top: '20%',
     containLabel: true
   }
@@ -118,9 +285,21 @@ const revenueChartOption = computed(() => ({
     textStyle: { fontSize: 12 },
     left: 'center'
   },
+  axisPointer: { type: 'cross' },
   tooltip: { 
     trigger: 'axis',
-    formatter: '{b}: ${c}'
+    formatter: (params: any) => {
+      const p = Array.isArray(params) ? params[0] : params;
+      return `${p.axisValue}: ${formatIDR(Number(p.data) || 0)}`
+    }
+  },
+  toolbox: {
+    feature: {
+      dataZoom: { yAxisIndex: 'none' },
+      restore: {},
+      saveAsImage: {}
+    },
+    right: 10
   },
   xAxis: { 
     data: filteredRevenueChart.value.map((item: any) => item.date),
@@ -133,20 +312,82 @@ const revenueChartOption = computed(() => ({
   },
   yAxis: { 
     type: 'value',
-    axisLabel: { fontSize: 8 }
+    axisLabel: { 
+      fontSize: 8,
+      formatter: (value: number) => formatIDR(Number(value) || 0)
+    }
   },
   series: [{
     name: 'Revenue',
     type: 'line',
     data: filteredRevenueChart.value.map((item: any) => item.amount),
     smooth: true,
+    sampling: 'lttb',
     itemStyle: { color: '#10B981' },
     lineStyle: { color: '#10B981', width: 2 }
   }],
+  dataZoom: [
+    { type: 'inside', throttle: 30 },
+    { type: 'slider', height: 20, bottom: 0 }
+  ],
   grid: { 
     left: '15%', 
     right: '10%', 
-    bottom: '20%', 
+    bottom: '22%', 
+    top: '20%',
+    containLabel: true
+  }
+}));
+
+const unpaidCustomersChartOption = computed(() => ({
+  title: { 
+    text: 'Unpaid Customers', 
+    textStyle: { fontSize: 12 },
+    left: 'center'
+  },
+  axisPointer: { type: 'cross' },
+  tooltip: { 
+    trigger: 'axis',
+    formatter: '{b}: {c} customers'
+  },
+  toolbox: {
+    feature: {
+      dataZoom: { yAxisIndex: 'none' },
+      restore: {},
+      saveAsImage: {}
+    },
+    right: 10
+  },
+  xAxis: { 
+    data: filteredUnpaidCustomersChart.value.map((item: any) => item.date),
+    type: 'category',
+    axisLabel: { 
+      rotate: 45, 
+      fontSize: 8,
+      interval: 'auto'
+    }
+  },
+  yAxis: { 
+    type: 'value',
+    axisLabel: { fontSize: 8 }
+  },
+  series: [{
+    name: 'Unpaid Customers',
+    type: 'line',
+    data: filteredUnpaidCustomersChart.value.map((item: any) => item.count),
+    smooth: true,
+    sampling: 'lttb',
+    itemStyle: { color: '#F59E0B' },
+    lineStyle: { color: '#F59E0B', width: 2 }
+  }],
+  dataZoom: [
+    { type: 'inside', throttle: 30 },
+    { type: 'slider', height: 20, bottom: 0 }
+  ],
+  grid: { 
+    left: '15%', 
+    right: '10%', 
+    bottom: '22%', 
     top: '20%',
     containLabel: true
   }
@@ -505,6 +746,14 @@ const getNewDashboardData = async () => {
     const revenueResponse = await dashboardAdminApi().getRevenueChart();
     revenueChart.value = revenueResponse.data;
 
+    // Get expenses chart
+    const expensesResponse = await dashboardAdminApi().getExpensesChart();
+    expensesChart.value = expensesResponse.data;
+
+    // Get unpaid customers chart
+    const unpaidResponse = await dashboardAdminApi().getUnpaidCustomersChart();
+    unpaidCustomersChart.value = unpaidResponse.data;
+
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
     notification.error('Dashboard Error', 'Failed to load dashboard data', 3000);
@@ -514,6 +763,15 @@ const getNewDashboardData = async () => {
 // Get recent tickets
 const getRecentTickets = async () => {
   try {
+    // Load trouble type names for display mapping
+    try {
+      const tt: any = await ticketsApi().troubleTypes();
+      const arr = (tt as any)?.data || tt || [];
+      const map: Record<string, string> = {};
+      for (const t of arr) if (t?.id) map[t.id] = t.name || t.id;
+      troubleTypeMap.value = map;
+    } catch {}
+
     const response = await ticketsApi().list();
     recentTickets.value = (response as any)?.data || response || [];
   } catch (error: any) {
@@ -592,9 +850,28 @@ function handleKeydown(event: KeyboardEvent) {
 // Removed logout confirmation handlers
 
 // Filter functions
-function applyDateFilter() {
-  // Data is automatically filtered through computed properties
-  console.log(`Date range changed to ${selectedDateRange.value} days`)
+async function applyDateFilter() {
+  // Reset year range when using day-based range
+  if (!useYearRange.value) {
+    yearStart.value = null;
+    yearEnd.value = null;
+  }
+  // Fetch server-side data with selected range for accurate aggregation
+  const params = useYearRange.value && yearStart.value !== null && yearEnd.value !== null
+    ? { year_start: Math.min(yearStart.value, yearEnd.value), year_end: Math.max(yearStart.value, yearEnd.value) }
+    : { days: Number(selectedDateRange.value) };
+  try {
+    const growthResponse = await dashboardAdminApi().getCustomerGrowth(params as any)
+    customerGrowth.value = growthResponse.data
+    const revenueResponse = await dashboardAdminApi().getRevenueChart(params as any)
+    revenueChart.value = revenueResponse.data
+    const expensesResponse = await dashboardAdminApi().getExpensesChart(params as any)
+    expensesChart.value = expensesResponse.data
+    const unpaidResponse = await dashboardAdminApi().getUnpaidCustomersChart(params as any)
+    unpaidCustomersChart.value = unpaidResponse.data
+  } catch (e) {
+    console.error('Failed to refresh charts with params', params, e)
+  }
 }
 
 
@@ -620,6 +897,13 @@ onMounted(async () => {
 onUnmounted(() => {
   // Remove keyboard event listener
   document.removeEventListener('keydown', handleKeydown)
+})
+
+// React to year range changes immediately
+watch([useYearRange, yearStart, yearEnd], async () => {
+  if (useYearRange.value) {
+    await applyDateFilter()
+  }
 })
 
 
@@ -707,7 +991,7 @@ onUnmounted(() => {
     <div
       class="w-full p-6 bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600 text-white rounded-2xl shadow-xl transition-transform hover:scale-[1.03] duration-300">
       <div class="flex items-center justify-between mb-6">
-        <h1 class="text-base font-medium uppercase tracking-wider opacity-90">Total Tickets</h1>
+        <h1 class="text-base font-medium uppercase tracking-wider opacity-90">Trouble Accumulation</h1>
       </div>
       <div class="text-center">
         <h1 class="text-3xl font-bold">{{ dashboardStats.total_tickets || 0 }}</h1>
@@ -820,7 +1104,7 @@ onUnmounted(() => {
           <tr v-for="ticket in recentTickets.slice(0, 10)" :key="ticket.id" class="hover:bg-gray-50">
             <td class="px-4 py-3 font-medium text-gray-900">{{ ticket.id }}</td>
             <td class="px-4 py-3 text-gray-900 max-w-xs truncate">{{ ticket.title }}</td>
-            <td class="px-4 py-3 text-gray-700 capitalize">{{ ticket.type || 'Other' }}</td>
+            <td class="px-4 py-3 text-gray-700 capitalize">{{ troubleTypeMap[ticket.type] || ticket.type || 'Other' }}</td>
             <td class="px-4 py-3">
               <span :class="{
                 'px-2 py-1 rounded-full text-xs font-medium': true,
@@ -876,7 +1160,30 @@ onUnmounted(() => {
             <option value="7">Last 7 days</option>
             <option value="30">Last 30 days</option>
             <option value="90">Last 90 days</option>
-            <option value="365">Last year</option>
+            <option :value="365">Last year</option>
+            <option :value="730">Last 2 years</option>
+            <option :value="1095">Last 3 years</option>
+            <option :value="0">All time</option>
+          </select>
+        </div>
+
+        <!-- Year Range Toggle -->
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">Year range:</label>
+          <input type="checkbox" v-model="useYearRange" class="h-4 w-4" title="Filter by start/end year" />
+        </div>
+
+        <!-- Year Range Selectors -->
+        <div class="flex items-center gap-2" v-if="useYearRange">
+          <label class="text-sm font-medium text-gray-700">From</label>
+          <select v-model.number="yearStart" class="px-3 py-1 text-sm border border-gray-300 rounded-md">
+            <option :value="null">-</option>
+            <option v-for="y in availableYears" :key="'ys'+y" :value="y">{{ y }}</option>
+          </select>
+          <label class="text-sm font-medium text-gray-700">To</label>
+          <select v-model.number="yearEnd" class="px-3 py-1 text-sm border border-gray-300 rounded-md">
+            <option :value="null">-</option>
+            <option v-for="y in availableYears" :key="'ye'+y" :value="y">{{ y }}</option>
           </select>
         </div>
 
@@ -912,6 +1219,32 @@ onUnmounted(() => {
         </div>
         <div v-else class="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
           <p class="text-gray-500">No revenue data available for selected period</p>
+        </div>
+      </div>
+
+      <!-- Expenses Chart -->
+      <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div class="mb-3">
+          <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">Expenses Chart ({{ selectedDateRange }} days)</h2>
+        </div>
+        <div v-if="filteredExpensesChart && filteredExpensesChart.length > 0" class="h-80 w-full overflow-hidden">
+          <VChart :option="expensesChartOption" autoresize style="height: 100%; width: 100%;" />
+        </div>
+        <div v-else class="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
+          <p class="text-gray-500">No expenses data available for selected period</p>
+        </div>
+      </div>
+
+      <!-- Unpaid Customers Chart -->
+      <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div class="mb-3">
+          <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">Unpaid Customers ({{ selectedDateRange }} days)</h2>
+        </div>
+        <div v-if="filteredUnpaidCustomersChart && filteredUnpaidCustomersChart.length > 0" class="h-80 w-full overflow-hidden">
+          <VChart :option="unpaidCustomersChartOption" autoresize style="height: 100%; width: 100%;" />
+        </div>
+        <div v-else class="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
+          <p class="text-gray-500">No unpaid customers data available for selected period</p>
         </div>
       </div>
     </div>

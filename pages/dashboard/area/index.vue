@@ -41,6 +41,10 @@ const columns = [
     label: "Village",
   },
   {
+    key: "code_name",
+    label: "Code Name",
+  },
+  {
     key: "actions",
     label: "Manage",
   },
@@ -107,6 +111,11 @@ async function deleteData(id: string){
   </div>
 
   <UTable :rows="filteredRows" :columns="columns">
+    <template #code_name-data="{ row }">
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+        {{ row.code_name || 'N/A' }}
+      </span>
+    </template>
     <template #actions-data="{ row }">
       <div class="flex gap-2">
         <UButton icon="fa-pencil" color="yellow" label="Edit" @click="openModal(true,row)" />

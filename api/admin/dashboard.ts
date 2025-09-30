@@ -163,8 +163,9 @@ export const dashboardAdminApi = () => {
       return response.json();
     },
 
-    getCustomerGrowth: async () => {
-      const response = await fetch(`${api}/api/admin/dashboard/customer-growth`, {
+    getCustomerGrowth: async (params?: { days?: number; year_start?: number; year_end?: number }) => {
+      const query = params ? `?${new URLSearchParams(Object.entries(params).reduce((acc: any, [k,v])=>{ if(v!==undefined && v!==null) acc[k]=String(v); return acc; }, {})).toString()}` : '';
+      const response = await fetch(`${api}/api/admin/dashboard/customer-growth${query}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -178,8 +179,9 @@ export const dashboardAdminApi = () => {
       return response.json();
     },
 
-    getRevenueChart: async () => {
-      const response = await fetch(`${api}/api/admin/dashboard/revenue-chart`, {
+    getRevenueChart: async (params?: { days?: number; year_start?: number; year_end?: number }) => {
+      const query = params ? `?${new URLSearchParams(Object.entries(params).reduce((acc: any, [k,v])=>{ if(v!==undefined && v!==null) acc[k]=String(v); return acc; }, {})).toString()}` : '';
+      const response = await fetch(`${api}/api/admin/dashboard/revenue-chart${query}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -189,6 +191,38 @@ export const dashboardAdminApi = () => {
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to get revenue chart');
+      }
+      return response.json();
+    },
+
+    getExpensesChart: async (params?: { days?: number; year_start?: number; year_end?: number }) => {
+      const query = params ? `?${new URLSearchParams(Object.entries(params).reduce((acc: any, [k,v])=>{ if(v!==undefined && v!==null) acc[k]=String(v); return acc; }, {})).toString()}` : '';
+      const response = await fetch(`${api}/api/admin/dashboard/expenses-chart${query}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get expenses chart');
+      }
+      return response.json();
+    },
+
+    getUnpaidCustomersChart: async (params?: { days?: number; year_start?: number; year_end?: number }) => {
+      const query = params ? `?${new URLSearchParams(Object.entries(params).reduce((acc: any, [k,v])=>{ if(v!==undefined && v!==null) acc[k]=String(v); return acc; }, {})).toString()}` : '';
+      const response = await fetch(`${api}/api/admin/dashboard/unpaid-customers-chart${query}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get unpaid customers chart');
       }
       return response.json();
     },

@@ -92,6 +92,25 @@ const invoiceTotal = computed(() => {
   return invoiceDetail.value.invoice_items.reduce((sum: number, item: any) => sum + (item.total || 0), 0);
 });
 
+// Group duplicate items (same name and price) into a single row with summed qty and total
+const groupedInvoiceItems = computed(() => {
+  const items: any[] = invoiceDetail.value?.invoice_items || [];
+  const map = new Map<string, { name: string; price: number; qty: number; total: number }>();
+  for (const it of items) {
+    const price = typeof it.price === 'number' ? it.price : Number(it.price) || 0;
+    const qty = typeof it.qty === 'number' ? it.qty : Number(it.qty) || 0;
+    const total = typeof it.total === 'number' ? it.total : (price * qty);
+    const key = `${it.name}|${price}`;
+    if (!map.has(key)) {
+      map.set(key, { name: it.name, price, qty: 0, total: 0 });
+    }
+    const agg = map.get(key)!;
+    agg.qty += qty;
+    agg.total += total;
+  }
+  return Array.from(map.values());
+});
+
 const isPaidStatus = computed(() => {
   const s = (invoiceDetail.value?.status || '').toString().toLowerCase()
   return s === 'paid'
@@ -212,7 +231,7 @@ const goBackToInvoiceList = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(item, i) in invoiceDetail.invoice_items" :key="i" class="odd:bg-white even:bg-gray-50">
+                  <tr v-for="(item, i) in groupedInvoiceItems" :key="i" class="odd:bg-white even:bg-gray-50">
                     <td class="py-2">{{ i + 1 }}</td>
                     <td class="py-2">{{ item.name }}</td>
                     <td class="py-2">{{ formatIDR(item.price) }}</td>

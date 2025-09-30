@@ -8,7 +8,9 @@ import {
   TitleComponent,
   TooltipComponent,
   GridComponent,
-  LegendComponent
+  LegendComponent,
+  ToolboxComponent,
+  DataZoomComponent
 } from 'echarts/components';
 import {
   CanvasRenderer
@@ -21,6 +23,8 @@ echarts.use([
   TooltipComponent,
   GridComponent,
   LegendComponent,
+  ToolboxComponent,
+  DataZoomComponent,
   CanvasRenderer
 ]);
 

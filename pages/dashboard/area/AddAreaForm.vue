@@ -8,6 +8,7 @@ const schema = object({
   name_city: string().required("Name is required").min(3, "min 3 words"),
   name_subdistrict: string().required("Name is required").min(4, "min 4 words"),
   name_village: string().required("Name is required").min(4, "min 4 words"),
+  code_name: string().required("Code name is required").min(2, "min 2 characters").max(10, "max 10 characters"),
 });
 
 type Schema = InferType<typeof schema>;
@@ -35,6 +36,10 @@ const props = defineProps({
       name_village: {
         type: String,
         default: ''
+      },
+      code_name: {
+        type: String,
+        default: ''
       }
     })
   }
@@ -45,6 +50,7 @@ const state = reactive({
   name_city: "",
   name_subdistrict: "",
   name_village: "",
+  code_name: "",
 });
 
 watch(
@@ -55,6 +61,7 @@ watch(
       state.name_city = props.data.name_city
       state.name_subdistrict = props.data.name_subdistrict
       state.name_village = props.data.name_village
+      state.code_name = props.data.code_name
     } else {
       clearState()
     }
@@ -64,6 +71,9 @@ watch(
 
 function clearState() {
   state.name_city = ""
+  state.name_subdistrict = ""
+  state.name_village = ""
+  state.code_name = ""
 }
 
 const emit = defineEmits(["success"]);
@@ -108,6 +118,12 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         </UFormGroup>
         <UFormGroup label="Name Village" name="name_village">
           <UInput v-model="state.name_village" />
+        </UFormGroup>
+        <UFormGroup label="Code Name" name="code_name">
+          <UInput v-model="state.code_name" placeholder="e.g., TLSK, JKT, BDG" />
+          <template #help>
+            <span class="text-xs text-gray-500">Short code for scheduler naming (2-10 characters)</span>
+          </template>
         </UFormGroup>
 
         <UButton type="submit" color="blue"> Submit </UButton>

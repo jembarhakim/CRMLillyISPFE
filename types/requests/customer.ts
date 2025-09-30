@@ -31,7 +31,6 @@ export type Customer = {
 
 export type UpdateCustomerRequest = {
   name?: String
-  email?: String
   phone?: String
   address?: String
   company?: String
