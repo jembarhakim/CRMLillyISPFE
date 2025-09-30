@@ -5,7 +5,7 @@ export type CreateTransactionRequest = {
         date: string,
         description: string,
         file: string,
-        amount: string,
+        amount: number,
         category: string,
         tags: string,
         payer_id: string,

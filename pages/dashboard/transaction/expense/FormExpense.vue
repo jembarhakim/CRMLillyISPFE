@@ -83,8 +83,13 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   if (state.category_custom != "") {
     state.category = state.category_custom
   }
+  // Build payload with numeric amount
+  const payload = {
+    ...state,
+    amount: parseFloat(state.amount || '0') || 0,
+  }
   await transactionAdminApi()
-    .createTransactions(state)
+    .createTransactions(payload as any)
     .then((response) => {
       console.log("Success creating / editing company", response);
       onSuccess();

@@ -10,7 +10,7 @@ useHead({
 
 const props = defineProps<{
   data: any[];
-  onRefresh: () => Promise<void>;
+  refresh?: () => Promise<void>;
   type?: any;
 }>();
 const rows = ref(props.data);
@@ -107,7 +107,7 @@ async function deleteExpense(transactionId: string) {
       title: "Success!",
       id: "modal-success",
     });
-    await props.onRefresh();
+    await props.refresh?.();
     // await fetchAllExpenses();
     // props.function;
   } catch (error) {

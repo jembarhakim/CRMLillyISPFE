@@ -5,7 +5,7 @@ import FormRole from "./FormDeposit.vue";
 import { formatIDR } from "@/helper/currency";
 const props = defineProps<{
   data: any[];
-  onRefresh: () => Promise<void>;
+  refresh?: () => Promise<void>;
   type?: any;
 }>();
 // Set page title
@@ -114,7 +114,7 @@ async function deleteDeposit(transactionId: string) {
       title: "Success!",
       id: "modal-success",
     });
-    await props.onRefresh();
+    await props.refresh?.();
     // await fetchAllDeposits();
     // props.function;
   } catch (error) {

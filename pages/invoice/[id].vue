@@ -191,9 +191,12 @@ const goBackToInvoiceList = () => {
               </div>
               <div class="mt-4 text-sm">
                 <p class="font-bold">Invoiced To</p>
-                <p>{{ invoiceDetail.customer.name }}</p>
+                <p>
+                  {{ (invoiceDetail.customer?.area?.code_name || invoiceDetail.customer?.area?.codeName) 
+                      ? `${invoiceDetail.customer.area.code_name || invoiceDetail.customer.area.codeName} - ${invoiceDetail.customer?.name || ''}`
+                      : invoiceDetail.customer?.name || '' }}
+                </p>
                 <p>Phone: {{ invoiceDetail.customer.phone ?? "-" }}</p>
-                <p>Email: {{ invoiceDetail.customer.email ?? "-" }}</p>
               </div>
             </div>
             <div class="text-right text-sm">

@@ -90,6 +90,11 @@ async function getData() {
           invoice.status = 'unpaid';
         }
       }
+
+      // Build display name: "[code_area] - [Customer name]"
+      const code = invoice?.customer?.area?.code_name || invoice?.customer?.area?.codeName || ''
+      const custName = invoice?.customer?.name || ''
+      invoice.customer_display = code ? `${code} - ${custName}` : custName
     });
 
     customer.value = [...data];
@@ -416,7 +421,7 @@ const columns = [
     label: "Number",
   },
   {
-    key: "customer.name",
+    key: "customer_display",
     label: "Customer",
   },
   {

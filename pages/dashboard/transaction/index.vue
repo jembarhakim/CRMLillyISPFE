@@ -114,7 +114,7 @@ const tab_items = [
           :type="queries[activeTab]"
           v-if="!isLoading"
           :data="transaction"
-          :onRefresh="() => fetchAllTransaction(queries[activeTab])"
+          :refresh="() => fetchAllTransaction(queries[activeTab])"
         />
       </div>
       <div v-if="item.value == 'expense'">
@@ -122,7 +122,7 @@ const tab_items = [
           :type="queries[activeTab]"
           :data="transaction"
           v-if="!isLoading"
-          :onRefresh="() => fetchAllTransaction(queries[activeTab])"
+          :refresh="() => fetchAllTransaction(queries[activeTab])"
         />
       </div>
       <!-- <div v-if="item.value == 'tranfer'">
@@ -136,14 +136,12 @@ const tab_items = [
         <ViewTransaction
           :data="transaction"
           v-if="!isLoading"
-          :onRefresh="() => fetchAllTransaction(queries[activeTab])"
         />
       </div>
       <div v-if="item.value == 'balance-sheet'">
         <BalanceSheet
           v-if="!isLoading"
           :data="accounts"
-          :onRefresh="() => fetchAllAccount()"
         />
       </div>
       <!-- <div v-if="item.value == 'report-customer'">
