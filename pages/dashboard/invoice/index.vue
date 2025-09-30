@@ -14,6 +14,8 @@ useHead({
 
 let customer = ref<any[]>([]);
 const isLoading = ref(false);
+// Router job cache by invoice id
+const routerJobsByInvoice = ref<Record<string, any[]>>({})
 
 // Partial payment modal state
 const showPartialPaymentModal = ref(false)
@@ -98,6 +100,9 @@ async function getData() {
     });
 
     customer.value = [...data];
+
+    // Lazy-init router job cache: don't auto-fetch all to avoid burst.
+    // We'll fetch per-row on demand when rendering if missing.
     console.log("Invoice data updated in customer.value:", (customer.value?.length || 0), "invoices");
   } catch (err: any) {
     console.error("Error fetching invoice data:", err);
@@ -136,6 +141,8 @@ async function proceedWithStatusUpdate(id: string, status: string, currentStatus
     const response = await invoiceAdminApi().updateStatusInvoice(id, { status });
     
     notification.success('Success', response.message);
+    // After a status update, refresh router jobs for this invoice
+    try { await fetchRouterJobs(id) } catch (_) {}
     
     // Update the specific invoice in the local array instead of refreshing all data
     const invoiceIndex = customer.value.findIndex(inv => inv.id === id);
@@ -418,6 +425,42 @@ async function deleteData(id: string) {
     .catch((err) => {
       notification.error('Error', err);
     });
+}
+
+// --- Router Jobs helpers ---
+async function fetchRouterJobs(invoiceId: string) {
+  const res = await invoiceAdminApi().getRouterJobsByInvoice(invoiceId)
+  routerJobsByInvoice.value[invoiceId] = res.data || []
+}
+
+function getRouterJobState(invoiceId: string): { state: 'none'|'pending'|'error'|'success', message?: string } {
+  const jobs = routerJobsByInvoice.value[invoiceId]
+  if (!jobs || jobs.length === 0) return { state: 'none' }
+  // If any error -> error; else if any pending -> pending; else success
+  const anyError = jobs.some((j: any) => (j.status || '').toLowerCase() === 'error')
+  if (anyError) {
+    const err = jobs.find((j: any) => (j.status || '').toLowerCase() === 'error')
+    return { state: 'error', message: err?.last_error || 'Router update failed' }
+  }
+  const anyPending = jobs.some((j: any) => (j.status || '').toLowerCase() === 'pending')
+  if (anyPending) return { state: 'pending' }
+  return { state: 'success' }
+}
+
+async function ensureJobsLoaded(invoiceId: string) {
+  if (!routerJobsByInvoice.value[invoiceId]) {
+    try { await fetchRouterJobs(invoiceId) } catch (_) {}
+  }
+}
+
+async function retryRouterJobs(invoiceId: string) {
+  try {
+    await invoiceAdminApi().retryRouterJobsByInvoice(invoiceId)
+    notification.success('Router Update', 'Retry queued')
+    await fetchRouterJobs(invoiceId)
+  } catch (err: any) {
+    notification.error('Router Update', err?.message || 'Failed to retry')
+  }
 }
 
 await Promise.all([getData(), loadActiveRecurringCustomers()]);
@@ -759,6 +802,27 @@ async function printAllUnpaidInvoices() {
       }">{{ currency.formatIDR(getAmountDue(row)) }}</p>
     </template>
     <template #status-data="{ row }">
+      <!-- Router job status badge (lazy load per row) -->
+      <div class="mb-1" @mouseenter="ensureJobsLoaded(row.id)" @touchstart.passive="ensureJobsLoaded(row.id)">
+        <template v-if="getRouterJobState(row.id).state === 'pending'">
+          <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-blue-100 text-blue-700">
+            Router update pending
+          </span>
+        </template>
+        <template v-else-if="getRouterJobState(row.id).state === 'error'">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-1 sm:space-y-0">
+            <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-red-100 text-red-700">
+              Router update failed
+            </span>
+            <UButton size="2xs" color="red" variant="outline" @click.stop="retryRouterJobs(row.id)">Retry</UButton>
+          </div>
+        </template>
+        <template v-else-if="getRouterJobState(row.id).state === 'success'">
+          <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-emerald-100 text-emerald-700">
+            Router updated
+          </span>
+        </template>
+      </div>
       <div class="space-y-2">
         <!-- Status Badge -->
         <div v-if="row.status === 'pending'" class="space-y-2">

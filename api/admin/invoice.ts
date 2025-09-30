@@ -105,6 +105,37 @@ export const invoiceAdminApi = () => {
       return response.json();
     },
 
+    // Router job helpers
+    getRouterJobsByInvoice: async (invoiceId: string) => {
+      const response = await fetch(`${api}/api/admin/invoice/${invoiceId}/router-jobs`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get router jobs');
+      }
+      return response.json();
+    },
+
+    retryRouterJobsByInvoice: async (invoiceId: string) => {
+      const response = await fetch(`${api}/api/admin/invoice/${invoiceId}/router-jobs/retry`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to retry router jobs');
+      }
+      return response.json();
+    },
+
     processPartialPayment: async (
       invoiceId: string,
       amount: number,
