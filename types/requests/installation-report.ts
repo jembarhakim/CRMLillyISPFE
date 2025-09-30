@@ -81,12 +81,16 @@ export type InstallationSummaryResponse = {
   customer_name: string;
   customer_address: string;
   customer_phone: string;
+  tgl_permintaan_psb?: string;
   total_installations: number;
   completed_installations: number;
   pending_installations: number;
   in_progress_installations: number;
   latest_on_air_date?: string;
   latest_completion_date?: string;
+  avg_durasi_psb?: number;
+  tepat_waktu_count?: number;
+  terlambat_count?: number;
 }
 
 export type InstallationAssetReportResponse = {
@@ -201,6 +205,7 @@ export type InstallationReportCompleteResponse = {
   customer_name?: string;
   customer_address?: string;
   customer_phone?: string;
+  tgl_permintaan_psb?: string;
   technician_id?: string;
   technician_name?: string;
   technician_phone?: string;
@@ -211,6 +216,8 @@ export type InstallationReportCompleteResponse = {
   trial_end_date?: string;
   service_ready_date?: string;
   installation_completed_at?: string;
+  durasi_psb?: number;
+  status_psb?: string;
   document_type?: string;
   document_photo?: string;
   total_assets_out?: number;

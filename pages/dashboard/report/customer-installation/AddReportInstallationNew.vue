@@ -22,6 +22,17 @@
                 option-attribute="name"
                 value-attribute="id"
                 placeholder="Select Customer"
+                @change="onCustomerChange"
+              />
+            </UFormGroup>
+
+            <UFormGroup label="Tgl. Permintaan PSB" name="tgl_permintaan_psb">
+              <UInput
+                v-model="selectedCustomerPSBDate"
+                type="date"
+                readonly
+                placeholder="Select customer first"
+                class="bg-gray-100"
               />
             </UFormGroup>
 
@@ -490,9 +501,12 @@ const isSubmitting = ref(false);
 const fileInput = ref<HTMLInputElement>();
 
 // Options for dropdowns
-const customerOptions = ref([]);
-const technicianOptions = ref([]);
-const assetOptions = ref([]);
+const customerOptions = ref<any[]>([]);
+const technicianOptions = ref<any[]>([]);
+const assetOptions = ref<any[]>([]);
+
+// PSB Request Date from selected customer
+const selectedCustomerPSBDate = ref("");
 
 const installationTypeOptions = [
   { label: "New Installation", value: "new_installation" },
@@ -581,6 +595,20 @@ async function loadAssets() {
     assetOptions.value = [];
   } catch (error) {
     console.error("Failed to load assets:", error);
+  }
+}
+
+// Handle customer selection change
+function onCustomerChange() {
+  if (state.customer_id) {
+    const selectedCustomer = customerOptions.value.find((customer: any) => customer.id === state.customer_id);
+    if (selectedCustomer && selectedCustomer.service_request_date) {
+      selectedCustomerPSBDate.value = selectedCustomer.service_request_date;
+    } else {
+      selectedCustomerPSBDate.value = "";
+    }
+  } else {
+    selectedCustomerPSBDate.value = "";
   }
 }
 
@@ -688,18 +716,53 @@ async function handleDocumentPhotoUpload(event: Event) {
   
   if (file && file.type.startsWith("image/")) {
     try {
+      // Use a more generic path if customer/technician not selected yet
+      const path = state.customer_id && state.technician_id 
+        ? `documents/${state.technician_id}/${state.customer_id}`
+        : `documents/temp/${Date.now()}`;
+        
+      console.log("Uploading document photo with path:", path);
+      
       const response = await uploadFileAdminApi().createUploadFile({
         name: `document_${Date.now()}`,
-        path: `documents/${state.technician_id}/${state.customer_id}`,
+        path: path,
         file: file,
       });
       
+      console.log("Document photo upload response:", response);
+      
       if (response.data?.full_path) {
         state.document_photo = response.data.full_path;
+        console.log("Document photo path set to:", state.document_photo);
+        
+        useToast().add({
+          title: "Success",
+          description: "Document photo uploaded successfully",
+          color: "green",
+        });
+      } else {
+        console.error("No full_path in response:", response);
+        useToast().add({
+          title: "Error",
+          description: "Failed to upload document photo",
+          color: "red",
+        });
       }
     } catch (error) {
       console.error("Error uploading document photo:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      useToast().add({
+        title: "Error",
+        description: "Failed to upload document photo: " + errorMessage,
+        color: "red",
+      });
     }
+  } else {
+    useToast().add({
+      title: "Error",
+      description: "Please select a valid image file",
+      color: "red",
+    });
   }
 }
 
@@ -738,6 +801,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     };
     
     console.log("Submitting complete installation report:", submitData);
+    console.log("Document photo being sent:", submitData.document_photo);
+    console.log("Document type being sent:", submitData.document_type);
     
     const response = await customerAdminApi().createCompleteInstallationReport(submitData);
     console.log("API response:", response);
