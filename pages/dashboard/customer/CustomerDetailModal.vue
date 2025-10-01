@@ -426,7 +426,7 @@
                   </div>
                   <div>
                     <label class="block text-xs font-medium text-gray-700">Last Ping</label>
-                    <p class="text-sm text-gray-900">{{ device.last_ping_time ? formatDate(device.last_ping_time) : 'N/A' }}</p>
+                    <p class="text-sm text-gray-900">{{ device.last_ping_timestamp ? formatDate(device.last_ping_timestamp) : 'N/A' }}</p>
                   </div>
                 </div>
                 <div class="mt-3 pt-3 border-t border-gray-200">
@@ -447,6 +447,11 @@
                           device.last_ping_status === 'down' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
                         ]"
                       >
+                        <UIcon 
+                          :name="device.last_ping_status === 'up' ? 'i-heroicons-wifi' : 
+                                 device.last_ping_status === 'down' ? 'i-heroicons-wifi-slash' : 'i-heroicons-question-mark-circle'"
+                          class="w-3 h-3 mr-1"
+                        />
                         Ping: {{ device.last_ping_status?.toUpperCase() }}
                       </span>
                     </div>
@@ -868,17 +873,31 @@
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-700">Ping Status</label>
-                  <span 
-                    :class="device.last_ping_status === 'up' ? 'bg-green-100 text-green-800' : device.last_ping_status === 'down' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'"
-                    class="inline-flex px-2 py-1 text-xs font-medium rounded-full"
-                  >
-                    {{ device.last_ping_status?.toUpperCase() }}
-                  </span>
+                  <div class="flex items-center space-x-2">
+                    <span 
+                      :class="device.last_ping_status === 'up' ? 'bg-green-100 text-green-800' : device.last_ping_status === 'down' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'"
+                      class="inline-flex px-2 py-1 text-xs font-medium rounded-full"
+                    >
+                      {{ device.last_ping_status?.toUpperCase() }}
+                    </span>
+                    <span v-if="device.last_ping_status === 'up'" class="text-xs text-green-600">
+                      <UIcon name="i-heroicons-wifi" class="w-3 h-3" />
+                    </span>
+                    <span v-else-if="device.last_ping_status === 'down'" class="text-xs text-red-600">
+                      <UIcon name="i-heroicons-wifi-slash" class="w-3 h-3" />
+                    </span>
+                    <span v-else class="text-xs text-gray-500">
+                      <UIcon name="i-heroicons-question-mark-circle" class="w-3 h-3" />
+                    </span>
+                  </div>
+                  <p v-if="device.last_ping_timestamp" class="text-xs text-gray-500 mt-1">
+                    Last seen: {{ formatDate(device.last_ping_timestamp) }}
+                  </p>
                 </div>
               </div>
-              <div v-if="device.last_ping_time" class="mt-3 pt-3 border-t border-gray-200">
+              <div v-if="device.last_ping_timestamp" class="mt-3 pt-3 border-t border-gray-200">
                 <div class="flex justify-between items-center text-xs text-gray-500">
-                  <span>Last Ping: {{ formatDate(device.last_ping_time) }}</span>
+                  <span>Last Ping: {{ formatDate(device.last_ping_timestamp) }}</span>
                   <span v-if="device.ping_response_time">Response Time: {{ device.ping_response_time }}ms</span>
                 </div>
               </div>
