@@ -88,3 +88,4 @@ After the fix:
 
 ## Conclusion
 The TypeScript error has been resolved by adding explicit type annotations to the dropdown option refs. This ensures type safety while maintaining the functionality of the company selection feature in the customer form.
+

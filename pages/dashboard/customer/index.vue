@@ -21,6 +21,7 @@ type Customer = {
     gmaps_link: string
     packet_internet: string
     hasInstallationReport?: boolean
+    installationReportCount?: number
 }
 
 
@@ -47,17 +48,20 @@ async function loadInstallationReports() {
         const response = await customerAdminApi().getInstallationReportComplete()
         installationReports.value = response.data || []
         
-        // Update customer data with installation report status
+        // Update customer data with installation report status (for display purposes only)
         customer.value.forEach((customerItem: any) => {
-            customerItem.hasInstallationReport = installationReports.value.some(
+            const reportCount = installationReports.value.filter(
                 (report: any) => report.customer_id === customerItem.id
-            )
+            ).length
+            customerItem.hasInstallationReport = reportCount > 0
+            customerItem.installationReportCount = reportCount
         })
     } catch (error) {
         console.error("Failed to load installation reports:", error)
         // Set all customers as not having installation reports if API fails
         customer.value.forEach((customerItem: any) => {
             customerItem.hasInstallationReport = false
+            customerItem.installationReportCount = 0
         })
     }
 }
@@ -151,14 +155,12 @@ const items = (row: Customer) => {
         }]
     ]
 
-    // Only show "Add Report Installation" if customer doesn't have one yet
-    if (!row.hasInstallationReport) {
-        baseItems.push([{
-            label: 'Add Report Installation',
-            icon: 'i-heroicons-archive-box-20-solid',
-            click: () => OpenModalReportInstallation(true, row)
-        }])
-    }
+    // Always show "Add Report Installation" - multiple reports are now supported
+    baseItems.push([{
+        label: row.hasInstallationReport ? 'Add Another Report' : 'Add Report Installation',
+        icon: 'i-heroicons-archive-box-20-solid',
+        click: () => OpenModalReportInstallation(true, row)
+    }])
 
     baseItems.push([{
         label: 'View Maps',
@@ -259,7 +261,7 @@ function closeDetailModal() {
               <span v-if="customer.hasInstallationReport" 
                     class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                 <UIcon name="i-heroicons-check-circle" class="w-3 h-3 mr-1" />
-                Report
+                {{ customer.installationReportCount > 1 ? `${customer.installationReportCount} Reports` : 'Report' }}
               </span>
             </div>
           </div>
@@ -304,9 +306,9 @@ function closeDetailModal() {
               </button>
               <span v-if="row.hasInstallationReport" 
                     class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
-                    title="Has Installation Report">
+                    :title="`Has ${row.installationReportCount} Installation Report(s)`">
                 <UIcon name="i-heroicons-check-circle" class="w-3 h-3 mr-1" />
-                Report
+                {{ row.installationReportCount > 1 ? `${row.installationReportCount} Reports` : 'Report' }}
               </span>
             </div>
           </template>
