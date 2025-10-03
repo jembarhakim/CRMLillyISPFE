@@ -426,9 +426,141 @@ onMounted(async () => {
 });
 </script>
 
+<style scoped>
+/* Prevent layout shift during scroll */
+.technician-card {
+  contain: layout style paint;
+  will-change: auto;
+}
+
+/* Smooth scrolling for better UX */
+.overflow-y-auto {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.7);
+}
+
+/* Prevent text selection during scroll on mobile */
+@media (max-width: 640px) {
+  .technician-card {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  .technician-card input,
+  .technician-card select,
+  .technician-card textarea {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+  }
+}
+
+/* Ensure proper touch scrolling on mobile */
+@media (hover: none) and (pointer: coarse) {
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Fix MikroTik section scrolling alignment issues */
+.mikrotik-section {
+  contain: layout style paint;
+  will-change: auto;
+}
+
+.mikrotik-form {
+  contain: layout;
+}
+
+.mikrotik-field {
+  contain: layout style;
+  transform: translateZ(0); /* Force hardware acceleration */
+  backface-visibility: hidden;
+}
+
+.mikrotik-field label {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+.mikrotik-field .relative {
+  position: relative;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Prevent text and input misalignment during scroll */
+.mikrotik-field input,
+.mikrotik-field .relative {
+  transform: translateZ(0);
+  will-change: auto;
+}
+
+/* Ensure consistent rendering context */
+.mikrotik-field * {
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Form container optimization */
+.form-container {
+  contain: layout style;
+  transform: translateZ(0);
+}
+
+/* Prevent any layout shifts during scroll */
+.form-container > div {
+  contain: layout style;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Optimize form inputs for smooth scrolling */
+.form-container input,
+.form-container select,
+.form-container textarea {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Fix toggle switches alignment during scroll */
+.toggle-switch {
+  contain: layout style;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.toggle-switch * {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+</style>
+
 <template>
   <UModal :prevent-close="true">
-    <div class="p-6 max-w-7xl max-h-[92vh] overflow-y-auto relative bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-950">
+    <div class="p-4 sm:p-6 max-w-7xl max-h-[92vh] overflow-y-auto relative bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-950 scroll-smooth">
       <!-- Close Button -->
       <button 
         @click="closeModal"
@@ -466,16 +598,16 @@ onMounted(async () => {
       <UForm
         :schema="schema"
         :state="state"
-        class="space-y-6"
+        class="form-container space-y-6"
         @submit="onSubmit"
       >
         <!-- Basic Installation Information -->
-        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 sm:p-6 rounded-lg">
           <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4 flex items-center">
             <UIcon name="i-heroicons-information-circle" class="mr-2" />
             Basic Installation Information
           </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <UFormGroup label="Customer *" name="customer_id">
               <USelectMenu
                 v-model="state.customer_id"
@@ -547,7 +679,7 @@ onMounted(async () => {
         </div>
 
         <!-- Technician Team Section -->
-        <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:bg-gradient-to-br dark:from-indigo-900/30 dark:to-purple-900/30 p-6 rounded-xl border-2 border-indigo-100 dark:border-indigo-800 shadow-sm">
+        <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:bg-gradient-to-br dark:from-indigo-900/30 dark:to-purple-900/30 p-4 sm:p-6 rounded-xl border-2 border-indigo-100 dark:border-indigo-800 shadow-sm">
           <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
             <div>
               <h3 class="text-xl font-bold text-indigo-900 dark:text-indigo-100 flex items-center gap-2">
@@ -571,25 +703,29 @@ onMounted(async () => {
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Click "Add Technician" to assign your installation team</p>
           </div>
           
-          <div v-else class="space-y-3">
+          <div v-else class="space-y-4 overflow-hidden">
             <div v-for="(tech, index) in state.technicians" :key="index" 
-              class="bg-white dark:bg-gray-800 rounded-lg border-2 border-indigo-200 dark:border-indigo-700 p-4 shadow-sm hover:shadow-md transition-shadow">
-              <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <!-- Technician Number Badge -->
-                <div class="md:col-span-12 flex items-center gap-2 mb-2">
-                  <div class="bg-indigo-500 text-white font-bold rounded-full w-8 h-8 flex items-center justify-center text-sm">
+              class="technician-card bg-white dark:bg-gray-800 rounded-xl border-2 border-indigo-200 dark:border-indigo-700 p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-200">
+              
+              <!-- Header Section -->
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                  <div class="bg-indigo-500 text-white font-bold rounded-full w-8 h-8 flex items-center justify-center text-sm flex-shrink-0">
                     {{ index + 1 }}
                   </div>
-                  <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">Technician {{ index + 1 }}</span>
-                  <div v-if="tech.is_primary" class="ml-auto flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full text-xs font-bold">
-                    <UIcon name="i-heroicons-star-solid" class="w-4 h-4" />
-                    PRIMARY
-                  </div>
+                  <span class="text-base font-semibold text-gray-700 dark:text-gray-200">Technician {{ index + 1 }}</span>
                 </div>
-                
-                <!-- Technician Select -->
-                <div class="md:col-span-5">
-                  <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
+                <div v-if="tech.is_primary" class="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full text-xs font-bold">
+                  <UIcon name="i-heroicons-star-solid" class="w-4 h-4" />
+                  PRIMARY
+                </div>
+              </div>
+              
+              <!-- Main Content - Mobile First Layout -->
+              <div class="space-y-4">
+                <!-- Technician Selection -->
+                <div class="w-full">
+                  <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
                     Select Technician <span class="text-red-500">*</span>
                   </label>
                   <USelectMenu
@@ -602,64 +738,71 @@ onMounted(async () => {
                     value-attribute="id"
                     :search-attributes="['name']"
                     size="lg"
+                    class="w-full"
                   />
                 </div>
                 
-                <!-- Role Select -->
-                <div class="md:col-span-3">
-                  <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
-                    Role <span class="text-red-500">*</span>
-                  </label>
-                  <USelectMenu
-                    v-model="tech.role"
-                    :options="[
-                      { value: 'senior', label: '👨‍🔧 Senior', description: 'Lead technician' },
-                      { value: 'junior', label: '👷 Junior', description: 'Supporting role' },
-                      { value: 'helper', label: '🔧 Helper', description: 'Assistant' }
-                    ]"
-                    value-attribute="value"
-                    option-attribute="label"
-                    size="lg"
-                  />
-                </div>
-                
-                <!-- Action Buttons -->
-                <div class="md:col-span-4 flex flex-col gap-2">
-                  <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">Actions</label>
-                  <div class="flex gap-2">
-                    <UButton 
-                      @click="setPrimaryTechnician(index)"
-                      :color="tech.is_primary ? 'green' : 'gray'"
-                      :variant="tech.is_primary ? 'solid' : 'outline'"
+                <!-- Role and Actions Row -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <!-- Role Selection -->
+                  <div class="w-full">
+                    <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                      Role <span class="text-red-500">*</span>
+                    </label>
+                    <USelectMenu
+                      v-model="tech.role"
+                      :options="[
+                        { value: 'senior', label: '👨‍🔧 Senior', description: 'Lead technician' },
+                        { value: 'junior', label: '👷 Junior', description: 'Supporting role' },
+                        { value: 'helper', label: '🔧 Helper', description: 'Assistant' }
+                      ]"
+                      value-attribute="value"
+                      option-attribute="label"
                       size="lg"
-                      class="flex-1"
-                      :disabled="tech.is_primary"
-                    >
-                      <UIcon :name="tech.is_primary ? 'i-heroicons-star-solid' : 'i-heroicons-star'" class="mr-1 w-4 h-4" />
-                      <span class="hidden sm:inline">{{ tech.is_primary ? 'Primary' : 'Set Primary' }}</span>
-                      <span class="sm:hidden">Primary</span>
-                    </UButton>
-                    <UButton 
-                      @click="removeTechnician(index)"
-                      color="red"
-                      variant="outline"
-                      size="lg"
-                      :disabled="state.technicians.length === 1"
-                    >
-                      <UIcon name="i-heroicons-trash" class="w-4 h-4" />
-                    </UButton>
+                      class="w-full"
+                    />
+                  </div>
+                  
+                  <!-- Action Buttons -->
+                  <div class="w-full">
+                    <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Actions</label>
+                    <div class="flex gap-2 w-full">
+                      <UButton 
+                        @click="setPrimaryTechnician(index)"
+                        :color="tech.is_primary ? 'green' : 'gray'"
+                        :variant="tech.is_primary ? 'solid' : 'outline'"
+                        size="lg"
+                        class="flex-1 min-w-0"
+                        :disabled="tech.is_primary"
+                      >
+                        <UIcon :name="tech.is_primary ? 'i-heroicons-star-solid' : 'i-heroicons-star'" class="mr-1 w-4 h-4" />
+                        <span class="hidden xs:inline">{{ tech.is_primary ? 'Primary' : 'Set Primary' }}</span>
+                        <span class="xs:hidden">Primary</span>
+                      </UButton>
+                      <UButton 
+                        @click="removeTechnician(index)"
+                        color="red"
+                        variant="outline"
+                        size="lg"
+                        class="flex-shrink-0"
+                        :disabled="state.technicians.length === 1"
+                      >
+                        <UIcon name="i-heroicons-trash" class="w-4 h-4" />
+                      </UButton>
+                    </div>
                   </div>
                 </div>
                 
-                <!-- Notes -->
-                <div class="md:col-span-12">
-                  <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
+                <!-- Notes Section -->
+                <div class="w-full">
+                  <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
                     Notes <span class="text-gray-500 text-xs font-normal">(optional)</span>
                   </label>
                   <UInput 
                     v-model="tech.notes" 
                     placeholder="e.g., Responsible for fiber splicing, familiar with this area, etc."
                     size="lg"
+                    class="w-full"
                   />
                 </div>
               </div>
@@ -682,7 +825,7 @@ onMounted(async () => {
         </div>
 
         <!-- MikroTik Provisioning Section -->
-        <div class="bg-gradient-to-br from-cyan-50 to-blue-50 dark:bg-gradient-to-br dark:from-cyan-900/30 dark:to-blue-900/30 p-6 rounded-xl border-2 border-cyan-100 dark:border-cyan-800 shadow-sm">
+        <div class="mikrotik-section bg-gradient-to-br from-cyan-50 to-blue-50 dark:bg-gradient-to-br dark:from-cyan-900/30 dark:to-blue-900/30 p-4 sm:p-6 rounded-xl border-2 border-cyan-100 dark:border-cyan-800 shadow-sm">
           <div class="mb-5">
             <h3 class="text-xl font-bold text-cyan-900 dark:text-cyan-100 flex items-center gap-2">
               <div class="bg-cyan-500 p-2 rounded-lg">
@@ -694,60 +837,72 @@ onMounted(async () => {
             <p class="text-sm text-cyan-700 dark:text-cyan-300 mt-1">Automatically configure customer on RouterOS/Winbox</p>
           </div>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+          <div class="mikrotik-form grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="mikrotik-field">
               <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
                 MAC Address
               </label>
-              <UInput 
-                v-model="state.mac_address" 
-                placeholder="AA:BB:CC:DD:EE:FF"
-                size="lg"
-                icon="i-heroicons-signal"
-              />
+              <div class="relative">
+                <UInput 
+                  v-model="state.mac_address" 
+                  placeholder="AA:BB:CC:DD:EE:FF"
+                  size="lg"
+                  icon="i-heroicons-signal"
+                  class="w-full"
+                />
+              </div>
               <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Customer device MAC address for provisioning</p>
             </div>
             
-            <div>
+            <div class="mikrotik-field">
               <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
                 Max Bandwidth Limit
               </label>
-              <UInput 
-                v-model="state.max_limit" 
-                placeholder="10M/10M"
-                size="lg"
-                icon="i-heroicons-arrow-trending-up"
-              />
+              <div class="relative">
+                <UInput 
+                  v-model="state.max_limit" 
+                  placeholder="10M/10M"
+                  size="lg"
+                  icon="i-heroicons-arrow-trending-up"
+                  class="w-full"
+                />
+              </div>
               <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Format: Download/Upload (e.g., 10M/10M, 50M/50M)</p>
             </div>
             
-            <div>
+            <div class="mikrotik-field">
               <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
                 PSB Date
               </label>
-              <UInput 
-                v-model="state.psb_date" 
-                type="date"
-                size="lg"
-              />
+              <div class="relative">
+                <UInput 
+                  v-model="state.psb_date" 
+                  type="date"
+                  size="lg"
+                  class="w-full"
+                />
+              </div>
               <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Provisioning service begin date</p>
             </div>
             
-            <div>
+            <div class="mikrotik-field">
               <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
                 PSB Time
               </label>
-              <UInput 
-                v-model="state.psb_time" 
-                type="time"
-                size="lg"
-              />
+              <div class="relative">
+                <UInput 
+                  v-model="state.psb_time" 
+                  type="time"
+                  size="lg"
+                  class="w-full"
+                />
+              </div>
               <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Service activation time</p>
             </div>
             
             <!-- Provisioning Toggle Switches -->
-            <div class="md:col-span-2 space-y-3 mt-2">
-              <div class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-cyan-200 dark:border-cyan-700">
+            <div class="sm:col-span-2 space-y-3 mt-4">
+              <div class="toggle-switch flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-cyan-200 dark:border-cyan-700">
                 <div class="flex items-center gap-3">
                   <div class="bg-cyan-100 dark:bg-cyan-900/50 p-2 rounded-lg">
                     <UIcon name="i-heroicons-bolt" class="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
@@ -768,7 +923,7 @@ onMounted(async () => {
               </div>
               
               <div 
-                class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border-2 transition-all"
+                class="toggle-switch flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border-2 transition-all"
                 :class="state.auto_provision ? 'border-orange-200 dark:border-orange-700' : 'border-gray-200 dark:border-gray-700 opacity-50'"
               >
                 <div class="flex items-center gap-3">
