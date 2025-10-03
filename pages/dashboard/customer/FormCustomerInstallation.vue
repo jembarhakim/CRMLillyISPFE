@@ -556,6 +556,17 @@ onMounted(async () => {
   transform: translateZ(0);
   backface-visibility: hidden;
 }
+
+/* Fix modal footer positioning and remove gaps */
+.sticky {
+  position: sticky;
+  z-index: 10;
+}
+
+/* Ensure no gap at bottom of modal */
+.overflow-y-auto {
+  padding-bottom: 0 !important;
+}
 </style>
 
 <template>
@@ -1194,7 +1205,7 @@ onMounted(async () => {
 
 
         <!-- Submit Button -->
-        <div class="sticky bottom-0 -mx-6 -mb-6 p-6 bg-gradient-to-r from-white to-blue-50 dark:from-gray-800 dark:to-blue-950 border-t-2 border-blue-200 dark:border-blue-800 shadow-lg">
+        <div class="sticky bottom-0 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 p-4 sm:p-6 bg-gradient-to-r from-white to-blue-50 dark:from-gray-800 dark:to-blue-950 border-t-2 border-blue-200 dark:border-blue-800 shadow-lg">
           <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
             <!-- Requirements Check -->
             <div class="text-sm text-gray-700 dark:text-gray-300">
@@ -1217,7 +1228,7 @@ onMounted(async () => {
                 color="gray" 
                 variant="outline"
                 size="xl"
-                @click="$emit('close')"
+                @click="closeModal"
                 class="flex-1 sm:flex-initial"
               >
                 <UIcon name="i-heroicons-x-circle" class="mr-2 w-5 h-5" />
