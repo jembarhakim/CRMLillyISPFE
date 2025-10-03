@@ -44,7 +44,8 @@ export default defineNuxtPlugin((nuxtApp) => {
         // Reset when navigating to dashboard (successful login)
         const originalPushState = history.pushState
         history.pushState = function(...args) {
-            if (args[2]?.includes('/dashboard')) {
+            const url = args[2]
+            if (url && typeof url === 'string' && url.includes('/dashboard')) {
                 resetNotificationFlag()
             }
             return originalPushState.apply(history, args)

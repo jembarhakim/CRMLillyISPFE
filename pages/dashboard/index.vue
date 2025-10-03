@@ -1314,7 +1314,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
                 <p class="font-medium text-gray-900">{{ customer.customer_name || 'Unknown Customer' }}</p>
-                <span v-if="customer.total_paid === 0" class="px-2 py-1 text-xs rounded-full font-medium bg-red-100 text-red-800">
+                <span v-if="Number(customer.total_paid) <= 0" class="px-2 py-1 text-xs rounded-full font-medium bg-red-100 text-red-800">
                   UNPAID
                 </span>
                 <span v-else class="px-2 py-1 text-xs rounded-full font-medium bg-orange-100 text-orange-800">
