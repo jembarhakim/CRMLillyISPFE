@@ -293,5 +293,37 @@ export const customerAdminApi = () => {
       }
     },
 
+    // Get customer related records count
+    getCustomerRelatedRecords: async (customerId: string) => {
+      const response = await fetch(`${api}/api/admin/customer/${customerId}/related-records`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get customer related records');
+      }
+      return response.json();
+    },
+
+    // Delete customer with all related records
+    deleteCustomerWithRelated: async (customerId: string) => {
+      const response = await fetch(`${api}/api/admin/customer/${customerId}/with-related`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete customer with related records');
+      }
+      return response.json();
+    },
+
   };
 };

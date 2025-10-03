@@ -29,14 +29,13 @@ const props = defineProps({
 
 const schema = object({
   customer_id: string().required("Customer is required"),
-  technician_id: string().required("Technician is required"),
   assets_id: string().required("Asset is required"),
 });
 
 const state = reactive({
   // Basic Installation Information
   customer_id: "",
-  technician_id: "",
+  technician_id: "", // Legacy - kept for backward compatibility
   status: "pending",
   notes: "",
   document_type: "KTP",
@@ -47,13 +46,28 @@ const state = reactive({
   service_ready_date: "",
   installation_completed_at: "",
 
+  // Multiple Technicians with Roles
+  technicians: [] as Array<{
+    technician_id: string;
+    role: 'senior' | 'junior' | 'helper';
+    is_primary: boolean;
+    notes: string;
+  }>,
+
+  // MikroTik Provisioning Fields
+  mac_address: "",
+  psb_date: "",
+  psb_time: "",
+  max_limit: "", // e.g., "10M/10M"
+  auto_provision: false,
+  dry_run: false,
+
   // Network Device Information
   assets_id: "",
   switch_id: "",
   port_number: "",
   remote_port: "",
   eth_port: "",
-  mac_address: "",
   ip_static: "",
   kepemilikan_perangkat: "owned",
   status_perangkat: "active",
@@ -68,11 +82,10 @@ const state = reactive({
   user_status: "Active",
   installation_notes: "",
 
-
   // UI State
   loading: false,
   customers: [] as any[],
-  technicians: [] as any[],
+  availableTechnicians: [] as any[], // List of available technicians from DB
   assets: [] as any[],
   documentPreview: "",
 });
@@ -100,12 +113,24 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   state.loading = true;
   
   try {
+    // Validate at least one technician is assigned
+    if (state.technicians.length === 0) {
+      notification.error('Validation Error', 'Please assign at least one technician');
+      return;
+    }
+
+    // Validate at least one senior technician
+    const hasSenior = state.technicians.some(t => t.role === 'senior');
+    if (!hasSenior) {
+      notification.error('Validation Error', 'At least one senior technician is required');
+      return;
+    }
+
     // Create FormData for multipart form submission
     const formData = new FormData();
     
     // Append all form fields
     formData.append('customer_id', state.customer_id);
-    formData.append('technician_id', state.technician_id);
     formData.append('assets_id', state.assets_id);
     formData.append('status', state.status);
     formData.append('notes', state.notes);
@@ -116,12 +141,22 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     formData.append('service_ready_date', state.service_ready_date);
     formData.append('installation_completed_at', state.installation_completed_at);
     
+    // Multiple technicians (send as JSON)
+    formData.append('technicians', JSON.stringify(state.technicians));
+    
+    // MikroTik provisioning fields
+    if (state.mac_address) formData.append('mac_address', state.mac_address);
+    if (state.psb_date) formData.append('psb_date', state.psb_date);
+    if (state.psb_time) formData.append('psb_time', state.psb_time);
+    if (state.max_limit) formData.append('max_limit', state.max_limit);
+    formData.append('auto_provision', state.auto_provision.toString());
+    formData.append('dry_run', state.dry_run.toString());
+    
     // Network device fields
     formData.append('switch_id', state.switch_id);
     formData.append('port_number', state.port_number);
     formData.append('remote_port', state.remote_port);
     formData.append('eth_port', state.eth_port);
-    formData.append('mac_address', state.mac_address);
     formData.append('ip_static', state.ip_static);
     formData.append('kepemilikan_perangkat', state.kepemilikan_perangkat);
     formData.append('status_perangkat', state.status_perangkat);
@@ -135,7 +170,6 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     formData.append('password', state.password);
     formData.append('user_status', state.user_status);
     formData.append('installation_notes', state.installation_notes);
-    
     
     // Append document photo if selected
     if (state.document_photo) {
@@ -156,8 +190,29 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     
     console.log("Success creating installation report", response);
     
-    // Show success notification
-    notification.success('Success', 'Installation report created successfully');
+    // Check if there's provisioning information in the response
+    if (response.data?.provisioning) {
+      const prov = response.data.provisioning;
+      if (prov.status === 'success') {
+        if (prov.dry_run) {
+          notification.success('Installation Created & Provisioning Preview', 
+            `Installation created. Dry-run completed with ${prov.commands?.length || 0} commands. Check console for details.`);
+          console.log('Provisioning commands (dry-run):', prov.commands);
+        } else {
+          notification.success('Installation Created & Provisioned', 
+            `Installation created and customer provisioned successfully! Code: ${prov.code_name || 'N/A'}`);
+        }
+      } else if (prov.status === 'failed') {
+        notification.warning('Installation Created (Provisioning Failed)', 
+          `Installation created but provisioning failed: ${prov.error || 'Unknown error'}`);
+      } else {
+        notification.success('Installation Created', 
+          `Installation created. Provisioning ${prov.message || 'skipped'}.`);
+      }
+    } else {
+      // Show success notification
+      notification.success('Success', 'Installation report created successfully');
+    }
     
     onSuccess();
     
@@ -185,6 +240,77 @@ function onSuccess() {
   // Dispatch event to refresh installation list
   window.dispatchEvent(new CustomEvent('installation-created'));
 }
+
+// Load test data for debugging
+const loadTestData = () => {
+  // Get current date/time
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const currentTime = now.toTimeString().slice(0, 5);
+  const nextMonth = new Date(now.setMonth(now.getMonth() + 1)).toISOString().split('T')[0];
+  
+  // Basic Installation Information
+  state.status = "pending";
+  state.notes = "Test installation report - debugging";
+  state.document_type = "KTP";
+  state.installation_type = "new_installation";
+  state.on_air_date = today;
+  state.trial_end_date = nextMonth;
+  state.service_ready_date = today;
+  state.installation_completed_at = `${today}T${currentTime}`;
+  
+  // Clear and add test technicians if available
+  if (state.availableTechnicians.length > 0) {
+    state.technicians = [];
+    // Add first available as senior primary
+    if (state.availableTechnicians[0]) {
+      state.technicians.push({
+        technician_id: state.availableTechnicians[0].id,
+        role: 'senior',
+        is_primary: true,
+        notes: 'Lead technician - test'
+      });
+    }
+    // Add second available as junior if exists
+    if (state.availableTechnicians.length > 1) {
+      state.technicians.push({
+        technician_id: state.availableTechnicians[1].id,
+        role: 'junior',
+        is_primary: false,
+        notes: 'Assistant technician - test'
+      });
+    }
+  }
+  
+  // MikroTik Provisioning Fields
+  state.mac_address = "40:EE:15:7D:43:99";
+  state.psb_date = today;
+  state.psb_time = currentTime;
+  state.max_limit = "10M/10M";
+  state.auto_provision = true;
+  state.dry_run = true; // Safe for testing
+  
+  // Network Device Information
+  state.switch_id = "SW-TEST-001";
+  state.port_number = "10";
+  state.remote_port = "2000";
+  state.eth_port = "eth0";
+  state.ip_static = "192.168.1.100";
+  state.kepemilikan_perangkat = "owned";
+  state.status_perangkat = "active";
+  state.last_ping_status = "up";
+  
+  // Customer Service Information
+  state.cable_type = "UTP Cat6";
+  state.cable_length = 20;
+  state.end_port_type = "RJ45";
+  state.user_login = "testuser@example.com";
+  state.password = "testpassword123";
+  state.user_status = "Active";
+  state.installation_notes = "Test installation with all fields populated";
+  
+  notification.success('Test Data Loaded', 'All fields have been filled with test data. Select a customer and asset to complete.');
+};
 
 // Handle document photo upload
 const handleDocumentPhotoUpload = (event: Event) => {
@@ -228,7 +354,7 @@ async function loadCustomers() {
 async function loadTechnicians() {
   try {
     const response = await userManagementAdminApi().getAllUsers({ query: { role: "TECHNICIAN" } });
-    state.technicians = response.data || [];
+    state.availableTechnicians = response.data || [];
   } catch (error) {
     console.error("Failed to load technicians:", error);
   }
@@ -254,6 +380,37 @@ function closeModal() {
   useModal().close();
 }
 
+// Helper functions for managing technicians
+function addTechnician() {
+  state.technicians.push({
+    technician_id: "",
+    role: "junior",
+    is_primary: state.technicians.length === 0, // First technician is primary by default
+    notes: "",
+  });
+}
+
+function removeTechnician(index: number) {
+  const removedTech = state.technicians[index];
+  state.technicians.splice(index, 1);
+  
+  // If we removed the primary, make the first senior primary
+  if (removedTech.is_primary && state.technicians.length > 0) {
+    const firstSenior = state.technicians.find(t => t.role === 'senior');
+    if (firstSenior) {
+      firstSenior.is_primary = true;
+    } else if (state.technicians.length > 0) {
+      state.technicians[0].is_primary = true;
+    }
+  }
+}
+
+function setPrimaryTechnician(index: number) {
+  state.technicians.forEach((tech, i) => {
+    tech.is_primary = i === index;
+  });
+}
+
 // Load data on component mount
 onMounted(async () => {
   await Promise.all([
@@ -261,24 +418,49 @@ onMounted(async () => {
     loadTechnicians(),
     loadAssets()
   ]);
+  
+  // Add one technician by default
+  if (state.technicians.length === 0) {
+    addTechnician();
+  }
 });
 </script>
 
 <template>
   <UModal :prevent-close="true">
-    <div class="p-6 max-w-6xl max-h-[90vh] overflow-y-auto relative">
+    <div class="p-6 max-w-7xl max-h-[92vh] overflow-y-auto relative bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-950">
       <!-- Close Button -->
       <button 
         @click="closeModal"
-        class="absolute top-4 right-4 z-10 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors duration-200"
+        class="absolute top-4 right-4 z-20 p-2.5 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all duration-200 shadow-md hover:shadow-lg"
         title="Close modal"
       >
-        <UIcon name="i-heroicons-x-mark" class="w-6 h-6" />
+        <UIcon name="i-heroicons-x-mark" class="w-7 h-7" />
       </button>
       
-      <div class="p-2 mb-6 text-2xl font-bold text-center">
-        <h1>Add Report Installation</h1>
-        <p class="text-sm font-normal text-gray-600 mt-2">Complete installation report with all technical details</p>
+      <!-- Header -->
+      <div class="mb-8 text-center pb-6 border-b-2 border-blue-200 dark:border-blue-800">
+        <div class="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-indigo-600 p-3 rounded-2xl mb-4 shadow-lg">
+          <UIcon name="i-heroicons-document-plus" class="w-10 h-10 text-white" />
+        </div>
+        <h1 class="text-3xl font-black text-gray-900 dark:text-gray-100 mb-2">
+          Add Installation Report
+        </h1>
+        <p class="text-base text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
+          Complete installation documentation with team assignment and optional MikroTik auto-provisioning
+        </p>
+        
+        <!-- Load Test Data Button for Debugging -->
+        <div class="mt-4">
+          <button
+            type="button"
+            @click="loadTestData"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+          >
+            <UIcon name="i-heroicons-beaker" class="w-5 h-5" />
+            Load Test Data (Debug)
+          </button>
+        </div>
       </div>
       
       <UForm
@@ -304,19 +486,6 @@ onMounted(async () => {
                 option-attribute="name"
                 value-attribute="id"
                 :search-attributes="['name', 'phone']"
-              />
-            </UFormGroup>
-            
-            <UFormGroup label="Technician *" name="technician_id">
-              <USelectMenu
-                v-model="state.technician_id"
-                :options="state.technicians"
-                placeholder="Select technician"
-                searchable
-                searchable-placeholder="Search by technician name"
-                option-attribute="name"
-                value-attribute="id"
-                :search-attributes="['name']"
               />
             </UFormGroup>
             
@@ -375,6 +544,299 @@ onMounted(async () => {
               :rows="3"
             />
           </UFormGroup>
+        </div>
+
+        <!-- Technician Team Section -->
+        <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:bg-gradient-to-br dark:from-indigo-900/30 dark:to-purple-900/30 p-6 rounded-xl border-2 border-indigo-100 dark:border-indigo-800 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
+            <div>
+              <h3 class="text-xl font-bold text-indigo-900 dark:text-indigo-100 flex items-center gap-2">
+                <div class="bg-indigo-500 p-2 rounded-lg">
+                  <UIcon name="i-heroicons-user-group" class="text-white w-5 h-5" />
+                </div>
+                Installation Team
+                <span class="text-red-500">*</span>
+              </h3>
+              <p class="text-sm text-indigo-700 dark:text-indigo-300 mt-1">Assign technicians with their roles and responsibilities</p>
+            </div>
+            <UButton @click="addTechnician" size="lg" color="indigo">
+              <UIcon name="i-heroicons-plus-circle" class="mr-2 w-5 h-5" />
+              Add Technician
+            </UButton>
+          </div>
+          
+          <div v-if="state.technicians.length === 0" class="text-center py-8 px-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-indigo-200 dark:border-indigo-700">
+            <UIcon name="i-heroicons-user-group" class="w-16 h-16 text-indigo-300 dark:text-indigo-600 mx-auto mb-3" />
+            <p class="text-gray-600 dark:text-gray-300 font-medium">No technicians assigned yet</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Click "Add Technician" to assign your installation team</p>
+          </div>
+          
+          <div v-else class="space-y-3">
+            <div v-for="(tech, index) in state.technicians" :key="index" 
+              class="bg-white dark:bg-gray-800 rounded-lg border-2 border-indigo-200 dark:border-indigo-700 p-4 shadow-sm hover:shadow-md transition-shadow">
+              <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <!-- Technician Number Badge -->
+                <div class="md:col-span-12 flex items-center gap-2 mb-2">
+                  <div class="bg-indigo-500 text-white font-bold rounded-full w-8 h-8 flex items-center justify-center text-sm">
+                    {{ index + 1 }}
+                  </div>
+                  <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">Technician {{ index + 1 }}</span>
+                  <div v-if="tech.is_primary" class="ml-auto flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full text-xs font-bold">
+                    <UIcon name="i-heroicons-star-solid" class="w-4 h-4" />
+                    PRIMARY
+                  </div>
+                </div>
+                
+                <!-- Technician Select -->
+                <div class="md:col-span-5">
+                  <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
+                    Select Technician <span class="text-red-500">*</span>
+                  </label>
+                  <USelectMenu
+                    v-model="tech.technician_id"
+                    :options="state.availableTechnicians"
+                    placeholder="Choose a technician"
+                    searchable
+                    searchable-placeholder="Search by name"
+                    option-attribute="name"
+                    value-attribute="id"
+                    :search-attributes="['name']"
+                    size="lg"
+                  />
+                </div>
+                
+                <!-- Role Select -->
+                <div class="md:col-span-3">
+                  <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
+                    Role <span class="text-red-500">*</span>
+                  </label>
+                  <USelectMenu
+                    v-model="tech.role"
+                    :options="[
+                      { value: 'senior', label: '👨‍🔧 Senior', description: 'Lead technician' },
+                      { value: 'junior', label: '👷 Junior', description: 'Supporting role' },
+                      { value: 'helper', label: '🔧 Helper', description: 'Assistant' }
+                    ]"
+                    value-attribute="value"
+                    option-attribute="label"
+                    size="lg"
+                  />
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="md:col-span-4 flex flex-col gap-2">
+                  <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">Actions</label>
+                  <div class="flex gap-2">
+                    <UButton 
+                      @click="setPrimaryTechnician(index)"
+                      :color="tech.is_primary ? 'green' : 'gray'"
+                      :variant="tech.is_primary ? 'solid' : 'outline'"
+                      size="lg"
+                      class="flex-1"
+                      :disabled="tech.is_primary"
+                    >
+                      <UIcon :name="tech.is_primary ? 'i-heroicons-star-solid' : 'i-heroicons-star'" class="mr-1 w-4 h-4" />
+                      <span class="hidden sm:inline">{{ tech.is_primary ? 'Primary' : 'Set Primary' }}</span>
+                      <span class="sm:hidden">Primary</span>
+                    </UButton>
+                    <UButton 
+                      @click="removeTechnician(index)"
+                      color="red"
+                      variant="outline"
+                      size="lg"
+                      :disabled="state.technicians.length === 1"
+                    >
+                      <UIcon name="i-heroicons-trash" class="w-4 h-4" />
+                    </UButton>
+                  </div>
+                </div>
+                
+                <!-- Notes -->
+                <div class="md:col-span-12">
+                  <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
+                    Notes <span class="text-gray-500 text-xs font-normal">(optional)</span>
+                  </label>
+                  <UInput 
+                    v-model="tech.notes" 
+                    placeholder="e.g., Responsible for fiber splicing, familiar with this area, etc."
+                    size="lg"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-4 p-4 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg border border-indigo-200 dark:border-indigo-700">
+            <div class="flex items-start gap-2">
+              <UIcon name="i-heroicons-information-circle" class="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
+              <div class="text-sm text-indigo-900 dark:text-indigo-100">
+                <p class="font-semibold mb-1">Team Requirements:</p>
+                <ul class="list-disc list-inside space-y-1 text-indigo-800 dark:text-indigo-200">
+                  <li>At least one <strong>Senior</strong> technician is required</li>
+                  <li>Primary technician will be the main point of contact</li>
+                  <li>You can assign multiple technicians for complex installations</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MikroTik Provisioning Section -->
+        <div class="bg-gradient-to-br from-cyan-50 to-blue-50 dark:bg-gradient-to-br dark:from-cyan-900/30 dark:to-blue-900/30 p-6 rounded-xl border-2 border-cyan-100 dark:border-cyan-800 shadow-sm">
+          <div class="mb-5">
+            <h3 class="text-xl font-bold text-cyan-900 dark:text-cyan-100 flex items-center gap-2">
+              <div class="bg-cyan-500 p-2 rounded-lg">
+                <UIcon name="i-heroicons-server-stack" class="text-white w-5 h-5" />
+              </div>
+              MikroTik Auto-Provisioning
+              <span class="text-xs font-normal text-gray-600 dark:text-gray-400 ml-2">(Optional)</span>
+            </h3>
+            <p class="text-sm text-cyan-700 dark:text-cyan-300 mt-1">Automatically configure customer on RouterOS/Winbox</p>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
+                MAC Address
+              </label>
+              <UInput 
+                v-model="state.mac_address" 
+                placeholder="AA:BB:CC:DD:EE:FF"
+                size="lg"
+                icon="i-heroicons-signal"
+              />
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Customer device MAC address for provisioning</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
+                Max Bandwidth Limit
+              </label>
+              <UInput 
+                v-model="state.max_limit" 
+                placeholder="10M/10M"
+                size="lg"
+                icon="i-heroicons-arrow-trending-up"
+              />
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Format: Download/Upload (e.g., 10M/10M, 50M/50M)</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
+                PSB Date
+              </label>
+              <UInput 
+                v-model="state.psb_date" 
+                type="date"
+                size="lg"
+              />
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Provisioning service begin date</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
+                PSB Time
+              </label>
+              <UInput 
+                v-model="state.psb_time" 
+                type="time"
+                size="lg"
+              />
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Service activation time</p>
+            </div>
+            
+            <!-- Provisioning Toggle Switches -->
+            <div class="md:col-span-2 space-y-3 mt-2">
+              <div class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-cyan-200 dark:border-cyan-700">
+                <div class="flex items-center gap-3">
+                  <div class="bg-cyan-100 dark:bg-cyan-900/50 p-2 rounded-lg">
+                    <UIcon name="i-heroicons-bolt" class="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                  </div>
+                  <div>
+                    <label for="auto_provision" class="text-sm font-bold text-gray-900 dark:text-gray-100 cursor-pointer">
+                      Enable Auto-Provisioning
+                    </label>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">Automatically configure customer on MikroTik after creation</p>
+                  </div>
+                </div>
+                <input 
+                  type="checkbox" 
+                  v-model="state.auto_provision" 
+                  id="auto_provision"
+                  class="w-6 h-6 text-cyan-600 bg-gray-100 border-2 border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 cursor-pointer"
+                />
+              </div>
+              
+              <div 
+                class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border-2 transition-all"
+                :class="state.auto_provision ? 'border-orange-200 dark:border-orange-700' : 'border-gray-200 dark:border-gray-700 opacity-50'"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="bg-orange-100 dark:bg-orange-900/50 p-2 rounded-lg">
+                    <UIcon name="i-heroicons-eye" class="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <div>
+                    <label for="dry_run" class="text-sm font-bold text-gray-900 dark:text-gray-100 cursor-pointer" :class="!state.auto_provision && 'opacity-50'">
+                      Dry Run Mode
+                    </label>
+                    <p class="text-xs text-gray-600 dark:text-gray-400" :class="!state.auto_provision && 'opacity-50'">
+                      Preview commands without executing (test mode)
+                    </p>
+                  </div>
+                </div>
+                <input 
+                  type="checkbox" 
+                  v-model="state.dry_run" 
+                  id="dry_run"
+                  class="w-6 h-6 text-orange-600 bg-gray-100 border-2 border-gray-300 rounded focus:ring-2 focus:ring-orange-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                  :disabled="!state.auto_provision"
+                />
+              </div>
+            </div>
+            
+            <!-- Status Alert -->
+            <div v-if="state.auto_provision" class="md:col-span-2 mt-2">
+              <div 
+                class="p-4 rounded-lg border-2 flex items-start gap-3"
+                :class="state.dry_run 
+                  ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700' 
+                  : 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700'"
+              >
+                <UIcon 
+                  :name="state.dry_run ? 'i-heroicons-eye' : 'i-heroicons-check-badge'" 
+                  class="w-6 h-6 flex-shrink-0"
+                  :class="state.dry_run ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'"
+                />
+                <div>
+                  <p class="font-bold text-sm" :class="state.dry_run ? 'text-orange-900 dark:text-orange-100' : 'text-green-900 dark:text-green-100'">
+                    {{ state.dry_run ? '🔍 Dry Run Mode Active' : '⚡ Live Provisioning Mode' }}
+                  </p>
+                  <p class="text-sm mt-1" :class="state.dry_run ? 'text-orange-800 dark:text-orange-200' : 'text-green-800 dark:text-green-200'">
+                    <span v-if="state.dry_run">
+                      Commands will be <strong>generated and displayed</strong> in the browser console but <strong>not executed</strong> on MikroTik. Use this to preview what will happen.
+                    </span>
+                    <span v-else>
+                      Customer will be <strong>automatically provisioned</strong> on MikroTik RouterOS immediately after installation creation. Queue rules and IP bindings will be created.
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div v-else class="md:col-span-2 mt-2">
+              <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 flex items-start gap-3">
+                <UIcon name="i-heroicons-power" class="w-6 h-6 text-gray-400 flex-shrink-0" />
+                <div>
+                  <p class="font-bold text-sm text-gray-900 dark:text-gray-100">
+                    Auto-Provisioning Disabled
+                  </p>
+                  <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    Enable auto-provisioning to automatically configure this customer on MikroTik RouterOS. Manual provisioning will be required otherwise.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Document Information -->
@@ -577,24 +1039,48 @@ onMounted(async () => {
 
 
         <!-- Submit Button -->
-        <div class="flex justify-end space-x-4 pt-6 border-t">
-          <UButton 
-            type="button" 
-            color="gray" 
-            variant="outline"
-            @click="$emit('close')"
-          >
-            Cancel
-          </UButton>
-          <UButton 
-            type="submit" 
-            color="blue"
-            :loading="state.loading"
-            :disabled="!state.customer_id || !state.technician_id || !state.assets_id"
-          >
-            <UIcon name="i-heroicons-document-plus" class="mr-2" />
-            Create Installation Report
-          </UButton>
+        <div class="sticky bottom-0 -mx-6 -mb-6 p-6 bg-gradient-to-r from-white to-blue-50 dark:from-gray-800 dark:to-blue-950 border-t-2 border-blue-200 dark:border-blue-800 shadow-lg">
+          <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <!-- Requirements Check -->
+            <div class="text-sm text-gray-700 dark:text-gray-300">
+              <div class="flex items-center gap-2">
+                <div v-if="!state.customer_id || state.technicians.length === 0 || !state.assets_id" class="flex items-center gap-2 text-orange-600 dark:text-orange-400">
+                  <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5" />
+                  <span class="font-semibold">Please complete required fields</span>
+                </div>
+                <div v-else class="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <UIcon name="i-heroicons-check-circle" class="w-5 h-5" />
+                  <span class="font-semibold">Ready to submit</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex gap-3 w-full sm:w-auto">
+              <UButton 
+                type="button" 
+                color="gray" 
+                variant="outline"
+                size="xl"
+                @click="$emit('close')"
+                class="flex-1 sm:flex-initial"
+              >
+                <UIcon name="i-heroicons-x-circle" class="mr-2 w-5 h-5" />
+                Cancel
+              </UButton>
+              <UButton 
+                type="submit" 
+                color="blue"
+                size="xl"
+                :loading="state.loading"
+                :disabled="!state.customer_id || state.technicians.length === 0 || !state.assets_id"
+                class="flex-1 sm:flex-initial bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              >
+                <UIcon name="i-heroicons-document-check" class="mr-2 w-5 h-5" />
+                <span class="font-bold">Create Installation Report</span>
+              </UButton>
+            </div>
+          </div>
         </div>
       </UForm>
     </div>

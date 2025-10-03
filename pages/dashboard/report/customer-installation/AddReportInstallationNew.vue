@@ -145,6 +145,12 @@
                 @change="handleDocumentPhotoUpload"
                 placeholder="Upload document photo"
               />
+              <div v-if="state.document_photo" class="mt-2 text-sm text-green-600">
+                ✓ Document photo uploaded: {{ state.document_photo }}
+              </div>
+              <div v-else class="mt-2 text-sm text-gray-500">
+                No document photo selected
+              </div>
             </UFormGroup>
           </div>
         </div>
@@ -714,6 +720,9 @@ async function handleDocumentPhotoUpload(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   
+  console.log("Document photo upload triggered");
+  console.log("Selected file:", file);
+  
   if (file && file.type.startsWith("image/")) {
     try {
       // Use a more generic path if customer/technician not selected yet
@@ -778,33 +787,93 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   isSubmitting.value = true;
   
   try {
-    const submitData: CreateCompleteInstallationReportRequest = {
-      customer_id: state.customer_id,
-      technician_id: state.technician_id,
-      status: state.status,
-      notes: state.notes,
-      document_type: state.document_type,
-      document_photo: state.document_photo,
-      installation_type: state.installation_type,
-      on_air_date: state.on_air_date,
-      trial_end_date: state.trial_end_date,
-      service_ready_date: state.service_ready_date,
-      installation_completed_at: state.installation_completed_at,
-      network_devices: state.network_devices,
-      customer_services: state.customer_services.map(service => ({
-        ...service,
-        installation_team_name: state.installation_team_name,
-        installation_team_phone: state.installation_team_phone,
-      })),
-      cables: state.cables,
-      image_ids: state.image_ids,
-    };
+    // Create FormData for multipart form submission
+    const formData = new FormData();
     
-    console.log("Submitting complete installation report:", submitData);
-    console.log("Document photo being sent:", submitData.document_photo);
-    console.log("Document type being sent:", submitData.document_type);
+    // Basic installation data
+    formData.append('customer_id', state.customer_id);
+    formData.append('technician_id', state.technician_id);
+    formData.append('status', state.status);
+    formData.append('notes', state.notes);
+    formData.append('document_type', state.document_type);
+    formData.append('installation_type', state.installation_type);
+    formData.append('on_air_date', state.on_air_date);
+    formData.append('trial_end_date', state.trial_end_date);
+    formData.append('service_ready_date', state.service_ready_date);
+    formData.append('installation_completed_at', state.installation_completed_at);
     
-    const response = await customerAdminApi().createCompleteInstallationReport(submitData);
+    // Add image_ids as JSON string (backend will need to parse this)
+    if (state.image_ids.length > 0) {
+      formData.append('image_ids', JSON.stringify(state.image_ids));
+    }
+    
+    // Add network device data (first device only for now, as backend expects single device)
+    if (state.network_devices.length > 0) {
+      const device = state.network_devices[0];
+      formData.append('assets_id', device.assets_id || '');
+      formData.append('switch_id', device.switch_id || '');
+      formData.append('port_number', device.port_number || '');
+      formData.append('remote_port', device.remote_port || '');
+      formData.append('eth_port', device.eth_port || '');
+      formData.append('mac_address', device.mac_address || '');
+      formData.append('ip_static', device.ip_static || '');
+      formData.append('status_perangkat', device.status_perangkat || 'active');
+      formData.append('kepemilikan_perangkat', device.kepemilikan_perangkat || 'owned');
+      formData.append('last_ping_status', device.last_ping_status || 'unknown');
+    }
+    
+    // Add customer service data (first service only for now)
+    if (state.customer_services.length > 0) {
+      const service = state.customer_services[0];
+      formData.append('user_login', service.user_login || '');
+      formData.append('password', service.password || '');
+      formData.append('user_status', service.user_status || 'Active');
+      formData.append('end_port_type', service.end_port_type || '');
+      formData.append('installation_notes', service.installation_notes || '');
+    }
+    
+    // Add cable data (first cable only for now)
+    if (state.cables.length > 0) {
+      const cable = state.cables[0];
+      formData.append('cable_type', cable.type || '');
+      formData.append('cable_length', cable.length?.toString() || '0');
+    }
+    
+    // Add document photo if it exists
+    if (state.document_photo) {
+      // If document_photo is a file path, we need to fetch the file and add it to FormData
+      // For now, we'll send the path as a form field and let the backend handle it
+      formData.append('document_photo_path', state.document_photo);
+      console.log("Added document_photo_path to FormData:", state.document_photo);
+    } else {
+      console.log("No document photo to send - state.document_photo is empty");
+    }
+    
+    // Add customer company_id and sales_representative_id if available
+    const selectedCustomer = customerOptions.value.find(c => c.id === state.customer_id);
+    if (selectedCustomer) {
+      if (selectedCustomer.company_id) {
+        formData.append('customer_company_id', selectedCustomer.company_id);
+      }
+      if (selectedCustomer.sales_representative_id) {
+        formData.append('customer_sales_representative_id', selectedCustomer.sales_representative_id);
+      }
+    }
+    
+    // Add product_id if available in network device
+    if (state.network_devices.length > 0) {
+      const device = state.network_devices[0];
+      if (device.product_id) {
+        formData.append('product_id', device.product_id);
+      }
+    }
+    
+    console.log("Submitting installation report with FormData");
+    console.log("Image IDs being sent:", state.image_ids);
+    console.log("Document photo being sent:", state.document_photo);
+    console.log("Document type being sent:", state.document_type);
+    
+    const response = await customerAdminApi().createReportInstallation(formData);
     console.log("API response:", response);
     
     useToast().add({
