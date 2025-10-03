@@ -269,10 +269,10 @@ export const customerAdminApi = () => {
       return response.json();
     },
 
-    // Check if customer has existing installation report
-    checkCustomerInstallationReport: async (customerId: string) => {
+    // Get all installation reports for a customer (supports multiple reports)
+    getCustomerInstallationReports: async (customerId: string) => {
       try {
-        const response = await fetch(`${api}/api/admin/customer-installation/report-complete`, {
+        const response = await fetch(`${api}/api/admin/customer-installation/customer/${customerId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -283,10 +283,7 @@ export const customerAdminApi = () => {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Failed to fetch installation reports');
         }
-        const data = await response.json();
-        // Check if any installation report exists for this customer
-        const hasInstallationReport = data.data && data.data.some((report: any) => report.customer_id === customerId);
-        return { hasInstallationReport };
+        return response.json();
       } catch (error) {
         console.error("Error checking customer installation report:", error);
         return { hasInstallationReport: false };
