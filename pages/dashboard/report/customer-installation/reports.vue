@@ -249,6 +249,9 @@
                   <UButton @click="editReport(report.installation_id)" size="sm" color="green" variant="outline">
                     Edit
                   </UButton>
+                  <UButton @click="deleteReport(report.installation_id)" size="sm" color="red" variant="outline">
+                    Delete
+                  </UButton>
                 </div>
               </td>
             </tr>
@@ -492,6 +495,31 @@ function viewReport(installationId: string) {
 function editReport(installationId: string) {
   // Navigate to edit page or open edit modal
   navigateTo(`/dashboard/report/customer-installation/edit/${installationId}`);
+}
+
+async function deleteReport(installationId: string) {
+  try {
+    await customerAdminApi().deleteInstallationReport(installationId);
+    
+    // Show success notification
+    useToast().add({
+      title: "Success!",
+      description: "Installation report deleted successfully",
+      color: "green",
+    });
+    
+    // Reload reports to reflect the changes
+    await loadReports();
+  } catch (error) {
+    console.error("Error deleting installation report:", error);
+    
+    // Show error notification
+    useToast().add({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Failed to delete installation report",
+      color: "red",
+    });
+  }
 }
 
 function exportReports() {

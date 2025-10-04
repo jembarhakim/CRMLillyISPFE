@@ -224,6 +224,22 @@ export const customerAdminApi = () => {
       return response.json();
     },
 
+    updateCompleteInstallationReport: async (installationId: string, data: any) => {
+      const response = await fetch(`${api}/api/admin/customer-installation/report/complete/${installationId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update installation report');
+      }
+      return response.json();
+    },
+
     createReportInstallation: async (formData: FormData) => {
       const response = await fetch(`${api}/api/admin/customer-installation/report-installations`, {
         method: "POST",
@@ -295,6 +311,21 @@ export const customerAdminApi = () => {
     checkCustomerInstallationReport: async (customerId: string) => {
       console.warn("checkCustomerInstallationReport is deprecated. Multiple installation reports are now supported.");
       return { hasInstallationReport: false }; // Always return false to allow multiple reports
+    },
+
+    deleteInstallationReport: async (installationId: string) => {
+      const response = await fetch(`${api}/api/admin/customer-installation/${installationId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete installation report');
+      }
+      return response.json();
     },
 
   };
