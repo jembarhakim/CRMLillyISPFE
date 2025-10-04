@@ -319,7 +319,7 @@
                   </div>
                   <div>
                     <label class="text-sm font-medium text-green-600">Total Assets</label>
-                    <p class="text-lg font-semibold text-gray-800">{{ report.total_assets_out || 0 }} assets</p>
+                    <p class="text-lg font-semibold text-gray-800">{{ report?.total_assets_out || 0 }} assets</p>
                   </div>
                 </div>
               </div>
@@ -371,14 +371,14 @@
                 </div>
                 <div v-if="report.document_photo" class="text-center">
                   <div class="relative inline-block">
-                    <img 
-                      :src="getDocumentPhotoUrl(report.document_photo)" 
-                      alt="Document Photo" 
+                    <img
+                      :src="getDocumentPhotoUrl(report?.document_photo)"
+                      alt="Document Photo"
                       class="w-64 h-40 object-cover rounded-xl border-2 border-amber-200 cursor-pointer hover:scale-105 transition-transform duration-200 shadow-lg"
-                      @click="openDocumentPhoto(report.document_photo)"
+                      @click="openDocumentPhotoModal"
                       @error="handleImageError"
                     />
-                    <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 rounded-xl transition-all duration-200 flex items-center justify-center">
+                    <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 rounded-xl transition-all duration-200 flex items-center justify-center pointer-events-none">
                       <UIcon name="i-heroicons-magnifying-glass-plus" class="text-white text-2xl opacity-0 hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
@@ -646,7 +646,7 @@
                   </div>
                   <h4 class="text-lg font-semibold text-gray-800">Created At</h4>
                 </div>
-                <p class="text-lg font-semibold text-gray-700">{{ formatDateTime(report.installation_created_at) }}</p>
+                <p class="text-lg font-semibold text-gray-700">{{ formatDateTime(report?.installation_created_at) }}</p>
               </div>
               <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
                 <div class="flex items-center mb-4">
@@ -655,7 +655,7 @@
                   </div>
                   <h4 class="text-lg font-semibold text-gray-800">Last Updated</h4>
                 </div>
-                <p class="text-lg font-semibold text-gray-700">{{ formatDateTime(report.installation_updated_at) }}</p>
+                <p class="text-lg font-semibold text-gray-700">{{ formatDateTime(report?.installation_updated_at) }}</p>
               </div>
             </div>
           </div>
@@ -677,24 +677,48 @@
                 color="white"
                 variant="ghost"
                 icon="i-heroicons-x-mark"
-                @click="showDocumentModal = false"
+                @click="() => { console.log('Modal close button clicked'); showDocumentModal = false; }"
                 class="text-white hover:bg-white/20"
               />
             </div>
           </div>
         </template>
         
-        <div class="flex justify-center p-4">
+        <div class="modal-content flex justify-center p-4">
           <div class="relative">
-            <img 
-              v-if="selectedDocumentPhoto"
-              :src="getDocumentPhotoUrl(selectedDocumentPhoto)" 
-              alt="Document Photo" 
+            <div v-if="!selectedDocumentPhoto" class="text-center p-8">
+              <p class="text-gray-500">No document photo selected</p>
+            </div>
+
+            <img
+              v-if="selectedDocumentPhoto && modalImageLoaded"
+              :src="getDocumentPhotoUrl(selectedDocumentPhoto)"
+              alt="Document Photo"
               class="max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl border border-gray-200"
               @error="handleImageError"
+              @load="handleImageLoad"
             />
-            <div class="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+            <div v-if="selectedDocumentPhoto" class="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
               {{ report?.document_type || 'Document' }}
+            </div>
+
+            <!-- Show error message if image failed to load -->
+            <div v-if="!modalImageLoaded && selectedDocumentPhoto" class="image-error-message-modal text-center p-8 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300">
+              <div class="text-gray-500 mb-4">
+                <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+              </div>
+              <p class="text-lg text-gray-600 mb-2">Document photo could not be loaded</p>
+              <p class="text-sm text-gray-500">The image may be corrupted or the path may be incorrect.</p>
+            </div>
+
+            <!-- Debug info -->
+            <div class="mt-4 p-2 bg-gray-100 rounded text-xs text-gray-600">
+              <p>selectedDocumentPhoto: {{ selectedDocumentPhoto || 'null' }}</p>
+              <p>modalImageLoaded: {{ modalImageLoaded }}</p>
+              <p>showDocumentModal: {{ showDocumentModal }}</p>
+              <p>report.document_photo: {{ report?.document_photo || 'null' }}</p>
             </div>
           </div>
         </div>
@@ -726,6 +750,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref, watch, onMounted } from 'vue';
 import { customerAdminApi } from "@/api/admin/customer";
 import type { InstallationReportCompleteResponse } from "@/types/requests/installation-report";
 
@@ -741,9 +766,28 @@ const loading = ref(false);
 const report = ref<InstallationReportCompleteResponse | null>(null);
 const showDocumentModal = ref(false);
 const selectedDocumentPhoto = ref<string | undefined>(undefined);
+const modalImageLoaded = ref(true); // Start as true, set to false on error
 
 onMounted(async () => {
   await loadReport();
+});
+
+// Watch for modal state changes
+watch(showDocumentModal, (newVal, oldVal) => {
+  console.log('🔍 Modal state changed:', oldVal, '→', newVal);
+  if (newVal) {
+    console.log('✅ Modal should be opening now');
+  } else {
+    console.log('❌ Modal should be closing now');
+  }
+});
+
+watch(selectedDocumentPhoto, (newVal, oldVal) => {
+  console.log('🔍 selectedDocumentPhoto changed:', oldVal, '→', newVal);
+});
+
+watch(modalImageLoaded, (newVal, oldVal) => {
+  console.log('🔍 modalImageLoaded changed:', oldVal, '→', newVal);
 });
 
 async function loadReport() {
@@ -798,67 +842,185 @@ function getDeviceStatusColor(status: string | undefined) {
 
 // Document photo functions
 function getDocumentPhotoUrl(documentPhoto: string | undefined) {
-  if (!documentPhoto) return '';
+  if (!documentPhoto) {
+    console.log('getDocumentPhotoUrl: No document photo provided');
+    return '';
+  }
+
+  console.log('getDocumentPhotoUrl: Processing path:', documentPhoto);
 
   // If it's already a full URL, return as is
   if (documentPhoto.startsWith('http')) {
+    console.log('getDocumentPhotoUrl: Already a full URL:', documentPhoto);
     return documentPhoto;
   }
 
   // Normalize the path by removing any duplicated upload directories
   let normalizedPath = normalizeDocumentPhotoPath(documentPhoto);
+  console.log('getDocumentPhotoUrl: Normalized path:', documentPhoto, '->', normalizedPath);
 
   // If it starts with uploads/, add the backend base URL
   if (normalizedPath.startsWith('uploads/')) {
-    return `http://localhost:8080/${normalizedPath}`;
+    const url = `http://localhost:3001/${normalizedPath}`;
+    console.log('getDocumentPhotoUrl: Generated URL:', url);
+    return url;
   }
 
   // If it's just a filename, assume it's in uploads/installations/documents/
   if (!normalizedPath.includes('/')) {
-    return `http://localhost:8080/uploads/installations/documents/${normalizedPath}`;
+    const url = `http://localhost:3001/uploads/installations/documents/${normalizedPath}`;
+    console.log('getDocumentPhotoUrl: Generated URL for filename:', url);
+    return url;
   }
 
   // Default: prepend backend URL
-  return `http://localhost:8080/${normalizedPath}`;
+  const url = `http://localhost:3001/${normalizedPath}`;
+  console.log('getDocumentPhotoUrl: Generated default URL:', url);
+  return url;
 }
 
 // Normalize document photo path by removing duplicated upload directories
 function normalizeDocumentPhotoPath(path: string): string {
-  // Pattern to match duplicated paths like:
-  // uploads/installations/documents/uploads/installations/documents/filename
-  const duplicatedPattern = /(uploads\/installations\/documents\/)+/g;
+  // Handle various path formats found in database:
+  // 1. uploads\installations\documents\filename (Windows paths with backslashes)
+  // 2. uploads/installations/documents/uploads/installations/documents/filename (duplicated)
+  // 3. uploads/installations/documents/filename (correct)
+  // 4. uploads/documents/filename (incorrect structure)
 
-  // Replace multiple occurrences with single occurrence
-  let normalized = path.replace(duplicatedPattern, 'uploads/installations/documents/');
+  // First, convert Windows backslashes to forward slashes for web URLs
+  let normalized = path.replace(/\\/g, '/');
 
-  // Also handle cases where it starts with the duplicated pattern
-  if (normalized.startsWith('uploads/installations/documents/uploads/installations/documents/')) {
+  // Handle triple duplication: uploads/installations/documents/uploads/installations/documents/
+  while (normalized.includes('uploads/installations/documents/uploads/installations/documents/')) {
     normalized = normalized.replace('uploads/installations/documents/uploads/installations/documents/', 'uploads/installations/documents/');
+  }
+
+  // Handle double duplication: uploads/installations/documents/uploads/installations/
+  while (normalized.includes('uploads/installations/documents/uploads/installations/')) {
+    normalized = normalized.replace('uploads/installations/documents/uploads/installations/', 'uploads/installations/documents/');
+  }
+
+  // Handle single duplication: uploads/installations/documents/uploads/
+  while (normalized.includes('uploads/installations/documents/uploads/') && !normalized.includes('uploads/installations/documents/uploads/installations/')) {
+    normalized = normalized.replace('uploads/installations/documents/uploads/', 'uploads/installations/documents/');
+  }
+
+  // Handle incorrect structure: uploads/documents/ -> uploads/installations/documents/
+  if (normalized.startsWith('uploads/documents/')) {
+    normalized = normalized.replace('uploads/documents/', 'uploads/installations/documents/');
+  }
+
+  // Handle paths that are just filenames
+  if (!normalized.includes('/') && normalized.endsWith('.jpg')) {
+    normalized = 'uploads/installations/documents/' + normalized;
   }
 
   return normalized;
 }
 
 function openDocumentPhoto(documentPhoto: string | undefined) {
-  if (!documentPhoto) return;
-  
+  console.log('=== MODAL DEBUG START ===');
+  console.log('openDocumentPhoto called with:', documentPhoto);
+  const reportData = report.value;
+  console.log('report.document_photo value:', reportData?.document_photo);
+
+  if (!documentPhoto) {
+    console.log('❌ No document photo provided, aborting');
+    return;
+  }
+
+  console.log('✅ Document photo provided, proceeding...');
+  console.log('Setting selectedDocumentPhoto to:', documentPhoto);
   selectedDocumentPhoto.value = documentPhoto;
+
+  console.log('Setting modalImageLoaded to true');
+  modalImageLoaded.value = true;
+
+  console.log('Setting showDocumentModal to true');
   showDocumentModal.value = true;
+
+  console.log('Current modal state after setting:');
+  console.log('- selectedDocumentPhoto:', selectedDocumentPhoto.value);
+  console.log('- modalImageLoaded:', modalImageLoaded.value);
+  console.log('- showDocumentModal:', showDocumentModal.value);
+
+  // Debug: Check what URL will be generated
+  const testUrl = getDocumentPhotoUrl(documentPhoto);
+  console.log('Generated URL for modal:', testUrl);
+
+  console.log('=== MODAL DEBUG END ===');
 }
 
 function handleImageError(event: Event) {
   const img = event.target as HTMLImageElement;
-  img.src = '/placeholder-document.png'; // Fallback image
-  img.alt = 'Document photo not available';
+  console.log('Image failed to load:', img.src);
+
+  // Check if this is the modal image or the thumbnail image
+  const isModalImage = img.closest('.modal-content') !== null;
+
+  if (isModalImage) {
+    // For modal images, set the loaded state to false
+    modalImageLoaded.value = false;
+    console.log('Modal image failed to load, showing error message');
+  } else {
+    // For thumbnail images, hide the image and show error message
+    img.style.display = 'none';
+
+    const parentDiv = img.parentElement;
+    if (parentDiv && !parentDiv.querySelector('.image-error-message')) {
+      const errorMsg = document.createElement('div');
+      errorMsg.className = 'image-error-message text-center p-4 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300';
+      errorMsg.innerHTML = `
+        <div class="text-gray-500 mb-2">
+          <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <p class="text-sm text-gray-600">Document photo could not be loaded</p>
+      `;
+      parentDiv.appendChild(errorMsg);
+    }
+  }
+}
+
+function handleImageLoad() {
+  console.log('Modal image loaded successfully');
+  modalImageLoaded.value = true;
+}
+
+function openDocumentPhotoModal() {
+  console.log('🖱️ THUMBNAIL CLICKED!');
+  console.log('Current showDocumentModal:', showDocumentModal.value);
+  console.log('Current selectedDocumentPhoto:', selectedDocumentPhoto.value);
+  console.log('Report document_photo:', report.value?.document_photo);
+  
+  showDocumentModal.value = true;
+  selectedDocumentPhoto.value = report.value?.document_photo;
+  modalImageLoaded.value = true;
+  
+  console.log('After setting - showDocumentModal:', showDocumentModal.value);
+  console.log('After setting - selectedDocumentPhoto:', selectedDocumentPhoto.value);
 }
 
 function downloadDocumentPhoto() {
   if (!selectedDocumentPhoto.value) return;
-  
+
   const photoUrl = getDocumentPhotoUrl(selectedDocumentPhoto.value);
   const link = document.createElement('a');
   link.href = photoUrl;
-  link.download = `document_${report.value?.customer_name || 'installation'}_${report.value?.document_type || 'document'}.jpg`;
+
+  // Get the current report data
+  const currentReport = report.value;
+  if (!currentReport) {
+    console.warn('downloadDocumentPhoto: report is null');
+    return;
+  }
+
+  // Use optional chaining and nullish coalescing for safety
+  const customerName = currentReport.customer_name || 'installation';
+  const docType = currentReport.document_type || 'document';
+
+  link.download = `document_${customerName}_${docType}.jpg`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
