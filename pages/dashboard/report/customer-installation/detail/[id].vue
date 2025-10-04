@@ -799,24 +799,44 @@ function getDeviceStatusColor(status: string | undefined) {
 // Document photo functions
 function getDocumentPhotoUrl(documentPhoto: string | undefined) {
   if (!documentPhoto) return '';
-  
+
   // If it's already a full URL, return as is
   if (documentPhoto.startsWith('http')) {
     return documentPhoto;
   }
-  
+
+  // Normalize the path by removing any duplicated upload directories
+  let normalizedPath = normalizeDocumentPhotoPath(documentPhoto);
+
   // If it starts with uploads/, add the backend base URL
-  if (documentPhoto.startsWith('uploads/')) {
-    return `http://localhost:8080/${documentPhoto}`;
+  if (normalizedPath.startsWith('uploads/')) {
+    return `http://localhost:8080/${normalizedPath}`;
   }
-  
+
   // If it's just a filename, assume it's in uploads/installations/documents/
-  if (!documentPhoto.includes('/')) {
-    return `http://localhost:8080/uploads/installations/documents/${documentPhoto}`;
+  if (!normalizedPath.includes('/')) {
+    return `http://localhost:8080/uploads/installations/documents/${normalizedPath}`;
   }
-  
+
   // Default: prepend backend URL
-  return `http://localhost:8080/${documentPhoto}`;
+  return `http://localhost:8080/${normalizedPath}`;
+}
+
+// Normalize document photo path by removing duplicated upload directories
+function normalizeDocumentPhotoPath(path: string): string {
+  // Pattern to match duplicated paths like:
+  // uploads/installations/documents/uploads/installations/documents/filename
+  const duplicatedPattern = /(uploads\/installations\/documents\/)+/g;
+
+  // Replace multiple occurrences with single occurrence
+  let normalized = path.replace(duplicatedPattern, 'uploads/installations/documents/');
+
+  // Also handle cases where it starts with the duplicated pattern
+  if (normalized.startsWith('uploads/installations/documents/uploads/installations/documents/')) {
+    normalized = normalized.replace('uploads/installations/documents/uploads/installations/documents/', 'uploads/installations/documents/');
+  }
+
+  return normalized;
 }
 
 function openDocumentPhoto(documentPhoto: string | undefined) {

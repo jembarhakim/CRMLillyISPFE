@@ -90,6 +90,199 @@ const state = reactive({
   documentPreview: "",
 });
 
+// Create a ref for the file input
+const fileInputRef = ref<HTMLInputElement | null>(null);
+
+// Watch for changes in the file input ref
+watch(fileInputRef, (newRef) => {
+  console.log('fileInputRef changed:', newRef);
+  if (newRef && (newRef as any).$el) {
+    console.log('File input ref is now available with $el');
+    // Add a direct event listener as a fallback - use $el for Vue component
+    const nativeElement = (newRef as any).$el as HTMLInputElement;
+    if (nativeElement && nativeElement.addEventListener) {
+      nativeElement.addEventListener('change', (event) => {
+        console.log('Direct event listener triggered on ref');
+        const target = event.target as HTMLInputElement;
+        if (target && target.files && target.files[0]) {
+          console.log('File found via direct event listener:', target.files[0].name);
+          handleFileUploadDirect();
+        }
+      });
+    }
+  } else if (newRef && newRef.addEventListener) {
+    // If it's a native HTML element
+    console.log('File input ref is now available (native element)');
+    newRef.addEventListener('change', (event) => {
+      console.log('Direct event listener triggered on ref');
+      const target = event.target as HTMLInputElement;
+      if (target && target.files && target.files[0]) {
+        console.log('File found via direct event listener:', target.files[0].name);
+        handleFileUploadDirect();
+      }
+    });
+  }
+}, { immediate: true });
+
+// Image compression function
+const compressImage = (file: File, maxSizeKB: number = 500): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = () => {
+      // Calculate new dimensions (max 1200px width, maintain aspect ratio)
+      let { width, height } = img;
+      const maxWidth = 1200;
+      
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      
+      // Draw and compress
+      ctx?.drawImage(img, 0, 0, width, height);
+      
+      // Try different quality levels to achieve target size
+      const tryCompress = (quality: number) => {
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Failed to compress image'));
+            return;
+          }
+          
+          const sizeKB = blob.size / 1024;
+          console.log(`Compressed image: ${sizeKB.toFixed(1)}KB (quality: ${quality})`);
+          
+          if (sizeKB <= maxSizeKB || quality <= 0.1) {
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now()
+            });
+            resolve(compressedFile);
+          } else {
+            // Try with lower quality
+            tryCompress(quality - 0.1);
+          }
+        }, 'image/jpeg', quality);
+      };
+      
+      // Start with 0.8 quality
+      tryCompress(0.8);
+    };
+    
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(file);
+  });
+};
+
+// Unified file processing function
+const processFile = async (file: File) => {
+  console.log('Processing file:', {
+    name: file.name,
+    size: file.size,
+    type: file.type,
+    lastModified: file.lastModified
+  });
+  
+  // Validate file type
+  if (!file.type.startsWith('image/')) {
+    console.log('File type validation failed:', file.type);
+    alert('Please select an image file (JPG, PNG)');
+    return null;
+  }
+  
+  // Validate file size (10MB max)
+  if (file.size > 10 * 1024 * 1024) {
+    console.log('File size validation failed:', file.size);
+    alert('File size must be less than 10MB');
+    return null;
+  }
+  
+  let processedFile = file;
+  
+  // Compress if file is larger than 1MB
+  if (file.size > 1 * 1024 * 1024) {
+    console.log('File is large, compressing...');
+    try {
+      processedFile = await compressImage(file, 500); // Compress to max 500KB
+      console.log(`✅ File compressed: ${file.size} bytes → ${processedFile.size} bytes`);
+    } catch (error) {
+      console.error('Compression failed, using original file:', error);
+      // Continue with original file if compression fails
+    }
+  }
+  
+  return processedFile;
+};
+
+// Alternative file upload handler that doesn't rely on event target
+const handleFileUploadDirect = async () => {
+  console.log('🔍 === DEBUG: CHECK FILE ===');
+  console.log('Direct file upload handler called');
+  console.log('fileInputRef.value:', fileInputRef.value);
+  
+  if (fileInputRef.value) {
+    console.log('✅ File input ref exists');
+    
+    // Try to access the native HTML input element through $el
+    const nativeInput = (fileInputRef.value as any)?.$el as HTMLInputElement;
+    console.log('Native input element:', nativeInput);
+    console.log('Native input files:', nativeInput?.files);
+    console.log('Number of files:', nativeInput?.files?.length || 0);
+    
+    if (nativeInput && nativeInput.files && nativeInput.files[0]) {
+      console.log('✅ File found in native input');
+      const file = nativeInput.files[0];
+      console.log('File details:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+      
+      const processedFile = await processFile(file);
+      
+      if (processedFile) {
+        state.document_photo = processedFile;
+        console.log('✅ Document photo file set successfully via direct method:', processedFile.name, processedFile.size, processedFile.type);
+        
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          state.documentPreview = e.target?.result as string;
+          console.log('✅ Document preview created successfully');
+        };
+        reader.readAsDataURL(processedFile);
+      }
+    } else {
+      console.log('❌ No file found in native input');
+      console.log('💡 This means the UInput component is not properly exposing the file');
+      
+      // Fallback: check if we have a file in state
+      if (state.document_photo) {
+        console.log('✅ But we DO have a file in state:', {
+          name: state.document_photo.name,
+          size: state.document_photo.size,
+          type: state.document_photo.type
+        });
+        console.log('💡 This means the file was processed by the event handler, not the ref');
+      } else {
+        console.log('❌ No file in state either');
+        console.log('💡 Click "Choose File" first, then click this debug button');
+      }
+    }
+  } else {
+    console.log('❌ File input ref is null/undefined');
+    console.log('💡 This might happen if the component is still loading');
+  }
+  
+  console.log('=== END DEBUG ===');
+};
+
 // Set default dates
 const today = new Date();
 state.on_air_date = today.toISOString().split('T')[0];
@@ -173,7 +366,24 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     
     // Append document photo if selected
     if (state.document_photo) {
+      console.log('✅ Appending document photo to form data:', {
+        name: state.document_photo.name,
+        size: state.document_photo.size,
+        type: state.document_photo.type
+      });
       formData.append('document_photo', state.document_photo);
+      
+      // Log FormData contents for debugging
+      console.log('FormData contents after appending document photo:');
+      for (let [key, value] of formData.entries()) {
+        if (key === 'document_photo') {
+          console.log(`  ${key}: [File] ${(value as File).name} (${(value as File).size} bytes, ${(value as File).type})`);
+        } else {
+          console.log(`  ${key}: ${value}`);
+        }
+      }
+    } else {
+      console.log('❌ No document photo selected - document_photo is null or undefined');
     }
 
     // Validate IP address format before submitting
@@ -186,9 +396,12 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     }
 
     // Submit using the new API endpoint
+    console.log('🚀 Submitting installation report with FormData...');
+    console.log('FormData size:', formData.get('document_photo') ? 'File included' : 'No file');
+    
     const response = await customerAdminApi().createReportInstallation(formData);
     
-    console.log("Success creating installation report", response);
+    console.log("✅ Success creating installation report", response);
     
     // Check if there's provisioning information in the response
     if (response.data?.provisioning) {
@@ -217,7 +430,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     onSuccess();
     
   } catch (error: any) {
-    console.error("Error creating installation report:", error);
+    console.error("❌ Error creating installation report:", error);
+    console.error("Error details:", error);
     
     // Show user-friendly error notification
     const errorMessage = error.message || 'Failed to create installation report';
@@ -313,31 +527,98 @@ const loadTestData = () => {
 };
 
 // Handle document photo upload
-const handleDocumentPhotoUpload = (event: Event) => {
+const handleDocumentPhotoUpload = async (event: Event) => {
+  console.log('File input change event triggered');
+  console.log('Event object:', event);
+  console.log('Event target:', event.target);
+  
   const input = event.target as HTMLInputElement;
+  console.log('Input element after casting:', input);
+  console.log('Input files:', input?.files);
+  
+  // Alternative way to get the input element
+  if (!input || !input.files) {
+    console.log('Input element is null/undefined, trying alternative approaches...');
+    
+    // Try using the ref first
+    console.log('Trying ref approach...');
+    console.log('fileInputRef.value:', fileInputRef.value);
+    console.log('fileInputRef.value?.files:', fileInputRef.value?.files);
+    
+    if (fileInputRef.value && fileInputRef.value.files && fileInputRef.value.files[0]) {
+      console.log('Using ref input element');
+      const file = fileInputRef.value.files[0];
+      const processedFile = await processFile(file);
+      
+      if (processedFile) {
+        state.document_photo = processedFile;
+        console.log('✅ Document photo file set successfully via ref method:', processedFile.name, processedFile.size, processedFile.type);
+        
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          state.documentPreview = e.target?.result as string;
+          console.log('✅ Document preview created successfully');
+        };
+        reader.readAsDataURL(processedFile);
+      }
+      return;
+    }
+    
+    // Try DOM query as fallback
+    console.log('Trying DOM query approach...');
+    const altInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    console.log('Alternative input element:', altInput);
+    console.log('Alternative input files:', altInput?.files);
+    
+    if (altInput && altInput.files && altInput.files[0]) {
+      console.log('Using DOM query input element');
+      const file = altInput.files[0];
+      const processedFile = await processFile(file);
+      
+      if (processedFile) {
+        state.document_photo = processedFile;
+        console.log('✅ Document photo file set successfully via DOM query method:', processedFile.name, processedFile.size, processedFile.type);
+        
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          state.documentPreview = e.target?.result as string;
+          console.log('✅ Document preview created successfully');
+        };
+        reader.readAsDataURL(processedFile);
+      }
+      return;
+    }
+  }
+  
   if (input && input.files && input.files[0]) {
     const file = input.files[0];
+    const processedFile = await processFile(file);
     
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file (JPG, PNG)');
-      return;
-    }
-    
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB');
-      return;
-    }
-    
-    state.document_photo = file;
-    
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      state.documentPreview = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+      if (processedFile) {
+        state.document_photo = processedFile;
+        console.log('✅ Document photo file set successfully:', processedFile.name, processedFile.size, processedFile.type);
+        
+        // Debug: Check if the ref can now access the file
+        console.log('🔍 === CHECKING REF AFTER FILE SET ===');
+        const nativeInput = (fileInputRef.value as any)?.$el as HTMLInputElement;
+        console.log('Native input after file set:', nativeInput);
+        console.log('Native input files after file set:', nativeInput?.files);
+        console.log('=== END REF CHECK ===');
+        
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          state.documentPreview = e.target?.result as string;
+          console.log('✅ Document preview created successfully');
+        };
+        reader.readAsDataURL(processedFile);
+      }
+  } else {
+    console.log('❌ No file selected or input.files is empty');
+    state.document_photo = null;
+    state.documentPreview = '';
   }
 };
 
@@ -1028,13 +1309,27 @@ onMounted(async () => {
             
             <UFormGroup label="Document Photo" name="document_photo">
               <UInput
+                ref="fileInputRef"
                 type="file"
                 accept="image/*"
                 @change="handleDocumentPhotoUpload"
+                @input="handleFileUploadDirect"
                 placeholder="Upload document photo"
               /> 
               <div v-if="state.documentPreview" class="mt-2">
                 <img :src="state.documentPreview" alt="Document Preview" class="w-32 h-20 object-cover rounded border" />
+              </div>
+              <!-- Debug button -->
+              <div class="mt-2">
+                <UButton 
+                  @click="handleFileUploadDirect" 
+                  size="sm" 
+                  color="gray" 
+                  variant="outline"
+                  class="text-xs"
+                >
+                  Debug: Check File
+                </UButton>
               </div>
             </UFormGroup>
           </div>
