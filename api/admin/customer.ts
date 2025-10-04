@@ -301,16 +301,41 @@ export const customerAdminApi = () => {
         }
         return response.json();
       } catch (error) {
-        console.error("Error fetching customer installation reports:", error);
-        return { success: false, data: [], message: 'Failed to fetch installation reports' };
+        console.error("Error checking customer installation report:", error);
+        return { hasInstallationReport: false };
       }
     },
 
-    // DEPRECATED: Use getCustomerInstallationReports instead
-    // This method is kept for backward compatibility but always returns false to allow multiple reports
-    checkCustomerInstallationReport: async (customerId: string) => {
-      console.warn("checkCustomerInstallationReport is deprecated. Multiple installation reports are now supported.");
-      return { hasInstallationReport: false }; // Always return false to allow multiple reports
+    // Get customer related records count
+    getCustomerRelatedRecords: async (customerId: string) => {
+      const response = await fetch(`${api}/api/admin/customer/${customerId}/related-records`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get customer related records');
+      }
+      return response.json();
+    },
+
+    // Delete customer with all related records
+    deleteCustomerWithRelated: async (customerId: string) => {
+      const response = await fetch(`${api}/api/admin/customer/${customerId}/with-related`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete customer with related records');
+      }
+      return response.json();
     },
 
     deleteInstallationReport: async (installationId: string) => {

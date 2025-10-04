@@ -7,6 +7,7 @@ export default defineNuxtConfig({
     "~/assets/css/global.css",
   ],
   plugins: [
+    "~/plugins/notification-init.client.ts",
     "~/plugins/auth-init.client.ts",
     "~/plugins/auth-persistence.client.ts", 
     "~/plugins/echarts.ts"

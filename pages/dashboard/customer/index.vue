@@ -26,7 +26,8 @@ type Customer = {
 
 
 async function getData() {
-    await customerAdminApi().getAllCustomers().then(async (response) => {
+    try {
+        const response = await customerAdminApi().getAllCustomers()
         response.data.forEach((customer: any) => {
             customer.number = response.data.indexOf(customer) + 1;
             customer.area_name = customer.area.name_city + "-" + customer.area.name_subdistrict + "-" + customer.area.name_village
@@ -38,9 +39,13 @@ async function getData() {
         
         // Load installation reports to check which customers already have reports
         await loadInstallationReports()
-    }).catch((err) => {
-        notification.error('Error', err)
-    })
+    } catch (err) {
+        console.error('Error loading customers:', err)
+        // Only show notification if it's available
+        if (notification && notification.error) {
+            notification.error('Error', String(err))
+        }
+    }
 }
 
 async function loadInstallationReports() {
@@ -67,15 +72,48 @@ async function loadInstallationReports() {
 }
 
 async function deleteData(id: string) {
-    await customerAdminApi().deleteCustomer(id).then((response) => {
-        getData()
-        notification.success('Success', response.message)
-    }).catch((err) => {
-        notification.error('Error', err)
-    })
+    try {
+        const response = await customerAdminApi().deleteCustomer(id)
+        await getData()
+        if (notification && notification.success) {
+            notification.success('Success', response.message)
+        }
+    } catch (err) {
+        console.error('Error deleting customer:', err)
+        if (notification && notification.error) {
+            notification.error('Error', String(err))
+        }
+    }
 }
 
-await getData();
+// Enhanced delete with confirmation
+const showDeleteModal = ref(false)
+const deleteCustomerId = ref<string | null>(null)
+const deleteCustomerName = ref('')
+const deleteCustomerPhone = ref('')
+
+function openDeleteConfirmation(customer: Customer) {
+    deleteCustomerId.value = customer.id
+    deleteCustomerName.value = customer.name
+    deleteCustomerPhone.value = customer.phone
+    showDeleteModal.value = true
+}
+
+function closeDeleteModal() {
+    showDeleteModal.value = false
+    deleteCustomerId.value = null
+    deleteCustomerName.value = ''
+    deleteCustomerPhone.value = ''
+}
+
+function onCustomerDeleted() {
+    getData() // Refresh the customer list
+}
+
+// Load data after component is mounted to ensure notification system is ready
+onMounted(async () => {
+    await getData()
+})
 
 const columns = [
     {
@@ -169,7 +207,7 @@ const items = (row: Customer) => {
     }], [{
         label: 'Delete',
         icon: 'i-heroicons-trash-20-solid',
-        click: () => deleteData(row.id)
+        click: () => openDeleteConfirmation(row)
     }])
 
     return baseItems
@@ -195,7 +233,9 @@ function OpenModalReportInstallation(isEdit: boolean, data: any) {
         data,
         async onSuccess() {
             await getData()
-            notification.success('Success!', 'Installation report created successfully')
+            if (notification && notification.success) {
+                notification.success('Success!', 'Installation report created successfully')
+            }
             modal.close()
         }
     })
@@ -343,6 +383,17 @@ function closeDetailModal() {
       v-if="showDetailModal && selectedCustomerId" 
       :customer-id="selectedCustomerId" 
       @close="closeDetailModal" 
+    />
+
+    <!-- Delete Confirmation Modal -->
+    <CustomerDeleteConfirmationModal
+      v-if="showDeleteModal"
+      :is-open="showDeleteModal"
+      :customer-id="deleteCustomerId"
+      :customer-name="deleteCustomerName"
+      :customer-phone="deleteCustomerPhone"
+      @close="closeDeleteModal"
+      @deleted="onCustomerDeleted"
     />
   </div>
 </template>

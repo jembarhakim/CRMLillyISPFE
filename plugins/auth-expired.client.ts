@@ -2,10 +2,12 @@ export default defineNuxtPlugin((nuxtApp) => {
     // Prevent multiple concurrent logout flows and debounce repeated 401s
     let isHandling = false
     let lastHandledAt = 0
+    let hasShownNotification = false
 
     const handleOnce = async () => {
         const now = Date.now()
-        if (isHandling || now - lastHandledAt < 5000) return
+        // Prevent multiple calls within 10 seconds OR if notification already shown
+        if (isHandling || now - lastHandledAt < 10000 || hasShownNotification) return
         isHandling = true
         lastHandledAt = now
 
@@ -15,9 +17,13 @@ export default defineNuxtPlugin((nuxtApp) => {
             auth.logout()
         } catch {}
         try {
-            const { useNotificationStore } = await import('@/stores/notification')
-            const notification = useNotificationStore()
-            notification.error('Invalid Token', 'You have been logged out. Please sign in again.', 4000)
+            // Only show notification if not already on login page AND not shown before
+            if (process.client && !location.pathname.startsWith('/login') && !hasShownNotification) {
+                const { useNotificationStore } = await import('@/stores/notification')
+                const notification = useNotificationStore()
+                notification.error('Invalid Token', 'You have been logged out. Please sign in again.', 4000)
+                hasShownNotification = true // Mark as shown to prevent duplicates
+            }
         } catch {}
         try {
             if (process.client && !location.pathname.startsWith('/login')) {
@@ -26,6 +32,32 @@ export default defineNuxtPlugin((nuxtApp) => {
         } catch {}
 
         setTimeout(() => { isHandling = false }, 2000)
+    }
+
+    // Reset notification flag when user logs in successfully
+    const resetNotificationFlag = () => {
+        hasShownNotification = false
+    }
+
+    // Listen for successful login events to reset the notification flag
+    if (process.client) {
+        // Reset when navigating to dashboard (successful login)
+        const originalPushState = history.pushState
+        history.pushState = function(...args) {
+            const url = args[2]
+            if (url && typeof url === 'string' && url.includes('/dashboard')) {
+                resetNotificationFlag()
+            }
+            return originalPushState.apply(history, args)
+        }
+
+        // Also reset on successful login via store
+        nuxtApp.hook('app:mounted', () => {
+            const authStore = useAuthStore()
+            if (authStore.isLoggedIn) {
+                resetNotificationFlag()
+            }
+        })
     }
 
     // Wrap $fetch to capture 401

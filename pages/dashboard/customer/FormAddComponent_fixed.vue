@@ -170,49 +170,41 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     try {
       const response = await customerAdminApi().editCustomer(props.data.id, state);
       
-       // Only update/create network device if we have a valid product package
-       if (response.success && state.proposed_package && state.proposed_package.trim() !== "") {
-         try {
-           const networkDevices = await networkDeviceAdminApi().getNetworkDevicesByCustomer(props.data.id);
-           if (networkDevices.data && networkDevices.data.length > 0) {
-             // Update existing network device
-             const device = networkDevices.data[0];
-             const networkDeviceData: any = {
-               customer_id: props.data.id,
-               ip_static: device.ip_static || "",
-               mac_address: device.mac_address || "",
-               status_perangkat: device.status_perangkat || "active",
-               last_ping_status: device.last_ping_status || "unknown",
-               product_id: state.proposed_package,
-               // Only include assets_id if it has a value
-               ...(networkDeviceState.assets_id && networkDeviceState.assets_id.trim() !== "" && {
-                 assets_id: networkDeviceState.assets_id
-               })
-             };
-             await networkDeviceAdminApi().editNetworkDevice(device.id, networkDeviceData);
-           } else {
-             // Create new network device only if we have a product
-             const networkDeviceData: any = {
-               customer_id: props.data.id,
-               ip_static: "",
-               mac_address: "",
-               status_perangkat: "active",
-               last_ping_status: "unknown",
-               product_id: state.proposed_package,
-               // Only include assets_id if it has a value
-               ...(networkDeviceState.assets_id && networkDeviceState.assets_id.trim() !== "" && {
-                 assets_id: networkDeviceState.assets_id
-               })
-             };
-             await networkDeviceAdminApi().createNetworkDevice(networkDeviceData);
-           }
-         } catch (networkError: any) {
-           console.error("Failed to update network device:", networkError);
-           // Don't fail the entire operation if network device update fails
-         }
-       } else {
-         console.log("Skipping network device update - no valid product package selected");
-       }
+      // Update or create network device if data is provided
+      if (response.success && (networkDeviceState.assets_id || networkDeviceState.product_id)) {
+        try {
+          const networkDevices = await networkDeviceAdminApi().getNetworkDevicesByCustomer(props.data.id);
+          if (networkDevices.data && networkDevices.data.length > 0) {
+            // Update existing network device
+            const device = networkDevices.data[0];
+            const networkDeviceData: any = {
+              customer_id: props.data.id,
+              ip_static: device.ip_static || "",
+              mac_address: device.mac_address || "",
+              status_perangkat: device.status_perangkat || "active",
+              last_ping_status: device.last_ping_status || "unknown",
+              product_id: state.proposed_package || networkDeviceState.product_id || device.product_id || "",
+              assets_id: networkDeviceState.assets_id || device.assets_id || null
+            };
+            await networkDeviceAdminApi().editNetworkDevice(device.id, networkDeviceData);
+          } else {
+            // Create new network device
+            const networkDeviceData: any = {
+              customer_id: props.data.id,
+              ip_static: "",
+              mac_address: "",
+              status_perangkat: "active",
+              last_ping_status: "unknown",
+              product_id: state.proposed_package || networkDeviceState.product_id || "",
+              assets_id: networkDeviceState.assets_id || null
+            };
+            await networkDeviceAdminApi().createNetworkDevice(networkDeviceData);
+          }
+        } catch (networkError: any) {
+          console.error("Failed to update network device:", networkError);
+          // Don't fail the entire operation if network device update fails
+        }
+      }
       
       notification.success('Success', response.message);
       onSuccess();
@@ -220,43 +212,30 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       notification.error('Error', error.message || 'Failed to update customer');
     }
   } else {
-     try {
-       // Create customer first
-       const customerResponse = await customerAdminApi().createCustomer(state);
-       
-       // Only create network device if we have a valid product package selected
-       if (customerResponse.success && state.proposed_package && state.proposed_package.trim() !== "") {
-         try {
-           const networkDeviceData: any = {
-             customer_id: customerResponse.data.id,
-             ip_static: "",
-             mac_address: "",
-             status_perangkat: "active",
-             last_ping_status: "unknown",
-             product_id: state.proposed_package,
-             // Only include assets_id if it has a value, otherwise omit it entirely
-             ...(networkDeviceState.assets_id && networkDeviceState.assets_id.trim() !== "" && {
-               assets_id: networkDeviceState.assets_id
-             })
-           };
-           
-           console.log("Creating network device with data:", networkDeviceData);
-           await networkDeviceAdminApi().createNetworkDevice(networkDeviceData);
-           console.log("Network device created successfully");
-         } catch (networkError: any) {
-           console.error("Failed to create network device:", networkError);
-           // Don't fail the entire operation if network device creation fails
-           // The customer was created successfully, so we can continue
-         }
-       } else {
-         console.log("Skipping network device creation - no valid product package selected");
-       }
-       
-       notification.success('Success', customerResponse.message);
-       onSuccess();
-     } catch (error: any) {
-       notification.error('Error', error.message || 'Failed to create customer');
-     }
+    try {
+      // Create customer first
+      const customerResponse = await customerAdminApi().createCustomer(state);
+      
+      // If customer creation is successful, create network device with product information
+      if (customerResponse.success) {
+        const networkDeviceData: any = {
+          customer_id: customerResponse.data.id,
+          ip_static: "",
+          mac_address: "",
+          status_perangkat: "active",
+          last_ping_status: "unknown",
+          product_id: state.proposed_package || networkDeviceState.product_id || "", // Use proposed_package as product_id
+          assets_id: networkDeviceState.assets_id || null // Set to null if empty to avoid foreign key constraint
+        };
+        
+        await networkDeviceAdminApi().createNetworkDevice(networkDeviceData);
+      }
+      
+      notification.success('Success', customerResponse.message);
+      onSuccess();
+    } catch (error: any) {
+      notification.error('Error', error.message || 'Failed to create customer');
+    }
   }
 
 }
@@ -359,7 +338,7 @@ await getDataOptions()
 </script>
 
 <style scoped>
-/* Responsive optimizations */
+/* Mobile-first optimizations */
 @media (max-width: 640px) {
   .max-w-7xl {
     max-width: 100%;
@@ -396,29 +375,6 @@ await getDataOptions()
   input[type="date"],
   select {
     font-size: 16px;
-  }
-  
-  /* Mobile-specific map height */
-  .leaflet-container {
-    height: 250px !important;
-  }
-}
-
-/* Desktop optimizations */
-@media (min-width: 1024px) {
-  /* Larger map for desktop */
-  .leaflet-container {
-    height: 300px !important;
-  }
-  
-  /* Better spacing for desktop */
-  .space-y-6 > * + * {
-    margin-top: 1.5rem;
-  }
-  
-  /* Desktop form spacing */
-  .gap-6 {
-    gap: 1.5rem;
   }
 }
 
@@ -466,54 +422,11 @@ select:focus {
 .dark .bg-gray-800 {
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
 }
-
-/* Perfect column alignment */
-.grid-cols-1.md\\:grid-cols-2 > div {
-  display: flex;
-  flex-direction: column;
-}
-
-/* Consistent label spacing */
-.space-y-1 > label {
-  margin-bottom: 0.25rem;
-  font-weight: 500;
-  line-height: 1.5;
-}
-
-/* Ensure all form elements have consistent height */
-.space-y-1 input,
-.space-y-1 select,
-.space-y-1 [role="combobox"] {
-  min-height: 42px;
-}
-
-/* Perfect grid alignment */
-.grid.grid-cols-1.md\\:grid-cols-2 {
-  align-items: start;
-}
-
-/* Consistent spacing for form groups */
-.space-y-1 {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
-
-/* Single column layout spacing */
-.space-y-4 > * + * {
-  margin-top: 1rem;
-}
-
-/* Ensure proper spacing between form sections */
-.space-y-4 {
-  display: flex;
-  flex-direction: column;
-}
 </style>
 
 <template>
-  <UModal :ui="{ width: 'w-full max-w-6xl', height: 'h-auto max-h-[90vh] overflow-y-auto' }">
-    <div class="w-full max-w-6xl mx-auto p-4 lg:p-6 overflow-y-auto max-h-[90vh]">
+  <UModal :ui="{ width: 'w-full max-w-7xl', height: 'h-auto max-h-[90vh] overflow-y-auto' }">
+    <div class="w-full max-w-7xl mx-auto p-2 sm:p-4 overflow-y-auto max-h-[90vh]">
       <!-- Modal Header -->
       <div class="flex items-center justify-between mb-4 p-2 sm:p-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg">
         <h1 class="text-lg sm:text-2xl font-bold text-white">
@@ -530,147 +443,131 @@ select:focus {
         </UButton>
       </div>
 
-      <UForm :schema="schema" :state="state" class="space-y-6" @submit="onSubmit">
-        <!-- Desktop: Two-column layout, Mobile: Single column -->
-        <div class="flex flex-col lg:flex-row gap-6">
-          <!-- Left Column: Customer & Business Information -->
-          <div class="flex-1 space-y-6">
-            <!-- Customer Information Section -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
+      <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
+        <!-- Mobile-First Responsive Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <!-- Customer Information Section -->
+          <div class="w-full space-y-4">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                 <UIcon name="i-heroicons-user" class="w-5 h-5 text-blue-600" />
                 Customer Information
               </h3>
               
-               <div class="space-y-4">
-                 <!-- Full width fields -->
-                 <UFormGroup label="Nama Pelanggan" name="name">
-                   <UInput 
-                     v-model="state.name" 
-                     placeholder="Masukkan nama lengkap pelanggan"
-                     class="w-full"
-                   />
-                 </UFormGroup>
-                 
-                 <UFormGroup label="Area Code" name="area_code">
-                   <USelectMenu 
-                     v-model="state.area_id" 
-                     :options="areas" 
-                     value-attribute="value" 
-                     option-attribute="label" 
-                     placeholder="Pilih area"
-                     class="w-full"
-                     searchable
-                   />
-                 </UFormGroup>
-                 
-                 <!-- Single column layout -->
-                 <div class="space-y-4">
-                   <div class="space-y-1">
-                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                       Panggilan / Samaran
-                     </label>
-                     <UInput 
-                       v-model="state.alias" 
-                       placeholder="Optional nickname"
-                       class="w-full"
-                     />
-                   </div>
-                   
-                   <div class="space-y-1">
-                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                       No.HP Pelanggan
-                     </label>
-                     <UInput 
-                       v-model="state.phone" 
-                       placeholder="Masukkan nomor HP pelanggan"
-                       type="tel"
-                       class="w-full"
-                     />
-                   </div>
-                   
-                   <div class="space-y-1">
-                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                       Tgl. Permintaan PSB
-                     </label>
-                     <UInput 
-                       v-model="state.service_request_date" 
-                       type="date"
-                       class="w-full"
-                     />
-                   </div>
-                   
-                   <div class="space-y-1">
-                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                       Paket yg Diajukan
-                     </label>
-                     <USelectMenu 
-                       v-model="state.proposed_package" 
-                       :options="internet_packages" 
-                       value-attribute="value"
-                       option-attribute="label" 
-                       placeholder="Pilih paket internet"
-                       class="w-full"
-                       searchable
-                     />
-                   </div>
-                 </div>
-               </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <UFormGroup label="Nama Pelanggan" name="name" class="sm:col-span-2">
+                  <UInput 
+                    v-model="state.name" 
+                    placeholder="Masukkan nama lengkap pelanggan"
+                    size="lg"
+                    class="w-full"
+                  />
+                </UFormGroup>
+                
+                <UFormGroup label="Panggilan / Samaran" name="alias">
+                  <UInput 
+                    v-model="state.alias" 
+                    placeholder="Optional nickname"
+                    size="lg"
+                    class="w-full"
+                  />
+                </UFormGroup>
+                
+                <UFormGroup label="No.HP Pelanggan" name="phone">
+                  <UInput 
+                    v-model="state.phone" 
+                    placeholder="Masukkan nomor HP pelanggan"
+                    size="lg"
+                    class="w-full"
+                    type="tel"
+                  />
+                </UFormGroup>
+                
+                <UFormGroup label="Area Code" name="area_code" class="sm:col-span-2">
+                  <USelectMenu 
+                    v-model="state.area_id" 
+                    :options="areas" 
+                    value-attribute="value" 
+                    option-attribute="label" 
+                    placeholder="Pilih area"
+                    size="lg"
+                    class="w-full"
+                    searchable
+                  />
+                </UFormGroup>
+                
+                <UFormGroup label="Tgl. Permintaan PSB" name="service_request_date">
+                  <UInput 
+                    v-model="state.service_request_date" 
+                    type="date"
+                    size="lg"
+                    class="w-full"
+                  />
+                </UFormGroup>
+                
+                <UFormGroup label="Paket yg Diajukan" name="proposed_package">
+                  <USelectMenu 
+                    v-model="state.proposed_package" 
+                    :options="internet_packages" 
+                    value-attribute="value"
+                    option-attribute="label" 
+                    placeholder="Pilih paket internet"
+                    size="lg"
+                    class="w-full"
+                    searchable
+                  />
+                </UFormGroup>
+              </div>
             </div>
             
-            <!-- Business Information Section -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                 <UIcon name="i-heroicons-building-office-2" class="w-5 h-5 text-green-600" />
                 Business Information
               </h3>
               
-               <div class="space-y-4">
-                 <div class="space-y-1">
-                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                     Sales Representative
-                   </label>
-                   <USelectMenu 
-                     v-model="state.sales_representative_id" 
-                     :options="salesRepresentatives" 
-                     value-attribute="value"
-                     option-attribute="label"
-                     placeholder="Pilih sales representative"
-                     class="w-full"
-                     searchable
-                   />
-                 </div>
-                 
-                 <div class="space-y-1">
-                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                     Company
-                   </label>
-                   <USelectMenu 
-                     v-model="state.company_id" 
-                     :options="companies" 
-                     value-attribute="value"
-                     option-attribute="label"
-                     placeholder="Pilih company (optional)"
-                     class="w-full"
-                     searchable
-                   />
-                 </div>
-               </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <UFormGroup label="Sales Representative" name="sales_representative_id">
+                  <USelectMenu 
+                    v-model="state.sales_representative_id" 
+                    :options="salesRepresentatives" 
+                    value-attribute="value"
+                    option-attribute="label"
+                    placeholder="Pilih sales representative"
+                    size="lg"
+                    class="w-full"
+                    searchable
+                  />
+                </UFormGroup>
+                
+                <UFormGroup label="Company" name="company_id">
+                  <USelectMenu 
+                    v-model="state.company_id" 
+                    :options="companies" 
+                    value-attribute="value"
+                    option-attribute="label"
+                    placeholder="Pilih company (optional)"
+                    size="lg"
+                    class="w-full"
+                    searchable
+                  />
+                </UFormGroup>
+              </div>
             </div>
           </div>
           
-          <!-- Right Column: Location & Map -->
-          <div class="flex-1">
-            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700 h-fit">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
+          <!-- Location & Map Section -->
+          <div class="w-full space-y-4">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                 <UIcon name="i-heroicons-map-pin" class="w-5 h-5 text-red-600" />
                 Location & Address
               </h3>
               
               <!-- Map Container -->
-              <div class="mb-6">
+              <div class="mb-4">
                 <LMap 
-                  style="height: 300px; width: 100%;" 
+                  style="height: 250px; width: 100%;" 
                   :zoom="6" 
                   :center="[state.latitude, state.longitude]"
                   :use-global-leaflet="false"
@@ -698,10 +595,11 @@ select:focus {
               </div>
               
               <!-- Address Field -->
-              <UFormGroup label="Address" name="address" class="mb-6">
+              <UFormGroup label="Address" name="address" class="mb-4">
                 <UInput 
                   v-model="state.address" 
                   placeholder="Address will be auto-filled from map"
+                  size="lg"
                   class="w-full"
                   readonly
                 />
@@ -709,24 +607,26 @@ select:focus {
               
               <!-- Coordinates -->
               <UFormGroup label="Coordinates" name="coordinates">
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Latitude</label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="space-y-1">
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Latitude</label>
                     <UInput 
                       v-model="state.latitude" 
                       placeholder="Latitude" 
                       type="number" 
                       step="any"
+                      size="lg"
                       class="w-full"
                     />
                   </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Longitude</label>
+                  <div class="space-y-1">
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Longitude</label>
                     <UInput 
                       v-model="state.longitude" 
                       placeholder="Longitude" 
                       type="number" 
                       step="any"
+                      size="lg"
                       class="w-full"
                     />
                   </div>

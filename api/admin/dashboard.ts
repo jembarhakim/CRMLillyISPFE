@@ -226,5 +226,20 @@ export const dashboardAdminApi = () => {
       }
       return response.json();
     },
+
+    getUnpaidCustomersList: async () => {
+      const response = await fetch(`${api}/api/admin/dashboard/unpaid-customers-list`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get unpaid customers list');
+      }
+      return response.json();
+    },
   };
 };

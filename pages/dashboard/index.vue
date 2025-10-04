@@ -38,6 +38,7 @@ const customerGrowth = ref<any>({});
 const revenueChart = ref<any>({});
 const expensesChart = ref<any>({});
 const unpaidCustomersChart = ref<any>({});
+const unpaidCustomersList = ref<any[]>([]);
 
 // Modal state for accumulation editing
 const showAccumulationModal = ref(false);
@@ -148,20 +149,32 @@ const filteredExpensesChart = computed(() => {
 });
 
 const filteredUnpaidCustomersChart = computed(() => {
-  if (!unpaidCustomersChart.value.unpaid_customers_chart) return [];
-  if (useYearRange.value && yearStart.value !== null && yearEnd.value !== null) {
-    const start = Math.min(yearStart.value, yearEnd.value);
-    const end = Math.max(yearStart.value, yearEnd.value);
-    return unpaidCustomersChart.value.unpaid_customers_chart.filter((item: any) => {
-      const yr = new Date(item.date).getFullYear();
-      return yr >= start && yr <= end;
-    });
-  }
-  const days = Number(selectedDateRange.value || 0);
-  if (days <= 0) return unpaidCustomersChart.value.unpaid_customers_chart;
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - days);
-  return unpaidCustomersChart.value.unpaid_customers_chart.filter((item: any) => new Date(item.date) >= cutoffDate);
+  if (!unpaidCustomersChart.value.unpaid_customers_chart) return { unpaid: [], pending: [] };
+  
+  const chartData = unpaidCustomersChart.value.unpaid_customers_chart;
+  const unpaidData = chartData.unpaid || [];
+  const pendingData = chartData.pending || [];
+  
+  const filterData = (data: any[]) => {
+    if (useYearRange.value && yearStart.value !== null && yearEnd.value !== null) {
+      const start = Math.min(yearStart.value, yearEnd.value);
+      const end = Math.max(yearStart.value, yearEnd.value);
+      return data.filter((item: any) => {
+        const yr = new Date(item.date).getFullYear();
+        return yr >= start && yr <= end;
+      });
+    }
+    const days = Number(selectedDateRange.value || 0);
+    if (days <= 0) return data;
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    return data.filter((item: any) => new Date(item.date) >= cutoffDate);
+  };
+  
+  return {
+    unpaid: filterData(unpaidData),
+    pending: filterData(pendingData)
+  };
 });
 
 // Chart options computed properties
@@ -339,59 +352,93 @@ const revenueChartOption = computed(() => ({
   }
 }));
 
-const unpaidCustomersChartOption = computed(() => ({
-  title: { 
-    text: 'Unpaid Customers', 
-    textStyle: { fontSize: 12 },
-    left: 'center'
-  },
-  axisPointer: { type: 'cross' },
-  tooltip: { 
-    trigger: 'axis',
-    formatter: '{b}: {c} customers'
-  },
-  toolbox: {
-    feature: {
-      dataZoom: { yAxisIndex: 'none' },
-      restore: {},
-      saveAsImage: {}
+const unpaidCustomersChartOption = computed(() => {
+  const unpaidData = filteredUnpaidCustomersChart.value.unpaid || [];
+  const pendingData = filteredUnpaidCustomersChart.value.pending || [];
+  
+  // Get all unique dates from both series
+  const allDates = new Set([...unpaidData.map((item: any) => item.date), ...pendingData.map((item: any) => item.date)]);
+  const sortedDates = Array.from(allDates).sort();
+  
+  // Create maps for quick lookup
+  const unpaidMap = new Map(unpaidData.map((item: any) => [item.date, item.count]));
+  const pendingMap = new Map(pendingData.map((item: any) => [item.date, item.count]));
+  
+  return {
+    title: { 
+      text: 'Unpaid & Pending Customers', 
+      textStyle: { fontSize: 12 },
+      left: 'center'
     },
-    right: 10
-  },
-  xAxis: { 
-    data: filteredUnpaidCustomersChart.value.map((item: any) => item.date),
-    type: 'category',
-    axisLabel: { 
-      rotate: 45, 
-      fontSize: 8,
-      interval: 'auto'
+    axisPointer: { type: 'cross' },
+    tooltip: { 
+      trigger: 'axis',
+      formatter: function(params: any) {
+        let result = params[0].name + '<br/>';
+        params.forEach((param: any) => {
+          result += param.seriesName + ': ' + param.value + ' customers<br/>';
+        });
+        return result;
+      }
+    },
+    legend: {
+      data: ['Unpaid Customers', 'Pending Customers'],
+      top: 30
+    },
+    toolbox: {
+      feature: {
+        dataZoom: { yAxisIndex: 'none' },
+        restore: {},
+        saveAsImage: {}
+      },
+      right: 10
+    },
+    xAxis: { 
+      data: sortedDates,
+      type: 'category',
+      axisLabel: { 
+        rotate: 45, 
+        fontSize: 8,
+        interval: 'auto'
+      }
+    },
+    yAxis: { 
+      type: 'value',
+      axisLabel: { fontSize: 8 }
+    },
+    series: [
+      {
+        name: 'Unpaid Customers',
+        type: 'line',
+        data: sortedDates.map(date => unpaidMap.get(date) || 0),
+        smooth: true,
+        sampling: 'lttb',
+        itemStyle: { color: '#EF4444' },
+        lineStyle: { color: '#EF4444', width: 2 }
+      },
+      {
+        name: 'Pending Customers',
+        type: 'line',
+        data: sortedDates.map(date => pendingMap.get(date) || 0),
+        smooth: true,
+        sampling: 'lttb',
+        itemStyle: { color: '#F59E0B' },
+        lineStyle: { color: '#F59E0B', width: 2 }
+      }
+    ],
+    dataZoom: [
+      { type: 'inside', throttle: 30 },
+      { type: 'slider', height: 20, bottom: 0 }
+    ],
+    grid: { 
+      left: '15%', 
+      right: '10%', 
+      bottom: '22%', 
+      top: '20%',
+      containLabel: true
     }
-  },
-  yAxis: { 
-    type: 'value',
-    axisLabel: { fontSize: 8 }
-  },
-  series: [{
-    name: 'Unpaid Customers',
-    type: 'line',
-    data: filteredUnpaidCustomersChart.value.map((item: any) => item.count),
-    smooth: true,
-    sampling: 'lttb',
-    itemStyle: { color: '#F59E0B' },
-    lineStyle: { color: '#F59E0B', width: 2 }
-  }],
-  dataZoom: [
-    { type: 'inside', throttle: 30 },
-    { type: 'slider', height: 20, bottom: 0 }
-  ],
-  grid: { 
-    left: '15%', 
-    right: '10%', 
-    bottom: '22%', 
-    top: '20%',
-    containLabel: true
-  }
-}));
+  };
+});
 const optionCardCustomer = ref();
 const optionCardPacketPopular = ref();
 const optionCardArea = ref();
@@ -753,6 +800,10 @@ const getNewDashboardData = async () => {
     // Get unpaid customers chart
     const unpaidResponse = await dashboardAdminApi().getUnpaidCustomersChart();
     unpaidCustomersChart.value = unpaidResponse.data;
+
+    // Get unpaid customers list
+    const unpaidListResponse = await dashboardAdminApi().getUnpaidCustomersList();
+    unpaidCustomersList.value = unpaidListResponse.data.unpaid_customers || [];
 
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
@@ -1238,13 +1289,52 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       <!-- Unpaid Customers Chart -->
       <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
         <div class="mb-3">
-          <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">Unpaid Customers ({{ selectedDateRange }} days)</h2>
+          <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">Unpaid & Pending Customers ({{ selectedDateRange }} days)</h2>
         </div>
-        <div v-if="filteredUnpaidCustomersChart && filteredUnpaidCustomersChart.length > 0" class="h-80 w-full overflow-hidden">
+        <div v-if="(filteredUnpaidCustomersChart.unpaid?.length > 0) || (filteredUnpaidCustomersChart.pending?.length > 0)" class="h-80 w-full overflow-hidden">
           <VChart :option="unpaidCustomersChartOption" autoresize style="height: 100%; width: 100%;" />
         </div>
         <div v-else class="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
           <p class="text-gray-500">No unpaid customers data available for selected period</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unpaid Customers List Section -->
+    <div class="grid gap-6 md:grid-cols-1 sm:grid-cols-1 mb-10">
+      <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg">
+        <div class="flex justify-between items-center mb-4">
+          <h1 class="text-xl font-semibold text-slate-800">Unpaid & Pending Customers</h1>
+          <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="getNewDashboardData"
+            title="Refresh Unpaid Customers" />
+        </div>
+        <div v-if="unpaidCustomersList.length > 0" class="space-y-3">
+          <div v-for="customer in unpaidCustomersList.slice(0, 10)" :key="customer.id"
+            class="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <p class="font-medium text-gray-900">{{ customer.customer_name || 'Unknown Customer' }}</p>
+                <span v-if="Number(customer.total_paid) <= 0" class="px-2 py-1 text-xs rounded-full font-medium bg-red-100 text-red-800">
+                  UNPAID
+                </span>
+                <span v-else class="px-2 py-1 text-xs rounded-full font-medium bg-orange-100 text-orange-800">
+                  PENDING
+                </span>
+              </div>
+              <p class="text-sm text-gray-600">{{ customer.customer_phone || 'No phone' }}</p>
+              <p class="text-xs text-gray-500">Due: {{ formatDateToYMD(customer.due_date) }}</p>
+            </div>
+            <div class="text-right">
+              <p class="font-semibold text-red-600">{{ formatIDR(customer.outstanding_amount || 0) }}</p>
+              <p class="text-xs text-gray-500">Out of {{ formatIDR(customer.amount || 0) }}</p>
+            </div>
+          </div>
+          <div v-if="unpaidCustomersList.length > 10" class="text-center py-2">
+            <p class="text-sm text-gray-500">And {{ unpaidCustomersList.length - 10 }} more customers...</p>
+          </div>
+        </div>
+        <div v-else class="text-center py-8 text-gray-500">
+          <p>No unpaid or pending customers found</p>
         </div>
       </div>
     </div>
