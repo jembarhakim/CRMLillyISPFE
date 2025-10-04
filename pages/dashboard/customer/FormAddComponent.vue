@@ -163,6 +163,12 @@ function onSuccess() {
   emit("success");
 }
 
+// Close modal function
+function closeModal() {
+  // Close modal directly without confirmation
+  useModal().close();
+}
+
 async function onSubmit(event: FormSubmitEvent<Schema>) {
   console.log("Form submitted with data:", state);
   // Do something with event.data
@@ -520,7 +526,7 @@ select:focus {
           {{ props.isEdit ? "Edit" : "Add New" }} Customer
         </h1>
         <UButton 
-          @click="$emit('close')" 
+          @click="closeModal" 
           variant="ghost" 
           color="white"
           size="sm"
@@ -745,7 +751,7 @@ select:focus {
           <div class="flex gap-3 w-full sm:w-auto">
             <UButton 
               type="button" 
-              @click="$emit('close')" 
+              @click="closeModal" 
               variant="outline" 
               color="gray"
               size="lg"
