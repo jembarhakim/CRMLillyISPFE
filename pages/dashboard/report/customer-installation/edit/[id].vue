@@ -1,20 +1,21 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-    <div class="container mx-auto p-6">
+    <div class="container mx-auto p-4 sm:p-6">
       <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
         <!-- Header Section -->
-        <div class="bg-gradient-to-r from-emerald-500 to-teal-600 px-8 py-6">
-          <div class="flex justify-between items-center">
-            <div class="flex items-center space-x-4">
-              <div class="bg-white/20 p-3 rounded-xl">
-                <UIcon name="i-heroicons-wrench-screwdriver" class="text-white text-2xl" />
+        <div class="bg-gradient-to-r from-emerald-500 to-teal-600 px-4 sm:px-8 py-4 sm:py-6">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div class="flex items-center space-x-3 sm:space-x-4">
+              <div class="bg-white/20 p-2 sm:p-3 rounded-xl">
+                <UIcon name="i-heroicons-wrench-screwdriver" class="text-white text-xl sm:text-2xl" />
               </div>
               <div>
-                <h1 class="text-2xl font-bold text-white">Edit Installation Report</h1>
-                <p class="text-emerald-100 text-sm mt-1">Update installation details and configuration</p>
+                <h1 class="text-lg sm:text-2xl font-bold text-white">Edit Installation Report</h1>
+                <p class="text-emerald-100 text-xs sm:text-sm mt-1">Update installation details and configuration</p>
               </div>
             </div>
-            <UButton @click="$router.back()" variant="outline" color="white" class="border-white/30 text-white hover:bg-white/10">
+            <UButton @click="$router.back()" variant="outline" color="white" 
+                     class="border-white/30 text-white hover:bg-white/10 w-full sm:w-auto">
               <UIcon name="i-heroicons-arrow-left" class="mr-2" />
               Back
             </UButton>
@@ -22,25 +23,25 @@
         </div>
 
         <!-- Loading State -->
-        <div v-if="loading" class="flex justify-center items-center py-16">
+        <div v-if="loading" class="flex justify-center items-center py-12 sm:py-16">
           <div class="text-center">
-            <UIcon name="i-heroicons-arrow-path" class="animate-spin text-4xl text-emerald-500 mb-4" />
-            <p class="text-gray-600">Loading installation report...</p>
+            <UIcon name="i-heroicons-arrow-path" class="animate-spin text-3xl sm:text-4xl text-emerald-500 mb-4" />
+            <p class="text-gray-600 text-sm sm:text-base">Loading installation report...</p>
           </div>
         </div>
 
         <!-- Form Content -->
-        <UForm v-else :schema="schema" :state="state" @submit="onSubmit" class="p-8 space-y-8">
+        <UForm v-else :schema="schema" :state="state" @submit="onSubmit" class="p-4 sm:p-8 space-y-6 sm:space-y-8">
           <!-- Basic Installation Information -->
-          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100">
-            <div class="flex items-center mb-6">
-              <div class="bg-blue-500 p-2 rounded-lg mr-3">
-                <UIcon name="i-heroicons-information-circle" class="text-white text-lg" />
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-6 rounded-xl border border-blue-100">
+            <div class="flex items-center mb-4 sm:mb-6">
+              <div class="bg-blue-500 p-2 rounded-lg mr-2 sm:mr-3">
+                <UIcon name="i-heroicons-information-circle" class="text-white text-sm sm:text-lg" />
               </div>
-              <h2 class="text-xl font-bold text-gray-800">Basic Installation Information</h2>
+              <h2 class="text-lg sm:text-xl font-bold text-gray-800">Basic Installation Information</h2>
             </div>
           
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <UFormGroup label="Customer" name="customer_id" required>
                 <USelect
                   v-model="state.customer_id"
@@ -510,13 +511,15 @@
           </div>
 
           <!-- Submit Button -->
-          <div class="bg-gray-50 p-6 rounded-xl border border-gray-200">
-            <div class="flex justify-end space-x-4">
-              <UButton @click="$router.back()" variant="outline" color="gray" size="lg" class="px-8">
+          <div class="bg-gray-50 p-4 sm:p-6 rounded-xl border border-gray-200">
+            <div class="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
+              <UButton @click="$router.back()" variant="outline" color="gray" size="sm" 
+                       class="w-full sm:w-auto px-6 sm:px-8">
                 <UIcon name="i-heroicons-x-mark" class="mr-2" />
                 Cancel
               </UButton>
-              <UButton type="submit" :loading="isSubmitting" color="emerald" size="lg" class="px-8 shadow-lg">
+              <UButton type="submit" :loading="isSubmitting" color="emerald" size="sm" 
+                       class="w-full sm:w-auto px-6 sm:px-8 shadow-lg">
                 <UIcon name="i-heroicons-check" class="mr-2" />
                 Update Installation Report
               </UButton>
