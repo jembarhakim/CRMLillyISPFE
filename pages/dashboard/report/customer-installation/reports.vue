@@ -1,110 +1,123 @@
 <template>
-  <div class="container mx-auto p-6">
-    <div class="bg-white rounded-lg shadow-lg p-6">
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">Installation Reports</h1>
-        <div class="flex space-x-3">
-          <UButton @click="navigateTo('/dashboard/report/customer-installation')" color="gray" variant="outline">
-            <UIcon name="i-heroicons-arrow-left" class="mr-2" />
-            Back to Dashboard
-          </UButton>
-          <UButton @click="exportReports" color="green" variant="outline">
-            <UIcon name="i-heroicons-document-arrow-down" class="mr-2" />
-            Export Reports
-          </UButton>
-        </div>
-      </div>
-
-      <!-- Filters -->
-      <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200 mb-6">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold text-blue-800 flex items-center">
-            <UIcon name="i-heroicons-funnel" class="mr-2" />
-            Filters
-          </h3>
-          <div class="flex space-x-2">
-            <UButton @click="clearFilters" color="gray" variant="outline" size="sm">
-              <UIcon name="i-heroicons-x-mark" class="mr-1" />
-              Clear All
+  <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div class="container mx-auto p-4 sm:p-6">
+      <div class="bg-white rounded-lg shadow-lg p-4 sm:p-6">
+        <!-- Header Section -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Installation Reports</h1>
+            <p class="text-sm text-gray-600 mt-1">View and manage installation reports</p>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <UButton @click="navigateTo('/dashboard/report/customer-installation')" 
+                     color="gray" variant="outline"
+                     class="w-full sm:w-auto">
+              <UIcon name="i-heroicons-arrow-left" class="mr-2" />
+              Back to Dashboard
             </UButton>
-            <UButton @click="applyFilters" color="blue" size="sm">
-              <UIcon name="i-heroicons-magnifying-glass" class="mr-1" />
-              Apply Filters
+            <UButton @click="exportReports" 
+                     color="green" variant="outline"
+                     class="w-full sm:w-auto">
+              <UIcon name="i-heroicons-document-arrow-down" class="mr-2" />
+              Export Reports
             </UButton>
           </div>
         </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <UFormGroup class="mb-4">
-            <template #label>
-              <span class="text-black font-bold text-sm">Search</span>
-            </template>
-            <UInput 
-              v-model="filters.search"
-              placeholder="Search customer, technician..."
-              @input="onFilterChange"
-              class="w-full"
-            >
-              <template #leading>
-                <UIcon name="i-heroicons-magnifying-glass" />
+
+        <!-- Filters -->
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-6 rounded-xl border border-blue-200 mb-6">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <h3 class="text-base sm:text-lg font-semibold text-blue-800 flex items-center">
+              <UIcon name="i-heroicons-funnel" class="mr-2" />
+              Filters
+            </h3>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <UButton @click="clearFilters" 
+                       color="gray" variant="outline" size="sm"
+                       class="w-full sm:w-auto">
+                <UIcon name="i-heroicons-x-mark" class="mr-1" />
+                Clear All
+              </UButton>
+              <UButton @click="applyFilters" 
+                       color="blue" size="sm"
+                       class="w-full sm:w-auto">
+                <UIcon name="i-heroicons-magnifying-glass" class="mr-1" />
+                Apply Filters
+              </UButton>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
+            <UFormGroup class="mb-3 sm:mb-4">
+              <template #label>
+                <span class="text-black font-bold text-xs sm:text-sm">Search</span>
               </template>
-            </UInput>
-          </UFormGroup>
-          
-          <UFormGroup class="mb-4">
-            <template #label>
-              <span class="text-black font-bold text-sm">Status</span>
-            </template>
-            <USelectMenu
-              v-model="filters.status"
-              :options="statusOptions"
-              placeholder="All Status"
-              value-attribute="value"
-              option-attribute="label"
-              @change="onFilterChange"
-              class="w-full"
-            />
-          </UFormGroup>
-          
-          <UFormGroup class="mb-4">
-            <template #label>
-              <span class="text-black font-bold text-sm">Installation Type</span>
-            </template>
-            <USelectMenu
-              v-model="filters.installation_type"
-              :options="installationTypeOptions"
-              placeholder="All Types"
-              value-attribute="value"
-              option-attribute="label"
-              @change="onFilterChange"
-              class="w-full"
-            />
-          </UFormGroup>
-          
-          <UFormGroup class="mb-4">
-            <template #label>
-              <span class="text-black font-bold text-sm">Date From</span>
-            </template>
-            <UInput 
-              v-model="filters.date_from" 
-              type="date" 
-              @change="onFilterChange"
-              class="w-full"
-            />
-          </UFormGroup>
-          
-          <UFormGroup class="mb-4">
-            <template #label>
-              <span class="text-black font-bold text-sm">Date To</span>
-            </template>
-            <UInput 
-              v-model="filters.date_to" 
-              type="date" 
-              @change="onFilterChange"
-              class="w-full"
-            />
-          </UFormGroup>
-        </div>
+              <UInput 
+                v-model="filters.search"
+                placeholder="Search customer, technician..."
+                @input="onFilterChange"
+                class="w-full"
+              >
+                <template #leading>
+                  <UIcon name="i-heroicons-magnifying-glass" />
+                </template>
+              </UInput>
+            </UFormGroup>
+            
+            <UFormGroup class="mb-3 sm:mb-4">
+              <template #label>
+                <span class="text-black font-bold text-xs sm:text-sm">Status</span>
+              </template>
+              <USelectMenu
+                v-model="filters.status"
+                :options="statusOptions"
+                placeholder="All Status"
+                value-attribute="value"
+                option-attribute="label"
+                @change="onFilterChange"
+                class="w-full"
+              />
+            </UFormGroup>
+            
+            <UFormGroup class="mb-3 sm:mb-4">
+              <template #label>
+                <span class="text-black font-bold text-xs sm:text-sm">Installation Type</span>
+              </template>
+              <USelectMenu
+                v-model="filters.installation_type"
+                :options="installationTypeOptions"
+                placeholder="All Types"
+                value-attribute="value"
+                option-attribute="label"
+                @change="onFilterChange"
+                class="w-full"
+              />
+            </UFormGroup>
+            
+            <UFormGroup class="mb-3 sm:mb-4">
+              <template #label>
+                <span class="text-black font-bold text-xs sm:text-sm">Date From</span>
+              </template>
+              <UInput 
+                v-model="filters.date_from" 
+                type="date" 
+                @change="onFilterChange"
+                class="w-full"
+              />
+            </UFormGroup>
+            
+            <UFormGroup class="mb-3 sm:mb-4">
+              <template #label>
+                <span class="text-black font-bold text-xs sm:text-sm">Date To</span>
+              </template>
+              <UInput 
+                v-model="filters.date_to" 
+                type="date" 
+                @change="onFilterChange"
+                class="w-full"
+              />
+            </UFormGroup>
+          </div>
         
         <!-- Active Filters Display -->
         <div v-if="hasActiveFilters" class="mt-4 pt-4 border-t border-blue-200">
@@ -144,140 +157,237 @@
         </div>
       </div>
 
-      <!-- Reports Table -->
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Customer
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Technician
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Type
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tgl. Permintaan PSB
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tgl. Selesai Instalasi
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Durasi PSB
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status PSB
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Assets
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-if="loading" class="text-center">
-              <td colspan="10" class="px-6 py-4">
-                <div class="flex justify-center">
-                  <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl" />
-                </div>
-              </td>
-            </tr>
-            <tr v-else-if="filteredReports.length === 0" class="text-center">
-              <td colspan="10" class="px-6 py-4 text-gray-500">
-                No installation reports found
-              </td>
-            </tr>
-            <tr v-else v-for="report in paginatedReports" :key="report.installation_id" class="hover:bg-gray-50">
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div>
-                  <div class="text-sm font-medium text-gray-900">{{ report.customer_name || 'Unknown' }}</div>
-                  <div class="text-sm text-gray-500">{{ report.customer_phone || '-' }}</div>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div>
-                  <div class="text-sm font-medium text-gray-900">{{ report.technician_name || 'Unknown' }}</div>
-                  <div class="text-sm text-gray-500">{{ report.technician_phone || '-' }}</div>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                  {{ report.installation_type || 'Unknown' }}
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span :class="getStatusColor(report.installation_status)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
+        <!-- Mobile Card View -->
+        <div class="block sm:hidden space-y-4">
+          <div v-if="loading" class="text-center py-8">
+            <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl text-blue-600 mb-2" />
+            <p class="text-gray-600">Loading reports...</p>
+          </div>
+          <div v-else-if="filteredReports.length === 0" class="text-center py-8 text-gray-500">
+            <UIcon name="i-heroicons-document-text" class="text-4xl mb-2" />
+            <p>No installation reports found</p>
+          </div>
+          <div v-else v-for="report in paginatedReports" :key="report.installation_id" 
+               class="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
+            <!-- Report Header -->
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex-1">
+                <h3 class="font-semibold text-gray-900 text-sm">{{ report.customer_name || 'Unknown' }}</h3>
+                <p class="text-xs text-gray-500">{{ report.customer_phone || '-' }}</p>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span :class="getStatusColor(report.installation_status)" 
+                      class="px-2 py-1 rounded-full text-xs font-medium">
                   {{ report.installation_status || 'Unknown' }}
                 </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ formatDate(report.tgl_permintaan_psb) }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {{ formatDate(report.installation_completed_at) }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                <span v-if="report.durasi_psb !== null && report.durasi_psb !== undefined" class="font-medium">
-                  {{ report.durasi_psb }} hari
+                <span class="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  {{ report.installation_type || 'Unknown' }}
                 </span>
-                <span v-else class="text-gray-400">-</span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span v-if="report.status_psb" 
-                      :class="report.status_psb === 'Tepat Waktu' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
-                      class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
-                  {{ report.status_psb }}
-                </span>
-                <span v-else class="text-gray-400">-</span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">{{ report.router_brand || '-' }} {{ report.router_model || '' }}</div>
-                <div class="text-sm text-gray-500">{{ report.mac_address || '-' }}</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <div class="flex space-x-2">
-                  <UButton @click="viewReport(report.installation_id)" size="sm" color="blue" variant="outline">
-                    View
-                  </UButton>
-                  <UButton @click="editReport(report.installation_id)" size="sm" color="green" variant="outline">
-                    Edit
-                  </UButton>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              </div>
+            </div>
 
-      <!-- Pagination -->
-      <div class="flex items-center justify-between mt-6">
-        <div class="text-sm text-gray-700">
-          Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, totalItems) }} of {{ totalItems }} results
+            <!-- Report Details -->
+            <div class="space-y-2 text-xs">
+              <div class="flex items-center gap-2">
+                <UIcon name="i-heroicons-user" class="w-3 h-3 text-gray-400" />
+                <span class="text-gray-600">Technician: {{ report.technician_name || 'Unknown' }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <UIcon name="i-heroicons-phone" class="w-3 h-3 text-gray-400" />
+                <span class="text-gray-600">{{ report.technician_phone || '-' }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <UIcon name="i-heroicons-calendar" class="w-3 h-3 text-gray-400" />
+                <span class="text-gray-600">PSB: {{ formatDate(report.tgl_permintaan_psb) }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <UIcon name="i-heroicons-check-circle" class="w-3 h-3 text-gray-400" />
+                <span class="text-gray-600">Completed: {{ formatDate(report.installation_completed_at) }}</span>
+              </div>
+              <div v-if="report.durasi_psb !== null && report.durasi_psb !== undefined" class="flex items-center gap-2">
+                <UIcon name="i-heroicons-clock" class="w-3 h-3 text-gray-400" />
+                <span class="text-gray-600">Duration: {{ report.durasi_psb }} hari</span>
+              </div>
+              <div v-if="report.status_psb" class="flex items-center gap-2">
+                <UIcon name="i-heroicons-flag" class="w-3 h-3 text-gray-400" />
+                <span :class="report.status_psb === 'Tepat Waktu' ? 'text-green-600' : 'text-red-600'" class="font-medium">
+                  PSB: {{ report.status_psb }}
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <UIcon name="i-heroicons-cube" class="w-3 h-3 text-gray-400" />
+                <span class="text-gray-600">{{ report.router_brand || '-' }} {{ report.router_model || '' }}</span>
+              </div>
+              <div v-if="report.mac_address" class="flex items-center gap-2">
+                <UIcon name="i-heroicons-computer-desktop" class="w-3 h-3 text-gray-400" />
+                <span class="text-gray-600 font-mono text-xs">{{ report.mac_address }}</span>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-2 mt-4">
+              <UButton @click="viewReport(report.installation_id)" 
+                       size="sm" color="blue" variant="outline"
+                       class="flex-1">
+                <UIcon name="i-heroicons-eye" class="w-3 h-3 mr-1" />
+                View
+              </UButton>
+              <UButton @click="editReport(report.installation_id)" 
+                       size="sm" color="green" variant="outline"
+                       class="flex-1">
+                <UIcon name="i-heroicons-pencil" class="w-3 h-3 mr-1" />
+                Edit
+              </UButton>
+              <UButton @click="deleteReport(report.installation_id)" 
+                       size="sm" color="red" variant="outline"
+                       class="flex-1">
+                <UIcon name="i-heroicons-trash" class="w-3 h-3 mr-1" />
+                Delete
+              </UButton>
+            </div>
+          </div>
         </div>
-        <div class="flex space-x-2">
-          <UButton 
-            @click="previousPage" 
-            :disabled="currentPage === 1"
-            size="sm" 
-            variant="outline"
-          >
-            Previous
-          </UButton>
-          <UButton 
-            @click="nextPage" 
-            :disabled="currentPage >= totalPages"
-            size="sm" 
-            variant="outline"
-          >
-            Next
-          </UButton>
+
+        <!-- Desktop Table View -->
+        <div class="hidden sm:block overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Customer
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Technician
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Type
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tgl. Permintaan PSB
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tgl. Selesai Instalasi
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Durasi PSB
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status PSB
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Assets
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr v-if="loading" class="text-center">
+                <td colspan="10" class="px-6 py-4">
+                  <div class="flex justify-center">
+                    <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl" />
+                  </div>
+                </td>
+              </tr>
+              <tr v-else-if="filteredReports.length === 0" class="text-center">
+                <td colspan="10" class="px-6 py-4 text-gray-500">
+                  No installation reports found
+                </td>
+              </tr>
+              <tr v-else v-for="report in paginatedReports" :key="report.installation_id" class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div>
+                    <div class="text-sm font-medium text-gray-900">{{ report.customer_name || 'Unknown' }}</div>
+                    <div class="text-sm text-gray-500">{{ report.customer_phone || '-' }}</div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div>
+                    <div class="text-sm font-medium text-gray-900">{{ report.technician_name || 'Unknown' }}</div>
+                    <div class="text-sm text-gray-500">{{ report.technician_phone || '-' }}</div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                    {{ report.installation_type || 'Unknown' }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span :class="getStatusColor(report.installation_status)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
+                    {{ report.installation_status || 'Unknown' }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ formatDate(report.tgl_permintaan_psb) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ formatDate(report.installation_completed_at) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <span v-if="report.durasi_psb !== null && report.durasi_psb !== undefined" class="font-medium">
+                    {{ report.durasi_psb }} hari
+                  </span>
+                  <span v-else class="text-gray-400">-</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span v-if="report.status_psb" 
+                        :class="report.status_psb === 'Tepat Waktu' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
+                    {{ report.status_psb }}
+                  </span>
+                  <span v-else class="text-gray-400">-</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">{{ report.router_brand || '-' }} {{ report.router_model || '' }}</div>
+                  <div class="text-sm text-gray-500">{{ report.mac_address || '-' }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <div class="flex space-x-2">
+                    <UButton @click="viewReport(report.installation_id)" size="sm" color="blue" variant="outline">
+                      View
+                    </UButton>
+                    <UButton @click="editReport(report.installation_id)" size="sm" color="green" variant="outline">
+                      Edit
+                    </UButton>
+                    <UButton @click="deleteReport(report.installation_id)" size="sm" color="red" variant="outline">
+                      Delete
+                    </UButton>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
+          <div class="text-xs sm:text-sm text-gray-700 text-center sm:text-left">
+            Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, totalItems) }} of {{ totalItems }} results
+          </div>
+          <div class="flex justify-center sm:justify-end gap-2">
+            <UButton 
+              @click="previousPage" 
+              :disabled="currentPage === 1"
+              size="sm" 
+              variant="outline"
+              class="w-full sm:w-auto"
+            >
+              Previous
+            </UButton>
+            <UButton 
+              @click="nextPage" 
+              :disabled="currentPage >= totalPages"
+              size="sm" 
+              variant="outline"
+              class="w-full sm:w-auto"
+            >
+              Next
+            </UButton>
+          </div>
         </div>
       </div>
     </div>
@@ -492,6 +602,31 @@ function viewReport(installationId: string) {
 function editReport(installationId: string) {
   // Navigate to edit page or open edit modal
   navigateTo(`/dashboard/report/customer-installation/edit/${installationId}`);
+}
+
+async function deleteReport(installationId: string) {
+  try {
+    await customerAdminApi().deleteInstallationReport(installationId);
+    
+    // Show success notification
+    useToast().add({
+      title: "Success!",
+      description: "Installation report deleted successfully",
+      color: "green",
+    });
+    
+    // Reload reports to reflect the changes
+    await loadReports();
+  } catch (error) {
+    console.error("Error deleting installation report:", error);
+    
+    // Show error notification
+    useToast().add({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Failed to delete installation report",
+      color: "red",
+    });
+  }
 }
 
 function exportReports() {

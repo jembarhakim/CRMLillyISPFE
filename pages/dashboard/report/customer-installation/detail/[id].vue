@@ -1,23 +1,23 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-    <div class="container mx-auto p-6">
+    <div class="container mx-auto p-4 sm:p-6">
       <!-- Header Section -->
-      <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-8">
-        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
-          <div class="flex justify-between items-center">
+      <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-6 sm:mb-8">
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 sm:px-8 py-4 sm:py-6">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div class="text-white">
-              <h1 class="text-3xl font-bold mb-2">Installation Report Detail</h1>
-              <p class="text-blue-100 text-lg">Complete installation report information</p>
+              <h1 class="text-xl sm:text-3xl font-bold mb-2">Installation Report Detail</h1>
+              <p class="text-blue-100 text-sm sm:text-lg">Complete installation report information</p>
             </div>
-            <div class="flex space-x-3">
+            <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <UButton @click="navigateTo('/dashboard/report/customer-installation/reports')" 
-                       color="white" variant="outline" size="lg"
-                       class="backdrop-blur-sm bg-white/10 border-white/20 text-white hover:bg-white/20">
+                       color="white" variant="outline" size="sm" 
+                       class="backdrop-blur-sm bg-white/10 border-white/20 text-white hover:bg-white/20 w-full sm:w-auto">
                 <UIcon name="i-heroicons-arrow-left" class="mr-2" />
                 Back to Reports
               </UButton>
-              <UButton @click="printReport" color="white" variant="solid" size="lg"
-                       class="bg-white/20 backdrop-blur-sm hover:bg-white/30">
+              <UButton @click="printReport" color="white" variant="solid" size="sm"
+                       class="bg-white/20 backdrop-blur-sm hover:bg-white/30 w-full sm:w-auto">
                 <UIcon name="i-heroicons-printer" class="mr-2" />
                 Print Report
               </UButton>
@@ -27,40 +27,40 @@
       </div>
 
       <!-- Loading State -->
-      <div v-if="loading" class="flex justify-center py-16">
+      <div v-if="loading" class="flex justify-center py-12 sm:py-16">
         <div class="text-center">
-          <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-            <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl text-blue-600" />
+          <div class="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-full mb-4">
+            <UIcon name="i-heroicons-arrow-path" class="animate-spin text-xl sm:text-2xl text-blue-600" />
           </div>
-          <p class="text-gray-600 text-lg">Loading installation report...</p>
+          <p class="text-gray-600 text-sm sm:text-lg">Loading installation report...</p>
         </div>
       </div>
 
       <!-- Not Found State -->
-      <div v-else-if="!report" class="text-center py-16">
-        <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-6">
-          <UIcon name="i-heroicons-document-text" class="text-3xl text-gray-400" />
+      <div v-else-if="!report" class="text-center py-12 sm:py-16">
+        <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full mb-4 sm:mb-6">
+          <UIcon name="i-heroicons-document-text" class="text-2xl sm:text-3xl text-gray-400" />
         </div>
-        <h3 class="text-xl font-semibold text-gray-700 mb-2">Report Not Found</h3>
-        <p class="text-gray-500">The installation report you're looking for doesn't exist or has been removed.</p>
+        <h3 class="text-lg sm:text-xl font-semibold text-gray-700 mb-2">Report Not Found</h3>
+        <p class="text-gray-500 text-sm sm:text-base">The installation report you're looking for doesn't exist or has been removed.</p>
       </div>
 
       <!-- Report Content -->
-      <div v-else class="space-y-8">
+      <div v-else class="space-y-6 sm:space-y-8">
         <!-- Status Overview Card -->
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <div class="bg-gradient-to-r from-green-500 to-emerald-500 px-8 py-6">
-            <div class="flex items-center justify-between">
+          <div class="bg-gradient-to-r from-green-500 to-emerald-500 px-4 sm:px-8 py-4 sm:py-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div class="text-white">
-                <h2 class="text-2xl font-bold mb-1">{{ report.customer_name || 'Unknown Customer' }}</h2>
-                <p class="text-green-100">Installation Report #{{ report.installation_id?.slice(-8) || 'N/A' }}</p>
+                <h2 class="text-lg sm:text-2xl font-bold mb-1">{{ report.customer_name || 'Unknown Customer' }}</h2>
+                <p class="text-green-100 text-sm sm:text-base">Installation Report #{{ report.installation_id?.slice(-8) || 'N/A' }}</p>
               </div>
-              <div class="text-right">
+              <div class="text-center sm:text-right">
                 <span :class="getStatusColor(report.installation_status)" 
-                      class="px-4 py-2 rounded-full text-sm font-semibold text-white shadow-lg">
+                      class="px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold text-white shadow-lg">
                   {{ report.installation_status || 'Unknown' }}
                 </span>
-                <p class="text-green-100 text-sm mt-2">{{ formatDate(report.installation_created_at) }}</p>
+                <p class="text-green-100 text-xs sm:text-sm mt-2">{{ formatDate(report.installation_created_at) }}</p>
               </div>
             </div>
           </div>
@@ -68,34 +68,34 @@
 
         <!-- Basic Information -->
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-8 py-4">
-            <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="i-heroicons-information-circle" class="mr-3 text-xl" />
+          <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-4 sm:px-8 py-3 sm:py-4">
+            <h3 class="text-lg sm:text-xl font-bold text-white flex items-center">
+              <UIcon name="i-heroicons-information-circle" class="mr-2 sm:mr-3 text-lg sm:text-xl" />
               Basic Installation Information
             </h3>
           </div>
-          <div class="p-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div class="p-4 sm:p-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <!-- Customer Information -->
-              <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
-                <div class="flex items-center mb-4">
-                  <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-user" class="text-white text-lg" />
+              <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 sm:p-6 rounded-xl border border-blue-200">
+                <div class="flex items-center mb-3 sm:mb-4">
+                  <div class="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-full flex items-center justify-center mr-2 sm:mr-3">
+                    <UIcon name="i-heroicons-user" class="text-white text-sm sm:text-lg" />
                   </div>
-                  <h4 class="text-lg font-semibold text-blue-800">Customer Information</h4>
+                  <h4 class="text-base sm:text-lg font-semibold text-blue-800">Customer Information</h4>
                 </div>
-                <div class="space-y-3">
+                <div class="space-y-2 sm:space-y-3">
                   <div>
-                    <label class="text-sm font-medium text-blue-600">Customer Name</label>
-                    <p class="text-lg font-semibold text-gray-800">{{ report.customer_name || '-' }}</p>
+                    <label class="text-xs sm:text-sm font-medium text-blue-600">Customer Name</label>
+                    <p class="text-sm sm:text-lg font-semibold text-gray-800">{{ report.customer_name || '-' }}</p>
                   </div>
                   <div>
-                    <label class="text-sm font-medium text-blue-600">Phone Number</label>
-                    <p class="text-lg text-gray-700">{{ report.customer_phone || '-' }}</p>
+                    <label class="text-xs sm:text-sm font-medium text-blue-600">Phone Number</label>
+                    <p class="text-sm sm:text-lg text-gray-700">{{ report.customer_phone || '-' }}</p>
                   </div>
                   <div>
-                    <label class="text-sm font-medium text-blue-600">Address</label>
-                    <p class="text-sm text-gray-600 leading-relaxed">{{ report.customer_address || '-' }}</p>
+                    <label class="text-xs sm:text-sm font-medium text-blue-600">Address</label>
+                    <p class="text-xs sm:text-sm text-gray-600 leading-relaxed">{{ report.customer_address || '-' }}</p>
                   </div>
                 </div>
               </div>
