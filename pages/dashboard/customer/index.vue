@@ -195,31 +195,33 @@ const items = (row: Customer) => {
 
     // Always show "Add Report Installation" - multiple reports are now supported
     baseItems.push([{
-        label: row.hasInstallationReport ? 'Add Another Report' : 'Add Report Installation',
+        label: row.hasInstallationReport ? 'Add Another Installation' : 'Add Installation Report',
         icon: 'i-heroicons-archive-box-20-solid',
         click: () => OpenModalReportInstallation(true, row)
     }])
 
     // Add "View Installation Reports" if customer has reports
     if (row.hasInstallationReport) {
-        // Get installation reports for this customer
-        const customerReports = installationReports.value.filter(
-            (report: any) => report.customer_id === row.id
-        )
+        // Get installation reports for this customer and sort by date (most recent first)
+        const customerReports = installationReports.value
+            .filter((report: any) => report.customer_id === row.id)
+            .sort((a: any, b: any) => {
+                const dateA = new Date(a.installation_completed_at || a.on_air_date || a.installation_created_at || 0);
+                const dateB = new Date(b.installation_completed_at || b.on_air_date || b.installation_created_at || 0);
+                return dateB.getTime() - dateA.getTime(); // Most recent first
+            })
         
-        // Create submenu items for each installation report
-        const installationSubmenu = customerReports.map((report: any) => ({
-            label: `Report #${report.installation_id?.slice(-8) || 'N/A'} (${report.installation_status || 'Unknown'}) - ${formatDate(report.installation_completed_at || report.on_air_date)}`,
+        // Create individual menu items for each installation report
+        const installationMenuItems = customerReports.map((report: any, index: number) => ({
+            label: `Installation #${index + 1} (${report.installation_status || 'Unknown'}) - ${formatDate(report.installation_completed_at || report.on_air_date)}`,
             icon: 'i-heroicons-document-text-20-solid',
             click: () => viewInstallationReportDetail(report.installation_id)
         }))
         
-        // Add the main menu item with submenu
-        baseItems.push([{
-            label: `View Installation Reports (${customerReports.length})`,
-            icon: 'i-heroicons-document-text-20-solid',
-            children: installationSubmenu
-        }])
+        // Add each report as a separate menu item
+        installationMenuItems.forEach((item, index) => {
+            baseItems.push([item])
+        })
     }
 
     baseItems.push([{
