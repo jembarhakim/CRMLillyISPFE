@@ -191,20 +191,21 @@ export const MAIN_MENU: MenuItem[] = [
     roles: [ROLES.ADMIN, ROLES.CUSTOMER_SERVICE, ROLES.NOC, ROLES.TECHNICIAN],
     description: 'Support ticket management'
   },
-  {
-    label: 'MikroTik Monitoring',
-    icon: 'i-heroicons-server-stack',
-    link: '/dashboard/mikrotik',
-    roles: [ROLES.ADMIN, ROLES.NOC],
-    description: 'MikroTik device monitoring and logs'
-  },
-  {
-    label: 'Network Monitoring',
-    icon: 'i-heroicons-signal',
-    link: '/customer/monitoring',
-    roles: [ROLES.ADMIN, ROLES.CUSTOMER_SERVICE, ROLES.NOC, ROLES.TECHNICIAN],
-    description: 'Customer network monitoring and status'
-  },
+  // Temporarily hidden - not in use yet
+  // {
+  //   label: 'MikroTik Monitoring',
+  //   icon: 'i-heroicons-server-stack',
+  //   link: '/dashboard/mikrotik',
+  //   roles: [ROLES.ADMIN, ROLES.NOC],
+  //   description: 'MikroTik device monitoring and logs'
+  // },
+  // {
+  //   label: 'Network Monitoring',
+  //   icon: 'i-heroicons-signal',
+  //   link: '/customer/monitoring',
+  //   roles: [ROLES.ADMIN, ROLES.CUSTOMER_SERVICE, ROLES.NOC, ROLES.TECHNICIAN],
+  //   description: 'Customer network monitoring and status'
+  // },
   {
     label: 'User Management',
     icon: 'i-heroicons-user-circle-16-solid',

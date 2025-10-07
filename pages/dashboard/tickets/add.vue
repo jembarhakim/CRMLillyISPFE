@@ -113,6 +113,16 @@ async function submit(){
     classifiedType = classifyTroubleType(textToAnalyze)
   }
   
+  // Fallback to first available trouble type if classification failed or no text provided
+  if (!classifiedType && types.value.length > 0) {
+    classifiedType = types.value[0].id
+  }
+  
+  // Final fallback to default type '1' if no trouble types are available
+  if (!classifiedType) {
+    classifiedType = '1'
+  }
+  
   await ticketsApi().create({
     customer_id: form.value.customer_id,
     title: form.value.title,

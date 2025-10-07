@@ -1226,6 +1226,16 @@ async function createTicket() {
       classifiedType = classifyTroubleType(textToAnalyze)
     }
 
+    // Fallback to first available trouble type if classification failed or no text provided
+    if (!classifiedType && troubleTypes.value.length > 0) {
+      classifiedType = troubleTypes.value[0].id
+    }
+
+    // Final fallback to default type '1' if no trouble types are available
+    if (!classifiedType) {
+      classifiedType = '1'
+    }
+
     // Only include img_cs if there's actually an image
     const ticketData: any = {
       customer_id: String(form.value.customer_id),
