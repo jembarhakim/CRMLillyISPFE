@@ -5,9 +5,7 @@ export type CreateAssetRequest = {
   serial_number: string,
   date: Date,
   company_id?: string,
-  quantity: number,
-  status: string,
   price: number,
   description: string,
-  status_in_out: string,
+  site: string,
   }

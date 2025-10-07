@@ -15,13 +15,13 @@ export const asset :CreateAssetRequest= {
   serial_number: "",
   date: new Date(),
   company_id: undefined,
-  quantity: 0,
-  status: "",
   price: 0,
   description: "",
-  status_in_out: "",
+  site: "",
 };
 
+// Note: status and status_in_out are now tracked at the asset_item level
+// These arrays are kept for backward compatibility but should not be used
 export const status_in_out = [
   { label: "IN", value: "in" },
   { label: "OUT", value: "out" },

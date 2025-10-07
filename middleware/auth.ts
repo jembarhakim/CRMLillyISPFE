@@ -33,22 +33,29 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 
   // Verify token with backend if needed (optional - can be expensive)
   // Only verify if token seems valid but we want to double-check
-  try {
-    const response = await authApi().verifyAuth();
-    if (!response.success) {
-      console.log("Token verification failed, logging out");
-      authStore.logout();
-      return navigateTo("/login");
+  // Skip verification during initial app load to prevent race conditions
+  const isInitialLoad = !authStore.isInitialized || Date.now() - (window as any).__appStartTime < 2000;
+  
+  if (!isInitialLoad) {
+    try {
+      const response = await authApi().verifyAuth();
+      if (!response.success) {
+        console.log("Token verification failed, logging out");
+        authStore.logout();
+        return navigateTo("/login");
+      }
+    } catch (error: any) {
+      // Only logout on clear authentication errors, not network errors
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        console.log("Authentication error, logging out");
+        authStore.logout();
+        return navigateTo("/login");
+      }
+      // For network errors, continue with the assumption that token is valid
+      console.log("Network error during token verification, continuing with cached token");
     }
-  } catch (error: any) {
-    // Only logout on clear authentication errors, not network errors
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      console.log("Authentication error, logging out");
-      authStore.logout();
-      return navigateTo("/login");
-    }
-    // For network errors, continue with the assumption that token is valid
-    console.log("Network error during token verification, continuing with cached token");
+  } else {
+    console.log("Skipping token verification during initial load to prevent race conditions");
   }
 
   console.log('Valid authentication found, allowing access to:', to.path);

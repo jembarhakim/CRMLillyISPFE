@@ -3,8 +3,6 @@ import type { FormSubmitEvent } from "#ui/types";
 import {
   asset,
   assetSchema,
-  status,
-  status_in_out,
   type AssetSchema,
 } from "./asset.model";
 import { DatePicker as VCalendarDatePicker } from 'v-calendar'
@@ -40,54 +38,16 @@ const props = defineProps({
   data: {
     type: Object,
     default: () => ({
-      id: {
-        type: String,
-        default: "",
-      },
-      type: {
-        type: String,
-        default: ""
-      },
-      brand: {
-        type: String,
-        default: ""
-      },
-      model: {
-        type: String,
-        default: ""
-      },
-      serial_number: {
-        type: String,
-        default: ""
-      },
-      date: {
-        type: String,
-        default: new Date()
-      },
-      company_id: {
-        type: String,
-        default: ""
-      },
-      quantity: {
-        type: String,
-        default: ""
-      },
-      status: {
-        type: String,
-        default: ""
-      },
-      price: {
-        type: String,
-        default: ""
-      },
-      description: {
-        type: String,
-        default: ""
-      },
-      status_in_out: {
-        type: String,
-        default: ""
-      },
+      id: "",
+      type: "",
+      brand: "",
+      model: "",
+      serial_number: "",
+      date: new Date(),
+      company_id: "",
+      price: 0,
+      description: "",
+      site: "",
     })
   }
 })
@@ -103,11 +63,9 @@ watch(
       state.serial_number = props.data.serial_number
       state.date = props.data.date
       state.company_id = props.data.company_id
-      state.quantity = props.data.quantity
-      state.status = props.data.status
       state.price = props.data.price
       state.description = props.data.description
-      state.status_in_out = props.data.status_in_out
+      state.site = props.data.site
     }else{
       // clearState()
     }
@@ -129,11 +87,9 @@ function clearState() {
   state.serial_number = ""
   state.date = new Date()
   state.company_id = undefined
-  state.quantity = 0
-  state.status = ""
   state.price = 0
   state.description = ""
-  state.status_in_out = ""
+  state.site = ""
 }
 
 async function onSubmit(event: FormSubmitEvent<AssetSchema>) {
@@ -208,16 +164,8 @@ async function onSubmit(event: FormSubmitEvent<AssetSchema>) {
           />
         </UFormGroup>
 
-        <UFormGroup label="Quantity" name="quantity">
-          <UInput v-model="state.quantity" type="number" />
-        </UFormGroup>
-
-        <UFormGroup label="Status Asset IN/Out" name="status_in_out">
-          <USelect v-model="state.status_in_out" :options="status_in_out"></USelect>
-        </UFormGroup>
-
-        <UFormGroup label="Status" name="status">
-          <USelect v-model="state.status" :options="status"> </USelect>
+        <UFormGroup label="Site" name="site">
+          <UInput v-model="state.site" placeholder="Enter site location" />
         </UFormGroup>
 
         <UFormGroup label="Price" name="price">

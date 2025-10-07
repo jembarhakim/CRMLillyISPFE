@@ -88,6 +88,10 @@ function OpenModalAddAsset(isEdit: boolean, data: any) {
 
 const items = (row: any) => [
     [{
+        label: 'View Details',
+        icon: 'i-heroicons-eye-20-solid',
+        click: () => navigateTo(`/dashboard/asset/${row.id}`)
+    }, {
         label: 'Edit',
         icon: 'i-heroicons-pencil-square-20-solid',
         click: () => OpenModalAddAsset(true, row)
@@ -101,7 +105,15 @@ const items = (row: any) => [
 </script>
 
 <template>
-    <UButton label="Add Asset" @click="OpenModalAddAsset(false, null)" />
+    <div class="flex gap-2 mb-4">
+        <UButton label="Add Asset" @click="OpenModalAddAsset(false, null)" />
+        <UButton 
+            label="Manage Asset Items" 
+            color="blue" 
+            variant="outline"
+            @click="navigateTo('/dashboard/asset/items')"
+        />
+    </div>
     <div class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700">
         <UInput v-model="q" placeholder="Filter asset..." />
     </div>
@@ -113,6 +125,13 @@ const items = (row: any) => [
                 </template>
                 <template #company-data="{ row }">
                     <span>{{ row.company?.name || 'No Company' }}</span>
+                </template>
+                <template #asset_items-data="{ row }">
+                    <UBadge 
+                        :label="`${row.asset_items?.length || 0} items`"
+                        color="blue"
+                        variant="soft"
+                    />
                 </template>
                 <template #actions-data="{ row }">
                     <UDropdown :items="items(row)">

@@ -3,6 +3,9 @@ import { object, string, type InferType } from "yup";
 import type { FormSubmitEvent } from "#ui/types";
 import { userManagementAdminApi } from "@/api/admin/user-management";
 import { customerAdminApi } from "@/api/admin/customer";
+import { assetAdminApi } from "@/api/admin/asset";
+import { assetItemAdminApi } from "@/api/admin/asset-item";
+import { mikrotikAdminApi } from "@/api/admin/mikrotik";
 import { useNotificationStore } from "@/stores/notification";
 
 const notification = useNotificationStore();
@@ -36,11 +39,11 @@ const state = reactive({
   // Basic Installation Information
   customer_id: "",
   technician_id: "", // Legacy - kept for backward compatibility
-  status: "pending",
+  status: "completed", // Always completed since technician already finished the installation
   notes: "",
   document_type: "KTP",
   document_photo: null as File | null,
-  installation_type: "new_installation",
+  installation_type: "new_installation", // Always new_installation for this form
   on_air_date: "",
   trial_end_date: "",
   service_ready_date: "",
@@ -59,6 +62,7 @@ const state = reactive({
   psb_date: "",
   psb_time: "",
   max_limit: "", // e.g., "10M/10M"
+  ip_binding_type: "bypassed", // Default to bypassed for new installations
   auto_provision: false,
   dry_run: false,
 
@@ -84,14 +88,45 @@ const state = reactive({
 
   // UI State
   loading: false,
+  fetchingDHCP: false,
+  dhcpStatus: null as { success: boolean; message: string } | null,
   customers: [] as any[],
   availableTechnicians: [] as any[], // List of available technicians from DB
   assets: [] as any[],
   documentPreview: "",
+  
+  // Asset item tracking
+  asset_item_id: "" as string | any, // Track the specific asset item selected
 });
 
 // Create a ref for the file input
 const fileInputRef = ref<HTMLInputElement | null>(null);
+
+// Available asset items for MAC address selection
+const availableAssetItems = ref<{[assetId: string]: any[]}>({});
+
+// Watch for asset changes to clear MAC address selection
+watch(() => state.assets_id, (newAssetId, oldAssetId) => {
+  if (newAssetId !== oldAssetId) {
+    // Clear MAC address selection when asset changes (affects both Network Device and MikroTik sections)
+    state.mac_address = "";
+    state.asset_item_id = "";
+  }
+});
+
+// Watch for asset item ID changes to update MAC address
+watch(() => state.asset_item_id, (newAssetItemId: any) => {
+  if (!newAssetItemId) {
+    state.mac_address = ""; // Clear MAC address
+    return;
+  }
+
+  // USelectMenu returns the entire object, so we can directly access the mac_address
+  if (newAssetItemId && typeof newAssetItemId === 'object' && (newAssetItemId as any).mac_address) {
+    state.mac_address = (newAssetItemId as any).mac_address;
+    console.log('Updated MAC address to:', state.mac_address);
+  }
+});
 
 // Watch for changes in the file input ref
 watch(fileInputRef, (newRef) => {
@@ -319,6 +354,18 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       return;
     }
 
+    // Check for duplicate technician assignments
+    const technicianIds = state.technicians
+      .map(tech => tech.technician_id)
+      .filter(id => id && id.trim() !== '');
+    
+    const uniqueTechnicianIds = [...new Set(technicianIds)];
+    
+    if (technicianIds.length !== uniqueTechnicianIds.length) {
+      notification.error('Validation Error', 'Cannot assign the same technician multiple times. Please remove duplicate assignments.');
+      return;
+    }
+
     // Create FormData for multipart form submission
     const formData = new FormData();
     
@@ -337,15 +384,26 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     // Multiple technicians (send as JSON)
     formData.append('technicians', JSON.stringify(state.technicians));
     
-    // MikroTik provisioning fields
-    if (state.mac_address) formData.append('mac_address', state.mac_address);
+    // MikroTik provisioning fields - use MAC address from Network Device section
+    const networkMacAddress = state.mac_address || '';
+    if (networkMacAddress) formData.append('mac_address', networkMacAddress);
     if (state.psb_date) formData.append('psb_date', state.psb_date);
+    formData.append('ip_binding_type', state.ip_binding_type);
     if (state.psb_time) formData.append('psb_time', state.psb_time);
     if (state.max_limit) formData.append('max_limit', state.max_limit);
     formData.append('auto_provision', state.auto_provision.toString());
     formData.append('dry_run', state.dry_run.toString());
     
-    // Network device fields
+    // Network device fields - extract ID from object if it's an object
+    let assetItemId = '';
+    if (state.asset_item_id) {
+      if (typeof state.asset_item_id === 'object' && (state.asset_item_id as any).id) {
+        assetItemId = (state.asset_item_id as any).id;
+      } else if (typeof state.asset_item_id === 'string') {
+        assetItemId = state.asset_item_id;
+      }
+    }
+    formData.append('asset_item_id', assetItemId); // Include specific asset item ID
     formData.append('switch_id', state.switch_id);
     formData.append('port_number', state.port_number);
     formData.append('remote_port', state.remote_port);
@@ -434,14 +492,18 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     console.error("Error details:", error);
     
     // Show user-friendly error notification
-    const errorMessage = error.message || 'Failed to create installation report';
+    let errorMessage = error.message || 'Failed to create installation report';
     
-    // Check if it's an IP address format error
-    if (errorMessage.includes('IP address format') || errorMessage.includes('Invalid IP')) {
+    // Handle specific error types
+    if (errorMessage.includes('Duplicate entry') || errorMessage.includes('duplicate')) {
+      errorMessage = 'Cannot assign the same technician multiple times. Please check your technician assignments and remove any duplicates.';
+    } else if (errorMessage.includes('IP address format') || errorMessage.includes('Invalid IP')) {
       notification.error('Invalid IP Address', 'Please enter a valid IP address format (e.g., 192.168.1.1)');
-    } else {
-      notification.error('Error', errorMessage);
+      state.loading = false;
+      return;
     }
+    
+    notification.error('Error', errorMessage);
   } finally {
     state.loading = false;
   }
@@ -464,10 +526,10 @@ const loadTestData = () => {
   const nextMonth = new Date(now.setMonth(now.getMonth() + 1)).toISOString().split('T')[0];
   
   // Basic Installation Information
-  state.status = "pending";
+  state.status = "completed"; // Always completed since technician already finished
   state.notes = "Test installation report - debugging";
   state.document_type = "KTP";
-  state.installation_type = "new_installation";
+  state.installation_type = "new_installation"; // Always new_installation for this form
   state.on_air_date = today;
   state.trial_end_date = nextMonth;
   state.service_ready_date = today;
@@ -497,10 +559,11 @@ const loadTestData = () => {
   }
   
   // MikroTik Provisioning Fields
-  state.mac_address = "40:EE:15:7D:43:99";
+  // Note: MAC address will be automatically set from Network Device section
   state.psb_date = today;
   state.psb_time = currentTime;
   state.max_limit = "10M/10M";
+  state.ip_binding_type = "bypassed"; // Default to bypassed for new installations
   state.auto_provision = true;
   state.dry_run = true; // Safe for testing
   
@@ -643,17 +706,53 @@ async function loadTechnicians() {
 
 async function loadAssets() {
   try {
-    // Use real assets from database
-    state.assets = [
-      { id: "5ca1606b-66b3-4958-b7af-f48d4cda800a", brand: "TP-Link", type: "Router Edit", model: "RBG128", status_in_out: "in", display: "TP-Link Router RBG128" },
-      { id: "842a48a4-6380-4280-96e1-a734f61a7d5b", brand: "ads", type: "asdzxc", model: "asd", status_in_out: "out", display: "ads asdzxc" },
-      { id: "ac9e147a-4a75-4d39-9068-83e28ea0288b", brand: "TP-Link", type: "Router Update2", model: "RBG128", status_in_out: "in", display: "TP-Link Router Update2" },
-      { id: "f2061760-b41b-420b-9f70-4e96e46f2f57", brand: "ads", type: "asd", model: "asd", status_in_out: "out", display: "ads asd" },
-    ];
+    const response = await assetAdminApi().getAllAssets();
+    if (response.success) {
+      state.assets = response.data.map((asset: any) => ({
+        id: asset.id,
+        name: `${asset.brand} ${asset.model} (${asset.serial_number})`,
+        brand: asset.brand,
+        model: asset.model,
+        serial_number: asset.serial_number,
+        display: `${asset.brand} ${asset.model} (${asset.serial_number})`
+      }));
+    }
   } catch (error) {
     console.error("Failed to load assets:", error);
   }
 }
+
+// Load available asset items when an asset is selected
+async function onAssetChange(assetId: string) {
+  // Always clear the MAC address selection when asset changes
+  state.mac_address = ""; // This clears both Network Device and MikroTik MAC address
+  state.asset_item_id = "";
+  
+  if (!assetId) {
+    return;
+  }
+
+  try {
+    // Always reload asset items for the selected asset (don't cache to ensure fresh data)
+    const response = await assetItemAdminApi().getAvailableAssetItems(assetId);
+    if (response.success) {
+      availableAssetItems.value[assetId] = response.data.map((item: any) => ({
+        value: item.id, // Use item ID as value for better tracking
+        label: `${item.mac_address} (${item.status})`,
+        id: item.id,
+        mac_address: item.mac_address,
+        status: item.status
+      }));
+    } else {
+      availableAssetItems.value[assetId] = [];
+    }
+  } catch (error) {
+    console.error("Failed to load available asset items:", error);
+    availableAssetItems.value[assetId] = [];
+    notification.error('Error', 'Failed to load available MAC addresses');
+  }
+}
+
 
 // Close modal function
 function closeModal() {
@@ -669,6 +768,17 @@ function addTechnician() {
     is_primary: state.technicians.length === 0, // First technician is primary by default
     notes: "",
   });
+}
+
+// Get available technicians (excluding already assigned ones)
+function getAvailableTechniciansForIndex(currentIndex: number) {
+  const assignedTechnicianIds = state.technicians
+    .map((tech, index) => index !== currentIndex ? tech.technician_id : null)
+    .filter(id => id && id.trim() !== '');
+  
+  return state.availableTechnicians.filter(tech => 
+    !assignedTechnicianIds.includes(tech.id)
+  );
 }
 
 function removeTechnician(index: number) {
@@ -690,6 +800,65 @@ function setPrimaryTechnician(index: number) {
   state.technicians.forEach((tech, i) => {
     tech.is_primary = i === index;
   });
+}
+
+// Fetch DHCP lease for the selected MAC address
+async function fetchDHCPLease() {
+  if (!state.mac_address) {
+    notification.error('Error', 'Please select a MAC address first');
+    return;
+  }
+
+  state.fetchingDHCP = true;
+  state.dhcpStatus = null;
+
+  try {
+    console.log('Fetching DHCP lease for MAC:', state.mac_address);
+    
+    const result = await mikrotikAdminApi().getDHCPLease(state.mac_address);
+    
+    if (result.success) {
+      state.ip_static = result.data.ip_address;
+      state.dhcpStatus = {
+        success: true,
+        message: `DHCP lease found: ${result.data.ip_address}`
+      };
+      notification.success('DHCP Lease Found', `IP address ${result.data.ip_address} fetched successfully`);
+      console.log('DHCP lease response:', result);
+    } else {
+      const errorMessage = result.message || 'Failed to fetch DHCP lease';
+      state.dhcpStatus = {
+        success: false,
+        message: errorMessage
+      };
+      notification.error('DHCP Error', errorMessage);
+      console.error('DHCP lease error:', result);
+    }
+  } catch (error: any) {
+    console.error('DHCP fetch error:', error);
+    
+    let errorMessage = 'Network error while fetching DHCP lease';
+    if (error.message) {
+      errorMessage = error.message;
+      if (error.message.includes('Authentication') || error.message.includes('401')) {
+        errorMessage = 'Authentication required. Please login again.';
+      } else if (error.message.includes('404')) {
+        errorMessage = 'DHCP API endpoint not found. Please check server configuration.';
+      } else if (error.message.includes('MikroTik service not initialized') || error.message.includes('MikroTik service not connected')) {
+        errorMessage = 'MikroTik router is not connected. Please connect to MikroTik first in the MikroTik management section.';
+      } else if (error.message.includes('500')) {
+        errorMessage = 'Server error. Please try again later.';
+      }
+    }
+    
+    state.dhcpStatus = {
+      success: false,
+      message: errorMessage
+    };
+    notification.error('DHCP Error', errorMessage);
+  } finally {
+    state.fetchingDHCP = false;
+  }
 }
 
 // Load data on component mount
@@ -871,7 +1040,7 @@ onMounted(async () => {
           Add Installation Report
         </h1>
         <p class="text-base text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
-          Complete installation documentation with team assignment and optional MikroTik auto-provisioning
+          Document completed new installation with team assignment and optional MikroTik auto-provisioning
         </p>
         
         <!-- Load Test Data Button for Debugging -->
@@ -914,34 +1083,29 @@ onMounted(async () => {
             </UFormGroup>
             
             <UFormGroup label="Status" name="status">
-              <USelectMenu
-                v-model="state.status"
-                :options="[
-                  { value: 'pending', label: 'Pending' },
-                  { value: 'in_progress', label: 'In Progress' },
-                  { value: 'completed', label: 'Completed' },
-                  { value: 'failed', label: 'Failed' },
-                  { value: 'cancelled', label: 'Cancelled' }
-                ]"
-                value-attribute="value"
-                option-attribute="label"
-                placeholder="Select status"
+              <UInput 
+                v-model="state.status" 
+                readonly 
+                disabled
+                class="bg-gray-100 dark:bg-gray-700"
               />
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                <UIcon name="i-heroicons-information-circle" class="inline mr-1" />
+                Installation reports are always "completed" since technicians document after finishing the work
+              </p>
             </UFormGroup>
             
             <UFormGroup label="Installation Type" name="installation_type">
-              <USelectMenu
-                v-model="state.installation_type"
-                :options="[
-                  { value: 'new_installation', label: 'New Installation' },
-                  { value: 'maintenance', label: 'Maintenance' },
-                  { value: 'upgrade', label: 'Upgrade' },
-                  { value: 'downgrade', label: 'Downgrade' }
-                ]"
-                value-attribute="value"
-                option-attribute="label"
-                placeholder="Select installation type"
+              <UInput 
+                v-model="state.installation_type" 
+                readonly 
+                disabled
+                class="bg-gray-100 dark:bg-gray-700"
               />
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                <UIcon name="i-heroicons-information-circle" class="inline mr-1" />
+                This form is for new installations only. Use separate forms for maintenance (from trouble tickets) or upgrades
+              </p>
             </UFormGroup>
             
             <UFormGroup label="On Air Date" name="on_air_date">
@@ -1022,7 +1186,7 @@ onMounted(async () => {
                   </label>
                   <USelectMenu
                     v-model="tech.technician_id"
-                    :options="state.availableTechnicians"
+                    :options="getAvailableTechniciansForIndex(index)"
                     placeholder="Choose a technician"
                     searchable
                     searchable-placeholder="Search by name"
@@ -1032,6 +1196,9 @@ onMounted(async () => {
                     size="lg"
                     class="w-full"
                   />
+                  <p v-if="getAvailableTechniciansForIndex(index).length === 0" class="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                    ⚠️ All available technicians have been assigned. Remove other assignments to see more options.
+                  </p>
                 </div>
                 
                 <!-- Role and Actions Row -->
@@ -1129,23 +1296,23 @@ onMounted(async () => {
             <p class="text-sm text-cyan-700 dark:text-cyan-300 mt-1">Automatically configure customer on RouterOS/Winbox</p>
           </div>
           
-          <div class="mikrotik-form grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="mikrotik-field">
-              <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
-                MAC Address
-              </label>
-              <div class="relative">
-                <UInput 
-                  v-model="state.mac_address" 
-                  placeholder="AA:BB:CC:DD:EE:FF"
-                  size="lg"
-                  icon="i-heroicons-signal"
-                  class="w-full"
-                />
-              </div>
-              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Customer device MAC address for provisioning</p>
+          <!-- MAC Address Preview -->
+          <div class="mb-4">
+            <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
+              MAC Address
+              <span class="text-xs text-gray-500 ml-2">(from Network Device)</span>
+            </label>
+            <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <span v-if="state.mac_address" class="font-mono text-gray-900 dark:text-gray-100 text-sm">
+                {{ state.mac_address }}
+              </span>
+              <span v-else class="text-gray-500 dark:text-gray-400 text-sm italic">
+                Select a MAC address in Network Device section above
+              </span>
             </div>
-            
+          </div>
+          
+          <div class="mikrotik-form grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="mikrotik-field">
               <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
                 Max Bandwidth Limit
@@ -1160,6 +1327,29 @@ onMounted(async () => {
                 />
               </div>
               <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Format: Download/Upload (e.g., 10M/10M, 50M/50M)</p>
+            </div>
+            
+            <div class="mikrotik-field">
+              <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
+                IP Binding Type
+              </label>
+              <USelectMenu
+                v-model="state.ip_binding_type"
+                :options="[
+                  { value: 'bypassed', label: 'Bypassed (Auto-connect)' },
+                  { value: 'regular', label: 'Regular (Manual login)' }
+                ]"
+                value-attribute="value"
+                option-attribute="label"
+                placeholder="Select IP binding type"
+                size="lg"
+                icon="i-heroicons-shield-check"
+                class="w-full"
+              />
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                <strong>Bypassed:</strong> Internet works automatically after installation<br>
+                <strong>Regular:</strong> Requires manual login through hotspot
+              </p>
             </div>
             
             <div class="mikrotik-field">
@@ -1352,6 +1542,7 @@ onMounted(async () => {
                 option-attribute="display"
                 value-attribute="id"
                 :search-attributes="['brand', 'type', 'model']"
+                @change="onAssetChange(state.assets_id)"
               />
             </UFormGroup>
             
@@ -1372,11 +1563,50 @@ onMounted(async () => {
             </UFormGroup>
             
             <UFormGroup label="MAC Address" name="mac_address">
-              <UInput v-model="state.mac_address" placeholder="XX:XX:XX:XX:XX:XX" />
+              <div>
+                <USelectMenu
+                  v-model="state.asset_item_id"
+                  :options="availableAssetItems[state.assets_id] || []"
+                  :placeholder="!state.assets_id ? 'Select an asset first' : 'Select MAC Address'"
+                  :disabled="!state.assets_id || (availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length === 0)"
+                />
+                <div v-if="state.assets_id && availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length === 0" class="text-xs text-red-500 mt-1 flex items-center">
+                  <UIcon name="i-heroicons-exclamation-triangle" class="w-3 h-3 mr-1" />
+                  No available devices for this asset
+                </div>
+                <div v-else-if="state.assets_id && availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length > 0" class="text-xs text-green-600 mt-1">
+                  {{ availableAssetItems[state.assets_id].length }} device(s) available
+                </div>
+              </div>
             </UFormGroup>
             
             <UFormGroup label="IP Static" name="ip_static">
-              <UInput v-model="state.ip_static" placeholder="192.168.1.100" />
+              <div class="flex gap-2">
+                <UInput 
+                  v-model="state.ip_static" 
+                  placeholder="192.168.1.100" 
+                  class="flex-1"
+                />
+                <UButton 
+                  @click="fetchDHCPLease"
+                  color="blue"
+                  variant="outline"
+                  size="sm"
+                  :loading="state.fetchingDHCP"
+                  :disabled="!state.mac_address"
+                  title="Fetch actual IP address from MikroTik DHCP lease"
+                >
+                  <UIcon name="i-heroicons-arrow-path" class="mr-1" />
+                  Fetch DHCP
+                </UButton>
+              </div>
+              <p v-if="state.dhcpStatus" class="text-xs mt-1" :class="state.dhcpStatus.success ? 'text-green-600' : 'text-red-600'">
+                {{ state.dhcpStatus.message }}
+              </p>
+              <p v-else class="text-xs text-gray-500 mt-1">
+                <UIcon name="i-heroicons-information-circle" class="inline mr-1" />
+                This button will fetch the actual IP address assigned by your MikroTik router's DHCP server
+              </p>
             </UFormGroup>
             
             <UFormGroup label="Device Ownership" name="kepemilikan_perangkat">

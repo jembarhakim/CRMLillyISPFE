@@ -114,5 +114,22 @@ export const mikrotikAdminApi = () => {
       }
       return response.json();
     },
+
+    // Get DHCP lease for MAC address
+    getDHCPLease: async (macAddress: string) => {
+      const response = await fetch(`${api}/api/admin/mikrotik/dhcp-lease`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+        body: JSON.stringify({ mac_address: macAddress }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get DHCP lease');
+      }
+      return response.json();
+    },
   };
 };

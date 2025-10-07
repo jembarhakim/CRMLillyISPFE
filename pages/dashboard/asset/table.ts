@@ -30,9 +30,18 @@ export const tableColumns = [
     label: "Company",
   },
   {
+    key: "site",
+    label: "Site",
+  },
+  {
     key: "description",
     label: "Description",
-  },  {
+  },
+  {
+    key: "asset_items",
+    label: "Asset Items",
+  },
+  {
     key: "actions",
     label: "Action",
   },

@@ -107,6 +107,11 @@ export const useAuthStore = defineStore('auth', {
         this.isInitialized = true
         
         console.log('Auth store initialized from cookies - token:', this.token ? 'exists' : 'missing', 'role:', this.user.role, 'name:', this.user.name, 'initialized:', this.isInitialized)
+        
+        // If no valid token found, ensure we don't trigger unnecessary API calls
+        if (!this.token || this.token === '' || this.token === 'null' || this.token === 'undefined') {
+          console.log('No valid token found during initialization - user not authenticated')
+        }
       }
     },
     login({token,role_id,name,email}:{token:string,role_id?:string,name?:string,email?:string}) {

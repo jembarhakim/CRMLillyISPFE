@@ -3,6 +3,11 @@ export default defineNuxtPlugin({
   setup() {
     const authStore = useAuthStore()
     
+    // Track app start time for initial load detection
+    if (process.client) {
+      (window as any).__appStartTime = Date.now()
+    }
+    
     // Initialize auth store from cookies immediately
     authStore.initFromCookies()
     

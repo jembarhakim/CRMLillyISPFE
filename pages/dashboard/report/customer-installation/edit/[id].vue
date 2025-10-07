@@ -246,6 +246,7 @@
                     value-attribute="id"
                     placeholder="Select Router Asset"
                     class="custom-select"
+                    @change="onAssetChange(device.assets_id, index)"
                   />
                   <UInput
                     v-model="device.router_brand"
@@ -285,11 +286,23 @@
                 
                 <!-- Device Information -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <UInput
-                    v-model="device.mac_address"
-                    placeholder="MacAddr"
-                    class="custom-input"
-                  />
+                  <div>
+                    <USelect
+                      v-model="device.asset_item_id"
+                      :options="availableAssetItems[device.assets_id] || []"
+                      :placeholder="!device.assets_id ? 'Select an asset first' : 'Select MAC Address'"
+                      :disabled="!device.assets_id || (availableAssetItems[device.assets_id] && availableAssetItems[device.assets_id].length === 0)"
+                      @change="onMacAddressChange(device.asset_item_id, index)"
+                      class="custom-select"
+                    />
+                    <div v-if="device.assets_id && availableAssetItems[device.assets_id] && availableAssetItems[device.assets_id].length === 0" class="text-xs text-red-500 mt-1 flex items-center">
+                      <UIcon name="i-heroicons-exclamation-triangle" class="w-3 h-3 mr-1" />
+                      No available devices for this asset
+                    </div>
+                    <div v-else-if="device.assets_id && availableAssetItems[device.assets_id] && availableAssetItems[device.assets_id].length > 0" class="text-xs text-green-600 mt-1">
+                      {{ availableAssetItems[device.assets_id].length }} device(s) available
+                    </div>
+                  </div>
                   <UInput
                     v-model="device.ip_static"
                     placeholder="IPAddr"
@@ -558,6 +571,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { object, string } from 'yup'
 import type { FormSubmitEvent } from '#ui/types'
 import { customerAdminApi } from '@/api/admin/customer'
+import { assetAdminApi } from '@/api/admin/asset'
+import { assetItemAdminApi } from '@/api/admin/asset-item'
 import { userManagementAdminApi } from '@/api/admin/user-management'
 import { uploadFileAdminApi } from '@/api/admin/file-upload'
 import type { CreateCompleteInstallationReportRequest } from '@/types/requests/installation-report'
@@ -630,6 +645,9 @@ const fileInput = ref<HTMLInputElement>();
 const customerOptions = ref<any[]>([]);
 const technicianOptions = ref<any[]>([]);
 const assetOptions = ref<any[]>([]);
+
+// Available asset items for MAC address selection
+const availableAssetItems = ref<{[assetId: string]: any[]}>({});
 
 // PSB Request Date from selected customer
 const selectedCustomerPSBDate = ref("");
@@ -772,11 +790,71 @@ async function loadTechnicians() {
 
 async function loadAssets() {
   try {
-    // For now, we'll use an empty array since getAllAssets doesn't exist
-    // You can implement this API endpoint later if needed
-    assetOptions.value = [];
+    const response = await assetAdminApi().getAllAssets();
+    if (response.success) {
+      assetOptions.value = response.data.map((asset: any) => ({
+        id: asset.id,
+        name: `${asset.brand} ${asset.model} (${asset.serial_number})`,
+        brand: asset.brand,
+        model: asset.model,
+        serial_number: asset.serial_number
+      }));
+    }
   } catch (error) {
     console.error("Failed to load assets:", error);
+  }
+}
+
+// Load available asset items when an asset is selected
+async function onAssetChange(assetId: string, deviceIndex: number) {
+  // Always clear the MAC address selection when asset changes
+  state.network_devices[deviceIndex].mac_address = "";
+  state.network_devices[deviceIndex].asset_item_id = "";
+  
+  if (!assetId) {
+    return;
+  }
+
+  try {
+    // Always reload asset items for the selected asset (don't cache to ensure fresh data)
+    const response = await assetItemAdminApi().getAvailableAssetItems(assetId);
+    if (response.success) {
+      availableAssetItems.value[assetId] = response.data.map((item: any) => ({
+        value: item.id, // Use item ID as value for better tracking
+        label: `${item.mac_address} (${item.status})`,
+        id: item.id,
+        mac_address: item.mac_address,
+        status: item.status
+      }));
+    } else {
+      availableAssetItems.value[assetId] = [];
+    }
+  } catch (error) {
+    console.error("Failed to load available asset items:", error);
+    availableAssetItems.value[assetId] = [];
+    useToast().add({
+      title: "Error",
+      description: "Failed to load available MAC addresses",
+      color: "red",
+    });
+  }
+}
+
+// Handle MAC address selection
+function onMacAddressChange(assetItemId: string, deviceIndex: number) {
+  if (!assetItemId) {
+    state.network_devices[deviceIndex].asset_item_id = "";
+    state.network_devices[deviceIndex].mac_address = "";
+    return;
+  }
+
+  // Find the selected asset item and update both fields
+  const assetId = state.network_devices[deviceIndex].assets_id;
+  const selectedItem = availableAssetItems.value[assetId]?.find(item => item.id === assetItemId);
+  
+  if (selectedItem) {
+    state.network_devices[deviceIndex].asset_item_id = selectedItem.id;
+    state.network_devices[deviceIndex].mac_address = selectedItem.mac_address;
   }
 }
 
@@ -798,6 +876,7 @@ function onCustomerChange() {
 function addNetworkDevice() {
   state.network_devices.push({
     assets_id: "",
+    asset_item_id: "", // Track the specific asset item selected
     router_brand: "",
     router_type: "",
     switch_id: "",

@@ -836,13 +836,27 @@ async function printAllUnpaidInvoices() {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
             </svg>
           </button>
+          
+          <!-- Pending Reason Display -->
+          <div v-if="row.pending_reason" class="mt-2 p-2 bg-yellow-50 dark:bg-black/70 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+            <div class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-yellow-200 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.726-1.36 3.491 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+              </svg>
+              <div class="flex-1">
+                <p class="text-xs font-medium text-yellow-800 dark:text-yellow-200 mb-1">Pending Reason:</p>
+                <p class="text-xs text-yellow-700 dark:text-yellow-300 leading-relaxed">{{ row.pending_reason }}</p>
+              </div>
+            </div>
+          </div>
+          
           <!-- Mobile-friendly stacked buttons -->
-          <div class="flex flex-col space-y-1 sm:flex-row sm:space-y-0 sm:space-x-1">
-            <UButton size="xs" color="green" variant="soft" class="w-full sm:w-auto"
+          <div class="flex flex-col space-y-1 lg:flex-row lg:space-y-0 lg:space-x-1">
+            <UButton size="xs" color="green" variant="soft" class="w-full lg:w-auto"
               @click="updateStatus(row.id, 'paid', row.status)">
               Mark Paid
             </UButton>
-            <UButton size="xs" color="gray" variant="outline" class="w-full sm:w-auto"
+            <UButton size="xs" color="gray" variant="outline" class="w-full lg:w-auto"
               @click="updateStatus(row.id, 'unpaid', row.status)">
               Mark Unpaid
             </UButton>
@@ -859,12 +873,12 @@ async function printAllUnpaidInvoices() {
         </div>
         <div v-else-if="row.status === 'unpaid'" class="space-y-2">
           <!-- Mobile-friendly stacked buttons -->
-          <div class="flex flex-col space-y-1 sm:flex-row sm:space-y-0 sm:space-x-1">
-            <UButton size="xs" color="green" variant="soft" class="w-full sm:w-auto"
+          <div class="flex flex-col space-y-1 lg:flex-row lg:space-y-0 lg:space-x-1">
+            <UButton size="xs" color="green" variant="soft" class="w-full lg:w-auto"
               @click="updateStatus(row.id, 'paid', row.status)">
               Mark Paid
             </UButton>
-            <UButton size="xs" color="yellow" variant="soft" class="w-full sm:w-auto"
+            <UButton size="xs" color="yellow" variant="soft" class="w-full lg:w-auto"
               @click="updateStatus(row.id, 'pending', row.status)">
               Mark Pending
             </UButton>
