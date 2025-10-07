@@ -409,7 +409,7 @@ function formatDate(dateString: string | undefined) {
 
           <template #actions-data="{ row }">
             <UDropdown :items="items(row)">
-              <UButton color="gray" variant="ghost" icon="i-heroicons-ellipsis-horizontal-20-solid" />
+              <UButton color="gray" variant="outline" icon="i-heroicons-ellipsis-horizontal-20-solid" />
             </UDropdown>
           </template>
         </UTable>
