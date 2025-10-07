@@ -294,19 +294,18 @@ const handleFileUploadDirect = async () => {
         reader.readAsDataURL(processedFile);
       }
     } else {
-      console.log('❌ No file found in native input');
-      console.log('💡 This means the UInput component is not properly exposing the file');
+      console.log('ℹ️ UInput component ref does not expose native file input (this is normal)');
       
       // Fallback: check if we have a file in state
       if (state.document_photo) {
-        console.log('✅ But we DO have a file in state:', {
+        console.log('✅ File is available in state (processed via event handler):', {
           name: state.document_photo.name,
           size: state.document_photo.size,
           type: state.document_photo.type
         });
-        console.log('💡 This means the file was processed by the event handler, not the ref');
+        console.log('💡 File upload is working correctly via DOM query method');
       } else {
-        console.log('❌ No file in state either');
+        console.log('❌ No file selected yet');
         console.log('💡 Click "Choose File" first, then click this debug button');
       }
     }
@@ -429,7 +428,15 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         size: state.document_photo.size,
         type: state.document_photo.type
       });
-      formData.append('document_photo', state.document_photo);
+      
+      // Ensure we're appending the actual File object, not a string
+      if (state.document_photo instanceof File) {
+        formData.append('document_photo', state.document_photo, state.document_photo.name);
+        console.log('✅ File object appended with name:', state.document_photo.name);
+      } else {
+        console.error('❌ document_photo is not a File object:', typeof state.document_photo);
+        return;
+      }
       
       // Log FormData contents for debugging
       console.log('FormData contents after appending document photo:');
@@ -442,6 +449,21 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       }
     } else {
       console.log('❌ No document photo selected - document_photo is null or undefined');
+      // Try to get file from the native input as fallback
+      console.log('🔍 Attempting fallback: getting file from native input...');
+      const nativeInput = document.querySelector('input[name="document_photo"]') as HTMLInputElement;
+      if (nativeInput && nativeInput.files && nativeInput.files[0]) {
+        const file = nativeInput.files[0];
+        console.log('✅ Found file via fallback method:', {
+          name: file.name,
+          size: file.size,
+          type: file.type
+        });
+        formData.append('document_photo', file, file.name);
+        console.log('✅ File appended via fallback method');
+      } else {
+        console.log('❌ No file found via fallback method either');
+      }
     }
 
     // Validate IP address format before submitting
@@ -601,12 +623,8 @@ const handleDocumentPhotoUpload = async (event: Event) => {
   
   // Alternative way to get the input element
   if (!input || !input.files) {
-    console.log('Input element is null/undefined, trying alternative approaches...');
-    
-    // Try using the ref first
-    console.log('Trying ref approach...');
-    console.log('fileInputRef.value:', fileInputRef.value);
-    console.log('fileInputRef.value?.files:', fileInputRef.value?.files);
+    console.log('UInput component ref not accessible, using DOM query method...');
+    console.log('This is normal behavior for UInput components');
     
     if (fileInputRef.value && fileInputRef.value.files && fileInputRef.value.files[0]) {
       console.log('Using ref input element');

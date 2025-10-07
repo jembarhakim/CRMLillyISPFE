@@ -460,6 +460,15 @@ const installationTypeOptions = [
 
 onMounted(async () => {
   await loadReports();
+  
+  // Check for customer_id in URL parameters
+  const route = useRoute();
+  const customerId = route.query.customer_id as string;
+  if (customerId) {
+    // Filter by customer ID
+    filters.search = customerId;
+    applyFilters();
+  }
 });
 
 async function loadReports() {
@@ -500,6 +509,7 @@ function applyFilters() {
     filtered = filtered.filter(report => 
       (report.customer_name && report.customer_name.toLowerCase().includes(searchTerm)) ||
       (report.customer_phone && report.customer_phone.toLowerCase().includes(searchTerm)) ||
+      (report.customer_id && report.customer_id.toLowerCase().includes(searchTerm)) ||
       (report.technician_name && report.technician_name.toLowerCase().includes(searchTerm)) ||
       (report.technician_phone && report.technician_phone.toLowerCase().includes(searchTerm)) ||
       (report.router_brand && report.router_brand.toLowerCase().includes(searchTerm)) ||

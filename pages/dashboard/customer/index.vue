@@ -200,6 +200,28 @@ const items = (row: Customer) => {
         click: () => OpenModalReportInstallation(true, row)
     }])
 
+    // Add "View Installation Reports" if customer has reports
+    if (row.hasInstallationReport) {
+        // Get installation reports for this customer
+        const customerReports = installationReports.value.filter(
+            (report: any) => report.customer_id === row.id
+        )
+        
+        // Create submenu items for each installation report
+        const installationSubmenu = customerReports.map((report: any) => ({
+            label: `Report #${report.installation_id?.slice(-8) || 'N/A'} (${report.installation_status || 'Unknown'}) - ${formatDate(report.installation_completed_at || report.on_air_date)}`,
+            icon: 'i-heroicons-document-text-20-solid',
+            click: () => viewInstallationReportDetail(report.installation_id)
+        }))
+        
+        // Add the main menu item with submenu
+        baseItems.push([{
+            label: `View Installation Reports (${customerReports.length})`,
+            icon: 'i-heroicons-document-text-20-solid',
+            children: installationSubmenu
+        }])
+    }
+
     baseItems.push([{
         label: 'View Maps',
         icon: 'i-heroicons-arrow-right-circle-20-solid',
@@ -249,6 +271,25 @@ function OpenCustomerDetailModal(customerId: string) {
 function closeDetailModal() {
     showDetailModal.value = false
     selectedCustomerId.value = null
+}
+
+function navigateToInstallationReports(customerId: string) {
+    // Navigate to installation reports page with customer filter
+    navigateTo(`/dashboard/report/customer-installation/reports?customer_id=${customerId}`)
+}
+
+function viewInstallationReportDetail(installationId: string) {
+    // Navigate to the specific installation report detail page
+    navigateTo(`/dashboard/report/customer-installation/detail/${installationId}`)
+}
+
+function formatDate(dateString: string | undefined) {
+    if (!dateString) return 'N/A'
+    return new Date(dateString).toLocaleDateString('id-ID', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    })
 }
 </script>
 

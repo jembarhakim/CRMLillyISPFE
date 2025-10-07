@@ -22,7 +22,8 @@ const form = ref({
   customer_id: '',
   title: '',
   description: '' as string | undefined,
-  type: ''
+  type: '',
+  auto_classify: true // Enable auto-classification by default
 })
 
 // Keyword-based trouble type classification
@@ -105,29 +106,13 @@ onMounted(async () => {
 })
 
 async function submit(){
-  // Auto-classify trouble type based on title/description
-  const textToAnalyze = form.value.title || form.value.description || ''
-  let classifiedType = ''
-  
-  if (textToAnalyze.trim()) {
-    classifiedType = classifyTroubleType(textToAnalyze)
-  }
-  
-  // Fallback to first available trouble type if classification failed or no text provided
-  if (!classifiedType && types.value.length > 0) {
-    classifiedType = types.value[0].id
-  }
-  
-  // Final fallback to default type '1' if no trouble types are available
-  if (!classifiedType) {
-    classifiedType = '1'
-  }
-  
+  // Use ML auto-classification instead of manual type selection
   await ticketsApi().create({
     customer_id: form.value.customer_id,
     title: form.value.title,
     description: form.value.description,
-    type: classifiedType,
+    auto_classify: true, // Enable ML auto-classification
+    classification: 'gangguan' // Default classification
   })
   navigateTo('/dashboard/tickets')
 }
