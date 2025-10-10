@@ -71,7 +71,7 @@
           </div>
           <div class="flex-1 p-2 overflow-auto no-scrollbar">
             <ul class="space-y-2">
-              <li v-for="(item, index) in filterMenu" :key="index"
+              <li v-for="(item, index) in userMenu" :key="index"
                 class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200"
                 :class="[
                   showSidebar ? 'justify-center' : '',
@@ -92,8 +92,13 @@
             </ul>
 
             <!-- Show message if no menu items -->
-            <div v-if="filterMenu.length === 0" class="p-3 text-center text-gray-500 text-sm">
-              No menu items available for role: {{ authStore.user?.role || 'Unknown' }}
+            <div v-if="userMenu.length === 0 && !isLoadingPermissions" class="p-3 text-center text-gray-500 text-sm">
+              No menu items available for your role
+            </div>
+            
+            <!-- Show loading message -->
+            <div v-if="isLoadingPermissions" class="p-3 text-center text-gray-500 text-sm">
+              Loading permissions...
             </div>
 
             <!-- Profile section for mobile -->
@@ -137,9 +142,10 @@
   </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { getMenuForRole, getRoleDisplayName } from '@/utilities/rolePermissions'
+import { useAuthStore } from '@/stores/auth'
+import { useRolePermissions } from '@/composables/useRolePermissions'
 
 // Type definitions
 interface ProfileDropdownItem {
@@ -153,6 +159,9 @@ const route = useRoute()
 const showSidebar = ref(true)
 const showMobileSidebar = ref(false)
 const authStore = useAuthStore()
+
+// Role permissions composable
+const { userMenu, loadFeaturePermissions, isLoadingPermissions } = useRolePermissions()
 
 // Modal state for logout confirmation
 const showLogoutModal = ref(false)
@@ -170,13 +179,11 @@ const ProfileDropdown: ProfileDropdownItem[][] = [
   ],
 ]
 
-// Computed menu based on user role using centralized system
-const filterMenu = computed(() => {
-  if (!authStore.user || !authStore.user.role) {
-    return [] // Return empty array if user is not defined
+// Load feature permissions on mount
+onMounted(async () => {
+  if (authStore.user) {
+    await loadFeaturePermissions()
   }
-
-  return getMenuForRole(authStore.user.role)
 })
 
 // Function to check if a menu item is active
