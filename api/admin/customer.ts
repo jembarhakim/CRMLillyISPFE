@@ -255,6 +255,36 @@ export const customerAdminApi = () => {
       return response.json();
     },
 
+    deleteInstallationReport: async (installationId: string) => {
+      const response = await fetch(`${api}/api/admin/customer-installation/report/delete/${installationId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete installation report');
+      }
+      return response.json();
+    },
+
+    getInstallationTechnicianTeam: async (installationId: string) => {
+      const response = await fetch(`${api}/api/admin/customer-installation/report/technician-team/${installationId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get technician team');
+      }
+      return response.json();
+    },
+
     getInstallationReportComplete: async () => {
       const response = await fetch(`${api}/api/admin/customer-installation/report-complete`, {
         method: "GET",
@@ -281,6 +311,21 @@ export const customerAdminApi = () => {
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to fetch installation report');
+      }
+      return response.json();
+    },
+
+    getInstallationReportCompleteWithTechnicianPhotos: async (installationId: string) => {
+      const response = await fetch(`${api}/api/admin/customer-installation/report/complete/${installationId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch installation report with technician photos');
       }
       return response.json();
     },
@@ -338,9 +383,9 @@ export const customerAdminApi = () => {
       return response.json();
     },
 
-    deleteInstallationReport: async (installationId: string) => {
-      const response = await fetch(`${api}/api/admin/customer-installation/${installationId}`, {
-        method: "DELETE",
+    getAllProducts: async () => {
+      const response = await fetch(`${api}/api/admin/product`, {
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${useCookie("token").value}`,
@@ -348,7 +393,7 @@ export const customerAdminApi = () => {
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to delete installation report');
+        throw new Error(errorData.message || 'Failed to load products');
       }
       return response.json();
     },

@@ -615,13 +615,31 @@ function editReport(installationId: string) {
 }
 
 async function deleteReport(installationId: string) {
+  // Find the report to get customer name for confirmation
+  const report = filteredReports.value.find(r => r.installation_id === installationId);
+  const customerName = report?.customer_name || 'Unknown Customer';
+  
+  // Show confirmation dialog
+  const confirmed = confirm(
+    `Are you sure you want to delete the installation report for "${customerName}"?\n\n` +
+    `This action will:\n` +
+    `• Delete the installation report permanently\n` +
+    `• Update the MAC address status back to "in_stock"\n` +
+    `• Remove all related technician assignments and asset transactions\n\n` +
+    `This action cannot be undone.`
+  );
+  
+  if (!confirmed) {
+    return;
+  }
+  
   try {
     await customerAdminApi().deleteInstallationReport(installationId);
     
     // Show success notification
     useToast().add({
       title: "Success!",
-      description: "Installation report deleted successfully",
+      description: `Installation report for "${customerName}" deleted successfully. MAC address status updated to "in_stock".`,
       color: "green",
     });
     

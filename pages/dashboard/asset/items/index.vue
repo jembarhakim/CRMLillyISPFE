@@ -135,7 +135,7 @@ const items = (row: any) => [
 <template>
     <div class="space-y-4">
         <div class="flex justify-between items-center">
-            <h1 class="text-2xl font-bold">Asset Items Management</h1>
+            <h1 class="text-2xl font-bold text-gray-900">Asset Items Management</h1>
             <UButton label="Add Asset Item" @click="OpenModalAddAssetItem(false, null)" />
         </div>
 

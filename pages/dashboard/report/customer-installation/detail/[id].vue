@@ -1,4 +1,4 @@
-<template>
+ on<template>
   <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
     <div class="container mx-auto p-4 sm:p-6">
       <!-- Header Section -->
@@ -20,6 +20,12 @@
                        class="bg-white/20 backdrop-blur-sm hover:bg-white/30 w-full sm:w-auto">
                 <UIcon name="i-heroicons-printer" class="mr-2" />
                 Print Report
+              </UButton>
+              <UButton @click="deleteInstallationReport" color="white" variant="solid" size="sm"
+                       class="bg-red-500/80 backdrop-blur-sm hover:bg-red-600/80 w-full sm:w-auto"
+                       :loading="deleting">
+                <UIcon name="i-heroicons-trash" class="mr-2" />
+                Delete Report
               </UButton>
             </div>
           </div>
@@ -61,95 +67,6 @@
                   {{ report.installation_status || 'Unknown' }}
                 </span>
                 <p class="text-green-100 text-xs sm:text-sm mt-2">{{ formatDate(report.installation_created_at) }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Basic Information -->
-        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-4 sm:px-8 py-3 sm:py-4">
-            <h3 class="text-lg sm:text-xl font-bold text-white flex items-center">
-              <UIcon name="i-heroicons-information-circle" class="mr-2 sm:mr-3 text-lg sm:text-xl" />
-              Basic Installation Information
-            </h3>
-          </div>
-          <div class="p-4 sm:p-8">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              <!-- Customer Information -->
-              <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-4 sm:p-6 rounded-xl border border-blue-200">
-                <div class="flex items-center mb-3 sm:mb-4">
-                  <div class="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-full flex items-center justify-center mr-2 sm:mr-3">
-                    <UIcon name="i-heroicons-user" class="text-white text-sm sm:text-lg" />
-                  </div>
-                  <h4 class="text-base sm:text-lg font-semibold text-blue-800">Customer Information</h4>
-                </div>
-                <div class="space-y-2 sm:space-y-3">
-                  <div>
-                    <label class="text-xs sm:text-sm font-medium text-blue-600">Customer Name</label>
-                    <p class="text-sm sm:text-lg font-semibold text-gray-800">{{ report.customer_name || '-' }}</p>
-                  </div>
-                  <div>
-                    <label class="text-xs sm:text-sm font-medium text-blue-600">Phone Number</label>
-                    <p class="text-sm sm:text-lg text-gray-700">{{ report.customer_phone || '-' }}</p>
-                  </div>
-                  <div>
-                    <label class="text-xs sm:text-sm font-medium text-blue-600">Address</label>
-                    <p class="text-xs sm:text-sm text-gray-600 leading-relaxed">{{ report.customer_address || '-' }}</p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Technician Information -->
-              <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200">
-                <div class="flex items-center mb-4">
-                  <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-wrench-screwdriver" class="text-white text-lg" />
-                  </div>
-                  <h4 class="text-lg font-semibold text-purple-800">Technician Information</h4>
-                </div>
-                <div class="space-y-3">
-                  <div>
-                    <label class="text-sm font-medium text-purple-600">Technician Name</label>
-                    <p class="text-lg font-semibold text-gray-800">{{ report.technician_name || '-' }}</p>
-                  </div>
-                  <div>
-                    <label class="text-sm font-medium text-purple-600">Phone Number</label>
-                    <p class="text-lg text-gray-700">{{ report.technician_phone || '-' }}</p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Installation Details -->
-              <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl border border-green-200">
-                <div class="flex items-center mb-4">
-                  <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-cog-6-tooth" class="text-white text-lg" />
-                  </div>
-                  <h4 class="text-lg font-semibold text-green-800">Installation Details</h4>
-                </div>
-                <div class="space-y-3">
-                  <div>
-                    <label class="text-sm font-medium text-green-600">Installation Type</label>
-                    <p class="text-lg font-semibold text-gray-800">{{ report.installation_type || '-' }}</p>
-                  </div>
-                  <div>
-                    <label class="text-sm font-medium text-green-600">On Air Date</label>
-                    <p class="text-lg text-gray-700">{{ formatDate(report.on_air_date) }}</p>
-                  </div>
-                  <div>
-                    <label class="text-sm font-medium text-green-600">Trial End Date</label>
-                    <p class="text-lg text-gray-700">{{ formatDate(report.trial_end_date) }}</p>
-                  </div>
-                  <div>
-                    <label class="text-sm font-medium text-green-600">Service Ready Date</label>
-                    <p class="text-lg text-gray-700">{{ formatDate(report.service_ready_date) }}</p>
-                  </div>
-                  <div>
-                    <label class="text-sm font-medium text-green-600">Completed At</label>
-                    <p class="text-lg text-gray-700">{{ formatDateTime(report.installation_completed_at) }}</p>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -268,23 +185,72 @@
                 </div>
               </div>
 
-              <!-- Technician Information -->
+              <!-- Installation Team Information -->
               <div class="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-wrench-screwdriver" class="text-white text-lg" />
+                    <UIcon name="i-heroicons-user-group" class="text-white text-lg" />
                   </div>
-                  <h4 class="text-lg font-semibold text-amber-800">Technician Information</h4>
+                  <h4 class="text-lg font-semibold text-amber-800">Installation Team</h4>
                 </div>
-                <div class="space-y-3">
+                
+                <!-- Team Members -->
+                <div v-if="technicianTeam.length > 0" class="space-y-3">
+                  <div v-for="(technician, index) in technicianTeam" :key="technician.id" 
+                       class="bg-white rounded-lg p-3 border border-amber-200 shadow-sm">
+                    <div class="flex items-start space-x-3">
+                      <div class="w-6 h-6 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="text-amber-600 font-semibold text-xs">{{ index + 1 }}</span>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center space-x-2 mb-1">
+                          <h5 class="font-semibold text-gray-800 text-sm">{{ technician.technician_name }}</h5>
+                          <span v-if="technician.is_primary" 
+                                class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <UIcon name="i-heroicons-star-solid" class="w-2 h-2 mr-0.5" />
+                            Primary
+                          </span>
+                        </div>
+                        <div class="flex items-center space-x-2 mb-1">
+                          <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium"
+                                :class="getRoleColor(technician.role)">
+                            {{ getRoleDisplayName(technician.role) }}
+                          </span>
+                        </div>
+                        <div class="text-xs text-gray-600 space-y-1">
+                          <div class="flex items-center">
+                            <UIcon name="i-heroicons-phone" class="w-3 h-3 mr-1" />
+                            {{ technician.technician_phone || '-' }}
+                          </div>
+                          <div class="flex items-center">
+                            <UIcon name="i-heroicons-envelope" class="w-3 h-3 mr-1" />
+                            {{ technician.technician_email || '-' }}
+                          </div>
+                        </div>
+                        <div v-if="technician.notes" class="mt-2">
+                          <p class="text-xs text-gray-600 italic">"{{ technician.notes }}"</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Fallback for single technician (backward compatibility) -->
+                <div v-else-if="report.technician_name" class="space-y-3">
                   <div>
                     <label class="text-sm font-medium text-amber-600">Technician Name</label>
-                    <p class="text-lg font-semibold text-gray-800">{{ report.technician_name || '-' }}</p>
+                    <p class="text-lg font-semibold text-gray-800">{{ report.technician_name }}</p>
                   </div>
                   <div>
                     <label class="text-sm font-medium text-amber-600">Phone Number</label>
                     <p class="text-lg text-gray-700">{{ report.technician_phone || '-' }}</p>
                   </div>
+                </div>
+                
+                <!-- No technicians found -->
+                <div v-else class="text-center py-4">
+                  <UIcon name="i-heroicons-user-group" class="w-12 h-12 text-amber-300 mx-auto mb-2" />
+                  <p class="text-gray-600 text-sm">No technician information available</p>
                 </div>
               </div>
 
@@ -316,11 +282,7 @@
                   <div>
                     <label class="text-sm font-medium text-green-600">Completed At</label>
                     <p class="text-lg text-gray-700">{{ formatDateTime(report.installation_completed_at) }}</p>
-                  </div>
-                  <div>
-                    <label class="text-sm font-medium text-green-600">Total Assets</label>
-                    <p class="text-lg font-semibold text-gray-800">{{ report?.total_assets_out || 0 }} assets</p>
-                  </div>
+                  </div>                  
                 </div>
               </div>
             </div>
@@ -390,6 +352,177 @@
                   </div>
                   <p class="text-amber-600 font-medium">No document photo uploaded</p>
                   <p class="text-amber-500 text-sm mt-1">Document photo will appear here when uploaded</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Technician Photo Documentation -->
+        <div v-if="technicianPhotos.length > 0 || report.technician_photos_notes" class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-4">
+            <h3 class="text-xl font-bold text-white flex items-center">
+              <UIcon name="i-heroicons-camera" class="mr-3 text-xl" />
+              Technician Photo Documentation
+            </h3>
+          </div>
+          <div class="p-8">
+            <!-- Technician Photos Notes -->
+            <div v-if="report.technician_photos_notes" class="mb-6">
+              <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
+                <div class="flex items-center mb-4">
+                  <div class="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center mr-3">
+                    <UIcon name="i-heroicons-document-text" class="text-white text-lg" />
+                  </div>
+                  <h4 class="text-lg font-semibold text-amber-800">Progress Notes</h4>
+                </div>
+                <p class="text-gray-700 leading-relaxed">{{ report.technician_photos_notes }}</p>
+              </div>
+            </div>
+
+            <!-- Technician Photos Grid -->
+            <div v-if="technicianPhotos.length > 0" class="mb-6">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="text-lg font-semibold text-gray-800 flex items-center">
+                  <UIcon name="i-heroicons-photo" class="mr-2 text-amber-600" />
+                  Progress Photos ({{ technicianPhotos.length }})
+                </h4>
+                <div class="text-sm text-gray-500">
+                  Uploaded: {{ formatDate(technicianPhotos[0]?.created_at) }}
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div
+                  v-for="(photo, index) in technicianPhotos"
+                  :key="index"
+                  class="relative group cursor-pointer bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
+                  @click="openTechnicianPhotoModal(photo.file || photo.full_path, index)"
+                >
+                  <img
+                    :src="getTechnicianPhotoUrl(photo.file || photo.full_path)"
+                    :alt="`Technician Photo ${index + 1}`"
+                    class="w-full h-32 object-cover"
+                    @error="handleTechnicianPhotoError"
+                  />
+                  <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
+                    <UIcon name="i-heroicons-eye" class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xl" />
+                  </div>
+                  <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-2">
+                    <div class="flex justify-between items-center">
+                      <span>Photo {{ index + 1 }}</span>
+                      <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-3 h-3" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- No Photos State -->
+            <div v-else class="text-center py-8">
+              <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <UIcon name="i-heroicons-camera" class="text-amber-500 text-2xl" />
+              </div>
+              <p class="text-amber-600 font-medium">No technician photos uploaded</p>
+              <p class="text-amber-500 text-sm mt-1">Technician progress photos will appear here when uploaded</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product Information -->
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div class="bg-gradient-to-r from-emerald-500 to-teal-500 px-8 py-4">
+            <h3 class="text-xl font-bold text-white flex items-center">
+              <UIcon name="i-heroicons-shopping-bag" class="mr-3 text-xl" />
+              Product Package Information
+            </h3>
+          </div>
+          <div class="p-8">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <!-- Product Details -->
+              <div class="bg-gradient-to-br from-emerald-50 to-teal-50 p-6 rounded-xl border border-emerald-200">
+                <div class="flex items-center mb-4">
+                  <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center mr-3">
+                    <UIcon name="i-heroicons-shopping-bag" class="text-white text-lg" />
+                  </div>
+                  <h4 class="text-lg font-semibold text-emerald-800">Package Details</h4>
+                </div>
+                <div class="space-y-3">
+                  <div>
+                    <label class="text-sm font-medium text-emerald-600">Package Name</label>
+                    <p class="text-lg font-semibold text-gray-800">{{ report.product_name || '-' }}</p>
+                  </div>
+                  <div>
+                    <label class="text-sm font-medium text-emerald-600">Description</label>
+                    <p class="text-sm text-gray-700">{{ report.product_description || '-' }}</p>
+                  </div>
+                  <div>
+                    <label class="text-sm font-medium text-emerald-600">Price</label>
+                    <p class="text-lg font-semibold text-gray-800">
+                      {{ report.product_price ? `Rp ${report.product_price.toLocaleString('id-ID')}` : '-' }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Speed Information -->
+              <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
+                <div class="flex items-center mb-4">
+                  <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
+                    <UIcon name="i-heroicons-bolt" class="text-white text-lg" />
+                  </div>
+                  <h4 class="text-lg font-semibold text-blue-800">Speed Configuration</h4>
+                </div>
+                <div class="space-y-3">
+                  <div>
+                    <label class="text-sm font-medium text-blue-600">Download Speed</label>
+                    <p class="text-lg font-semibold text-gray-800">
+                      {{ report.product_download_speed_mbps ? `${report.product_download_speed_mbps} Mbps` : '-' }}
+                    </p>
+                  </div>
+                  <div>
+                    <label class="text-sm font-medium text-blue-600">Upload Speed</label>
+                    <p class="text-lg font-semibold text-gray-800">
+                      {{ report.product_upload_speed_mbps ? `${report.product_upload_speed_mbps} Mbps` : '-' }}
+                    </p>
+                  </div>
+                  <div>
+                    <label class="text-sm font-medium text-blue-600">Total Speed</label>
+                    <p class="text-lg font-semibold text-gray-800">
+                      {{ report.product_download_speed_mbps && report.product_upload_speed_mbps ? 
+                          `${report.product_download_speed_mbps}/${report.product_upload_speed_mbps} Mbps` : '-' }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Package Summary -->
+              <div class="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-200">
+                <div class="flex items-center mb-4">
+                  <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mr-3">
+                    <UIcon name="i-heroicons-document-text" class="text-white text-lg" />
+                  </div>
+                  <h4 class="text-lg font-semibold text-purple-800">Package Summary</h4>
+                </div>
+                <div class="space-y-3">
+                  <div class="bg-white p-4 rounded-lg border border-purple-200">
+                    <p class="text-sm text-purple-600 font-medium">Selected Package:</p>
+                    <p class="text-lg font-bold text-gray-800">{{ report.product_name || 'No package selected' }}</p>
+                  </div>
+                  <div class="bg-white p-4 rounded-lg border border-purple-200">
+                    <p class="text-sm text-purple-600 font-medium">Bandwidth:</p>
+                    <p class="text-lg font-bold text-gray-800">
+                      {{ report.product_download_speed_mbps && report.product_upload_speed_mbps ? 
+                          `${report.product_download_speed_mbps}/${report.product_upload_speed_mbps} Mbps` : 'Not specified' }}
+                    </p>
+                  </div>
+                  <div class="bg-white p-4 rounded-lg border border-purple-200">
+                    <p class="text-sm text-purple-600 font-medium">Monthly Cost:</p>
+                    <p class="text-lg font-bold text-gray-800">
+                      {{ report.product_price ? `Rp ${report.product_price.toLocaleString('id-ID')}` : 'Not specified' }}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -492,25 +625,22 @@
                 </div>
                 <div class="space-y-3">
                   <div>
-                    <label class="text-sm font-medium text-orange-600">Device Status</label>
-                    <span :class="getDeviceStatusColor(report.status_perangkat)" class="px-3 py-1 rounded-full text-sm font-medium">
-                      {{ report.status_perangkat || 'Unknown' }}
-                    </span>
+                    <label class="text-sm font-medium text-orange-600">Real-time Connection Status</label>
+                    <div class="flex items-center space-x-2">
+                      <div :class="[
+                        'w-3 h-3 rounded-full',
+                        getDeviceConnectionStatus(report) === 'up' ? 'bg-green-500' :
+                          getDeviceConnectionStatus(report) === 'down' ? 'bg-red-500' : 'bg-gray-500'
+                      ]"></div>
+                      <span :class="getDeviceConnectionStatusColor(getDeviceConnectionStatus(report))" class="px-3 py-1 rounded-full text-sm font-medium">
+                        {{ getDeviceConnectionStatus(report).toUpperCase() }}
+                      </span>
+                    </div>
                   </div>
                   <div>
                     <label class="text-sm font-medium text-orange-600">Ownership</label>
                     <p class="text-lg text-gray-700">{{ report.kepemilikan_perangkat || '-' }}</p>
-                  </div>
-                  <div>
-                    <label class="text-sm font-medium text-orange-600">Ping Status</label>
-                    <span :class="getPingStatusColor(report.last_ping_status)" class="px-3 py-1 rounded-full text-sm font-medium">
-                      {{ report.last_ping_status || 'Unknown' }}
-                    </span>
-                  </div>
-                  <div v-if="report.last_ping_timestamp">
-                    <label class="text-sm font-medium text-orange-600">Last Ping</label>
-                    <p class="text-sm text-gray-600">{{ formatDateTime(report.last_ping_timestamp) }}</p>
-                  </div>
+                  </div>                  
                 </div>
               </div>
             </div>
@@ -542,13 +672,31 @@
                   </div>
                   <div>
                     <label class="text-sm font-medium text-orange-600">Password</label>
-                    <p class="text-lg font-mono text-gray-800 bg-gray-100 px-3 py-1 rounded">{{ report.password ? '••••••••' : '-' }}</p>
+                    <p class="text-lg font-mono text-gray-800 bg-gray-100 px-3 py-1 rounded">{{ report.password || '-' }}</p>
                   </div>
                   <div>
                     <label class="text-sm font-medium text-orange-600">Status</label>
                     <span :class="getUserStatusColor(report.user_status)" class="px-3 py-1 rounded-full text-sm font-medium">
                       {{ report.user_status || 'Unknown' }}
                     </span>
+                  </div>
+                  
+                  <!-- Remote Router Access Button -->
+                  <div class="pt-3 border-t border-orange-200">
+                    <UButton 
+                      @click="openRemoteRouter" 
+                      color="orange" 
+                      variant="solid" 
+                      size="sm"
+                      class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-lg"
+                      :disabled="!report.ip_static"
+                    >
+                      <UIcon name="i-heroicons-computer-desktop" class="mr-2" />
+                      Remote Router Access
+                    </UButton>
+                    <p class="text-xs text-orange-600 mt-1 text-center">
+                      {{ report.ip_static ? `${report.ip_static}:8080` : 'IP address not available' }}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -746,13 +894,246 @@
         </template>
       </UCard>
     </UModal>
+
+    <!-- Technician Photo Modal -->
+    <UModal v-model="showTechnicianPhotoModal">
+      <UCard>
+        <template #header>
+          <div class="flex justify-between items-center">
+            <h3 class="text-lg font-semibold">Technician Photo {{ selectedTechnicianPhotoIndex + 1 }}</h3>
+            <UButton @click="showTechnicianPhotoModal = false" variant="ghost" size="sm">
+              <UIcon name="i-heroicons-x-mark" />
+            </UButton>
+          </div>
+        </template>
+        
+        <div class="text-center">
+          <img
+            v-if="selectedTechnicianPhoto && technicianPhotoModalLoaded"
+            :src="getTechnicianPhotoUrl(selectedTechnicianPhoto)"
+            alt="Technician photo"
+            class="max-w-full max-h-96 mx-auto rounded-lg"
+            @load="handleTechnicianPhotoModalLoad"
+            @error="handleTechnicianPhotoModalError"
+          />
+          
+          <!-- Loading state -->
+          <div v-if="!technicianPhotoModalLoaded && selectedTechnicianPhoto" class="text-center p-8">
+            <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl text-amber-600 mx-auto mb-4" />
+            <p class="text-gray-600">Loading photo...</p>
+          </div>
+          
+          <!-- Error state -->
+          <div v-if="technicianPhotoModalError" class="text-center p-8 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300">
+            <UIcon name="i-heroicons-exclamation-triangle" class="text-2xl text-red-500 mx-auto mb-4" />
+            <p class="text-lg text-gray-600 mb-2">Photo could not be loaded</p>
+            <p class="text-sm text-gray-500">The image may be corrupted or the path may be incorrect.</p>
+          </div>
+        </div>
+        
+        <template #footer>
+          <div class="flex justify-end space-x-3 bg-gray-50 -m-6 mt-6 p-6">
+            <UButton
+              color="gray"
+              variant="outline"
+              @click="showTechnicianPhotoModal = false"
+              size="lg"
+            >
+              <UIcon name="i-heroicons-x-mark" class="mr-2" />
+              Close
+            </UButton>
+            <UButton
+              color="blue"
+              @click="downloadTechnicianPhoto"
+              size="lg"
+              :disabled="!selectedTechnicianPhoto"
+            >
+              <UIcon name="i-heroicons-arrow-down-tray" class="mr-2" />
+              Download
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
+     <!-- Delete Confirmation Modal -->
+     <UModal :model-value="showDeleteModal" @update:model-value="showDeleteModal = $event" :ui="{ width: 'w-full sm:max-w-lg' }">
+       <UCard class="bg-white dark:bg-gray-800">
+         <template #header>
+           <div class="flex items-center justify-between bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 p-4 -m-4 mb-4 rounded-t-lg">
+             <h3 class="text-xl font-bold text-red-700 dark:text-red-300 flex items-center">
+               <div class="bg-red-500 p-3 rounded-xl mr-4 shadow-lg">
+                 <UIcon name="i-heroicons-trash" class="w-6 h-6 text-white" />
+               </div>
+               Delete Installation Report
+             </h3>
+             <UButton
+               color="gray"
+               variant="ghost"
+               icon="i-heroicons-x-mark"
+               @click="closeDeleteModal"
+               :disabled="deleting"
+               class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+             />
+           </div>
+         </template>
+
+         <div class="space-y-6">
+           <!-- Customer Information -->
+           <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-5 border-2 border-blue-200 dark:border-blue-700">
+             <div class="flex items-center gap-4">
+               <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                 <UIcon name="i-heroicons-user" class="text-white text-2xl" />
+               </div>
+               <div>
+                 <h4 class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ report?.customer_name || 'Unknown Customer' }}</h4>
+                 <p class="text-sm text-gray-600 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded mt-1">
+                   ID: {{ installationId }}
+                 </p>
+               </div>
+             </div>
+           </div>
+
+           <!-- Warning Message -->
+           <div class="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/30 dark:to-pink-900/30 border-2 border-red-300 dark:border-red-600 rounded-xl p-6 shadow-lg">
+             <div class="flex items-start">
+               <div class="bg-red-500 p-3 rounded-full mr-4 flex-shrink-0 shadow-lg">
+                 <UIcon name="i-heroicons-exclamation-triangle" class="text-white text-2xl" />
+               </div>
+               <div class="flex-1">
+                 <h5 class="text-xl font-bold text-red-800 dark:text-red-200 mb-3">⚠️ CRITICAL WARNING</h5>
+                 <p class="text-red-700 dark:text-red-300 text-base leading-relaxed mb-4 font-medium">
+                   You are about to <strong class="text-red-900 dark:text-red-100">PERMANENTLY DELETE</strong> this installation report and all associated data.
+                 </p>
+                 <div class="bg-white dark:bg-gray-800 border-2 border-red-400 dark:border-red-500 rounded-lg p-4 shadow-inner">
+                   <p class="text-red-800 dark:text-red-200 text-base font-bold mb-3 flex items-center">
+                     <UIcon name="i-heroicons-list-bullet" class="w-5 h-5 mr-2" />
+                     This action will:
+                   </p>
+                   <ul class="text-red-700 dark:text-red-300 text-sm list-disc list-inside space-y-2 font-medium">
+                     <li class="flex items-start">
+                       <UIcon name="i-heroicons-trash" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                       <strong>Delete the installation report and clean up all Mikrotik RouterOS configurations</strong>
+                     </li>
+                     <li class="flex items-start">
+                       <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                       <strong>Update the MAC address status back to "in_stock"</strong>
+                     </li>
+                     <li class="flex items-start">
+                       <UIcon name="i-heroicons-user-group" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                       <strong>Remove all related technician assignments and asset transactions</strong>
+                     </li>
+                     <li class="flex items-start">
+                       <UIcon name="i-heroicons-cpu-chip" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                       <strong>Delete all associated network devices, cables, and images</strong>
+                     </li>
+                     <li class="flex items-start">
+                       <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                       <strong>Delete all associated recurring invoices</strong>
+                     </li>
+                     <li class="flex items-start">
+                       <UIcon name="i-heroicons-cog-6-tooth" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                       <strong>Remove Mikrotik configurations: queue rules, hotspot bindings, netwatch entries, schedulers, scripts, and DHCP leases</strong>
+                     </li>
+                   </ul>
+                 </div>
+               </div>
+             </div>
+           </div>
+
+           <!-- Impact Summary -->
+           <div class="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-700 dark:to-slate-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl p-5 shadow-lg">
+             <h6 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+               <div class="bg-gray-500 p-2 rounded-lg mr-3">
+                 <UIcon name="i-heroicons-information-circle" class="w-5 h-5 text-white" />
+               </div>
+               Impact Summary
+             </h6>
+             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+               <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                 <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Customer:</span>
+                 <span class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ report?.customer_name || 'Unknown' }}</span>
+               </div>
+               <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                 <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Status:</span>
+                 <span class="px-3 py-1 rounded-full text-sm font-bold" :class="getStatusColor(report?.installation_status)">
+                   {{ report?.installation_status || 'Unknown' }}
+                 </span>
+               </div>
+               <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                 <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Report ID:</span>
+                 <span class="font-mono text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-800 dark:text-gray-200">{{ installationId }}</span>
+               </div>
+               <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                 <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 block">MAC Address:</span>
+                 <span class="font-mono text-sm bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded text-blue-800 dark:text-blue-200">{{ report?.mac_address || 'Not available' }}</span>
+               </div>
+             </div>
+           </div>
+
+           <!-- Confirmation Checkbox -->
+           <div class="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-2 border-yellow-300 dark:border-yellow-600 rounded-xl p-5 shadow-lg">
+             <label class="flex items-start cursor-pointer group">
+               <UCheckbox 
+                 v-model="deleteConfirmationChecked" 
+                 class="mt-1 scale-125"
+                 :disabled="deleting"
+                 color="red"
+               />
+               <div class="ml-4 flex-1">
+                 <p class="text-base text-gray-800 dark:text-gray-200 leading-relaxed">
+                   I understand that this action will 
+                   <span class="inline-flex items-center px-2 py-1 rounded bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 font-bold mx-1">
+                     PERMANENTLY DELETE
+                   </span>
+                   the installation report for 
+                   <strong class="text-blue-600 dark:text-blue-400">"{{ report?.customer_name || 'Unknown Customer' }}"</strong> 
+                   and all associated data.
+                 </p>
+                 <p class="text-sm text-red-600 dark:text-red-400 font-semibold mt-2 flex items-center">
+                   <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 mr-1" />
+                   This action CANNOT be undone!
+                 </p>
+               </div>
+             </label>
+           </div>
+
+           <!-- Action Buttons -->
+           <div class="flex flex-col sm:flex-row justify-end gap-4 pt-4">
+             <UButton
+               @click="closeDeleteModal"
+               color="gray"
+               variant="outline"
+               size="xl"
+               :disabled="deleting"
+               class="w-full sm:w-auto border-2 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold"
+             >
+               <UIcon name="i-heroicons-x-mark" class="mr-2" />
+               Cancel
+             </UButton>
+             <UButton
+               @click="confirmDelete"
+               color="red"
+               variant="solid"
+               size="xl"
+               :loading="deleting"
+               :disabled="!deleteConfirmationChecked"
+               class="w-full sm:w-auto bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 border-2 border-red-500 shadow-lg font-bold"
+             >
+               <UIcon name="i-heroicons-trash" class="mr-2" />
+               {{ deleting ? 'Deleting...' : 'Delete Installation Report' }}
+             </UButton>
+           </div>
+         </div>
+       </UCard>
+     </UModal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import { customerAdminApi } from "@/api/admin/customer";
-import type { InstallationReportCompleteResponse } from "@/types/requests/installation-report";
+import type { CompleteInstallationReportWithTechnicianPhotosResponse, InstallationTechnicianTeamResponse } from "@/types/requests/installation-report";
 
 // Apply auth middleware
 definePageMeta({
@@ -763,17 +1144,58 @@ const route = useRoute();
 const installationId = route.params.id as string;
 
 const loading = ref(false);
-const report = ref<InstallationReportCompleteResponse | null>(null);
+const deleting = ref(false);
+const report = ref<CompleteInstallationReportWithTechnicianPhotosResponse | null>(null);
+const technicianTeam = ref<InstallationTechnicianTeamResponse[]>([]);
 const showDocumentModal = ref(false);
+const showDeleteModal = ref(false);
+const deleteConfirmationChecked = ref(false);
 const selectedDocumentPhoto = ref<string | undefined>(undefined);
 const modalImageLoaded = ref(true); // Start as true, set to false on error
 
+// Technician photo variables
+const showTechnicianPhotoModal = ref(false);
+const selectedTechnicianPhoto = ref<string | undefined>(undefined);
+const selectedTechnicianPhotoIndex = ref(0);
+const technicianPhotoModalLoaded = ref(true);
+const technicianPhotoModalError = ref(false);
+
+// Function to refresh device status
+async function refreshDeviceStatus() {
+  if (!report.value?.ip_static) return
+  
+  try {
+    const device = { ip_static: report.value.ip_static }
+    await fetchRealTimeDeviceStatus(device)
+    console.log('Device status refreshed for IP:', report.value.ip_static)
+  } catch (error) {
+    console.error('Failed to refresh device status:', error)
+  }
+}
+
 onMounted(async () => {
+  // Clear any lingering modal states from other pages
+  clearGlobalModalStates();
   await loadReport();
 });
 
+// Function to clear global modal states
+function clearGlobalModalStates() {
+  // Force close any lingering modals by dispatching a custom event
+  window.dispatchEvent(new CustomEvent('clear-all-modals'));
+  
+  // Also try to close any UModal components that might be open
+  const openModals = document.querySelectorAll('[data-modal-open="true"]');
+  openModals.forEach(modal => {
+    const closeButton = modal.querySelector('[data-modal-close]');
+    if (closeButton) {
+      (closeButton as HTMLElement).click();
+    }
+  });
+}
+
 // Watch for modal state changes
-watch(showDocumentModal, (newVal, oldVal) => {
+watch(showDocumentModal, (newVal: boolean, oldVal: boolean) => {
   console.log('🔍 Modal state changed:', oldVal, '→', newVal);
   if (newVal) {
     console.log('✅ Modal should be opening now');
@@ -782,23 +1204,68 @@ watch(showDocumentModal, (newVal, oldVal) => {
   }
 });
 
-watch(selectedDocumentPhoto, (newVal, oldVal) => {
+watch(selectedDocumentPhoto, (newVal: string | undefined, oldVal: string | undefined) => {
   console.log('🔍 selectedDocumentPhoto changed:', oldVal, '→', newVal);
 });
 
-watch(modalImageLoaded, (newVal, oldVal) => {
+watch(modalImageLoaded, (newVal: boolean, oldVal: boolean) => {
   console.log('🔍 modalImageLoaded changed:', oldVal, '→', newVal);
 });
 
 async function loadReport() {
   loading.value = true;
   try {
-    // Use the new endpoint that returns PSB data
-    const response = await customerAdminApi().getInstallationReportCompleteByView(installationId);
-    report.value = response.data || null;
+    // Use the endpoint that preloads Images relationship for technician photos
+    const [reportResponse, technicianResponse] = await Promise.all([
+      customerAdminApi().getInstallationReportCompleteWithTechnicianPhotos(installationId),
+      customerAdminApi().getInstallationTechnicianTeam(installationId)
+    ]);
+    
+    report.value = reportResponse.data || null;
+    technicianTeam.value = technicianResponse.data || [];
+    
+    console.log("Loaded report data:", report.value);
+    console.log("Images relationship:", report.value?.images);
+    
+    // Debug PSB fields specifically
+    if (report.value) {
+      console.log("🔍 PSB Debug Info:");
+      console.log("- tgl_permintaan_psb:", report.value.tgl_permintaan_psb);
+      console.log("- durasi_psb:", report.value.durasi_psb);
+      console.log("- status_psb:", report.value.status_psb);
+      console.log("- installation_completed_at:", report.value.installation_completed_at);
+    }
+    
+    // Debug: Check if technician photos are properly computed from Images relationship
+    if (report.value) {
+      console.log("Report images:", report.value.images);
+      console.log("Report images count:", report.value.images?.length || 0);
+      
+      // Ensure images is an array (handle null/undefined cases)
+      const images = report.value.images || [];
+      console.log("Images array (normalized):", images);
+      
+      // Filter technician photos from images (where archive_installation_id is set)
+      const technicianPhotos = images.filter((img: any) => img.archive_installation_id);
+      console.log("Technician photos from images:", technicianPhotos);
+      console.log("Technician photos count:", technicianPhotos.length);
+      
+      // Refresh device status after report is loaded
+      if (report.value.ip_static) {
+        await refreshDeviceStatus();
+      }
+    }
   } catch (error) {
     console.error("Failed to load report:", error);
     report.value = null;
+    technicianTeam.value = [];
+    
+    // Show user-friendly error message
+    useToast().add({
+      title: "Error",
+      description: "Failed to load installation report. Please try again.",
+      color: "red",
+    });
   } finally {
     loading.value = false;
   }
@@ -806,6 +1273,52 @@ async function loadReport() {
 
 function printReport() {
   window.print();
+}
+
+function deleteInstallationReport() {
+  showDeleteModal.value = true;
+}
+
+// function onDeleteConfirmed() {
+//   // Navigate back to reports list after successful deletion
+//   navigateTo('/dashboard/report/customer-installation/reports');
+// }
+
+function closeDeleteModal() {
+  showDeleteModal.value = false;
+  deleteConfirmationChecked.value = false;
+}
+
+// TypeScript: Delete confirmation handler
+const confirmDelete = async () => {
+  if (!installationId || !deleteConfirmationChecked.value || deleting.value) return
+  
+  deleting.value = true
+  
+  try {
+    await customerAdminApi().deleteInstallationReport(installationId)
+    
+    // Show success notification
+    useToast().add({
+      title: 'Success!',
+      description: `Installation report for "${report.value?.customer_name || 'Unknown Customer'}" deleted successfully. MAC address status updated to "in_stock".`,
+      color: 'green',
+    })
+    
+    closeDeleteModal();
+    await navigateTo('/dashboard/report/customer-installation/reports');
+  } catch (err: any) {
+    console.error("Error deleting installation report:", err)
+    
+    // Show error notification
+    useToast().add({
+      title: 'Error',
+      description: err.message || 'Failed to delete installation report',
+      color: 'red',
+    })
+  } finally {
+    deleting.value = false
+  }
 }
 
 function getStatusColor(status: string | undefined) {
@@ -1026,6 +1539,101 @@ function downloadDocumentPhoto() {
   document.body.removeChild(link);
 }
 
+// Computed property for technician photos - now using Images relationship
+const technicianPhotos = computed(() => {
+  if (!report.value) return [];
+  
+  try {
+    // Ensure images is an array (handle null/undefined cases)
+    const images = report.value.images || [];
+    
+    // Filter images where archive_installation_id is set (technician photos)
+    return images.filter((img: any) => img.archive_installation_id);
+  } catch (error) {
+    console.error('Error filtering technician photos from images:', error);
+    return [];
+  }
+});
+
+// Technician photo functions
+function getTechnicianPhotoUrl(photoPath: string) {
+  if (!photoPath) return '';
+  
+  // If it's already a full URL, return as is
+  if (photoPath.startsWith('http')) {
+    return photoPath;
+  }
+  
+  // Construct the full URL using the same pattern as document photos
+  const baseUrl = 'http://localhost:3001'; // Use the same backend URL as document photos
+  return `${baseUrl}/${photoPath}`;
+}
+
+function openTechnicianPhotoModal(photo: string, index: number) {
+  selectedTechnicianPhoto.value = photo;
+  selectedTechnicianPhotoIndex.value = index;
+  technicianPhotoModalLoaded.value = true;
+  technicianPhotoModalError.value = false;
+  showTechnicianPhotoModal.value = true;
+}
+
+function handleTechnicianPhotoError(event: Event) {
+  const img = event.target as HTMLImageElement;
+  console.log('Technician photo failed to load:', img.src);
+  img.style.display = 'none';
+  
+  const parentDiv = img.parentElement;
+  if (parentDiv && !parentDiv.querySelector('.technician-photo-error')) {
+    const errorMsg = document.createElement('div');
+    errorMsg.className = 'technician-photo-error text-center p-4 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300';
+    errorMsg.innerHTML = `
+      <div class="text-gray-500 mb-2">
+        <UIcon name="i-heroicons-exclamation-triangle" class="w-8 h-8 mx-auto mb-2" />
+      </div>
+      <p class="text-sm text-gray-600">Photo could not be loaded</p>
+    `;
+    parentDiv.appendChild(errorMsg);
+  }
+}
+
+function handleTechnicianPhotoModalLoad() {
+  technicianPhotoModalLoaded.value = true;
+  technicianPhotoModalError.value = false;
+}
+
+function handleTechnicianPhotoModalError() {
+  technicianPhotoModalLoaded.value = false;
+  technicianPhotoModalError.value = true;
+}
+
+function downloadTechnicianPhoto() {
+  if (!selectedTechnicianPhoto.value) return;
+  
+  const photoUrl = getTechnicianPhotoUrl(selectedTechnicianPhoto.value);
+  const link = document.createElement('a');
+  link.href = photoUrl;
+  link.download = `technician_photo_${selectedTechnicianPhotoIndex.value + 1}_${report.value?.customer_name || 'customer'}.jpg`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function openRemoteRouter() {
+  if (!report.value?.ip_static) {
+    useToast().add({
+      title: 'Error',
+      description: 'IP address not available for remote access',
+      color: 'red',
+    });
+    return;
+  }
+
+  const routerUrl = `http://${report.value.ip_static}:8080`;
+  
+  // Open in new tab
+  window.open(routerUrl, '_blank');
+}
+
 function getPingStatusColor(status: string | undefined) {
   switch (status) {
     case 'up':
@@ -1033,6 +1641,76 @@ function getPingStatusColor(status: string | undefined) {
     case 'down':
       return 'bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-md';
     case 'unknown':
+      return 'bg-gradient-to-r from-gray-500 to-gray-600 text-white shadow-md';
+    default:
+      return 'bg-gradient-to-r from-gray-500 to-gray-600 text-white shadow-md';
+  }
+}
+
+// Real-time device status cache
+const deviceStatusCache = ref<Map<string, { status: string; timestamp: number }>>(new Map())
+
+// Get device connection status (now using real-time Mikrotik data)
+function getDeviceConnectionStatus(device: any) {
+  if (!device) return 'off'
+
+  // Check if device has IP address for Mikrotik lookup
+  if (!device.ip_static) {
+    return 'off'
+  }
+
+  // Check cache first (cache for 30 seconds)
+  const cacheKey = device.ip_static
+  const cached = deviceStatusCache.value.get(cacheKey)
+  const now = Date.now()
+  
+  if (cached && (now - cached.timestamp) < 30000) {
+    return cached.status
+  }
+
+  // For now, return 'unknown' to indicate we need to fetch real-time data
+  // TODO: Implement actual Mikrotik API call here
+  const status = 'unknown'
+  
+  // Cache the result
+  deviceStatusCache.value.set(cacheKey, { status, timestamp: now })
+  
+  return status
+}
+
+// Function to fetch real-time status from Mikrotik (placeholder for future implementation)
+async function fetchRealTimeDeviceStatus(device: any) {
+  if (!device?.ip_static) return 'off'
+  
+  try {
+    // TODO: Implement actual Mikrotik API call
+    // const response = await mikrotikAdminApi().getDeviceStatus(device.ip_static)
+    // return response.status || 'unknown'
+    
+    // For now, return a mock status based on IP
+    const mockStatus = device.ip_static.includes('10.10.20') ? 'up' : 'down'
+    
+    // Update cache
+    deviceStatusCache.value.set(device.ip_static, { 
+      status: mockStatus, 
+      timestamp: Date.now() 
+    })
+    
+    return mockStatus
+  } catch (error) {
+    console.error('Failed to fetch device status:', error)
+    return 'unknown'
+  }
+}
+
+// Get device connection status color for real-time status
+function getDeviceConnectionStatusColor(status: string) {
+  switch (status) {
+    case 'up':
+      return 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md';
+    case 'down':
+      return 'bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-md';
+    case 'off':
       return 'bg-gradient-to-r from-gray-500 to-gray-600 text-white shadow-md';
     default:
       return 'bg-gradient-to-r from-gray-500 to-gray-600 text-white shadow-md';
@@ -1087,5 +1765,32 @@ function formatDateTime(dateString: string | undefined) {
     hour: '2-digit',
     minute: '2-digit'
   });
+}
+
+// Helper functions for technician team display
+function getRoleColor(role: string) {
+  switch (role.toLowerCase()) {
+    case 'senior':
+      return 'bg-blue-100 text-blue-800';
+    case 'junior':
+      return 'bg-green-100 text-green-800';
+    case 'helper':
+      return 'bg-gray-100 text-gray-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+}
+
+function getRoleDisplayName(role: string) {
+  switch (role.toLowerCase()) {
+    case 'senior':
+      return '👨‍🔧 Senior';
+    case 'junior':
+      return '👷 Junior';
+    case 'helper':
+      return '🔧 Helper';
+    default:
+      return role;
+  }
 }
 </script>

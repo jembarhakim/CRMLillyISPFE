@@ -149,22 +149,37 @@
               <h2 class="text-xl font-bold text-gray-800">Installation Team Information</h2>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <UFormGroup label="Nama Anggota Tim Install" name="installation_team_name">
-                <UInput
-                  v-model="state.installation_team_name"
-                  placeholder="Enter installation team member name"
-                  class="custom-input"
-                />
-              </UFormGroup>
-
-              <UFormGroup label="No.HP Tim Install" name="installation_team_phone">
-                <UInput
-                  v-model="state.installation_team_phone"
-                  placeholder="Enter installation team phone number"
-                  class="custom-input"
-                />
-              </UFormGroup>
+            <div v-if="installationTeam.length > 0" class="space-y-4">
+              <div v-for="(member, index) in installationTeam" :key="index" 
+                   class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                <div class="flex justify-between items-center mb-2">
+                  <h4 class="text-lg font-semibold text-gray-700 flex items-center">
+                    <UIcon name="i-heroicons-user" class="mr-2 text-purple-500" />
+                    {{ member.technician?.name || 'Unknown Technician' }}
+                    <span v-if="member.is_primary" class="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                      Lead
+                    </span>
+                  </h4>
+                  <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full capitalize">
+                    {{ member.role }}
+                  </span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                  <div v-if="member.technician?.phone">
+                    <span class="font-medium">Phone:</span> {{ member.technician.phone }}
+                  </div>
+                  <div v-if="member.technician?.email">
+                    <span class="font-medium">Email:</span> {{ member.technician.email }}
+                  </div>
+                </div>
+                <div v-if="member.notes" class="mt-2 text-sm text-gray-600">
+                  <span class="font-medium">Notes:</span> {{ member.notes }}
+                </div>
+              </div>
+            </div>
+            <div v-else class="text-center py-8 text-gray-500">
+              <UIcon name="i-heroicons-users" class="text-4xl mb-2" />
+              <p>No installation team members assigned</p>
             </div>
           </div>
 
@@ -190,7 +205,7 @@
               <UFormGroup label="Foto Dokumen" name="document_photo">
                 <div v-if="state.document_photo" class="mb-4">
                   <div class="bg-white p-4 rounded-lg border border-gray-200">
-                    <img :src="state.document_photo" alt="Current document" class="w-32 h-32 object-cover rounded-lg border" />
+                    <img :src="getFullImageUrl(state.document_photo)" alt="Current document" class="w-32 h-32 object-cover rounded-lg border" />
                     <p class="text-sm text-gray-600 mt-2 font-medium">Current document photo</p>
                   </div>
                 </div>
@@ -248,16 +263,7 @@
                     class="custom-select"
                     @change="onAssetChange(device.assets_id, index)"
                   />
-                  <UInput
-                    v-model="device.router_brand"
-                    placeholder="Router Brand"
-                    class="custom-input"
-                  />
-                  <UInput
-                    v-model="device.router_type"
-                    placeholder="Type/Series"
-                    class="custom-input"
-                  />
+                  
                 </div>
                 
                 <!-- Network Configuration -->
@@ -387,19 +393,19 @@
                 <!-- Cable and Port Information -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <UInput
-                    v-model="service.cable_type"
-                    placeholder="Cable Type"
-                    class="custom-input"
-                  />
-                  <UInput
                     v-model="service.cable_length"
                     type="number"
-                    placeholder="Length (meters)"
+                    placeholder="Cable Length (m)"
                     class="custom-input"
                   />
                   <UInput
                     v-model="service.end_port_type"
                     placeholder="End Port Type"
+                    class="custom-input"
+                  />
+                  <UInput
+                    v-model="service.installation_notes"
+                    placeholder="Installation Notes"
                     class="custom-input"
                   />
                 </div>
@@ -462,6 +468,99 @@
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- Technician Photo Documentation -->
+          <div class="bg-gradient-to-r from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-100">
+            <div class="flex items-center mb-6">
+              <div class="bg-amber-500 p-2 rounded-lg mr-3">
+                <UIcon name="i-heroicons-camera" class="text-white text-lg" />
+              </div>
+              <h2 class="text-xl font-bold text-gray-800">Technician Photo Documentation</h2>
+            </div>
+            
+            <div class="mb-4">
+              <p class="text-sm text-gray-600 mb-4">
+                Document your PSB progress with photos (maximum 10 images). Images will be automatically compressed to reduce file size.
+              </p>
+              
+              <UFormGroup label="Progress Notes" name="technician_photos_notes">
+                <UTextarea
+                  v-model="state.technician_photos_notes"
+                  placeholder="Add notes about the installation progress and photos..."
+                  :rows="3"
+                  class="custom-textarea"
+                />
+              </UFormGroup>
+            </div>
+            
+            <UFormGroup label="Upload Progress Photos" name="technician_photos">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div
+                  v-for="(preview, index) in state.technician_photo_previews"
+                  :key="index"
+                  class="relative group cursor-pointer bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
+                  @click="state.selectedTechnicianImage = preview; state.showTechnicianModal = true"
+                >
+                  <img
+                    :src="preview"
+                    :alt="`Technician Photo ${index + 1}`"
+                    class="w-full h-32 object-cover"
+                  />
+                  <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
+                    <UIcon name="i-heroicons-eye" class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xl" />
+                  </div>
+                  <UButton
+                    @click.stop="removeTechnicianPhoto(index)"
+                    size="xs"
+                    color="red"
+                    variant="solid"
+                    class="absolute -top-2 -right-2 shadow-lg"
+                  >
+                    <UIcon name="i-heroicons-x-mark" />
+                  </UButton>
+                  <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-2">
+                    <div class="flex justify-between items-center">
+                      <span>Photo {{ index + 1 }}</span>
+                      <span v-if="technicianPhotoSizes[index]" class="text-xs opacity-75">
+                        {{ formatFileSize(technicianPhotoSizes[index]) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div
+                  v-if="state.technician_photo_previews.length < 10"
+                  class="w-full h-32 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition-all duration-200 bg-white"
+                  @click="triggerTechnicianPhotoUpload"
+                >
+                  <div class="text-center">
+                    <UIcon name="i-heroicons-plus" class="text-gray-400 text-3xl mb-2" />
+                    <p class="text-sm text-gray-500 font-medium">Add Photo</p>
+                    <p class="text-xs text-gray-400">{{ state.technician_photo_previews.length }}/10</p>
+                  </div>
+                </div>
+              </div>
+              
+              <input
+                ref="technicianPhotoInput"
+                type="file"
+                accept="image/*"
+                multiple
+                class="hidden"
+                @change="handleTechnicianPhotoUpload"
+              />
+              
+              <div v-if="state.technician_photo_previews.length > 0" class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div class="flex items-center text-sm text-amber-800">
+                  <UIcon name="i-heroicons-information-circle" class="mr-2" />
+                  <span>
+                    {{ state.technician_photo_previews.length }} photo(s) uploaded. 
+                    Total size: {{ formatFileSize(totalTechnicianPhotoSize) }}
+                  </span>
+                </div>
+              </div>
+            </UFormGroup>
           </div>
 
           <!-- Images -->
@@ -564,10 +663,32 @@
         </div>
       </UCard>
     </UModal>
+
+    <!-- Technician Photo Modal -->
+    <UModal v-model="state.showTechnicianModal">
+      <UCard>
+        <template #header>
+          <div class="flex justify-between items-center">
+            <h3 class="text-lg font-semibold">Technician Photo Preview</h3>
+            <UButton @click="state.showTechnicianModal = false" variant="ghost" size="sm">
+              <UIcon name="i-heroicons-x-mark" />
+            </UButton>
+          </div>
+        </template>
+        
+        <div class="text-center">
+          <img
+            :src="state.selectedTechnicianImage"
+            alt="Technician photo preview"
+            class="max-w-full max-h-96 mx-auto rounded-lg"
+          />
+        </div>
+      </UCard>
+    </UModal>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { object, string } from 'yup'
 import type { FormSubmitEvent } from '#ui/types'
 import { customerAdminApi } from '@/api/admin/customer'
@@ -575,7 +696,8 @@ import { assetAdminApi } from '@/api/admin/asset'
 import { assetItemAdminApi } from '@/api/admin/asset-item'
 import { userManagementAdminApi } from '@/api/admin/user-management'
 import { uploadFileAdminApi } from '@/api/admin/file-upload'
-import type { CreateCompleteInstallationReportRequest } from '@/types/requests/installation-report'
+import type { UpdateCompleteInstallationReportRequest } from '@/types/requests/installation-report'
+// Remove the custom compression import - we'll use the existing compression function
 
 // Apply auth middleware
 definePageMeta({
@@ -597,8 +719,6 @@ const schema = object({
   service_ready_date: string().optional(),
   installation_completed_at: string().optional(),
   notes: string().optional(),
-  installation_team_name: string().optional(),
-  installation_team_phone: string().optional(),
   document_type: string().optional(),
   document_photo: string().optional(),
 })
@@ -617,10 +737,6 @@ const state = reactive({
   service_ready_date: "",
   installation_completed_at: "",
   
-  // Installation Team
-  installation_team_name: "",
-  installation_team_phone: "",
-  
   // Network Devices
   network_devices: [] as any[],
   
@@ -635,11 +751,91 @@ const state = reactive({
   previews: [] as string[],
   selectedImage: "",
   showModal: false,
+  
+  // Technician Photos
+  technician_photos: [] as string[],
+  technician_photos_notes: "",
+  technician_photo_previews: [] as string[],
+  selectedTechnicianImage: "",
+  showTechnicianModal: false,
 });
+
+// Installation team data
+const installationTeam = ref<any[]>([]);
 
 const loading = ref(true);
 const isSubmitting = ref(false);
 const fileInput = ref<HTMLInputElement>();
+const technicianPhotoInput = ref<HTMLInputElement>();
+
+// Use the existing compression function from tickets page
+async function compressImageFile(file: File, maxBytes: number): Promise<File> {
+  try {
+    // Skip compression for non-images
+    if (!file.type.startsWith('image/')) return file
+    // Already small enough
+    if (file.size <= maxBytes) return file
+
+    const bitmap = await createImageBitmap(file)
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')!
+
+    // Scale down if image is huge; keep aspect ratio
+    const maxDim = 2000 // cap the longest side to limit memory
+    let { width, height } = bitmap
+    const ratio = Math.min(1, maxDim / Math.max(width, height))
+    width = Math.round(width * ratio)
+    height = Math.round(height * ratio)
+    canvas.width = width
+    canvas.height = height
+    ctx.drawImage(bitmap, 0, 0, width, height)
+
+    // Binary search quality to fit under maxBytes
+    let low = 0.5, high = 0.92, bestBlob: Blob | null = null
+    for (let i = 0; i < 6; i++) {
+      const q = (low + high) / 2
+      const blob = await new Promise<Blob>(res => canvas.toBlob(b => res(b || new Blob()), 'image/jpeg', q))
+      if (blob.size > 0 && blob.size <= maxBytes) { bestBlob = blob; high = q } else { low = q }
+    }
+    const out = bestBlob || await new Promise<Blob>(res => canvas.toBlob(b => res(b || new Blob()), 'image/jpeg', 0.85))
+    // If still larger, accept and let backend reject
+    if (out.size >= file.size) return file
+    return new File([out], file.name.replace(/\.(png|jpeg|jpg|webp)$/i, '.jpg'), { type: 'image/jpeg' })
+  } catch {
+    return file
+  }
+}
+
+// File validation function (reused from tickets)
+function validateFile(file: File): { isValid: boolean; message: string } {
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+
+  if (file.size > maxSize) {
+    return { isValid: false, message: 'File size exceeds 10MB limit' };
+  }
+
+  if (!allowedTypes.includes(file.type)) {
+    return { isValid: false, message: 'File type not supported. Please use JPG, PNG, or GIF' };
+  }
+
+  return { isValid: true, message: 'File is valid' };
+}
+
+// File size formatting utility
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes';
+  
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Technician photo tracking
+const technicianPhotoSizes = ref<number[]>([]);
+const isCompressing = ref(false);
 
 // Options for dropdowns
 const customerOptions = ref<any[]>([]);
@@ -651,6 +847,11 @@ const availableAssetItems = ref<{[assetId: string]: any[]}>({});
 
 // PSB Request Date from selected customer
 const selectedCustomerPSBDate = ref("");
+
+// Computed properties
+const totalTechnicianPhotoSize = computed(() => {
+  return technicianPhotoSizes.value.reduce((total, size) => total + size, 0);
+});
 
 const installationTypeOptions = [
   { label: "New Installation", value: "new_installation" },
@@ -705,6 +906,21 @@ const cableStatusOptions = [
   { label: "Retired", value: "retired" },
 ];
 
+// Helper function to get full image URL
+function getFullImageUrl(imagePath: string): string {
+  if (!imagePath) return '';
+  
+  // If it's already a full URL, return as is
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // If it's a relative path, prepend the base URL
+  const config = useRuntimeConfig();
+  const baseUrl = config.public.apiBase || 'http://localhost:8080';
+  return `${baseUrl}/${imagePath}`;
+}
+
 // Load initial data
 onMounted(async () => {
   await Promise.all([
@@ -734,12 +950,15 @@ async function loadInstallationReport() {
       state.service_ready_date = report.service_ready_date ? report.service_ready_date.split('T')[0] : "";
       state.installation_completed_at = report.installation_completed_at ? report.installation_completed_at.replace('Z', '') : "";
       
-      // Installation Team
-      state.installation_team_name = report.installation_team_name || "";
-      state.installation_team_phone = report.installation_team_phone || "";
+      // Installation Team - Load from installation_technicians relationship
+      installationTeam.value = report.installation_technicians || [];
       
-      // Network Devices
-      state.network_devices = report.network_devices || [];
+      // Network Devices - Load with proper asset item mapping
+      state.network_devices = (report.network_devices || []).map((device: any) => ({
+        ...device,
+        asset_item_id: '', // Will be set when user selects from asset_items
+        mac_address: device.mac_address || '', // Current MAC address from network_devices table
+      }));
       
       // Customer Services
       state.customer_services = report.customer_services || [];
@@ -749,7 +968,12 @@ async function loadInstallationReport() {
       
       // Images
       state.image_ids = report.image_ids || [];
-      state.previews = report.images ? report.images.map((img: any) => img.full_path || img.file) : [];
+      state.previews = report.images ? report.images.map((img: any) => getFullImageUrl(img.full_path || img.file)) : [];
+      
+      // Technician Photos
+      state.technician_photos = report.technician_photos || [];
+      state.technician_photos_notes = report.technician_photos_notes || "";
+      state.technician_photo_previews = report.technician_photos ? report.technician_photos.map((photo: string) => getFullImageUrl(photo)) : [];
       
       // Set PSB date if available
       if (report.tgl_permintaan_psb) {
@@ -1032,14 +1256,168 @@ function removeImage(index: number) {
   state.image_ids.splice(index, 1);
 }
 
+// Technician photo functions
+function triggerTechnicianPhotoUpload() {
+  technicianPhotoInput.value?.click();
+}
+
+async function handleTechnicianPhotoUpload(event: Event) {
+  console.log('[TechnicianPhotos] Starting photo upload process');
+  
+  const input = event.target as HTMLInputElement;
+  const files = input.files;
+  
+  if (!files) {
+    console.log('[TechnicianPhotos] No files selected');
+    return;
+  }
+  
+  console.log('[TechnicianPhotos] Files selected:', {
+    count: files.length,
+    files: Array.from(files).map(f => ({ name: f.name, size: f.size, type: f.type }))
+  });
+  
+  // Check if adding these files would exceed the limit
+  const currentCount = state.technician_photo_previews.length;
+  const newFilesCount = files.length;
+  
+  console.log('[TechnicianPhotos] Photo count check:', {
+    currentCount,
+    newFilesCount,
+    total: currentCount + newFilesCount,
+    limit: 10
+  });
+  
+  if (currentCount + newFilesCount > 10) {
+    console.log('[TechnicianPhotos] ERROR: Photo limit exceeded');
+    useToast().add({
+      title: "Error",
+      description: `Maximum 10 photos allowed. You currently have ${currentCount} photos and are trying to add ${newFilesCount} more.`,
+      color: "red",
+    });
+    return;
+  }
+  
+  console.log('[TechnicianPhotos] Starting compression process');
+  isCompressing.value = true;
+  
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      console.log(`[TechnicianPhotos] Processing file ${i + 1}/${files.length}:`, {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+      
+      // Validate file
+      const validation = validateFile(file);
+      if (!validation.isValid) {
+        console.log(`[TechnicianPhotos] Validation failed for ${file.name}:`, validation.message);
+        useToast().add({
+          title: "Error",
+          description: validation.message,
+          color: "red",
+        });
+        continue;
+      }
+      
+      console.log(`[TechnicianPhotos] Validation passed for ${file.name}, starting compression`);
+      
+      // Compress image using existing compression function (2MB limit)
+      const originalSize = file.size;
+      const compressedFile = await compressImageFile(file, 2 * 1024 * 1024);
+      const compressedSize = compressedFile.size;
+      const compressionRatio = ((originalSize - compressedSize) / originalSize) * 100;
+      
+      console.log(`[TechnicianPhotos] Compression completed for ${file.name}:`, {
+        originalSize,
+        compressedSize,
+        compressionRatio: compressionRatio.toFixed(1) + '%'
+      });
+      
+      // Upload compressed image
+      const fileName = `technician_photo_${Date.now()}_${file.name}`;
+      const uploadPath = `installations/technician_photos/${state.technician_id}/${state.customer_id}`;
+      
+      console.log(`[TechnicianPhotos] Uploading ${file.name} to:`, {
+        fileName,
+        uploadPath,
+        technicianId: state.technician_id,
+        customerId: state.customer_id
+      });
+      
+      const response = await uploadFileAdminApi().createUploadFile({
+        name: fileName,
+        path: uploadPath,
+        file: compressedFile,
+      });
+      
+      console.log(`[TechnicianPhotos] Upload response for ${file.name}:`, response);
+      
+      if (response.data?.id) {
+        const photoPath = response.data.full_path || response.data.file;
+        console.log(`[TechnicianPhotos] Upload successful for ${file.name}:`, {
+          fileId: response.data.id,
+          photoPath,
+          fullResponse: response.data
+        });
+        
+        // Create preview for the compressed file
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const dataUrl = e.target?.result as string;
+          state.technician_photo_previews.push(dataUrl);
+        };
+        reader.readAsDataURL(compressedFile);
+        
+        state.technician_photos.push(photoPath);
+        technicianPhotoSizes.value.push(compressedSize);
+        
+        console.log(`[TechnicianPhotos] State updated:`, {
+          photosCount: state.technician_photos.length,
+          previewsCount: state.technician_photo_previews.length,
+          sizesCount: technicianPhotoSizes.value.length
+        });
+        
+        useToast().add({
+          title: "Success",
+          description: `Photo uploaded successfully. Compressed from ${formatFileSize(originalSize)} to ${formatFileSize(compressedSize)} (${compressionRatio.toFixed(1)}% reduction)`,
+          color: "green",
+        });
+      } else {
+        console.log(`[TechnicianPhotos] ERROR: Upload failed for ${file.name}:`, response);
+      }
+    }
+  } catch (error) {
+    console.error("Error uploading technician photos:", error);
+    useToast().add({
+      title: "Error",
+      description: "Failed to upload technician photos",
+      color: "red",
+    });
+  } finally {
+    isCompressing.value = false;
+    // Reset input
+    input.value = "";
+  }
+}
+
+function removeTechnicianPhoto(index: number) {
+  state.technician_photos.splice(index, 1);
+  state.technician_photo_previews.splice(index, 1);
+  technicianPhotoSizes.value.splice(index, 1);
+}
+
 // Form submission
 type Schema = typeof schema;
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
+  console.log('[FormSubmission] Starting form submission');
   isSubmitting.value = true;
   
   try {
-    const submitData: CreateCompleteInstallationReportRequest = {
+    const submitData: UpdateCompleteInstallationReportRequest = {
       customer_id: state.customer_id,
       technician_id: state.technician_id,
       status: state.status,
@@ -1052,38 +1430,65 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       service_ready_date: state.service_ready_date,
       installation_completed_at: state.installation_completed_at,
       network_devices: state.network_devices,
-      customer_services: state.customer_services.map(service => ({
-        ...service,
-        installation_team_name: state.installation_team_name,
-        installation_team_phone: state.installation_team_phone,
-      })),
+      customer_services: state.customer_services,
       cables: state.cables,
       image_ids: state.image_ids,
+      technician_photos: state.technician_photos,
+      technician_photos_notes: state.technician_photos_notes,
     };
     
-    console.log("Updating installation report:", submitData);
-    console.log("Network devices data:", submitData.network_devices);
-    console.log("Customer services data:", submitData.customer_services);
-    
-    const response = await customerAdminApi().updateCompleteInstallationReport(installationId, submitData);
-    console.log("API response:", response);
-    
-    useToast().add({
-      title: "Success",
-      description: "Installation report updated successfully",
-      color: "green",
+    console.log('[FormSubmission] Submit data prepared:', {
+      customer_id: submitData.customer_id,
+      technician_id: submitData.technician_id,
+      technician_photos_count: submitData.technician_photos?.length || 0,
+      technician_photos: submitData.technician_photos,
+      technician_photos_notes: submitData.technician_photos_notes,
+      network_devices_count: submitData.network_devices?.length || 0,
+      customer_services_count: submitData.customer_services?.length || 0,
+      cables_count: submitData.cables?.length || 0,
+      image_ids_count: submitData.image_ids?.length || 0
     });
     
-    await navigateTo('/dashboard/report/customer-installation/reports');
+    console.log('[FormSubmission] Full submit data:', submitData);
+    
+    console.log('[FormSubmission] Calling API to update installation report');
+    const response = await customerAdminApi().updateCompleteInstallationReport(installationId, submitData);
+    console.log('[FormSubmission] API response received:', response);
+    
+    if (response.success) {
+      console.log('[FormSubmission] Update successful');
+      useToast().add({
+        title: "Success",
+        description: "Installation report updated successfully",
+        color: "green",
+      });
+      
+      console.log('[FormSubmission] Navigating to reports page');
+      await navigateTo('/dashboard/report/customer-installation/reports');
+    } else {
+      console.log('[FormSubmission] API returned success=false:', response);
+      useToast().add({
+        title: "Error",
+        description: response.message || "Failed to update installation report",
+        color: "red",
+      });
+    }
     
   } catch (error: any) {
-    console.error("Failed to update installation report:", error);
+    console.error('[FormSubmission] ERROR: Failed to update installation report:', error);
+    console.error('[FormSubmission] Error details:', {
+      message: error.message,
+      stack: error.stack,
+      response: error.response?.data
+    });
+    
     useToast().add({
       title: "Error",
       description: error.message || "Failed to update installation report",
       color: "red",
     });
   } finally {
+    console.log('[FormSubmission] Form submission completed');
     isSubmitting.value = false;
   }
 }

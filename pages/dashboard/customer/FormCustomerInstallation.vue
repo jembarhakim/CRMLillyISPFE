@@ -6,33 +6,64 @@ import { customerAdminApi } from "@/api/admin/customer";
 import { assetAdminApi } from "@/api/admin/asset";
 import { assetItemAdminApi } from "@/api/admin/asset-item";
 import { mikrotikAdminApi } from "@/api/admin/mikrotik";
+import { uploadFileAdminApi } from "@/api/admin/file-upload";
 import { useNotificationStore } from "@/stores/notification";
+import { computed } from "vue";
 
 const notification = useNotificationStore();
+
+// Add debugging for component initialization
+console.log('[FormCustomerInstallation] Component initializing...');
 
 const props = defineProps({
   isEdit: {
     type: Boolean,
     required: false,
+    default: false,
   },
   data: {
     type: Object,
     default: () => ({
-      id: {
-        type: string,
-        default: "",
-      },
-      technician_id: {
-        type: string,
-        default: "",
-      },
+      id: "",
+      technician_id: "",
     }),
   },
+  // Add modelValue prop to handle the warning
+  modelValue: {
+    type: Boolean,
+    required: false,
+    default: false,
+  },
 });
+
+// Define emits to handle the afterLeave event warning
+const emit = defineEmits([
+  "success", 
+  "close", 
+  "update:modelValue",
+  "afterLeave"
+]);
+
+// Add debugging for props
+console.log('[FormCustomerInstallation] Props received:', {
+  isEdit: props.isEdit,
+  data: props.data,
+  modelValue: props.modelValue
+});
+
+// Watch for props changes
+watch(() => props.isEdit, (newValue, oldValue) => {
+  console.log('[FormCustomerInstallation] isEdit prop changed:', { oldValue, newValue });
+}, { immediate: true });
+
+watch(() => props.data, (newValue, oldValue) => {
+  console.log('[FormCustomerInstallation] data prop changed:', { oldValue, newValue });
+}, { immediate: true });
 
 const schema = object({
   customer_id: string().required("Customer is required"),
   assets_id: string().required("Asset is required"),
+  product_id: string().required("Package/Product is required"),
 });
 
 const state = reactive({
@@ -59,15 +90,13 @@ const state = reactive({
 
   // MikroTik Provisioning Fields
   mac_address: "",
-  psb_date: "",
-  psb_time: "",
   max_limit: "", // e.g., "10M/10M"
-  ip_binding_type: "bypassed", // Default to bypassed for new installations
   auto_provision: false,
   dry_run: false,
 
   // Network Device Information
   assets_id: "",
+  product_id: "", // Package/Product selection
   switch_id: "",
   port_number: "",
   remote_port: "",
@@ -93,14 +122,29 @@ const state = reactive({
   customers: [] as any[],
   availableTechnicians: [] as any[], // List of available technicians from DB
   assets: [] as any[],
+  products: [] as any[], // Available products/packages
   documentPreview: "",
   
   // Asset item tracking
   asset_item_id: "" as string | any, // Track the specific asset item selected
+
+  // Technician Photo Documentation
+  technician_photos: [] as string[], // Stores uploaded file paths/URLs (after successful form submission)
+  technician_photos_notes: "",
+  technician_photo_previews: [] as string[], // Stores Data URLs for previews
+  selectedTechnicianImage: "",
+  showTechnicianModal: false,
+  // Local storage for files before upload
+  technician_photo_files: [] as File[], // Stores local files before upload
 });
 
 // Create a ref for the file input
 const fileInputRef = ref<HTMLInputElement | null>(null);
+const technicianPhotoInput = ref<HTMLInputElement | null>(null);
+
+// Technician photo tracking
+const technicianPhotoSizes = ref<number[]>([]);
+const isCompressing = ref(false);
 
 // Available asset items for MAC address selection
 const availableAssetItems = ref<{[assetId: string]: any[]}>({});
@@ -128,36 +172,28 @@ watch(() => state.asset_item_id, (newAssetItemId: any) => {
   }
 });
 
-// Watch for changes in the file input ref
-watch(fileInputRef, (newRef) => {
-  console.log('fileInputRef changed:', newRef);
-  if (newRef && (newRef as any).$el) {
-    console.log('File input ref is now available with $el');
-    // Add a direct event listener as a fallback - use $el for Vue component
-    const nativeElement = (newRef as any).$el as HTMLInputElement;
-    if (nativeElement && nativeElement.addEventListener) {
-      nativeElement.addEventListener('change', (event) => {
-        console.log('Direct event listener triggered on ref');
-        const target = event.target as HTMLInputElement;
-        if (target && target.files && target.files[0]) {
-          console.log('File found via direct event listener:', target.files[0].name);
-          handleFileUploadDirect();
-        }
-      });
-    }
-  } else if (newRef && newRef.addEventListener) {
-    // If it's a native HTML element
-    console.log('File input ref is now available (native element)');
-    newRef.addEventListener('change', (event) => {
-      console.log('Direct event listener triggered on ref');
-      const target = event.target as HTMLInputElement;
-      if (target && target.files && target.files[0]) {
-        console.log('File found via direct event listener:', target.files[0].name);
-        handleFileUploadDirect();
-      }
-    });
+// Watch for product selection to update MikroTik bandwidth automatically
+watch(() => state.product_id, (newProductId: string) => {
+  if (!newProductId) {
+    state.max_limit = ""; // Clear bandwidth limit
+    return;
   }
-}, { immediate: true });
+
+  // Find the selected product and update bandwidth
+  const selectedProduct = state.products.find((p: any) => p.id === newProductId);
+  if (selectedProduct) {
+    console.log('Selected product:', selectedProduct);
+    console.log('Raw download_speed_mbps:', selectedProduct.download_speed_mbps);
+    console.log('Raw upload_speed_mbps:', selectedProduct.upload_speed_mbps);
+    
+    const downloadMbps = selectedProduct.download_speed_mbps || 10;
+    const uploadMbps = selectedProduct.upload_speed_mbps || 10;
+    state.max_limit = `${downloadMbps}M/${uploadMbps}M`;
+    console.log('Updated MikroTik bandwidth to:', state.max_limit, 'for product:', selectedProduct.name);
+  }
+});
+
+// File input ref is now simplified - just used for the UInput component
 
 // Image compression function
 const compressImage = (file: File, maxSizeKB: number = 500): Promise<File> => {
@@ -255,67 +291,7 @@ const processFile = async (file: File) => {
   return processedFile;
 };
 
-// Alternative file upload handler that doesn't rely on event target
-const handleFileUploadDirect = async () => {
-  console.log('🔍 === DEBUG: CHECK FILE ===');
-  console.log('Direct file upload handler called');
-  console.log('fileInputRef.value:', fileInputRef.value);
-  
-  if (fileInputRef.value) {
-    console.log('✅ File input ref exists');
-    
-    // Try to access the native HTML input element through $el
-    const nativeInput = (fileInputRef.value as any)?.$el as HTMLInputElement;
-    console.log('Native input element:', nativeInput);
-    console.log('Native input files:', nativeInput?.files);
-    console.log('Number of files:', nativeInput?.files?.length || 0);
-    
-    if (nativeInput && nativeInput.files && nativeInput.files[0]) {
-      console.log('✅ File found in native input');
-      const file = nativeInput.files[0];
-      console.log('File details:', {
-        name: file.name,
-        size: file.size,
-        type: file.type
-      });
-      
-      const processedFile = await processFile(file);
-      
-      if (processedFile) {
-        state.document_photo = processedFile;
-        console.log('✅ Document photo file set successfully via direct method:', processedFile.name, processedFile.size, processedFile.type);
-        
-        // Create preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          state.documentPreview = e.target?.result as string;
-          console.log('✅ Document preview created successfully');
-        };
-        reader.readAsDataURL(processedFile);
-      }
-    } else {
-      console.log('ℹ️ UInput component ref does not expose native file input (this is normal)');
-      
-      // Fallback: check if we have a file in state
-      if (state.document_photo) {
-        console.log('✅ File is available in state (processed via event handler):', {
-          name: state.document_photo.name,
-          size: state.document_photo.size,
-          type: state.document_photo.type
-        });
-        console.log('💡 File upload is working correctly via DOM query method');
-      } else {
-        console.log('❌ No file selected yet');
-        console.log('💡 Click "Choose File" first, then click this debug button');
-      }
-    }
-  } else {
-    console.log('❌ File input ref is null/undefined');
-    console.log('💡 This might happen if the component is still loading');
-  }
-  
-  console.log('=== END DEBUG ===');
-};
+// Simplified file upload handler
 
 // Set default dates
 const today = new Date();
@@ -337,12 +313,18 @@ watch(
 type Schema = InferType<typeof schema>;
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
+  console.log('[FormCustomerInstallation] onSubmit called with event:', event);
   state.loading = true;
   
   try {
-    // Validate at least one technician is assigned
+    // Validate required fields
     if (state.technicians.length === 0) {
       notification.error('Validation Error', 'Please assign at least one technician');
+      return;
+    }
+
+    if (!state.product_id) {
+      notification.error('Validation Error', 'Please select a package/product');
       return;
     }
 
@@ -386,9 +368,6 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     // MikroTik provisioning fields - use MAC address from Network Device section
     const networkMacAddress = state.mac_address || '';
     if (networkMacAddress) formData.append('mac_address', networkMacAddress);
-    if (state.psb_date) formData.append('psb_date', state.psb_date);
-    formData.append('ip_binding_type', state.ip_binding_type);
-    if (state.psb_time) formData.append('psb_time', state.psb_time);
     if (state.max_limit) formData.append('max_limit', state.max_limit);
     formData.append('auto_provision', state.auto_provision.toString());
     formData.append('dry_run', state.dry_run.toString());
@@ -403,6 +382,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       }
     }
     formData.append('asset_item_id', assetItemId); // Include specific asset item ID
+    if (state.product_id) formData.append('product_id', state.product_id); // Include selected product/package
     formData.append('switch_id', state.switch_id);
     formData.append('port_number', state.port_number);
     formData.append('remote_port', state.remote_port);
@@ -466,6 +446,36 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       }
     }
 
+    // Append technician photo files directly to form data (don't upload yet)
+    console.log('=== FRONTEND TECHNICIAN PHOTOS DEBUG ===');
+    console.log('state.technician_photo_files.length:', state.technician_photo_files.length);
+    
+    if (state.technician_photo_files.length > 0) {
+      console.log('📤 Adding technician photo files to form data...');
+      for (let i = 0; i < state.technician_photo_files.length; i++) {
+        const file = state.technician_photo_files[i];
+        console.log(`Processing technician photo ${i + 1}:`, {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          lastModified: file.lastModified
+        });
+        
+        formData.append(`technician_photo_${i}`, file, file.name);
+        console.log(`✅ Added technician photo ${i + 1}/${state.technician_photo_files.length} to form data: ${file.name}`);
+      }
+      formData.append('technician_photos_count', state.technician_photo_files.length.toString());
+      console.log('✅ Added technician_photos_count:', state.technician_photo_files.length);
+    } else {
+      console.log('❌ No technician photo files to add');
+    }
+    console.log('=== END FRONTEND TECHNICIAN PHOTOS DEBUG ===');
+    
+    if (state.technician_photos_notes) {
+      formData.append('technician_photos_notes', state.technician_photos_notes);
+      console.log('✅ Appending technician photos notes to form data:', state.technician_photos_notes);
+    }
+
     // Validate IP address format before submitting
     if (state.ip_static && state.ip_static.trim() !== '') {
       const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
@@ -513,6 +523,17 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     console.error("❌ Error creating installation report:", error);
     console.error("Error details:", error);
     
+    // Clean up any uploaded technician photos since form submission failed
+    if (state.technician_photos.length > 0) {
+      console.log('🧹 Cleaning up uploaded technician photos due to form submission failure...');
+      // Note: In a production environment, you might want to implement a cleanup API endpoint
+      // For now, we'll just clear the local state
+      state.technician_photos = [];
+      state.technician_photo_files = [];
+      state.technician_photo_previews = [];
+      technicianPhotoSizes.value = [];
+    }
+    
     // Show user-friendly error notification
     let errorMessage = error.message || 'Failed to create installation report';
     
@@ -531,9 +552,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   }
 }
 
-const emit = defineEmits(["success", "close"]);
-
 function onSuccess() {
+  console.log('[FormCustomerInstallation] onSuccess called');
   emit("success");
   // Dispatch event to refresh installation list
   window.dispatchEvent(new CustomEvent('installation-created'));
@@ -582,14 +602,16 @@ const loadTestData = () => {
   
   // MikroTik Provisioning Fields
   // Note: MAC address will be automatically set from Network Device section
-  state.psb_date = today;
-  state.psb_time = currentTime;
   state.max_limit = "10M/10M";
-  state.ip_binding_type = "bypassed"; // Default to bypassed for new installations
   state.auto_provision = true;
   state.dry_run = true; // Safe for testing
   
   // Network Device Information
+  // Select first available product for testing
+  if (state.products.length > 0) {
+    state.product_id = state.products[0].id;
+    console.log('Test data: Selected product:', state.products[0].name);
+  }
   state.switch_id = "SW-TEST-001";
   state.port_number = "10";
   state.remote_port = "2000";
@@ -614,115 +636,253 @@ const loadTestData = () => {
 // Handle document photo upload
 const handleDocumentPhotoUpload = async (event: Event) => {
   console.log('File input change event triggered');
-  console.log('Event object:', event);
-  console.log('Event target:', event.target);
+  console.log('Event details:', {
+    type: event.type,
+    target: event.target,
+    currentTarget: event.currentTarget
+  });
   
+  // Get the file from the event
   const input = event.target as HTMLInputElement;
-  console.log('Input element after casting:', input);
+  console.log('Input element:', input);
   console.log('Input files:', input?.files);
+  console.log('Input files length:', input?.files?.length);
   
-  // Alternative way to get the input element
-  if (!input || !input.files) {
-    console.log('UInput component ref not accessible, using DOM query method...');
-    console.log('This is normal behavior for UInput components');
-    
-    if (fileInputRef.value && fileInputRef.value.files && fileInputRef.value.files[0]) {
-      console.log('Using ref input element');
-      const file = fileInputRef.value.files[0];
-      const processedFile = await processFile(file);
-      
-      if (processedFile) {
-        state.document_photo = processedFile;
-        console.log('✅ Document photo file set successfully via ref method:', processedFile.name, processedFile.size, processedFile.type);
-        
-        // Create preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          state.documentPreview = e.target?.result as string;
-          console.log('✅ Document preview created successfully');
-        };
-        reader.readAsDataURL(processedFile);
-      }
-      return;
-    }
-    
-    // Try DOM query as fallback
-    console.log('Trying DOM query approach...');
-    const altInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    console.log('Alternative input element:', altInput);
-    console.log('Alternative input files:', altInput?.files);
-    
-    if (altInput && altInput.files && altInput.files[0]) {
-      console.log('Using DOM query input element');
-      const file = altInput.files[0];
-      const processedFile = await processFile(file);
-      
-      if (processedFile) {
-        state.document_photo = processedFile;
-        console.log('✅ Document photo file set successfully via DOM query method:', processedFile.name, processedFile.size, processedFile.type);
-        
-        // Create preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          state.documentPreview = e.target?.result as string;
-          console.log('✅ Document preview created successfully');
-        };
-        reader.readAsDataURL(processedFile);
-      }
-      return;
-    }
+  // Also try to get file from ref as backup
+  if (fileInputRef.value) {
+    console.log('File input ref:', fileInputRef.value);
+    console.log('File input ref files:', fileInputRef.value.files);
+    console.log('File input ref files length:', fileInputRef.value.files?.length);
   }
   
-  if (input && input.files && input.files[0]) {
-    const file = input.files[0];
-    const processedFile = await processFile(file);
-    
-      if (processedFile) {
-        state.document_photo = processedFile;
-        console.log('✅ Document photo file set successfully:', processedFile.name, processedFile.size, processedFile.type);
-        
-        // Debug: Check if the ref can now access the file
-        console.log('🔍 === CHECKING REF AFTER FILE SET ===');
-        const nativeInput = (fileInputRef.value as any)?.$el as HTMLInputElement;
-        console.log('Native input after file set:', nativeInput);
-        console.log('Native input files after file set:', nativeInput?.files);
-        console.log('=== END REF CHECK ===');
-        
-        // Create preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          state.documentPreview = e.target?.result as string;
-          console.log('✅ Document preview created successfully');
-        };
-        reader.readAsDataURL(processedFile);
-      }
-  } else {
-    console.log('❌ No file selected or input.files is empty');
+  const file = input?.files?.[0] || fileInputRef.value?.files?.[0];
+  console.log('Selected file:', file);
+  
+  if (!file) {
+    console.log('❌ No file selected');
     state.document_photo = null;
     state.documentPreview = '';
+    // Don't clear the input value - this might be causing the issue
+    return;
+  }
+  
+  // Prevent the input from being cleared
+  if (input && file) {
+    console.log('Preserving file input value');
+  }
+  
+  console.log('✅ File selected:', {
+    name: file.name,
+    size: file.size,
+    type: file.type
+  });
+  
+  // First, create preview directly from the file to test
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const result = e.target?.result as string;
+    state.documentPreview = result;
+    console.log('✅ Document preview created successfully (direct):', {
+      previewLength: result?.length || 0,
+      previewType: typeof result,
+      previewStart: result?.substring(0, 50) + '...'
+    });
+  };
+  reader.onerror = (e) => {
+    console.error('❌ FileReader error:', e);
+    state.documentPreview = '';
+  };
+  reader.readAsDataURL(file);
+  
+  try {
+    // Process the file (validate and compress if needed)
+    const processedFile = await processFile(file);
+    
+    if (processedFile) {
+      state.document_photo = processedFile;
+      console.log('✅ Document photo file processed successfully:', {
+        name: processedFile.name,
+        size: processedFile.size,
+        type: processedFile.type
+      });
+    } else {
+      console.log('❌ File processing failed, but keeping original file');
+      state.document_photo = file; // Keep the original file if processing fails
+    }
+  } catch (error) {
+    console.error('❌ Error processing file:', error);
+    state.document_photo = file; // Keep the original file if processing fails
   }
 };
 
+// Technician photo functions
+function triggerTechnicianPhotoUpload() {
+  technicianPhotoInput.value?.click();
+}
+
+async function handleTechnicianPhotoUpload(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const files = input.files;
+  
+  if (!files) return;
+  
+  const currentCount = state.technician_photo_previews.length;
+  const newFilesCount = files.length;
+  
+  if (currentCount + newFilesCount > 10) {
+    useToast().add({
+      title: "Error",
+      description: `Maximum 10 photos allowed. You currently have ${currentCount} photos and are trying to add ${newFilesCount} more.`,
+      color: "red",
+    });
+    return;
+  }
+  
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    
+    // Validate file
+    const validation = validateFile(file);
+    if (!validation.isValid) {
+      useToast().add({
+        title: "Error",
+        description: validation.message,
+        color: "red",
+      });
+      continue;
+    }
+    
+    // Compress image using existing compression function (2MB limit)
+    const originalSize = file.size;
+    const compressedFile = await compressImageFile(file, 2 * 1024 * 1024);
+    const compressedSize = compressedFile.size;
+    const compressionRatio = ((originalSize - compressedSize) / originalSize) * 100;
+    
+    // Store compressed file locally (don't upload yet)
+    state.technician_photo_files.push(compressedFile);
+    
+    // Create preview for the compressed file
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      state.technician_photo_previews.push(dataUrl);
+    };
+    reader.readAsDataURL(compressedFile);
+    
+    technicianPhotoSizes.value.push(compressedSize);
+    
+    useToast().add({
+      title: "Success",
+      description: `Photo added successfully. Compressed from ${formatFileSize(originalSize)} to ${formatFileSize(compressedSize)} (${compressionRatio.toFixed(1)}% reduction). Will be uploaded when form is submitted.`,
+      color: "green",
+    });
+  }
+  
+  input.value = ''; // Clear input
+}
+
+function removeTechnicianPhoto(index: number) {
+  state.technician_photos.splice(index, 1);
+  state.technician_photo_previews.splice(index, 1);
+  technicianPhotoSizes.value.splice(index, 1);
+  state.technician_photo_files.splice(index, 1);
+}
+
+// Computed property for total size
+const totalTechnicianPhotoSize = computed(() => {
+  return technicianPhotoSizes.value.reduce((total, size) => total + size, 0);
+});
+
+// File size formatting utility
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes';
+  
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Use the existing compression function from tickets page
+async function compressImageFile(file: File, maxBytes: number): Promise<File> {
+  try {
+    // Skip compression for non-images
+    if (!file.type.startsWith('image/')) return file
+    // Already small enough
+    if (file.size <= maxBytes) return file
+
+    const bitmap = await createImageBitmap(file)
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')!
+
+    // Scale down if image is huge; keep aspect ratio
+    const maxDim = 2000 // cap the longest side to limit memory
+    let { width, height } = bitmap
+    const ratio = Math.min(1, maxDim / Math.max(width, height))
+    width = Math.round(width * ratio)
+    height = Math.round(height * ratio)
+    canvas.width = width
+    canvas.height = height
+    ctx.drawImage(bitmap, 0, 0, width, height)
+
+    // Binary search quality to fit under maxBytes
+    let low = 0.5, high = 0.92, bestBlob: Blob | null = null
+    for (let i = 0; i < 6; i++) {
+      const q = (low + high) / 2
+      const blob = await new Promise<Blob>(res => canvas.toBlob(b => res(b || new Blob()), 'image/jpeg', q))
+      if (blob.size > 0 && blob.size <= maxBytes) { bestBlob = blob; high = q } else { low = q }
+    }
+    const out = bestBlob || await new Promise<Blob>(res => canvas.toBlob(b => res(b || new Blob()), 'image/jpeg', 0.85))
+    // If still larger, accept and let backend reject
+    if (out.size >= file.size) return file
+    return new File([out], file.name.replace(/\.(png|jpeg|jpg|webp)$/i, '.jpg'), { type: 'image/jpeg' })
+  } catch {
+    return file
+  }
+}
+
+// File validation function (reused from tickets)
+function validateFile(file: File): { isValid: boolean; message: string } {
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+
+  if (file.size > maxSize) {
+    return { isValid: false, message: 'File size exceeds 10MB limit' };
+  }
+
+  if (!allowedTypes.includes(file.type)) {
+    return { isValid: false, message: 'File type not supported. Please use JPG, PNG, or GIF' };
+  }
+
+  return { isValid: true, message: 'File is valid' };
+}
+
 // Load data functions
 async function loadCustomers() {
+  console.log('[FormCustomerInstallation] Loading customers...');
   try {
     const response = await customerAdminApi().getAllCustomers();
     state.customers = response.data || [];
+    console.log('[FormCustomerInstallation] Customers loaded:', state.customers.length);
   } catch (error) {
-    console.error("Failed to load customers:", error);
+    console.error('[FormCustomerInstallation] Failed to load customers:', error);
   }
 }
 
 async function loadTechnicians() {
+  console.log('[FormCustomerInstallation] Loading technicians...');
   try {
     const response = await userManagementAdminApi().getAllUsers({ query: { role: "TECHNICIAN" } });
     state.availableTechnicians = response.data || [];
+    console.log('[FormCustomerInstallation] Technicians loaded:', state.availableTechnicians.length);
   } catch (error) {
-    console.error("Failed to load technicians:", error);
+    console.error('[FormCustomerInstallation] Failed to load technicians:', error);
   }
 }
 
 async function loadAssets() {
+  console.log('[FormCustomerInstallation] Loading assets...');
   try {
     const response = await assetAdminApi().getAllAssets();
     if (response.success) {
@@ -734,9 +894,41 @@ async function loadAssets() {
         serial_number: asset.serial_number,
         display: `${asset.brand} ${asset.model} (${asset.serial_number})`
       }));
+      console.log('[FormCustomerInstallation] Assets loaded:', state.assets.length);
+    } else {
+      console.warn('[FormCustomerInstallation] Assets response not successful:', response);
     }
   } catch (error) {
-    console.error("Failed to load assets:", error);
+    console.error('[FormCustomerInstallation] Failed to load assets:', error);
+  }
+}
+
+async function loadProducts() {
+  console.log('[FormCustomerInstallation] Loading products...');
+  try {
+    const response = await customerAdminApi().getAllProducts();
+    if (response.success) {
+      state.products = response.data.map((product: any) => ({
+        id: product.id,
+        name: product.name,
+        description: product.description || '',
+        download_speed_mbps: product.download_speed_mbps,
+        upload_speed_mbps: product.upload_speed_mbps,
+        price: product.price,
+        display: `${product.name} (${product.download_speed_mbps || 'N/A'}M/${product.upload_speed_mbps || 'N/A'}M) - ${product.description || 'No description'}`
+      }));
+      console.log('[FormCustomerInstallation] Products loaded:', state.products.length);
+      // Debug: Log the first product to see its structure
+      if (state.products.length > 0) {
+        console.log('[FormCustomerInstallation] First product structure:', state.products[0]);
+        console.log('[FormCustomerInstallation] Download speed:', state.products[0].download_speed_mbps);
+        console.log('[FormCustomerInstallation] Upload speed:', state.products[0].upload_speed_mbps);
+      }
+    } else {
+      console.warn('[FormCustomerInstallation] Products response not successful:', response);
+    }
+  } catch (error) {
+    console.error('[FormCustomerInstallation] Failed to load products:', error);
   }
 }
 
@@ -774,8 +966,17 @@ async function onAssetChange(assetId: string) {
 
 // Close modal function
 function closeModal() {
-  // Close modal directly without confirmation
-  useModal().close();
+  console.log('[FormCustomerInstallation] closeModal called');
+  
+  // Clear any pending technician photo files when closing modal
+  if (state.technician_photo_files.length > 0) {
+    console.log('🧹 Clearing pending technician photo files on modal close');
+    state.technician_photo_files = [];
+    state.technician_photo_previews = [];
+    technicianPhotoSizes.value = [];
+  }
+  
+  emit("close");
 }
 
 // Helper functions for managing technicians
@@ -852,7 +1053,7 @@ async function fetchDHCPLease() {
       notification.error('DHCP Error', errorMessage);
       console.error('DHCP lease error:', result);
     }
-  } catch (error: any) {
+  } catch (error: any) {  
     console.error('DHCP fetch error:', error);
     
     let errorMessage = 'Network error while fetching DHCP lease';
@@ -881,20 +1082,71 @@ async function fetchDHCPLease() {
 
 // Load data on component mount
 onMounted(async () => {
-  await Promise.all([
-    loadCustomers(),
-    loadTechnicians(),
-    loadAssets()
-  ]);
+  console.log('[FormCustomerInstallation] Component mounted, loading data...');
+  console.log('[FormCustomerInstallation] Component should now be rendered inside modal');
   
-  // Add one technician by default
-  if (state.technicians.length === 0) {
-    addTechnician();
+  // Debug: Check if component is visible
+  setTimeout(() => {
+    const componentElement = document.querySelector('.bg-gradient-to-br.from-gray-50');
+    console.log('[FormCustomerInstallation] Component element found:', !!componentElement);
+    if (componentElement) {
+      console.log('[FormCustomerInstallation] Component styles:', {
+        display: getComputedStyle(componentElement).display,
+        visibility: getComputedStyle(componentElement).visibility,
+        opacity: getComputedStyle(componentElement).opacity
+      });
+    }
+  }, 100);
+  
+  try {
+    await Promise.all([
+      loadCustomers(),
+      loadTechnicians(),
+      loadAssets(),
+      loadProducts()
+    ]);
+    
+    console.log('[FormCustomerInstallation] Data loaded successfully:', {
+      customers: state.customers.length,
+      technicians: state.availableTechnicians.length,
+      assets: state.assets.length,
+      products: state.products.length
+    });
+    
+    // Add one technician by default
+    if (state.technicians.length === 0) {
+      console.log('[FormCustomerInstallation] Adding default technician...');
+      addTechnician();
+    }
+    
+    console.log('[FormCustomerInstallation] Component fully initialized');
+  } catch (error) {
+    console.error('[FormCustomerInstallation] Error during component initialization:', error);
   }
 });
 </script>
 
 <style scoped>
+/* Fix dropdown z-index issue */
+:deep(.usm-container) {
+  z-index: 50 !important;
+}
+
+:deep(.usm-menu) {
+  z-index: 50 !important;
+}
+
+/* Ensure document type dropdown appears above technician photo section */
+.document-info-section {
+  position: relative;
+  z-index: 10;
+}
+
+/* Override any conflicting z-index from technician photo section */
+:deep(.technician-photo-section) {
+  z-index: 5 !important;
+}
+
 /* Prevent layout shift during scroll */
 .technician-card {
   contain: layout style paint;
@@ -1038,16 +1290,7 @@ onMounted(async () => {
 </style>
 
 <template>
-  <UModal :prevent-close="true">
-    <div class="p-4 sm:p-6 max-w-7xl max-h-[92vh] overflow-y-auto relative bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-950 scroll-smooth">
-      <!-- Close Button -->
-      <button 
-        @click="closeModal"
-        class="absolute top-4 right-4 z-20 p-2.5 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all duration-200 shadow-md hover:shadow-lg"
-        title="Close modal"
-      >
-        <UIcon name="i-heroicons-x-mark" class="w-7 h-7" />
-      </button>
+  <div class="max-h-[85vh] overflow-y-auto relative bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-950 scroll-smooth">
       
       <!-- Header -->
       <div class="mb-8 text-center pb-6 border-b-2 border-blue-200 dark:border-blue-800">
@@ -1334,6 +1577,7 @@ onMounted(async () => {
             <div class="mikrotik-field">
               <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
                 Max Bandwidth Limit
+                <span v-if="state.product_id" class="text-green-600 text-xs font-normal ml-2">(Auto-set from package)</span>
               </label>
               <div class="relative">
                 <UInput 
@@ -1341,64 +1585,23 @@ onMounted(async () => {
                   placeholder="10M/10M"
                   size="lg"
                   icon="i-heroicons-arrow-trending-up"
-                  class="w-full"
+                  :readonly="!!state.product_id"
+                  :class="state.product_id ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600' : ''"
                 />
+                <div v-if="state.product_id" class="absolute inset-y-0 right-0 flex items-center pr-3">
+                  <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-green-500" />
+                </div>
               </div>
-              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Format: Download/Upload (e.g., 10M/10M, 50M/50M)</p>
-            </div>
-            
-            <div class="mikrotik-field">
-              <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
-                IP Binding Type
-              </label>
-              <USelectMenu
-                v-model="state.ip_binding_type"
-                :options="[
-                  { value: 'bypassed', label: 'Bypassed (Auto-connect)' },
-                  { value: 'regular', label: 'Regular (Manual login)' }
-                ]"
-                value-attribute="value"
-                option-attribute="label"
-                placeholder="Select IP binding type"
-                size="lg"
-                icon="i-heroicons-shield-check"
-                class="w-full"
-              />
               <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                <strong>Bypassed:</strong> Internet works automatically after installation<br>
-                <strong>Regular:</strong> Requires manual login through hotspot
+                <span v-if="state.product_id" class="text-green-600">
+                  <UIcon name="i-heroicons-information-circle" class="inline mr-1" />
+                  Bandwidth automatically set from selected package. Select a package above to override.
+                </span>
+                <span v-else>Format: Download/Upload (e.g., 10M/10M, 50M/50M). Select a package above for automatic configuration.</span>
               </p>
             </div>
             
-            <div class="mikrotik-field">
-              <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
-                PSB Date
-              </label>
-              <div class="relative">
-                <UInput 
-                  v-model="state.psb_date" 
-                  type="date"
-                  size="lg"
-                  class="w-full"
-                />
-              </div>
-              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Provisioning service begin date</p>
-            </div>
             
-            <div class="mikrotik-field">
-              <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
-                PSB Time
-              </label>
-              <div class="relative">
-                <UInput 
-                  v-model="state.psb_time" 
-                  type="time"
-                  size="lg"
-                  class="w-full"
-                />
-              </div>
-              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Service activation time</p>
-            </div>
             
             <!-- Provisioning Toggle Switches -->
             <div class="sm:col-span-2 space-y-3 mt-4">
@@ -1495,7 +1698,7 @@ onMounted(async () => {
         </div>
 
         <!-- Document Information -->
-        <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+        <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg document-info-section">
           <h3 class="text-lg font-semibold text-green-800 dark:text-green-200 mb-4 flex items-center">
             <UIcon name="i-heroicons-document-text" class="mr-2" />
             Document Information
@@ -1512,35 +1715,115 @@ onMounted(async () => {
                 value-attribute="value"
                 option-attribute="label"
                 placeholder="Select document type"
+                :ui="{
+                  container: 'relative z-50'
+                }"
+                :popper="{
+                  placement: 'bottom-start'
+                }"
               />
             </UFormGroup>
             
             <UFormGroup label="Document Photo" name="document_photo">
-              <UInput
+              <input
                 ref="fileInputRef"
                 type="file"
                 accept="image/*"
                 @change="handleDocumentPhotoUpload"
-                @input="handleFileUploadDirect"
+                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-300 dark:hover:file:bg-blue-800"
                 placeholder="Upload document photo"
               /> 
               <div v-if="state.documentPreview" class="mt-2">
                 <img :src="state.documentPreview" alt="Document Preview" class="w-32 h-20 object-cover rounded border" />
               </div>
-              <!-- Debug button -->
-              <div class="mt-2">
-                <UButton 
-                  @click="handleFileUploadDirect" 
-                  size="sm" 
-                  color="gray" 
-                  variant="outline"
-                  class="text-xs"
-                >
-                  Debug: Check File
-                </UButton>
-              </div>
             </UFormGroup>
           </div>
+        </div>
+
+        <!-- Technician Photo Documentation -->
+        <div class="bg-gradient-to-r from-amber-50 to-orange-50 dark:bg-gradient-to-br dark:from-amber-900/30 dark:to-orange-900/30 p-4 sm:p-6 rounded-xl border-2 border-amber-100 dark:border-amber-800 shadow-sm technician-photo-section">
+          <div class="flex items-center mb-6">
+            <div class="bg-amber-500 p-2 rounded-lg mr-3">
+              <UIcon name="i-heroicons-camera" class="text-white text-lg" />
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">Technician Photo Documentation</h3>
+          </div>
+          
+          <div class="mb-4">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Document your PSB progress with photos (maximum 10 images). Images will be automatically compressed to reduce file size.
+            </p>
+            
+            
+          </div>
+          
+          <UFormGroup label="Upload Progress Photos" name="technician_photos">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div
+                v-for="(preview, index) in state.technician_photo_previews"
+                :key="index"
+                class="relative group cursor-pointer bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
+                @click="state.selectedTechnicianImage = preview; state.showTechnicianModal = true"
+              >
+                <img
+                  :src="preview"
+                  :alt="`Technician Photo ${index + 1}`"
+                  class="w-full h-32 object-cover"
+                />
+                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
+                  <UIcon name="i-heroicons-eye" class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xl" />
+                </div>
+                <UButton
+                  @click.stop="removeTechnicianPhoto(index)"
+                  size="xs"
+                  color="red"
+                  variant="solid"
+                  class="absolute -top-2 -right-2 shadow-lg"
+                >
+                  <UIcon name="i-heroicons-x-mark" />
+                </UButton>
+                <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-2">
+                  <div class="flex justify-between items-center">
+                    <span>Photo {{ index + 1 }}</span>
+                    <span v-if="technicianPhotoSizes[index]" class="text-xs opacity-75">
+                      {{ formatFileSize(technicianPhotoSizes[index]) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div
+                v-if="state.technician_photo_previews.length < 10"
+                class="w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl flex items-center justify-center cursor-pointer hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all duration-200 bg-white dark:bg-gray-800"
+                @click="triggerTechnicianPhotoUpload"
+              >
+                <div class="text-center">
+                  <UIcon name="i-heroicons-plus" class="text-gray-400 dark:text-gray-500 text-3xl mb-2" />
+                  <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Add Photo</p>
+                  <p class="text-xs text-gray-400 dark:text-gray-500">{{ state.technician_photo_previews.length }}/10</p>
+                </div>
+              </div>
+            </div>
+            
+            <input
+              ref="technicianPhotoInput"
+              type="file"
+              accept="image/*"
+              multiple
+              class="hidden"
+              @change="handleTechnicianPhotoUpload"
+            />
+            
+            <div v-if="state.technician_photo_previews.length > 0" class="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+              <div class="flex items-center text-sm text-amber-800 dark:text-amber-200">
+                <UIcon name="i-heroicons-information-circle" class="mr-2" />
+                <span>
+                  {{ state.technician_photo_previews.length }} photo(s) uploaded. 
+                  Total size: {{ formatFileSize(totalTechnicianPhotoSize) }}
+                </span>
+              </div>
+            </div>
+          </UFormGroup>
         </div>
 
         <!-- Network Device Information -->
@@ -1562,6 +1845,23 @@ onMounted(async () => {
                 :search-attributes="['brand', 'type', 'model']"
                 @change="onAssetChange(state.assets_id)"
               />
+            </UFormGroup>
+
+            <UFormGroup label="Package/Product *" name="product_id">
+              <USelectMenu
+                v-model="state.product_id"
+                :options="state.products"
+                placeholder="Select internet package"
+                searchable
+                searchable-placeholder="Search by package name or speed"
+                option-attribute="display"
+                value-attribute="id"
+                :search-attributes="['name', 'description']"
+              />
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                <UIcon name="i-heroicons-information-circle" class="inline mr-1" />
+                Package selection will automatically set the bandwidth limit for MikroTik provisioning
+              </p>
             </UFormGroup>
             
             <UFormGroup label="Switch ID" name="switch_id">
@@ -1753,9 +2053,9 @@ onMounted(async () => {
             <!-- Requirements Check -->
             <div class="text-sm text-gray-700 dark:text-gray-300">
               <div class="flex items-center gap-2">
-                <div v-if="!state.customer_id || state.technicians.length === 0 || !state.assets_id" class="flex items-center gap-2 text-orange-600 dark:text-orange-400">
+                <div v-if="!state.customer_id || state.technicians.length === 0 || !state.assets_id || !state.product_id" class="flex items-center gap-2 text-orange-600 dark:text-orange-400">
                   <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5" />
-                  <span class="font-semibold">Please complete required fields</span>
+                  <span class="font-semibold">Please complete required fields (Customer, Technicians, Asset, Package)</span>
                 </div>
                 <div v-else class="flex items-center gap-2 text-green-600 dark:text-green-400">
                   <UIcon name="i-heroicons-check-circle" class="w-5 h-5" />
@@ -1782,7 +2082,7 @@ onMounted(async () => {
                 color="blue"
                 size="xl"
                 :loading="state.loading"
-                :disabled="!state.customer_id || state.technicians.length === 0 || !state.assets_id"
+                :disabled="!state.customer_id || state.technicians.length === 0 || !state.assets_id || !state.product_id"
                 class="flex-1 sm:flex-initial bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
               >
                 <UIcon name="i-heroicons-document-check" class="mr-2 w-5 h-5" />
@@ -1793,5 +2093,26 @@ onMounted(async () => {
         </div>
       </UForm>
     </div>
+
+  <!-- Technician Photo Modal -->
+  <UModal v-model="state.showTechnicianModal">
+    <UCard>
+      <template #header>
+        <div class="flex justify-between items-center">
+          <h3 class="text-lg font-semibold">Technician Photo Preview</h3>
+          <UButton @click="state.showTechnicianModal = false" variant="ghost" size="sm">
+            <UIcon name="i-heroicons-x-mark" />
+          </UButton>
+        </div>
+      </template>
+      
+      <div class="text-center">
+        <img
+          :src="state.selectedTechnicianImage"
+          alt="Technician photo preview"
+          class="max-w-full max-h-96 mx-auto rounded-lg"
+        />
+      </div>
+    </UCard>
   </UModal>
 </template>

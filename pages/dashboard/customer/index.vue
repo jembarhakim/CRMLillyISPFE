@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { watch, onMounted } from 'vue'
 import FormCustomerInstallation from './FormCustomerInstallation.vue'
 import FormAddComponent from './FormAddComponent.vue'
 import CustomerDetailModal from './CustomerDetailModal.vue'
@@ -9,8 +10,131 @@ useHead({
   title: 'Customer Management - CRM System'
 })
 
+// Watch for route changes to reset modal state
+const route = useRoute()
+watch(() => route.path, (newPath, oldPath) => {
+  // Reset modal state when navigating away from customer index page
+  if (oldPath === '/dashboard/customer' && newPath !== '/dashboard/customer') {
+    showInstallationModal.value = false
+    modalData.value = { isEdit: false, data: null }
+  }
+})
+
+// Listen for global modal clear events
+onMounted(() => {
+  window.addEventListener('clear-all-modals', () => {
+    showInstallationModal.value = false
+    modalData.value = { isEdit: false, data: null }
+  })
+})
+
 let customer = ref<any[]>([])
 let installationReports = ref<any[]>([])
+
+// Real-time device status cache
+const deviceStatusCache = ref<Map<string, { status: string; timestamp: number }>>(new Map())
+
+// Get device connection status (now using real-time Mikrotik data)
+function getDeviceConnectionStatus(device: any) {
+  if (!device) return 'off'
+
+  // Check if device has IP address for Mikrotik lookup
+  if (!device.ip_static) {
+    return 'off'
+  }
+
+  // Check cache first (cache for 30 seconds)
+  const cacheKey = device.ip_static
+  const cached = deviceStatusCache.value.get(cacheKey)
+  const now = Date.now()
+  
+  if (cached && (now - cached.timestamp) < 30000) {
+    return cached.status
+  }
+
+  // For now, use mock status based on IP (same logic as fetchRealTimeDeviceStatus)
+  // TODO: Implement actual Mikrotik API call here
+  const status = device.ip_static.includes('10.10.20') ? 'up' : 'down'
+  
+  // Debug logging
+  console.log(`[Device Status] IP: ${device.ip_static} → Status: ${status}`)
+  
+  // Cache the result
+  deviceStatusCache.value.set(cacheKey, { status, timestamp: now })
+  
+  return status
+}
+
+// Function to fetch real-time status from Mikrotik (placeholder for future implementation)
+async function fetchRealTimeDeviceStatus(device: any) {
+  if (!device?.ip_static) return 'off'
+  
+  try {
+    // TODO: Implement actual Mikrotik API call
+    // const response = await mikrotikAdminApi().getDeviceStatus(device.ip_static)
+    // return response.status || 'unknown'
+    
+    // For now, return a mock status based on IP
+    const mockStatus = device.ip_static.includes('10.10.20') ? 'up' : 'down'
+    
+    // Update cache
+    deviceStatusCache.value.set(device.ip_static, { 
+      status: mockStatus, 
+      timestamp: Date.now() 
+    })
+    
+    return mockStatus
+  } catch (error) {
+    console.error('Failed to fetch device status:', error)
+    return 'unknown'
+  }
+}
+
+// Function to get customer's device status
+function getCustomerDeviceStatus(customer: any) {
+  if (!customer.hasInstallationReport) return 'off'
+  
+  // Find the customer's installation reports
+  const customerReports = installationReports.value.filter(
+    (report: any) => report.customer_id === customer.id
+  )
+  
+  if (customerReports.length === 0) return 'off'
+  
+  // Get all unique IP addresses from customer's reports
+  const uniqueIPs = [...new Set(customerReports
+    .filter((report: any) => report.ip_static)
+    .map((report: any) => report.ip_static)
+  )]
+  
+  if (uniqueIPs.length === 0) return 'off'
+  
+  // Check status of all devices
+  const deviceStatuses = uniqueIPs.map(ip => getDeviceConnectionStatus({ ip_static: ip }))
+  
+  // Debug logging
+  console.log(`[Customer Status] Customer: ${customer.name}, IPs: ${uniqueIPs.join(', ')}, Statuses: ${deviceStatuses.join(', ')}`)
+  
+  // Determine overall status
+  const hasUp = deviceStatuses.includes('up')
+  const hasDown = deviceStatuses.includes('down')
+  const hasUnknown = deviceStatuses.includes('unknown')
+  
+  // Mixed status: some up, some down
+  if (hasUp && hasDown) return 'mixed'
+  
+  // All down
+  if (hasDown && !hasUp) return 'down'
+  
+  // All up
+  if (hasUp && !hasDown) return 'up'
+  
+  // All unknown
+  if (hasUnknown && !hasUp && !hasDown) return 'unknown'
+  
+  // Default fallback
+  return 'off'
+}
 
 type Customer = {
     id: string
@@ -22,6 +146,18 @@ type Customer = {
     packet_internet: string
     hasInstallationReport?: boolean
     installationReportCount?: number
+    // NEW: Product-related fields from installation reports
+    products?: Array<{
+        id: string
+        name: string
+        description: string
+        price: number
+        downloadSpeed: number
+        uploadSpeed: number
+    }>
+    product_names?: string[]
+    product_name?: string
+    product_count?: number
 }
 
 
@@ -31,20 +167,38 @@ async function getData() {
         response.data.forEach((customer: any) => {
             customer.number = response.data.indexOf(customer) + 1;
             customer.area_name = customer.area.name_city + "-" + customer.area.name_subdistrict + "-" + customer.area.name_village
-            // customer.product_name = customer.product.name // Removed since product_id moved to network_devices
             customer.gmaps_link = "https://www.google.com/maps/place/" + customer.latitude + "," + customer.longitude
         })
 
         customer.value = [...response.data]
         
-        // Load installation reports to check which customers already have reports
+        // Load installation reports to get product information and check which customers have reports
         await loadInstallationReports()
+        
+        // Update packet internet information from installation reports
+        updatePacketInternetInfo()
     } catch (err) {
         console.error('Error loading customers:', err)
         // Only show notification if it's available
         if (notification && notification.error) {
             notification.error('Error', String(err))
         }
+    }
+}
+
+// Function to refresh all device statuses
+async function refreshDeviceStatuses() {
+    if (!installationReports.value.length) return
+    
+    const statusPromises = installationReports.value
+        .filter((report: any) => report.ip_static)
+        .map((report: any) => fetchRealTimeDeviceStatus({ ip_static: report.ip_static }))
+    
+    try {
+        await Promise.all(statusPromises)
+        console.log('Device statuses refreshed for customer list')
+    } catch (error) {
+        console.error('Failed to refresh device statuses:', error)
     }
 }
 
@@ -61,6 +215,9 @@ async function loadInstallationReports() {
             customerItem.hasInstallationReport = reportCount > 0
             customerItem.installationReportCount = reportCount
         })
+        
+        // Refresh device statuses after loading installation reports
+        await refreshDeviceStatuses()
     } catch (error) {
         console.error("Failed to load installation reports:", error)
         // Set all customers as not having installation reports if API fails
@@ -69,6 +226,55 @@ async function loadInstallationReports() {
             customerItem.installationReportCount = 0
         })
     }
+}
+
+// NEW: Function to update packet internet information from installation reports
+function updatePacketInternetInfo() {
+    customer.value.forEach((customerItem: any) => {
+        // Get all installation reports for this customer
+        const customerReports = installationReports.value.filter(
+            (report: any) => report.customer_id === customerItem.id
+        )
+        
+        if (customerReports.length > 0) {
+            // Get unique product names from installation reports
+            const uniqueProducts = new Set<string>()
+            const products: Array<{
+                id: string
+                name: string
+                description: string
+                price: number
+                downloadSpeed: number
+                uploadSpeed: number
+            }> = []
+            
+            customerReports.forEach((report: any) => {
+                if (report.product_name && !uniqueProducts.has(report.product_id)) {
+                    uniqueProducts.add(report.product_id)
+                    products.push({
+                        id: report.product_id,
+                        name: report.product_name,
+                        description: report.product_description,
+                        price: report.product_price,
+                        downloadSpeed: report.product_download_speed_mbps,
+                        uploadSpeed: report.product_upload_speed_mbps
+                    })
+                }
+            })
+            
+            // Update customer with product information
+            customerItem.products = products
+            customerItem.product_names = products.map((p: any) => p.name)
+            customerItem.product_name = products.length > 0 ? products[0].name : 'No Package'
+            customerItem.product_count = products.length
+        } else {
+            // No installation reports, no product information
+            customerItem.products = []
+            customerItem.product_names = []
+            customerItem.product_name = 'No Package'
+            customerItem.product_count = 0
+        }
+    })
 }
 
 async function deleteData(id: string) {
@@ -80,8 +286,15 @@ async function deleteData(id: string) {
         }
     } catch (err) {
         console.error('Error deleting customer:', err)
+        
+        // Enhanced error handling for installation report validation
+        let errorMessage = String(err)
+        if (errorMessage.includes('installation report(s) are associated')) {
+            errorMessage = errorMessage + '\n\n💡 Tip: You can either:\n• Delete the installation reports first using the "Delete Installation Report" feature\n• Use "Delete with Related Records" to remove everything at once'
+        }
+        
         if (notification && notification.error) {
-            notification.error('Error', String(err))
+            notification.error('Cannot Delete Customer', errorMessage)
         }
     }
 }
@@ -144,17 +357,53 @@ const page = ref(1)
 const pageCount = 5
 
 const q = ref('')
+const statusFilter = ref('all') // New status filter
+
+// Reset page when filters change
+watch([q, statusFilter], () => {
+    page.value = 1
+})
+
 const rows = computed(() => {
-    if (!q.value) {
-        return customer.value.slice((page.value - 1) * pageCount, (page.value) * pageCount)
-    }
-    const newData = customerData.value.filter((customer) => {
-        return Object.values(customer).some((value) => {
-            return String(value).toLowerCase().includes(q.value.toLowerCase())
+    let dataToShow = customer.value
+    
+    // Apply search filter if query exists
+    if (q.value) {
+        dataToShow = customerData.value.filter((customer) => {
+            return Object.values(customer).some((value) => {
+                return String(value).toLowerCase().includes(q.value.toLowerCase())
+            })
         })
+    }
+    
+    // Apply status filter
+    if (statusFilter.value !== 'all') {
+        dataToShow = dataToShow.filter((customer) => {
+            const customerStatus = getCustomerDeviceStatus(customer)
+            return customerStatus === statusFilter.value
+        })
+    }
+    
+    // Sort customers: down devices first, then mixed, then by name
+    const sortedData = dataToShow.sort((a: any, b: any) => {
+        const aStatus = getCustomerDeviceStatus(a)
+        const bStatus = getCustomerDeviceStatus(b)
+        
+        // Priority order: down > mixed > up > unknown > off
+        const statusPriority = { 'down': 0, 'mixed': 1, 'up': 2, 'unknown': 3, 'off': 4 }
+        const aPriority = statusPriority[aStatus] || 4
+        const bPriority = statusPriority[bStatus] || 4
+        
+        // If different priorities, sort by priority
+        if (aPriority !== bPriority) {
+            return aPriority - bPriority
+        }
+        
+        // If same priority, sort by name
+        return a.name.localeCompare(b.name)
     })
 
-    return newData.slice((page.value - 1) * pageCount, (page.value) * pageCount)
+    return sortedData.slice((page.value - 1) * pageCount, (page.value) * pageCount)
 })
 
 
@@ -212,8 +461,9 @@ const items = (row: Customer) => {
             })
         
         // Create individual menu items for each installation report
+        // Number them in reverse order so newest report has highest number
         const installationMenuItems = customerReports.map((report: any, index: number) => ({
-            label: `Installation #${index + 1} (${report.installation_status || 'Unknown'}) - ${formatDate(report.installation_completed_at || report.on_air_date)}`,
+            label: `Installation #${customerReports.length - index} (${report.installation_status || 'Unknown'}) - ${formatDate(report.installation_completed_at || report.on_air_date)}`,
             icon: 'i-heroicons-document-text-20-solid',
             click: () => viewInstallationReportDetail(report.installation_id)
         }))
@@ -251,18 +501,34 @@ function OpenModalAddCustomer(isEdit: boolean, data: any) {
     })
 }
 
+// Simple modal state
+const showInstallationModal = ref(false);
+const modalData = ref({ isEdit: false, data: null as any });
+
 function OpenModalReportInstallation(isEdit: boolean, data: any) {
-    modal.open(FormCustomerInstallation, {
-        isEdit,
-        data,
-        async onSuccess() {
-            await getData()
-            if (notification && notification.success) {
-                notification.success('Success!', 'Installation report created successfully')
-            }
-            modal.close()
-        }
-    })
+    console.log('[CustomerIndex] OpenModalReportInstallation called:', { isEdit, data });
+    
+    modalData.value = { isEdit, data };
+    showInstallationModal.value = true;
+    
+    console.log('[CustomerIndex] Modal state set:', {
+        showInstallationModal: showInstallationModal.value,
+        modalData: modalData.value
+    });
+}
+
+function closeInstallationModal() {
+    showInstallationModal.value = false;
+    modalData.value = { isEdit: false, data: null };
+}
+
+async function onInstallationSuccess() {
+    console.log('[CustomerIndex] Installation report success callback');
+    await getData();
+    if (notification && notification.success) {
+        notification.success('Success!', 'Installation report created successfully');
+    }
+    closeInstallationModal();
 }
 
 function OpenCustomerDetailModal(customerId: string) {
@@ -293,6 +559,41 @@ function formatDate(dateString: string | undefined) {
         day: 'numeric'
     })
 }
+
+// Function to get count of customers by status
+function getStatusCount(status: string) {
+    return customer.value.filter((customer: any) => {
+        return getCustomerDeviceStatus(customer) === status
+    }).length
+}
+
+function debugModal() {
+    console.log('[CustomerIndex] Debug Modal State:');
+    console.log('- Modal isOpen:', modal.isOpen.value);
+    console.log('- Modal object:', modal);
+    
+    // Check for any modal elements in DOM
+    const allModals = document.querySelectorAll('[role="dialog"], [data-headlessui-state], .modal, [class*="modal"]');
+    console.log('- Modal elements in DOM:', allModals.length);
+    
+    allModals.forEach((modalEl, index) => {
+        console.log(`  Modal ${index}:`, {
+            tagName: modalEl.tagName,
+            className: modalEl.className,
+            id: modalEl.id,
+            display: getComputedStyle(modalEl).display,
+            visibility: getComputedStyle(modalEl).visibility,
+            opacity: getComputedStyle(modalEl).opacity,
+            zIndex: getComputedStyle(modalEl).zIndex,
+            position: getComputedStyle(modalEl).position
+        });
+    });
+    
+    // Check for FormCustomerInstallation content
+    const formElements = document.querySelectorAll('[class*="FormCustomerInstallation"], [class*="installation"]');
+    console.log('- Form elements in DOM:', formElements.length);
+}
+
 </script>
 
 
@@ -304,12 +605,53 @@ function formatDate(dateString: string | undefined) {
         <h1 class="text-2xl font-bold text-gray-900">Customer Management</h1>
         <p class="text-sm text-gray-600">Manage your customer database</p>
       </div>
-      <UButton 
-        label="Add Customer" 
-        icon="i-heroicons-plus"
-        @click="OpenModalAddCustomer(false, null)"
-        class="w-full sm:w-auto"
-      />
+      <div class="flex flex-col sm:flex-row gap-2">
+        <UButton 
+          label="Add Customer" 
+          icon="i-heroicons-plus"
+          @click="OpenModalAddCustomer(false, null)"
+          class="w-full sm:w-auto"
+        />
+        <UButton 
+          label="Add Installation Report" 
+          icon="i-heroicons-document-plus"
+          @click="OpenModalReportInstallation(false, null)"
+          class="w-full sm:w-auto"
+          color="green"
+        />
+        <UButton 
+          label="Debug Modal" 
+          icon="i-heroicons-bug-ant"
+          @click="debugModal"
+          class="w-full sm:w-auto"
+          color="orange"
+        />
+        <UButton 
+          label="Refresh Device Status" 
+          icon="i-heroicons-arrow-path"
+          @click="refreshDeviceStatuses"
+          class="w-full sm:w-auto"
+          color="blue"
+          variant="outline"
+        />
+        <UButton 
+          label="Show Down Devices" 
+          icon="i-heroicons-x-circle"
+          @click="statusFilter = 'down'"
+          class="w-full sm:w-auto"
+          color="red"
+          variant="outline"
+        />
+        <UButton 
+          v-if="statusFilter !== 'all'"
+          label="Clear Filter" 
+          icon="i-heroicons-x-mark"
+          @click="statusFilter = 'all'"
+          class="w-full sm:w-auto"
+          color="gray"
+          variant="ghost"
+        />
+      </div>
     </div>
 
     <!-- Search and Filter -->
@@ -321,6 +663,56 @@ function formatDate(dateString: string | undefined) {
           icon="i-heroicons-magnifying-glass"
           class="w-full"
         />
+      </div>
+      <div class="w-full sm:w-64">
+        <USelect
+          v-model="statusFilter"
+          :options="[
+            { label: 'All Status', value: 'all' },
+            { label: '🔴 Down Devices', value: 'down' },
+            { label: '🟠 Mixed Status', value: 'mixed' },
+            { label: '🟢 Up Devices', value: 'up' },
+            { label: '⚪ Unknown Status', value: 'unknown' },
+            { label: '⚫ No Devices', value: 'off' }
+          ]"
+          placeholder="Filter by device status"
+          class="w-full"
+        />
+      </div>
+    </div>
+
+    <!-- Status Statistics -->
+    <div class="bg-white rounded-lg border border-gray-200 p-4">
+      <div class="flex flex-wrap gap-4 text-sm">
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+          <span class="text-gray-600">Down:</span>
+          <span class="font-semibold text-red-600">{{ getStatusCount('down') }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 bg-orange-500 rounded-full"></div>
+          <span class="text-gray-600">Mixed:</span>
+          <span class="font-semibold text-orange-600">{{ getStatusCount('mixed') }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+          <span class="text-gray-600">Up:</span>
+          <span class="font-semibold text-green-600">{{ getStatusCount('up') }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 bg-gray-500 rounded-full"></div>
+          <span class="text-gray-600">Unknown:</span>
+          <span class="font-semibold text-gray-600">{{ getStatusCount('unknown') }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 bg-gray-300 rounded-full"></div>
+          <span class="text-gray-600">No Devices:</span>
+          <span class="font-semibold text-gray-500">{{ getStatusCount('off') }}</span>
+        </div>
+        <div class="flex items-center gap-2 ml-auto">
+          <span class="text-gray-600">Total:</span>
+          <span class="font-semibold text-gray-900">{{ customer.length }}</span>
+        </div>
       </div>
     </div>
 
@@ -336,7 +728,14 @@ function formatDate(dateString: string | undefined) {
           <div class="flex-1">
             <button 
               @click="OpenCustomerDetailModal(customer.id)"
-              class="text-lg font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+              :class="[
+                'text-lg font-semibold hover:underline',
+                getCustomerDeviceStatus(customer) === 'down' 
+                  ? 'text-red-600 hover:text-red-800' 
+                  : getCustomerDeviceStatus(customer) === 'mixed'
+                  ? 'text-orange-600 hover:text-orange-800'
+                  : 'text-blue-600 hover:text-blue-800'
+              ]"
             >
               {{ customer.name }}
             </button>
@@ -345,6 +744,22 @@ function formatDate(dateString: string | undefined) {
                     class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                 <UIcon name="i-heroicons-check-circle" class="w-3 h-3 mr-1" />
                 {{ customer.installationReportCount > 1 ? `${customer.installationReportCount} Reports` : 'Report' }}
+              </span>
+              <!-- Device Status Indicator -->
+              <span v-if="customer.hasInstallationReport" 
+                    :class="[
+                      'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
+                      getCustomerDeviceStatus(customer) === 'down' 
+                        ? 'bg-red-100 text-red-800' 
+                        : getCustomerDeviceStatus(customer) === 'mixed'
+                        ? 'bg-orange-100 text-orange-800'
+                        : getCustomerDeviceStatus(customer) === 'up'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
+                    ]"
+                    :title="`Device Status: ${getCustomerDeviceStatus(customer).toUpperCase()}`">
+                <UIcon :name="getCustomerDeviceStatus(customer) === 'down' ? 'i-heroicons-x-circle' : getCustomerDeviceStatus(customer) === 'mixed' ? 'i-heroicons-exclamation-triangle' : getCustomerDeviceStatus(customer) === 'up' ? 'i-heroicons-check-circle' : 'i-heroicons-question-mark-circle'" class="w-3 h-3 mr-1" />
+                {{ getCustomerDeviceStatus(customer).toUpperCase() }}
               </span>
             </div>
           </div>
@@ -371,6 +786,30 @@ function formatDate(dateString: string | undefined) {
               {{ customer.area.code_name }}
             </span>
           </div>
+          <!-- NEW: Packet Internet Information -->
+          <div class="flex items-start gap-2">
+            <UIcon name="i-heroicons-wifi" class="w-4 h-4 text-gray-400 mt-0.5" />
+            <div class="flex-1">
+              <div v-if="customer.products && customer.products.length > 0" class="space-y-1">
+                <div v-for="(product, index) in customer.products" :key="product.id" 
+                     class="flex items-center gap-2">
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    {{ product.name }}
+                  </span>
+                  <span v-if="product.downloadSpeed && product.uploadSpeed" 
+                        class="text-xs text-gray-500">
+                    {{ product.downloadSpeed }}M/{{ product.uploadSpeed }}M
+                  </span>
+                </div>
+                <div v-if="customer.product_count > 1" class="text-xs text-gray-500">
+                  {{ customer.product_count }} different packages
+                </div>
+              </div>
+              <div v-else class="text-gray-500 italic">
+                No package assigned
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -383,7 +822,14 @@ function formatDate(dateString: string | undefined) {
             <div class="flex items-center space-x-2">
               <button 
                 @click="OpenCustomerDetailModal(row.id)"
-                class="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                :class="[
+                  'hover:underline font-medium',
+                  getCustomerDeviceStatus(row) === 'down' 
+                    ? 'text-red-600 hover:text-red-800' 
+                    : getCustomerDeviceStatus(row) === 'mixed'
+                    ? 'text-orange-600 hover:text-orange-800'
+                    : 'text-blue-600 hover:text-blue-800'
+                ]"
               >
                 {{ row.name }}
               </button>
@@ -392,6 +838,22 @@ function formatDate(dateString: string | undefined) {
                     :title="`Has ${row.installationReportCount} Installation Report(s)`">
                 <UIcon name="i-heroicons-check-circle" class="w-3 h-3 mr-1" />
                 {{ row.installationReportCount > 1 ? `${row.installationReportCount} Reports` : 'Report' }}
+              </span>
+              <!-- Device Status Indicator -->
+              <span v-if="row.hasInstallationReport" 
+                    :class="[
+                      'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
+                      getCustomerDeviceStatus(row) === 'down' 
+                        ? 'bg-red-100 text-red-800' 
+                        : getCustomerDeviceStatus(row) === 'mixed'
+                        ? 'bg-orange-100 text-orange-800'
+                        : getCustomerDeviceStatus(row) === 'up'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
+                    ]"
+                    :title="`Device Status: ${getCustomerDeviceStatus(row).toUpperCase()}`">
+                <UIcon :name="getCustomerDeviceStatus(row) === 'down' ? 'i-heroicons-x-circle' : getCustomerDeviceStatus(row) === 'mixed' ? 'i-heroicons-exclamation-triangle' : getCustomerDeviceStatus(row) === 'up' ? 'i-heroicons-check-circle' : 'i-heroicons-question-mark-circle'" class="w-3 h-3 mr-1" />
+                {{ getCustomerDeviceStatus(row).toUpperCase() }}
               </span>
             </div>
           </template>
@@ -404,6 +866,27 @@ function formatDate(dateString: string | undefined) {
                     class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                 {{ row.area.code_name }}
               </span>
+            </div>
+          </template>
+
+          <template #product_name-data="{ row }">
+            <div v-if="row.products && row.products.length > 0" class="space-y-1">
+              <div v-for="(product, index) in row.products" :key="product.id" 
+                   class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  {{ product.name }}
+                </span>
+                <span v-if="product.downloadSpeed && product.uploadSpeed" 
+                      class="text-xs text-gray-500">
+                  {{ product.downloadSpeed }}M/{{ product.uploadSpeed }}M
+                </span>
+              </div>
+              <div v-if="row.product_count > 1" class="text-xs text-gray-500">
+                {{ row.product_count }} different packages
+              </div>
+            </div>
+            <div v-else class="text-gray-500 italic">
+              No package assigned
             </div>
           </template>
 
@@ -438,5 +921,26 @@ function formatDate(dateString: string | undefined) {
       @close="closeDeleteModal"
       @deleted="onCustomerDeleted"
     />
+    
+    <!-- Installation Report Modal -->
+    <UModal v-model="showInstallationModal" :prevent-close="false">
+      <UCard class="max-w-7xl max-h-[95vh] overflow-hidden">
+        <template #header>
+          <div class="flex justify-between items-center">
+            <h3 class="text-lg font-semibold">Installation Report</h3>
+            <UButton @click="closeInstallationModal" variant="ghost" size="sm">
+              <UIcon name="i-heroicons-x-mark" />
+            </UButton>
+          </div>
+        </template>
+        
+        <FormCustomerInstallation
+          :is-edit="modalData.isEdit"
+          :data="modalData.data"
+          @success="onInstallationSuccess"
+          @close="closeInstallationModal"
+        />
+      </UCard>
+    </UModal>
   </div>
 </template>

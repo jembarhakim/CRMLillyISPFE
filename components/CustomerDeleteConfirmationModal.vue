@@ -52,6 +52,30 @@
           </div>
         </div>
 
+        <!-- Installation Reports Warning -->
+        <div v-if="relatedRecords && relatedRecords.installations > 0" class="mb-6">
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="flex items-start">
+              <UIcon name="i-heroicons-x-circle" class="text-red-500 text-xl mr-3 mt-0.5" />
+              <div>
+                <h5 class="text-red-800 font-semibold mb-2">🚫 Cannot Delete Customer</h5>
+                <p class="text-red-900 text-sm leading-relaxed mb-3">
+                  This customer has <strong>{{ relatedRecords.installations }} installation report(s)</strong> that must be deleted first.
+                  <strong>Customer deletion is blocked</strong> to prevent data loss.
+                </p>
+                <div class="bg-red-100 border border-red-300 rounded-lg p-3 mt-3">
+                  <p class="text-red-900 text-sm font-semibold mb-2">Required Action:</p>
+                  <ol class="text-red-900 text-sm list-decimal list-inside space-y-1">
+                    <li>Go to the "Installation Reports" page</li>
+                    <li>Delete all installation reports for this customer</li>
+                    <li>Return here to delete the customer</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Related Records Summary -->
         <div v-if="relatedRecords && Object.keys(relatedRecords).length > 0" class="mb-6">
           <h5 class="text-sm font-semibold text-gray-900 mb-3">Related Records That Will Be Deleted:</h5>
@@ -64,12 +88,12 @@
               <span class="text-sm font-bold text-red-600">{{ relatedRecords.invoices }}</span>
             </div>
             
-            <div v-if="relatedRecords.installations > 0" class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+            <div v-if="relatedRecords.installations > 0" class="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded-lg">
               <div class="flex items-center">
-                <UIcon name="i-heroicons-wrench-screwdriver" class="text-red-500 mr-2" />
-                <span class="text-sm font-medium text-gray-900">Installations</span>
+                <UIcon name="i-heroicons-wrench-screwdriver" class="text-orange-500 mr-2" />
+                <span class="text-sm font-medium text-gray-900">Installation Reports</span>
               </div>
-              <span class="text-sm font-bold text-red-600">{{ relatedRecords.installations }}</span>
+              <span class="text-sm font-bold text-orange-600">{{ relatedRecords.installations }}</span>
             </div>
             
             <div v-if="relatedRecords.network_devices > 0" class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
@@ -117,8 +141,12 @@
         <!-- Confirmation Checkbox -->
         <div class="mb-6">
           <label class="flex items-start">
-            <UCheckbox v-model="confirmationChecked" class="mt-1" />
-            <span class="ml-3 text-sm text-white leading-relaxed">
+            <UCheckbox 
+              v-model="confirmationChecked" 
+              class="mt-1" 
+              :disabled="!!(relatedRecords && relatedRecords.installations > 0)"
+            />
+            <span class="ml-3 text-sm text-white leading-relaxed" :class="(!!(relatedRecords && relatedRecords.installations > 0)) && 'opacity-50'">
               I understand that this action will permanently delete the customer and all associated data.
               This action cannot be undone.
             </span>
@@ -139,10 +167,10 @@
             @click="confirmDelete"
             color="red"
             :loading="deleting"
-            :disabled="!confirmationChecked"
+            :disabled="!confirmationChecked || !!(relatedRecords && relatedRecords.installations > 0)"
           >
             <UIcon name="i-heroicons-trash" class="mr-2" />
-            Delete Customer
+            {{ (relatedRecords && relatedRecords.installations > 0) ? 'Blocked (Installation Reports)' : 'Delete Customer' }}
           </UButton>
         </div>
       </div>

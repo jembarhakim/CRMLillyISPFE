@@ -29,7 +29,6 @@ interface Customer {
   created_at: string;
   updated_at: string;
   installation_date: string;
-  next_payment_date: string;
 }
 
 interface Product {
@@ -109,10 +108,11 @@ async function getData() {
 await getData();
 
 const router = useRouter();
-const status =
-  new Date(dashboardResponse.value.customer.next_payment_date) >= new Date()
-    ? "active"
-    : "non active";
+// Status is now determined by installation date and service status
+// For now, we'll use a simple active status based on installation date
+const status = dashboardResponse.value.customer.installation_date 
+  ? "active" 
+  : "non active";
 const logout = async () => {
   await useAuthStore().logout();
   router.push("/login");
@@ -142,9 +142,9 @@ const logout = async () => {
     <div class="max-w-4xl p-4 mx-auto space-y-6">
       <div class="p-6 bg-white border border-gray-200 shadow-lg rounded-xl">
         <div class="mb-4 text-center">
-          <h2 class="text-xl font-bold text-gray-800">Next Payment</h2>
+          <h2 class="text-xl font-bold text-gray-800">Installation Date</h2>
           <p class="text-gray-600">
-            {{ formatDateToYMD(dashboardResponse.customer.next_payment_date) }}
+            {{ formatDateToYMD(dashboardResponse.customer.installation_date) }}
           </p>
         </div>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">

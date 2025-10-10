@@ -215,20 +215,74 @@
               
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="bg-white p-3 rounded border">
-                  <h4 class="font-medium text-gray-800 mb-2">Assets Out</h4>
-                  <p class="text-2xl font-bold text-red-600">{{ assetReport.total_assets_out }}</p>
-                  <p class="text-sm text-gray-500">Total Quantity: {{ assetReport.total_quantity_out }}</p>
-                  <p v-if="assetReport.assets_out_details" class="text-xs text-gray-400 mt-1">
-                    {{ assetReport.assets_out_details }}
-                  </p>
+                  
                 </div>
                 <div class="bg-white p-3 rounded border">
-                  <h4 class="font-medium text-gray-800 mb-2">Assets In</h4>
-                  <p class="text-2xl font-bold text-green-600">{{ assetReport.total_assets_in }}</p>
-                  <p class="text-sm text-gray-500">Total Quantity: {{ assetReport.total_quantity_in }}</p>
-                  <p v-if="assetReport.assets_in_details" class="text-xs text-gray-400 mt-1">
-                    {{ assetReport.assets_in_details }}
-                  </p>
+                  
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <template #complete-reports>
+          <div class="p-4">
+            <div class="mb-4 flex justify-between items-center">
+              <h3 class="text-lg font-semibold">Complete Installation Reports</h3>
+              <UButton @click="loadCompleteInstallationReports" :loading="loadingCompleteReports">
+                Refresh
+              </UButton>
+            </div>
+            
+            <div v-if="loadingCompleteReports" class="text-center py-8">
+              <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p class="mt-2 text-gray-600">Loading complete installation reports...</p>
+            </div>
+            
+            <div v-else-if="completeInstallationReports.length === 0" class="text-center py-8 text-gray-500">
+              <p>No complete installation reports found.</p>
+            </div>
+            
+            <div v-else class="space-y-4">
+              <div v-for="report in completeInstallationReports" :key="report.installation_id" 
+                   class="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <!-- Customer Info -->
+                  <div>
+                    <h4 class="font-semibold text-gray-800 mb-2">Customer Information</h4>
+                    <p class="text-sm text-gray-600"><strong>Name:</strong> {{ report.customer_name || '-' }}</p>
+                    <p class="text-sm text-gray-600"><strong>Phone:</strong> {{ report.customer_phone || '-' }}</p>
+                    <p class="text-sm text-gray-600"><strong>Address:</strong> {{ report.customer_address || '-' }}</p>
+                  </div>
+                  
+                  <!-- Installation Info -->
+                  <div>
+                    <h4 class="font-semibold text-gray-800 mb-2">Installation Details</h4>
+                    <p class="text-sm text-gray-600"><strong>Status:</strong> {{ report.installation_status || '-' }}</p>
+                    <p class="text-sm text-gray-600"><strong>Type:</strong> {{ report.installation_type || '-' }}</p>
+                    <p class="text-sm text-gray-600"><strong>Technician:</strong> {{ report.technician_name || '-' }}</p>
+                    <p class="text-sm text-gray-600"><strong>On Air Date:</strong> {{ report.on_air_date ? formatDate(report.on_air_date) : '-' }}</p>
+                  </div>
+                  
+                  <!-- Network Device Info -->
+                  <div>
+                    <h4 class="font-semibold text-gray-800 mb-2">Network Device</h4>
+                    <p class="text-sm text-gray-600"><strong>MAC Address:</strong> {{ report.mac_address || '-' }}</p>
+                    <p class="text-sm text-gray-600"><strong>IP Static:</strong> {{ report.ip_static || '-' }}</p>
+                    <p class="text-sm text-gray-600"><strong>Router:</strong> {{ report.router_brand || '-' }} {{ report.router_model || '' }}</p>
+                    <p class="text-sm text-gray-600"><strong>Product:</strong> {{ report.product_name || '-' }}</p>
+                  </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="mt-4 flex justify-end space-x-2">
+                  <UButton 
+                    size="sm" 
+                    variant="outline"
+                    @click="navigateTo(`/dashboard/report/customer-installation/detail/${report.installation_id}`)"
+                  >
+                    View Details
+                  </UButton>
                 </div>
               </div>
             </div>
@@ -267,6 +321,11 @@ const tabs = [
     key: 'asset-report',
     label: 'Asset Report',
     icon: 'i-heroicons-cube'
+  },
+  {
+    key: 'complete-reports',
+    label: 'Complete Installation Reports',
+    icon: 'i-heroicons-document-text'
   }
 ];
 
@@ -275,6 +334,8 @@ const technicianReports = ref<InstallationTechnicianReportResponse[]>([]);
 const assetReport = ref<InstallationAssetReportResponse | null>(null);
 const searchInstallationId = ref('');
 const loadingAssetReport = ref(false);
+const completeInstallationReports = ref<any[]>([]);
+const loadingCompleteReports = ref(false);
 
 const summaryStats = computed(() => {
   const totalCustomers = customerSummaries.value.length;
@@ -293,6 +354,7 @@ const summaryStats = computed(() => {
 onMounted(async () => {
   await loadCustomerSummaries();
   await loadTechnicianReports();
+  await loadCompleteInstallationReports();
 });
 
 async function loadCustomerSummaries() {
@@ -320,6 +382,24 @@ async function loadTechnicianReports() {
       description: "Failed to load technician reports",
       color: "red",
     });
+  }
+}
+
+async function loadCompleteInstallationReports() {
+  try {
+    loadingCompleteReports.value = true;
+    const response = await customerAdminApi().getInstallationReportComplete();
+    completeInstallationReports.value = response.data || [];
+    console.log("Complete installation reports loaded:", completeInstallationReports.value.length);
+  } catch (error) {
+    console.error("Failed to load complete installation reports:", error);
+    useToast().add({
+      title: "Error",
+      description: "Failed to load complete installation reports",
+      color: "red",
+    });
+  } finally {
+    loadingCompleteReports.value = false;
   }
 }
 

@@ -1,5 +1,5 @@
-  <template>
-    <div class="min-h-screen flex flex-col">
+<template>
+  <div class="min-h-screen flex flex-col">
       <!-- Navbar -->
       <div
         class="sticky top-0 z-20 flex justify-between items-center w-full h-16 px-4 md:px-6 bg-white border-b shadow-sm">

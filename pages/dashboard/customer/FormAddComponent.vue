@@ -3,8 +3,7 @@ import { object, string, type InferType } from "yup";
 import type { FormSubmitEvent } from "#ui/types";
 import { customerAdminApi } from "@/api/admin/customer";
 import { areaAdminApi } from "@/api/admin/area";
-import { internetPackageAdminApi } from "@/api/admin/internet-package";
-import { networkDeviceAdminApi } from "@/api/admin/network-device";
+// Removed internet package and network device imports - handled during installation
 import { userManagementAdminApi } from "@/api/admin/user-management";
 import { companyAdminApi } from "@/api/admin/company";
 import { useNotification } from '@/composables/useNotification';
@@ -94,7 +93,6 @@ const schema = object({
   latitude: string().required(),
   longitude: string().required(),
   service_request_date: string().required(),
-  proposed_package: string().required(),
   sales_representative_id: string().optional(),
   company_id: string().optional(),
 });
@@ -112,17 +110,11 @@ const state = reactive({
   latitude: 0,
   longitude: 0,
   service_request_date: "",
-  proposed_package: "",
   sales_representative_id: "",
   company_id: "",
 });
 
-const networkDeviceState = reactive({
-  ip_static: "",
-  mac_address: "",
-  assets_id: "",
-  product_id: "",
-});
+// Network device state removed - will be handled during installation report creation
 
 watch(
   () => props.isEdit,
@@ -136,23 +128,10 @@ watch(
         state.latitude = props.data.latitude,
         state.longitude = props.data.longitude,
         state.service_request_date = props.data.service_request_date || "",
-        state.proposed_package = props.data.proposed_package || "",
         state.sales_representative_id = props.data.sales_representative_id || "",
         state.company_id = props.data.company_id || ""
       
-      // Load existing network device data if available
-      try {
-        const networkDevices = await networkDeviceAdminApi().getNetworkDevicesByCustomer(props.data.id);
-        if (networkDevices.data && networkDevices.data.length > 0) {
-          const device = networkDevices.data[0]; // Assuming one device per customer for now
-          networkDeviceState.ip_static = device.ip_static || "";
-          networkDeviceState.mac_address = device.mac_address || "";
-          networkDeviceState.assets_id = device.assets_id || "";
-        }
-      } catch (error) {
-        // Network device data not found, which is fine
-        console.log("No network device data found for customer");
-      }
+      // Network device data will be handled during installation report creation
     }
   },
   { immediate: true }
@@ -175,94 +154,20 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   if (props.isEdit) {
     try {
       const response = await customerAdminApi().editCustomer(props.data.id, state);
-      
-       // Only update/create network device if we have a valid product package
-       if (response.success && state.proposed_package && state.proposed_package.trim() !== "") {
-         try {
-           const networkDevices = await networkDeviceAdminApi().getNetworkDevicesByCustomer(props.data.id);
-           if (networkDevices.data && networkDevices.data.length > 0) {
-             // Update existing network device
-             const device = networkDevices.data[0];
-             const networkDeviceData: any = {
-               customer_id: props.data.id,
-               ip_static: device.ip_static || "",
-               mac_address: device.mac_address || "",
-               status_perangkat: device.status_perangkat || "active",
-               last_ping_status: device.last_ping_status || "unknown",
-               product_id: state.proposed_package,
-               // Only include assets_id if it has a value
-               ...(networkDeviceState.assets_id && networkDeviceState.assets_id.trim() !== "" && {
-                 assets_id: networkDeviceState.assets_id
-               })
-             };
-             await networkDeviceAdminApi().editNetworkDevice(device.id, networkDeviceData);
-           } else {
-             // Create new network device only if we have a product
-             const networkDeviceData: any = {
-               customer_id: props.data.id,
-               ip_static: "",
-               mac_address: "",
-               status_perangkat: "active",
-               last_ping_status: "unknown",
-               product_id: state.proposed_package,
-               // Only include assets_id if it has a value
-               ...(networkDeviceState.assets_id && networkDeviceState.assets_id.trim() !== "" && {
-                 assets_id: networkDeviceState.assets_id
-               })
-             };
-             await networkDeviceAdminApi().createNetworkDevice(networkDeviceData);
-           }
-         } catch (networkError: any) {
-           console.error("Failed to update network device:", networkError);
-           // Don't fail the entire operation if network device update fails
-         }
-       } else {
-         console.log("Skipping network device update - no valid product package selected");
-       }
-      
       notification.success('Success', response.message);
       onSuccess();
     } catch (error: any) {
       notification.error('Error', error.message || 'Failed to update customer');
     }
   } else {
-     try {
-       // Create customer first
-       const customerResponse = await customerAdminApi().createCustomer(state);
-       
-       // Only create network device if we have a valid product package selected
-       if (customerResponse.success && state.proposed_package && state.proposed_package.trim() !== "") {
-         try {
-           const networkDeviceData: any = {
-             customer_id: customerResponse.data.id,
-             ip_static: "",
-             mac_address: "",
-             status_perangkat: "active",
-             last_ping_status: "unknown",
-             product_id: state.proposed_package,
-             // Only include assets_id if it has a value, otherwise omit it entirely
-             ...(networkDeviceState.assets_id && networkDeviceState.assets_id.trim() !== "" && {
-               assets_id: networkDeviceState.assets_id
-             })
-           };
-           
-           console.log("Creating network device with data:", networkDeviceData);
-           await networkDeviceAdminApi().createNetworkDevice(networkDeviceData);
-           console.log("Network device created successfully");
-         } catch (networkError: any) {
-           console.error("Failed to create network device:", networkError);
-           // Don't fail the entire operation if network device creation fails
-           // The customer was created successfully, so we can continue
-         }
-       } else {
-         console.log("Skipping network device creation - no valid product package selected");
-       }
-       
-       notification.success('Success', customerResponse.message);
-       onSuccess();
-     } catch (error: any) {
-       notification.error('Error', error.message || 'Failed to create customer');
-     }
+    try {
+      // Create customer - network device will be created during installation
+      const customerResponse = await customerAdminApi().createCustomer(state);
+      notification.success('Success', customerResponse.message);
+      onSuccess();
+    } catch (error: any) {
+      notification.error('Error', error.message || 'Failed to create customer');
+    }
   }
 
 }
@@ -323,19 +228,11 @@ async function moveToMyLocation() {
 }
 
 
-const internet_packages = ref<{label: string, value: string}[]>([]);
 const areas = ref<{label: string, value: string}[]>([]);
 const salesRepresentatives = ref<{label: string, value: string}[]>([]);
 const companies = ref<{label: string, value: string}[]>([]);
 
 async function getDataOptions() {
-  internetPackageAdminApi().getAllInternetPacket().then((response) => {
-    internet_packages.value = response.data.map((value: any, index: number) => ({
-      label: value.name,
-      value: value.id
-    }))
-  })
-
   areaAdminApi().getAllAreas().then((response) => {
     areas.value = response.data.map((value: any, index: number) => ({
       label: value.name_city + "-" + value.name_subdistrict + "-" + value.name_village,
@@ -603,21 +500,6 @@ select:focus {
                        v-model="state.service_request_date" 
                        type="date"
                        class="w-full"
-                     />
-                   </div>
-                   
-                   <div class="space-y-1">
-                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                       Paket yg Diajukan
-                     </label>
-                     <USelectMenu 
-                       v-model="state.proposed_package" 
-                       :options="internet_packages" 
-                       value-attribute="value"
-                       option-attribute="label" 
-                       placeholder="Pilih paket internet"
-                       class="w-full"
-                       searchable
                      />
                    </div>
                  </div>
