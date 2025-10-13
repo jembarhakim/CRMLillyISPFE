@@ -131,12 +131,6 @@ const rows = computed(() => {
     return newData.slice((page.value - 1) * pageCount, page.value * pageCount);
 });
 
-// Function to handle view action
-const viewTransaction = (row: any) => {
-  console.log('View transaction:', row);
-  // Add your view logic here
-};
-
 // Function to handle edit action
 const editTransaction = (row: any) => {
   console.log('Edit transaction:', row);
@@ -202,14 +196,6 @@ const deleteTransaction = async (row: any) => {
     </template>
     <template #actions-data="{ row }">
       <div class="flex space-x-2">
-        <UButton 
-          size="xs" 
-          color="blue" 
-          variant="soft"
-          icon="i-heroicons-eye"
-          @click="viewTransaction(row)"
-          title="View Details"
-        />
         <UButton 
           size="xs" 
           color="green" 

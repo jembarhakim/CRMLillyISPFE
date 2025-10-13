@@ -1,9 +1,12 @@
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { userManagementAdminApi } from '@/api/admin/user-management'
 import { 
   hasPermission, 
   canAccessMenu, 
+  canAccessMenuByFeature,
   getMenuForRole, 
+  getMenuForFeaturePermissions,
   getRoleDisplayName, 
   getRoleDescription,
   normalizeRole,
@@ -16,17 +19,40 @@ import {
 export function useRolePermissions() {
   const authStore = useAuthStore()
 
+  // Feature permissions from database
+  const featurePermissions = ref<Record<string, number>>({})
+  const isLoadingPermissions = ref(false)
+
   // Current user's role (normalized)
   const userRole = computed(() => {
     const role = authStore.user?.role || ''
     return normalizeRole(role)
   })
 
-  // Current user's menu items
+  // Current user's menu items (using feature permissions)
   const userMenu = computed(() => {
-    if (!userRole.value) return []
-    return getMenuForRole(userRole.value)
+    if (Object.keys(featurePermissions.value).length === 0) {
+      // Fallback to role-based menu if no feature permissions loaded
+      if (!userRole.value) return []
+      return getMenuForRole(userRole.value)
+    }
+    return getMenuForFeaturePermissions(featurePermissions.value)
   })
+
+  // Load feature permissions from database
+  const loadFeaturePermissions = async () => {
+    try {
+      isLoadingPermissions.value = true
+      const response = await userManagementAdminApi().getUserRolePermissions()
+      featurePermissions.value = response.data
+    } catch (error) {
+      console.error('Failed to load feature permissions:', error)
+      // Fallback to empty permissions (will use role-based menu)
+      featurePermissions.value = {}
+    } finally {
+      isLoadingPermissions.value = false
+    }
+  }
 
   // Check if user has specific permission
   const can = (permission: string) => {
@@ -36,6 +62,16 @@ export function useRolePermissions() {
   // Check if user can access specific menu item
   const canAccess = (menuItem: MenuItem) => {
     return canAccessMenu(userRole.value, menuItem)
+  }
+
+  // Check if user can access specific menu item by feature
+  const canAccessByFeature = (menuItem: MenuItem) => {
+    return canAccessMenuByFeature(featurePermissions.value, menuItem)
+  }
+
+  // Check if user can access specific feature
+  const canAccessFeature = (feature: string) => {
+    return featurePermissions.value[feature] === 1
   }
 
   // Get role display name
@@ -74,9 +110,16 @@ export function useRolePermissions() {
     userRole,
     userMenu,
     
+    // Feature permissions
+    featurePermissions,
+    isLoadingPermissions,
+    loadFeaturePermissions,
+    
     // Permission checks
     can,
     canAccess,
+    canAccessByFeature,
+    canAccessFeature,
     
     // Role information
     getRoleName,

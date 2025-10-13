@@ -130,16 +130,46 @@ export const userManagementAdminApi = () => {
       });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
+        throw new Error(errorData.message || 'Failed to fetch roles');
       }
       return response.json();
     },
+
+  getAllFeatures: async () => {
+    const response = await fetch(`${api}/api/admin/feature`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${useCookie("token").value}`,
+      },
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch features');
+    }
+    return response.json();
+  },
+
+  getUserRolePermissions: async () => {
+    const response = await fetch(`${api}/api/admin/user-management/role-permissions`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${useCookie("token").value}`,
+      },
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch user role permissions');
+    }
+    return response.json();
+  },
 
 
     createRole: async (
       data: CreateRoleRequest = {
         name: "",
-        permissions: []
+        role_permissions: []
       }
     ) => {
       const response = await fetch(`${api}/api/admin/role`, {
@@ -161,7 +191,7 @@ export const userManagementAdminApi = () => {
       roleId: string,
       data: CreateRoleRequest = {
         name: "",
-        permissions: []
+        role_permissions: []
       }
     ) => {
       const response = await fetch(`${api}/api/admin/role/${roleId}`, {

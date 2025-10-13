@@ -3,7 +3,8 @@ export interface MenuItem {
   label: string
   icon: string
   link: string
-  roles?: string[]
+  feature?: string
+  roles?: string[] // Keep for backward compatibility
   description?: string
 }
 
@@ -118,99 +119,91 @@ export const MAIN_MENU: MenuItem[] = [
     label: 'Dashboard',
     icon: 'i-heroicons-home',
     link: '/dashboard',
-    roles: [ROLES.ADMIN, ROLES.CUSTOMER_SERVICE, ROLES.NOC, ROLES.TECHNICIAN, ROLES.FINANCE],
+    feature: 'dashboard',
     description: 'Main dashboard overview'
   },
   {
     label: 'Customer',
     icon: 'i-heroicons-user-circle-16-solid',
     link: '/dashboard/customer',
-    roles: [ROLES.ADMIN, ROLES.CUSTOMER_SERVICE, ROLES.NOC, ROLES.TECHNICIAN],
+    feature: 'customer',
     description: 'Customer management'
   },
   {
     label: 'Area',
     icon: 'i-heroicons-map',
     link: '/dashboard/area',
-    roles: [ROLES.ADMIN, ROLES.CUSTOMER_SERVICE],
+    feature: 'area',
     description: 'Geographic area management'
   },
   {
     label: 'Report',
     icon: 'i-heroicons-book-open-solid',
     link: '/dashboard/report',
-    roles: [ROLES.ADMIN, ROLES.CUSTOMER_SERVICE, ROLES.NOC, ROLES.FINANCE],
+    feature: 'report',
     description: 'System reports and analytics'
   },
   {
     label: 'Internet Package',
     icon: 'i-heroicons-wifi-16-solid',
     link: '/dashboard/internet-package',
-    roles: [ROLES.ADMIN, ROLES.CUSTOMER_SERVICE],
+    feature: 'internet_package',
     description: 'Internet package management'
   },
   {
     label: 'Assets',
     icon: 'i-heroicons-arrow-down-on-square-stack',
     link: '/dashboard/asset',
-    roles: [ROLES.ADMIN, ROLES.CUSTOMER_SERVICE],
+    feature: 'assets',
     description: 'Asset inventory management'
   },
   {
     label: 'Company',
     icon: 'i-heroicons-building-office-16-solid',
     link: '/dashboard/companies',
-    roles: [ROLES.ADMIN, ROLES.CUSTOMER_SERVICE],
+    feature: 'company',
     description: 'Company management'
   },
   {
     label: 'Invoice',
     icon: 'i-heroicons-document-currency-dollar-16-solid',
     link: '/dashboard/invoice',
-    roles: [ROLES.ADMIN, ROLES.CUSTOMER_SERVICE, ROLES.FINANCE],
+    feature: 'invoice',
     description: 'Invoice management'
   },
   {
     label: 'Recurring Invoices',
     icon: 'i-heroicons-arrow-path-16-solid',
     link: '/dashboard/recurring-invoice',
-    roles: [ROLES.ADMIN, ROLES.CUSTOMER_SERVICE, ROLES.FINANCE],
+    feature: 'invoice',
     description: 'Recurring invoice management'
   },
   {
     label: 'Transaction',
     icon: 'i-heroicons-document-currency-dollar-16-solid',
     link: '/dashboard/transaction',
-    roles: [ROLES.ADMIN, ROLES.CUSTOMER_SERVICE, ROLES.FINANCE],
+    feature: 'transaction',
     description: 'Financial transactions'
   },
   {
     label: 'Tickets',
     icon: 'i-heroicons-exclamation-triangle-16-solid',
     link: '/dashboard/tickets',
-    roles: [ROLES.ADMIN, ROLES.CUSTOMER_SERVICE, ROLES.NOC, ROLES.TECHNICIAN],
+    feature: 'tickets',
     description: 'Support ticket management'
   },
-  // Temporarily hidden - not in use yet
-  // {
-  //   label: 'MikroTik Monitoring',
-  //   icon: 'i-heroicons-server-stack',
-  //   link: '/dashboard/mikrotik',
-  //   roles: [ROLES.ADMIN, ROLES.NOC],
-  //   description: 'MikroTik device monitoring and logs'
-  // },
-  // {
-  //   label: 'Network Monitoring',
-  //   icon: 'i-heroicons-signal',
-  //   link: '/customer/monitoring',
-  //   roles: [ROLES.ADMIN, ROLES.CUSTOMER_SERVICE, ROLES.NOC, ROLES.TECHNICIAN],
-  //   description: 'Customer network monitoring and status'
-  // },
+  {
+    label: 'Trouble Reports',
+    icon: 'i-heroicons-exclamation-triangle-16-solid',
+    link: '/dashboard/trouble-reports',
+    feature: 'trouble_reports',
+    description: 'Trouble report management'
+  },
   {
     label: 'User Management',
     icon: 'i-heroicons-user-circle-16-solid',
     link: '/dashboard/user-management',
-    roles: [ROLES.ADMIN],
+    feature: 'user_management',
     description: 'User and role management'
   }
 ]
@@ -236,9 +229,23 @@ export function canAccessMenu(userRole: string, menuItem: MenuItem): boolean {
   return menuItem.roles.includes(userRole)
 }
 
+export function canAccessMenuByFeature(featurePermissions: Record<string, number>, menuItem: MenuItem): boolean {
+  // If no feature specified, allow access
+  if (!menuItem.feature) {
+    return true
+  }
+  
+  // Check if user has permission for this feature (can_access = 1)
+  return featurePermissions[menuItem.feature] === 1
+}
+
 export function getMenuForRole(userRole: string): MenuItem[] {
   const normalizedRole = normalizeRole(userRole)
   return MAIN_MENU.filter(item => canAccessMenu(normalizedRole, item))
+}
+
+export function getMenuForFeaturePermissions(featurePermissions: Record<string, number>): MenuItem[] {
+  return MAIN_MENU.filter(item => canAccessMenuByFeature(featurePermissions, item))
 }
 
 export function getRoleDisplayName(role: string): string {

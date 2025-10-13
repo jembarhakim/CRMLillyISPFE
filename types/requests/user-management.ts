@@ -9,6 +9,10 @@ export type CreateUserRequest = {
   }
 
   export type CreateRoleRequest = {
-  name: String,
-  permissions: String[]
+  name: string,
+  role_permissions: Array<{
+    feature_id: string;
+    feature_name: string;
+    can_access: number;
+  }>
   }
