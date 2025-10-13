@@ -397,6 +397,7 @@
 <script setup lang="ts">
 import { customerAdminApi } from "@/api/admin/customer";
 import type { InstallationReportCompleteResponse } from "@/types/requests/installation-report";
+import { useNavigationContext } from "@/composables/useNavigationContext";
 
 // Apply auth middleware
 definePageMeta({
@@ -606,6 +607,14 @@ function formatFilterDate(dateString: string) {
 }
 
 function viewReport(installationId: string) {
+  // Set navigation context to indicate we came from reports page
+  const { setNavigationContext } = useNavigationContext();
+  setNavigationContext({
+    from: 'reports',
+    returnUrl: '/dashboard/report/customer-installation/reports',
+    returnLabel: 'Back to Reports'
+  });
+  
   navigateTo(`/dashboard/report/customer-installation/detail/${installationId}`);
 }
 

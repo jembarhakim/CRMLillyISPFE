@@ -10,11 +10,11 @@
               <p class="text-blue-100 text-sm sm:text-lg">Complete installation report information</p>
             </div>
             <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-              <UButton @click="navigateTo('/dashboard/report/customer-installation/reports')" 
+              <UButton @click="handleBackNavigation" 
                        color="white" variant="outline" size="sm" 
                        class="backdrop-blur-sm bg-white/10 border-white/20 text-white hover:bg-white/20 w-full sm:w-auto">
                 <UIcon name="i-heroicons-arrow-left" class="mr-2" />
-                Back to Reports
+                {{ backNavigationLabel }}
               </UButton>
               <UButton @click="printReport" color="white" variant="solid" size="sm"
                        class="bg-white/20 backdrop-blur-sm hover:bg-white/30 w-full sm:w-auto">
@@ -1134,6 +1134,7 @@
 import { ref, watch, onMounted, computed } from 'vue';
 import { customerAdminApi } from "@/api/admin/customer";
 import type { CompleteInstallationReportWithTechnicianPhotosResponse, InstallationTechnicianTeamResponse } from "@/types/requests/installation-report";
+import { useNavigationContext } from "@/composables/useNavigationContext";
 
 // Apply auth middleware
 definePageMeta({
@@ -1150,6 +1151,21 @@ const technicianTeam = ref<InstallationTechnicianTeamResponse[]>([]);
 const showDocumentModal = ref(false);
 const showDeleteModal = ref(false);
 const deleteConfirmationChecked = ref(false);
+
+// Navigation context management
+const { getBackNavigation, clearNavigationContext } = useNavigationContext();
+
+// Computed property for back navigation
+const backNavigation = computed(() => getBackNavigation());
+const backNavigationLabel = computed(() => backNavigation.value.returnLabel);
+
+// Handle back navigation
+function handleBackNavigation() {
+  const navigation = backNavigation.value;
+  navigateTo(navigation.returnUrl);
+  // Clear the navigation context after use
+  clearNavigationContext();
+}
 const selectedDocumentPhoto = ref<string | undefined>(undefined);
 const modalImageLoaded = ref(true); // Start as true, set to false on error
 
