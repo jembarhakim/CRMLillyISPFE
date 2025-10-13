@@ -49,6 +49,12 @@ const newAccumulationValue = ref<string>('');
 
 // Filter variables
 const selectedDateRange = ref<number>(0); // 0 = All time by default
+const filterType = ref<string>('all-time'); // 'all-time', 'monthly', 'yearly', 'custom'
+const selectedMonth = ref<number | null>(null);
+const selectedYear = ref<number | null>(null);
+const customDateFrom = ref<string>('');
+const customDateTo = ref<string>('');
+
 // Optional year-range filter (overrides day range when active and both years selected)
 const useYearRange = ref<boolean>(false);
 const yearStart = ref<number | null>(null);
@@ -82,6 +88,68 @@ const availableYears = computed<number[]>(() => {
   return unique;
 });
 
+// Available months for monthly filter
+const availableMonths = computed(() => {
+  const months = [
+    { value: 1, label: 'January' },
+    { value: 2, label: 'February' },
+    { value: 3, label: 'March' },
+    { value: 4, label: 'April' },
+    { value: 5, label: 'May' },
+    { value: 6, label: 'June' },
+    { value: 7, label: 'July' },
+    { value: 8, label: 'August' },
+    { value: 9, label: 'September' },
+    { value: 10, label: 'October' },
+    { value: 11, label: 'November' },
+    { value: 12, label: 'December' }
+  ];
+  return months;
+});
+
+// Helper function to filter data by date range
+const filterDataByDateRange = (data: any[], dateAccessor: (item: any) => string) => {
+  if (!data || data.length === 0) return [];
+
+  const filterItem = (item: any) => {
+    const itemDate = new Date(dateAccessor(item));
+    if (isNaN(itemDate.getTime())) return false;
+
+    switch (filterType.value) {
+      case 'all-time':
+        return true;
+      
+      case 'monthly':
+        if (selectedYear.value === null || selectedMonth.value === null) return false;
+        return itemDate.getFullYear() === selectedYear.value && 
+               itemDate.getMonth() + 1 === selectedMonth.value;
+      
+      case 'yearly':
+        if (selectedYear.value === null) return false;
+        return itemDate.getFullYear() === selectedYear.value;
+      
+      case 'custom':
+        if (!customDateFrom.value || !customDateTo.value) return false;
+        const fromDate = new Date(customDateFrom.value);
+        const toDate = new Date(customDateTo.value);
+        return itemDate >= fromDate && itemDate <= toDate;
+      
+      case 'range':
+        // Legacy day-based range
+        const days = Number(selectedDateRange.value || 0);
+        if (days <= 0) return true;
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - days);
+        return itemDate >= cutoffDate;
+      
+      default:
+        return true;
+    }
+  };
+
+  return data.filter(filterItem);
+};
+
 // Computed properties for filtered data
 const filteredCustomerGrowth = computed(() => {
   if (!customerGrowth.value.customer_growth) return [];
@@ -96,16 +164,7 @@ const filteredCustomerGrowth = computed(() => {
     });
   }
 
-  // Days-based filtering; 0 means all time
-  const days = Number(selectedDateRange.value || 0);
-  if (days <= 0) return customerGrowth.value.customer_growth;
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - days);
-
-  return customerGrowth.value.customer_growth.filter((item: any) => {
-    const itemDate = new Date(item.date);
-    return itemDate >= cutoffDate;
-  });
+  return filterDataByDateRange(customerGrowth.value.customer_growth, (item: any) => item.date);
 });
 
 const filteredRevenueChart = computed(() => {
@@ -120,15 +179,7 @@ const filteredRevenueChart = computed(() => {
     });
   }
 
-  const days = Number(selectedDateRange.value || 0);
-  if (days <= 0) return revenueChart.value.revenue_chart;
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - days);
-
-  return revenueChart.value.revenue_chart.filter((item: any) => {
-    const itemDate = new Date(item.date);
-    return itemDate >= cutoffDate;
-  });
+  return filterDataByDateRange(revenueChart.value.revenue_chart, (item: any) => item.date);
 });
 
 const filteredExpensesChart = computed(() => {
@@ -141,11 +192,7 @@ const filteredExpensesChart = computed(() => {
       return yr >= start && yr <= end;
     });
   }
-  const days = Number(selectedDateRange.value || 0);
-  if (days <= 0) return expensesChart.value.expenses_chart;
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - days);
-  return expensesChart.value.expenses_chart.filter((item: any) => new Date(item.date) >= cutoffDate);
+  return filterDataByDateRange(expensesChart.value.expenses_chart, (item: any) => item.date);
 });
 
 const filteredUnpaidCustomersChart = computed(() => {
@@ -164,11 +211,7 @@ const filteredUnpaidCustomersChart = computed(() => {
         return yr >= start && yr <= end;
       });
     }
-    const days = Number(selectedDateRange.value || 0);
-    if (days <= 0) return data;
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - days);
-    return data.filter((item: any) => new Date(item.date) >= cutoffDate);
+    return filterDataByDateRange(data, (item: any) => item.date);
   };
   
   return {
@@ -907,18 +950,57 @@ async function applyDateFilter() {
     yearStart.value = null;
     yearEnd.value = null;
   }
-  // Fetch server-side data with selected range for accurate aggregation
-  const params = useYearRange.value && yearStart.value !== null && yearEnd.value !== null
-    ? { year_start: Math.min(yearStart.value, yearEnd.value), year_end: Math.max(yearStart.value, yearEnd.value) }
-    : { days: Number(selectedDateRange.value) };
+  
+  // Build params based on filter type
+  let params: any = {};
+  
+  switch (filterType.value) {
+    case 'monthly':
+      if (selectedYear.value && selectedMonth.value) {
+        params = { 
+          year: selectedYear.value, 
+          month: selectedMonth.value 
+        };
+      }
+      break;
+    case 'yearly':
+      if (selectedYear.value) {
+        params = { year: selectedYear.value };
+      }
+      break;
+    case 'custom':
+      if (customDateFrom.value && customDateTo.value) {
+        params = { 
+          date_from: customDateFrom.value, 
+          date_to: customDateTo.value 
+        };
+      }
+      break;
+    case 'range':
+      params = { days: Number(selectedDateRange.value) };
+      break;
+    case 'all-time':
+    default:
+      params = { days: 0 }; // All time
+      break;
+  }
+  
+  // Override with year range if active
+  if (useYearRange.value && yearStart.value !== null && yearEnd.value !== null) {
+    params = { 
+      year_start: Math.min(yearStart.value, yearEnd.value), 
+      year_end: Math.max(yearStart.value, yearEnd.value) 
+    };
+  }
+  
   try {
-    const growthResponse = await dashboardAdminApi().getCustomerGrowth(params as any)
+    const growthResponse = await dashboardAdminApi().getCustomerGrowth(params)
     customerGrowth.value = growthResponse.data
-    const revenueResponse = await dashboardAdminApi().getRevenueChart(params as any)
+    const revenueResponse = await dashboardAdminApi().getRevenueChart(params)
     revenueChart.value = revenueResponse.data
-    const expensesResponse = await dashboardAdminApi().getExpensesChart(params as any)
+    const expensesResponse = await dashboardAdminApi().getExpensesChart(params)
     expensesChart.value = expensesResponse.data
-    const unpaidResponse = await dashboardAdminApi().getUnpaidCustomersChart(params as any)
+    const unpaidResponse = await dashboardAdminApi().getUnpaidCustomersChart(params)
     unpaidCustomersChart.value = unpaidResponse.data
   } catch (e) {
     console.error('Failed to refresh charts with params', params, e)
@@ -948,6 +1030,11 @@ onMounted(async () => {
 onUnmounted(() => {
   // Remove keyboard event listener
   document.removeEventListener('keydown', handleKeydown)
+})
+
+// React to filter changes immediately
+watch([filterType, selectedMonth, selectedYear, customDateFrom, customDateTo], async () => {
+  await applyDateFilter()
 })
 
 // React to year range changes immediately
@@ -1202,9 +1289,48 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       <h1 class="text-xl font-semibold text-slate-800">Analytics Charts</h1>
       
       <!-- Chart Filters -->
-      <div class="flex flex-col sm:flex-row flex-wrap gap-3 w-full sm:w-auto">
-        <!-- Date Range Filter -->
+      <div class="flex flex-col gap-4 w-full">
+        <!-- Filter Type Selection -->
         <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">Filter Type:</label>
+          <select v-model="filterType" @change="applyDateFilter"
+            class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="all-time">All Time</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+            <option value="range">Range (Days)</option>
+            <option value="custom">Custom Date Range</option>
+          </select>
+        </div>
+
+        <!-- Monthly Filter -->
+        <div v-if="filterType === 'monthly'" class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">Year:</label>
+          <select v-model.number="selectedYear" @change="applyDateFilter"
+            class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option :value="null">Select Year</option>
+            <option v-for="y in availableYears" :key="'my'+y" :value="y">{{ y }}</option>
+          </select>
+          <label class="text-sm font-medium text-gray-700">Month:</label>
+          <select v-model.number="selectedMonth" @change="applyDateFilter"
+            class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option :value="null">Select Month</option>
+            <option v-for="month in availableMonths" :key="'mm'+month.value" :value="month.value">{{ month.label }}</option>
+          </select>
+        </div>
+
+        <!-- Yearly Filter -->
+        <div v-if="filterType === 'yearly'" class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">Year:</label>
+          <select v-model.number="selectedYear" @change="applyDateFilter"
+            class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option :value="null">Select Year</option>
+            <option v-for="y in availableYears" :key="'yy'+y" :value="y">{{ y }}</option>
+          </select>
+        </div>
+
+        <!-- Range Filter (Legacy) -->
+        <div v-if="filterType === 'range'" class="flex items-center gap-2">
           <label class="text-sm font-medium text-gray-700">Date Range:</label>
           <select v-model="selectedDateRange" @change="applyDateFilter"
             class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -1218,39 +1344,70 @@ watch([useYearRange, yearStart, yearEnd], async () => {
           </select>
         </div>
 
-        <!-- Year Range Toggle -->
+        <!-- Custom Date Range Filter -->
+        <div v-if="filterType === 'custom'" class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700">From:</label>
+          <input v-model="customDateFrom" type="date" @change="applyDateFilter"
+            class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <label class="text-sm font-medium text-gray-700">To:</label>
+          <input v-model="customDateTo" type="date" @change="applyDateFilter"
+            class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+
+        <!-- Year Range Toggle (Advanced) -->
         <div class="flex items-center gap-2">
-          <label class="text-sm font-medium text-gray-700">Year range:</label>
+          <label class="text-sm font-medium text-gray-700">Advanced Year Range:</label>
           <input type="checkbox" v-model="useYearRange" class="h-4 w-4" title="Filter by start/end year" />
         </div>
 
         <!-- Year Range Selectors -->
         <div class="flex items-center gap-2" v-if="useYearRange">
-          <label class="text-sm font-medium text-gray-700">From</label>
-          <select v-model.number="yearStart" class="px-3 py-1 text-sm border border-gray-300 rounded-md">
+          <label class="text-sm font-medium text-gray-700">From Year</label>
+          <select v-model.number="yearStart" @change="applyDateFilter" class="px-3 py-1 text-sm border border-gray-300 rounded-md">
             <option :value="null">-</option>
             <option v-for="y in availableYears" :key="'ys'+y" :value="y">{{ y }}</option>
           </select>
-          <label class="text-sm font-medium text-gray-700">To</label>
-          <select v-model.number="yearEnd" class="px-3 py-1 text-sm border border-gray-300 rounded-md">
+          <label class="text-sm font-medium text-gray-700">To Year</label>
+          <select v-model.number="yearEnd" @change="applyDateFilter" class="px-3 py-1 text-sm border border-gray-300 rounded-md">
             <option :value="null">-</option>
             <option v-for="y in availableYears" :key="'ye'+y" :value="y">{{ y }}</option>
           </select>
         </div>
 
-
         <!-- Refresh Button -->
-        <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="refreshCharts"
-          title="Refresh Charts">
-          Refresh
-        </UButton>
+        <div class="flex items-center gap-2">
+          <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="refreshCharts"
+            title="Refresh Charts">
+            Refresh
+          </UButton>
+        </div>
       </div>
     </div>
     <div class="grid gap-6 grid-cols-1">
       <!-- Customer Growth Chart -->
       <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
         <div class="mb-3">
-          <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">Customer Growth ({{ selectedDateRange }} days)</h2>
+          <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">
+            Customer Growth 
+            <span v-if="filterType === 'monthly' && selectedYear && selectedMonth">
+              ({{ availableMonths.find(m => m.value === selectedMonth)?.label }} {{ selectedYear }})
+            </span>
+            <span v-else-if="filterType === 'yearly' && selectedYear">
+              ({{ selectedYear }})
+            </span>
+            <span v-else-if="filterType === 'range'">
+              ({{ selectedDateRange }} days)
+            </span>
+            <span v-else-if="filterType === 'custom' && customDateFrom && customDateTo">
+              ({{ customDateFrom }} to {{ customDateTo }})
+            </span>
+            <span v-else-if="useYearRange && yearStart && yearEnd">
+              ({{ yearStart }} - {{ yearEnd }})
+            </span>
+            <span v-else>
+              (All Time)
+            </span>
+          </h2>
         </div>
         <div v-if="filteredCustomerGrowth && filteredCustomerGrowth.length > 0" class="h-80 w-full overflow-hidden">
           <VChart :option="customerGrowthChartOption" autoresize style="height: 100%; width: 100%;" />
@@ -1263,7 +1420,27 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       <!-- Revenue Chart -->
       <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
         <div class="mb-3">
-          <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">Revenue Chart ({{ selectedDateRange }} days)</h2>
+          <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">
+            Revenue Chart 
+            <span v-if="filterType === 'monthly' && selectedYear && selectedMonth">
+              ({{ availableMonths.find(m => m.value === selectedMonth)?.label }} {{ selectedYear }})
+            </span>
+            <span v-else-if="filterType === 'yearly' && selectedYear">
+              ({{ selectedYear }})
+            </span>
+            <span v-else-if="filterType === 'range'">
+              ({{ selectedDateRange }} days)
+            </span>
+            <span v-else-if="filterType === 'custom' && customDateFrom && customDateTo">
+              ({{ customDateFrom }} to {{ customDateTo }})
+            </span>
+            <span v-else-if="useYearRange && yearStart && yearEnd">
+              ({{ yearStart }} - {{ yearEnd }})
+            </span>
+            <span v-else>
+              (All Time)
+            </span>
+          </h2>
         </div>
         <div v-if="filteredRevenueChart && filteredRevenueChart.length > 0" class="h-80 w-full overflow-hidden">
           <VChart :option="revenueChartOption" autoresize style="height: 100%; width: 100%;" />
@@ -1276,7 +1453,27 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       <!-- Expenses Chart -->
       <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
         <div class="mb-3">
-          <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">Expenses Chart ({{ selectedDateRange }} days)</h2>
+          <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">
+            Expenses Chart 
+            <span v-if="filterType === 'monthly' && selectedYear && selectedMonth">
+              ({{ availableMonths.find(m => m.value === selectedMonth)?.label }} {{ selectedYear }})
+            </span>
+            <span v-else-if="filterType === 'yearly' && selectedYear">
+              ({{ selectedYear }})
+            </span>
+            <span v-else-if="filterType === 'range'">
+              ({{ selectedDateRange }} days)
+            </span>
+            <span v-else-if="filterType === 'custom' && customDateFrom && customDateTo">
+              ({{ customDateFrom }} to {{ customDateTo }})
+            </span>
+            <span v-else-if="useYearRange && yearStart && yearEnd">
+              ({{ yearStart }} - {{ yearEnd }})
+            </span>
+            <span v-else>
+              (All Time)
+            </span>
+          </h2>
         </div>
         <div v-if="filteredExpensesChart && filteredExpensesChart.length > 0" class="h-80 w-full overflow-hidden">
           <VChart :option="expensesChartOption" autoresize style="height: 100%; width: 100%;" />
@@ -1289,7 +1486,27 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       <!-- Unpaid Customers Chart -->
       <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
         <div class="mb-3">
-          <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">Unpaid & Pending Customers ({{ selectedDateRange }} days)</h2>
+          <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">
+            Unpaid & Pending Customers 
+            <span v-if="filterType === 'monthly' && selectedYear && selectedMonth">
+              ({{ availableMonths.find(m => m.value === selectedMonth)?.label }} {{ selectedYear }})
+            </span>
+            <span v-else-if="filterType === 'yearly' && selectedYear">
+              ({{ selectedYear }})
+            </span>
+            <span v-else-if="filterType === 'range'">
+              ({{ selectedDateRange }} days)
+            </span>
+            <span v-else-if="filterType === 'custom' && customDateFrom && customDateTo">
+              ({{ customDateFrom }} to {{ customDateTo }})
+            </span>
+            <span v-else-if="useYearRange && yearStart && yearEnd">
+              ({{ yearStart }} - {{ yearEnd }})
+            </span>
+            <span v-else>
+              (All Time)
+            </span>
+          </h2>
         </div>
         <div v-if="(filteredUnpaidCustomersChart.unpaid?.length > 0) || (filteredUnpaidCustomersChart.pending?.length > 0)" class="h-80 w-full overflow-hidden">
           <VChart :option="unpaidCustomersChartOption" autoresize style="height: 100%; width: 100%;" />
