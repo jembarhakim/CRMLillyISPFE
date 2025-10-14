@@ -26,6 +26,10 @@ export default defineNuxtConfig({
   },
   // Remove automatic middleware assignment to prevent race conditions
   // Middleware will be applied manually in each page that needs it
+  
+  // Add debugging configuration
+  debug: true,
+  devtools: { enabled: true },
   app: {
     head: {
       title: "CRM System",
