@@ -5,6 +5,7 @@ import FormAddComponent from './FormAddComponent.vue'
 import CustomerDetailModal from './CustomerDetailModal.vue'
 import { customerAdminApi } from '@/api/admin/customer'
 import { useNotification } from '@/composables/useNotification'
+import { useNavigationContext } from '@/composables/useNavigationContext'
 // Set page title
 useHead({
   title: 'Customer Management - CRM System'
@@ -547,6 +548,14 @@ function navigateToInstallationReports(customerId: string) {
 }
 
 function viewInstallationReportDetail(installationId: string) {
+    // Set navigation context to indicate we came from customer page
+    const { setNavigationContext } = useNavigationContext();
+    setNavigationContext({
+        from: 'customer',
+        returnUrl: '/dashboard/customer',
+        returnLabel: 'Back to Customer'
+    });
+    
     // Navigate to the specific installation report detail page
     navigateTo(`/dashboard/report/customer-installation/detail/${installationId}`)
 }

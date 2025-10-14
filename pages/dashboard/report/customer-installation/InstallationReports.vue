@@ -279,7 +279,7 @@
                   <UButton 
                     size="sm" 
                     variant="outline"
-                    @click="navigateTo(`/dashboard/report/customer-installation/detail/${report.installation_id}`)"
+                    @click="viewReportDetail(report.installation_id)"
                   >
                     View Details
                   </UButton>
@@ -300,6 +300,7 @@ import type {
   InstallationTechnicianReportResponse, 
   InstallationAssetReportResponse 
 } from "@/types/requests/installation-report";
+import { useNavigationContext } from "@/composables/useNavigationContext";
 
 // Apply auth middleware
 definePageMeta({
@@ -441,5 +442,17 @@ function formatDate(dateString: string) {
     month: 'short',
     day: 'numeric'
   });
+}
+
+function viewReportDetail(installationId: string) {
+  // Set navigation context to indicate we came from reports page
+  const { setNavigationContext } = useNavigationContext();
+  setNavigationContext({
+    from: 'reports',
+    returnUrl: '/dashboard/report/customer-installation/reports',
+    returnLabel: 'Back to Reports'
+  });
+  
+  navigateTo(`/dashboard/report/customer-installation/detail/${installationId}`);
 }
 </script>

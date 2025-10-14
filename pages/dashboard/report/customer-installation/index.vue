@@ -8,20 +8,6 @@
             <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Customer Installation Reports</h1>
             <p class="text-sm text-gray-600 mt-1">Manage installation reports and track progress</p>
           </div>
-          <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <UButton @click="navigateTo('/dashboard/report/customer-installation/reports')" 
-                     color="blue" variant="outline" 
-                     class="w-full sm:w-auto">
-              <UIcon name="i-heroicons-chart-bar" class="mr-2" />
-              View Reports
-            </UButton>
-            <UButton @click="navigateTo('/dashboard/customer')" 
-                     color="blue"
-                     class="w-full sm:w-auto">
-              <UIcon name="i-heroicons-plus" class="mr-2" />
-              Add Report Installation
-            </UButton>
-          </div>
         </div>
 
         <!-- Quick Stats -->
@@ -101,21 +87,6 @@
             </UButton>
           </div>
 
-          <!-- Installation Management -->
-          <div class="bg-gradient-to-br from-purple-500 to-purple-600 p-4 sm:p-6 rounded-lg text-white">
-            <div class="flex items-center mb-3 sm:mb-4">
-              <UIcon name="i-heroicons-cog-6-tooth" class="text-2xl sm:text-3xl mr-2 sm:mr-3" />
-              <h3 class="text-lg sm:text-xl font-semibold">Installation Management</h3>
-            </div>
-            <p class="text-purple-100 mb-3 sm:mb-4 text-sm sm:text-base">
-              Manage existing installations, update status, and track progress through the installation lifecycle.
-            </p>
-            <UButton @click="navigateTo('/dashboard/customer-installation')" 
-                     color="white" variant="solid"
-                     class="w-full sm:w-auto">
-              Manage Installations
-            </UButton>
-          </div>
 
           <!-- Asset Tracking -->
           <div class="bg-gradient-to-br from-orange-500 to-orange-600 p-4 sm:p-6 rounded-lg text-white">
@@ -175,26 +146,26 @@
               <p class="text-sm sm:text-base">No recent installations found</p>
             </div>
             <div v-else class="space-y-3">
-              <div v-for="installation in recentInstallations" :key="installation.installation_id" 
+              <div v-for="installation in recentInstallations" :key="installation.id" 
                    class="bg-white p-3 sm:p-4 rounded-lg border">
                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                   <div class="flex-1">
                     <h3 class="font-medium text-gray-800 text-sm sm:text-base">
-                      {{ installation.customer_name || 'Unknown Customer' }}
+                      {{ installation.customer?.name || installation.customer_name || 'Unknown Customer' }}
                     </h3>
                     <p class="text-xs sm:text-sm text-gray-500">
                       {{ installation.installation_type || 'Unknown Type' }}
                     </p>
                     <p class="text-xs text-gray-400">
-                      {{ formatDate(installation.on_air_date) }}
+                      {{ formatDate(installation.on_air_date || installation.created_at) }}
                     </p>
                   </div>
                   <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                    <span :class="getStatusColor(installation.installation_status)" 
+                    <span :class="getStatusColor(installation.status || installation.installation_status)" 
                           class="px-2 py-1 rounded-full text-xs font-medium self-start sm:self-auto">
-                      {{ installation.installation_status }}
+                      {{ installation.status || installation.installation_status || 'Unknown' }}
                     </span>
-                    <UButton @click="viewInstallation(installation.installation_id)" 
+                    <UButton @click="viewInstallation(installation.id)" 
                              size="sm" color="blue" variant="outline"
                              class="w-full sm:w-auto">
                       View
@@ -212,7 +183,9 @@
 
 <script setup lang="ts">
 import { customerAdminApi } from "@/api/admin/customer";
-import type { InstallationAssetReportResponse } from "@/types/requests/installation-report";
+import { archiveInstallationAdminApi } from "@/api/admin/archive-installation";
+import type { InstallationAssetReportResponse, CompleteInstallationReportWithTechnicianPhotosResponse } from "@/types/requests/installation-report";
+import { useNavigationContext } from "@/composables/useNavigationContext";
 
 // Apply auth middleware
 definePageMeta({
@@ -226,7 +199,7 @@ const stats = ref({
   inProgress: 0
 });
 
-const recentInstallations = ref<InstallationAssetReportResponse[]>([]);
+const recentInstallations = ref<CompleteInstallationReportWithTechnicianPhotosResponse[]>([]);
 
 onMounted(async () => {
   await loadStats();
@@ -258,9 +231,15 @@ async function loadStats() {
 
 async function loadRecentInstallations() {
   try {
-    // You might need to create this endpoint or use existing one
-    const response = await customerAdminApi().getAllCustomers();
-    recentInstallations.value = (response.data || []).slice(0, 5); // Show only recent 5
+    const response = await archiveInstallationAdminApi().getAllArchiveInstallation();
+    const installations = response.data || [];
+    
+    // Sort by created_at date (most recent first) and take only the first 5
+    const sortedInstallations = installations
+      .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 5);
+    
+    recentInstallations.value = sortedInstallations;
   } catch (error) {
     console.error("Failed to load recent installations:", error);
     // Set empty array if API fails
@@ -270,19 +249,41 @@ async function loadRecentInstallations() {
 
 function viewInstallation(installationId: string | undefined) {
   if (!installationId) return;
-  navigateTo(`/dashboard/report/customer-installation/${installationId}`);
+  
+  // Set navigation context to indicate we came from reports page
+  const { setNavigationContext } = useNavigationContext();
+  setNavigationContext({
+    from: 'reports',
+    returnUrl: '/dashboard/report/customer-installation',
+    returnLabel: 'Back to Dashboard'
+  });
+  
+  navigateTo(`/dashboard/report/customer-installation/detail/${installationId}`);
 }
 
 function getStatusColor(status: string | undefined) {
-  switch (status) {
+  if (!status) return 'bg-gray-100 text-gray-800';
+  
+  const statusLower = status.toLowerCase();
+  switch (statusLower) {
     case 'completed':
+    case 'done':
+    case 'finished':
       return 'bg-green-100 text-green-800';
     case 'pending':
+    case 'waiting':
       return 'bg-yellow-100 text-yellow-800';
     case 'in_progress':
+    case 'in progress':
+    case 'processing':
       return 'bg-blue-100 text-blue-800';
     case 'cancelled':
+    case 'canceled':
       return 'bg-red-100 text-red-800';
+    case 'active':
+      return 'bg-green-100 text-green-800';
+    case 'inactive':
+      return 'bg-gray-100 text-gray-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }
