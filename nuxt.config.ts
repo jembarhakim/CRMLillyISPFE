@@ -20,8 +20,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      API_HOST: process.env.NUXT_PUBLIC_API_HOST || 'http://localhost:3001', // Default to localhost:3001
-      WA_HOST: process.env.NUXT_PUBLIC_WA_HOST || 'http://localhost:3001', // Default to localhost:3001
+      API_HOST: process.env.NUXT_PUBLIC_API_HOST || 'https://crm-be-production-cfa1.up.railway.app', // Railway Backend API URL
+      WA_HOST: process.env.NUXT_PUBLIC_WA_HOST || 'https://crm-be-production-cfa1.up.railway.app', // Railway Backend API URL
     },
   },
   // Remove automatic middleware assignment to prevent race conditions
@@ -40,7 +40,7 @@ export default defineNuxtConfig({
   },
   compatibilityDate: "2024-11-01",
   devtools: { enabled: true },
-  ssr: false, // Disable SSR to avoid auth issues during refresh
+  ssr: true, // Enable SSR for proper hosting
   modules: [
     "@pinia/nuxt",
     "@nuxt/ui",
