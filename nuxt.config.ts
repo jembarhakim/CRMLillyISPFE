@@ -12,6 +12,7 @@ export default defineNuxtConfig({
     "~/plugins/auth-persistence.client.ts", 
     "~/plugins/echarts.ts"
   ],
+  // SSR mode - no prerendering needed
   echarts: {
     charts: ["BarChart", "LineChart", "PieChart"],
     components: ["DatasetComponent", "GridComponent", "TooltipComponent"],
@@ -20,8 +21,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      API_HOST: process.env.NUXT_PUBLIC_API_HOST || 'https://crm-be-production-cfa1.up.railway.app', // Railway Backend API URL
-      WA_HOST: process.env.NUXT_PUBLIC_WA_HOST || 'https://crm-be-production-cfa1.up.railway.app', // Railway Backend API URL
+      API_HOST: process.env.NUXT_PUBLIC_API_HOST || 'http://localhost:3001',
+      WA_HOST: process.env.NUXT_PUBLIC_WA_HOST || 'http://localhost:3001',
     },
   },
   // Remove automatic middleware assignment to prevent race conditions
@@ -44,7 +45,7 @@ export default defineNuxtConfig({
   },
   compatibilityDate: "2024-11-01",
   devtools: { enabled: true },
-  ssr: true, // Enable SSR for proper hosting
+  ssr: true, // Enable SSR for proper API calls
   modules: [
     "@pinia/nuxt",
     "@nuxt/ui",

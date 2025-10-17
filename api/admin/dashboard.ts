@@ -118,8 +118,21 @@ export const dashboardAdminApi = () => {
     },
 
     // New dashboard endpoints
-    getDashboardStats: async () => {
-      const response = await fetch(`${api}/api/admin/dashboard/stats`, {
+    getDashboardStats: async (params: any = {}) => {
+      // Build query string from parameters
+      const queryParams = new URLSearchParams();
+      if (params.days) queryParams.append('days', params.days.toString());
+      if (params.year_start) queryParams.append('year_start', params.year_start.toString());
+      if (params.year_end) queryParams.append('year_end', params.year_end.toString());
+      if (params.year) queryParams.append('year', params.year.toString());
+      if (params.month) queryParams.append('month', params.month.toString());
+      if (params.date_from) queryParams.append('date_from', params.date_from);
+      if (params.date_to) queryParams.append('date_to', params.date_to);
+      
+      const queryString = queryParams.toString();
+      const url = queryString ? `${api}/api/admin/dashboard/stats?${queryString}` : `${api}/api/admin/dashboard/stats`;
+      
+      const response = await fetch(url, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",

@@ -1,3 +1,5 @@
+
+
 import { Bar } from 'vue-chartjs'
 import {
 Chart as ChartJS,
@@ -67,6 +69,11 @@ const note = ref('')
 const selectedId = ref<number | null>(null)
 const activeTab = ref(0)
 const isLoading = ref(true)
+
+// New classification system state
+const selectedClassification = ref<string>('gangguan')
+const dateFilter = ref<string>('1day') // '1day', '7days', '30days', 'all'
+const showHistory = ref(false)
 
 // Loading states for action buttons
 const actionLoading = ref<{ [key: string]: boolean }>({})
@@ -334,34 +341,69 @@ async function saveNetworkArchitecture() {
   }
 }
 
-// Filtered tickets based on search query
+// Filtered tickets based on classification, date filter, and search query
 const filteredRows = computed(() => {
   // Ensure rows.value is always an array
   const safeRows = Array.isArray(rows.value) ? rows.value : []
   
-  if (!searchQuery.value.trim()) {
-    return safeRows
+  let filtered = safeRows
+
+  // Filter by classification
+  if (selectedClassification.value) {
+    filtered = filtered.filter(ticket => {
+      if (!ticket) return false
+      return ticket.classification_id === selectedClassification.value || 
+             ticket.classification === selectedClassification.value
+    })
   }
 
-  const query = searchQuery.value.toLowerCase().trim()
-  return safeRows.filter(ticket => {
-    // Add null checks for ticket object
-    if (!ticket) return false
+  // Filter by date
+  if (dateFilter.value !== 'all' && !showHistory.value) {
+    const now = new Date()
+    const filterDate = new Date()
     
-    return (
-      ticket.id?.toString().includes(query) ||
-      ticket.customer_name?.toLowerCase().includes(query) ||
-      ticket.title?.toLowerCase().includes(query) ||
-      ticket.type?.toLowerCase().includes(query) ||
-      ticket.type_name?.toLowerCase().includes(query) ||
-      ticket.status?.toLowerCase().includes(query) ||
-      ticket.current_assignee_name?.toLowerCase().includes(query) ||
-      ticket.current_assignee_role?.toLowerCase().includes(query) ||
-      ticket.customer_note?.toLowerCase().includes(query) ||
-      ticket.technician_note?.toLowerCase().includes(query) ||
-      ticket.noc_note?.toLowerCase().includes(query)
-    )
-  })
+    switch (dateFilter.value) {
+      case '1day':
+        filterDate.setDate(now.getDate() - 1)
+        break
+      case '7days':
+        filterDate.setDate(now.getDate() - 7)
+        break
+      case '30days':
+        filterDate.setDate(now.getDate() - 30)
+        break
+    }
+    
+    filtered = filtered.filter(ticket => {
+      if (!ticket || !ticket.created_at) return false
+      const ticketDate = new Date(ticket.created_at)
+      return ticketDate >= filterDate
+    })
+  }
+
+  // Filter by search query
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim()
+    filtered = filtered.filter(ticket => {
+      if (!ticket) return false
+      
+      return (
+        ticket.id?.toString().includes(query) ||
+        ticket.customer_name?.toLowerCase().includes(query) ||
+        ticket.title?.toLowerCase().includes(query) ||
+        ticket.type?.toLowerCase().includes(query) ||
+        ticket.type_name?.toLowerCase().includes(query) ||
+        ticket.status?.toLowerCase().includes(query) ||
+        ticket.current_assignee_name?.toLowerCase().includes(query) ||
+        ticket.current_assignee_role?.toLowerCase().includes(query) ||
+        ticket.customer_note?.toLowerCase().includes(query) ||
+        ticket.technician_note?.toLowerCase().includes(query) ||
+        ticket.noc_note?.toLowerCase().includes(query)
+      )
+    })
+  }
+
+  return filtered
 })
 
 const nocImageFile = ref<File | null>(null)
@@ -796,6 +838,83 @@ async function sendToCSFromModal() {
     nocActionSubmitting.value = false
   }
 }
+
+// New function: Send to CS and automatically assign technician
+async function sendToCSWithAutoAssign() {
+  if (!selectedId.value) return;
+  try {
+    nocActionSubmitting.value = true
+
+    // First, send to CS
+    await ticketsApi().sendToCS(selectedId.value, nocNote.value, nocSelectedType.value || undefined, nocImageFile.value || undefined)
+    
+    // Then automatically assign technician (since it's always a technician problem when pressing "To CS")
+    try {
+      await ticketsApi().assignTechnician(selectedId.value)
+      notification.success('Sent to CS & Assigned Technician', 'Ticket sent to CS and automatically assigned to technician.', 3000)
+    } catch (assignError: any) {
+      console.warn('Auto-assign technician failed:', assignError)
+      notification.success('Sent to CS', 'Ticket sent to CS. Note: Auto-assign technician failed.', 3000)
+    }
+    
+    showNOCNoteModal.value = false
+    await refresh()
+  } catch (e: any) {
+    console.error('sendToCSWithAutoAssign error:', e)
+    const msg = e?.data?.message || e?.message || 'Failed to send to CS'
+    notification.error('Action failed', String(msg), 5000)
+  } finally {
+    nocActionSubmitting.value = false
+  }
+}
+
+// Classification management functions
+function selectClassification(classification: string) {
+  selectedClassification.value = classification
+  showHistory.value = false
+  dateFilter.value = '1day' // Reset to default when switching classification
+}
+
+function resetFilters() {
+  selectedClassification.value = 'gangguan'
+  dateFilter.value = '1day'
+  showHistory.value = false
+  searchQuery.value = ''
+}
+
+function toggleHistory() {
+  showHistory.value = !showHistory.value
+  if (showHistory.value) {
+    dateFilter.value = 'all'
+  } else {
+    dateFilter.value = '1day'
+  }
+}
+
+// Get classification display name
+function getClassificationName(classificationId: string): string {
+  const names: Record<string, string> = {
+    'gangguan': 'Gangguan',
+    'psb': 'PSB',
+    'lainnya': 'Lainnya',
+    'dismantle': 'Dismantle'
+  }
+  return names[classificationId] || classificationId
+}
+
+// Check if NOC action should be shown for classification
+function shouldShowNOCAction(classificationId: string): boolean {
+  // Only show NOC action for "Gangguan" classification
+  // Hide for: psb, lainnya, dismantle
+  return classificationId === 'gangguan'
+}
+
+// Check if ticket should be shown in dashboard cards
+function shouldShowInCards(classificationId: string): boolean {
+  // Show in cards: gangguan, psb, dismantle, lainnya
+  // All classifications show in cards now
+  return true
+}
 async function resolve() {
   if (!selectedId.value) return;
   const actionKey = `resolve_${selectedId.value}`
@@ -874,18 +993,22 @@ const getTicketActions = (ticket: any) => {
   // Enforce: NOC must act BEFORE assigning a technician
   const nocActionRecorded = !!(ticket.noc_note || ticket.img_noc)
   const isCSLikeAssignee = (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN')
+  const classificationId = ticket.classification_id || ticket.classification || 'gangguan'
 
   if ((ticket.status === 'unfinished' || (ticket.status === 'ongoing' && isCSLikeAssignee && !nocActionRecorded)) &&
     isCSLikeAssignee) {
 
     if (isAdmin.value || isCustomerService.value) {
-      actions.push({
-        label: 'NOC Action',
-        color: 'bg-blue-600',
-        action: () => { actPrepareNOC(ticket.id) },
-        show: true,
-        tooltip: 'Send ticket to Network Operations Center'
-      })
+      // Only show NOC action if classification allows it
+      if (shouldShowNOCAction(classificationId)) {
+        actions.push({
+          label: 'Ticket Action',
+          color: 'bg-blue-600',
+          action: () => { actPrepareNOC(ticket.id) },
+          show: true,
+          tooltip: 'Take action on ticket (To CS or NOC Solved)'
+        })
+      }
     }
   }
 
@@ -1178,8 +1301,21 @@ async function handleImageUpload(event: Event) {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   if (file) {
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      notification.error('File too large', 'Image must be less than 10MB', 3000)
+      return
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      notification.error('Invalid file type', 'Please select an image file', 3000)
+      return
+    }
+
     try {
       selectedCSFile = file
+      
       // Upload file using existing API
       const uploadData = {
         name: `ticket_cs_${Date.now()}`,
@@ -1188,19 +1324,27 @@ async function handleImageUpload(event: Event) {
       }
 
       const response = await uploadFileAdminApi().createUploadFile(uploadData)
-      if (response.data) {
-        // Store filename only, URL will be constructed in backend
-        const fileName = response.data.file || response.data.full_path?.split('/').pop()
+      if (response.data && response.data.file) {
+        // Store only the filename (should be under 60 characters)
+        const fileName = response.data.file
+        if (fileName.length > 60) {
+          throw new Error('Generated filename is too long')
+        }
         form.value.img_cs = fileName
+        notification.success('Image uploaded', 'Image uploaded successfully', 2000)
+      } else {
+        throw new Error('Invalid response from upload API')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading image:', error)
-      // Fallback to base64 for preview
-      const fallbackReader = new FileReader()
-      fallbackReader.onload = (e) => {
-        form.value.img_cs = e.target?.result as string
+      notification.error('Upload failed', `Failed to upload image: ${error?.message || 'Unknown error'}`, 5000)
+      
+      // Clear the form field and file input
+      form.value.img_cs = ''
+      selectedCSFile = undefined
+      if (target) {
+        target.value = ''
       }
-      fallbackReader.readAsDataURL(file)
     }
   }
 }
@@ -1236,18 +1380,23 @@ async function createTicket() {
       classifiedType = '1'
     }
 
-    // Only include img_cs if there's actually an image
+    // Only include img_cs if there's actually an image filename (not base64)
     const ticketData: any = {
       customer_id: String(form.value.customer_id),
       title: form.value.title,
       description: form.value.description,
       type: classifiedType,
-      classification: form.value.classification,
+      classification_id: form.value.classification,
     }
 
-    // Only add img_cs if there's a valid image filename
-    if (form.value.img_cs && form.value.img_cs.trim() !== '') {
-      ticketData.img_cs = form.value.img_cs
+    // Only add img_cs if there's a valid image filename (not base64 data)
+    if (form.value.img_cs && form.value.img_cs.trim() !== '' && !form.value.img_cs.startsWith('data:')) {
+      // Ensure filename is not too long for database
+      if (form.value.img_cs.length <= 60) {
+        ticketData.img_cs = form.value.img_cs
+      } else {
+        console.warn('Image filename too long, skipping:', form.value.img_cs.length)
+      }
     }
 
     const created: any = await ticketsApi().create(ticketData)
@@ -1255,14 +1404,15 @@ async function createTicket() {
     // Immediately send to NOC with description as note and attached image file
     try {
       const newId = created?.data?.id || created?.id
-      if (newId) {
+      if (newId && selectedCSFile) {
         await ticketsApi().sendToNOC(Number(newId), form.value.description || form.value.title || '', selectedCSFile)
       }
     } catch (e) {
       console.warn('sendToNOC after create failed:', e)
     }
     showAdd.value = false
-    form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', img_cs: '', classification: '' }
+    form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', img_cs: '', classification: 'gangguan' }
+    selectedCSFile = undefined // Clear the selected file
     notification.success('Success!', 'Ticket created successfully', 3000)
     await refresh()
   } catch (error: any) {
@@ -1326,6 +1476,136 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
     <div v-if="activeTab === 0" class="space-y-4">
       <h1 class="text-2xl font-semibold text-gray-900">Trouble Tickets</h1>
 
+      <!-- New Classification System UI -->
+      <div class="bg-white rounded-lg shadow border border-gray-100 p-4">
+        <!-- Responsive Classification Buttons -->
+        <div class="space-y-3">
+          <!-- Desktop Classification Buttons -->
+          <div class="hidden md:flex flex-wrap gap-2">
+            <button 
+              v-for="classification in ['gangguan', 'psb', 'dismantle', 'lainnya']" 
+              :key="classification"
+              @click="selectClassification(classification)"
+              :class="[
+                'px-4 py-2 rounded-lg font-medium transition-colors',
+                selectedClassification === classification 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ]"
+            >
+              {{ getClassificationName(classification) }}
+            </button>
+            
+            <!-- Reset and Histori buttons -->
+            <div class="flex gap-2 ml-auto">
+              <button 
+                @click="resetFilters"
+                class="px-4 py-2 rounded-lg font-medium bg-gray-500 text-white hover:bg-gray-600 transition-colors"
+              >
+                Reset
+              </button>
+              <button 
+                @click="toggleHistory"
+                :class="[
+                  'px-4 py-2 rounded-lg font-medium transition-colors',
+                  showHistory 
+                    ? 'bg-green-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ]"
+              >
+                {{ showHistory ? 'Current' : 'Histori' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Mobile Classification Buttons -->
+          <div class="md:hidden space-y-3">
+            <!-- Classification Buttons - 2x2 Grid on Mobile -->
+            <div class="grid grid-cols-2 gap-2">
+              <button 
+                v-for="classification in ['gangguan', 'psb', 'dismantle', 'lainnya']" 
+                :key="classification"
+                @click="selectClassification(classification)"
+                :class="[
+                  'px-4 py-3 rounded-lg font-medium transition-colors text-center',
+                  selectedClassification === classification 
+                    ? 'bg-blue-600 text-white shadow-md' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                ]"
+              >
+                {{ getClassificationName(classification) }}
+              </button>
+            </div>
+            
+            <!-- Reset and Histori buttons - Full Width on Mobile -->
+            <div class="grid grid-cols-2 gap-2">
+              <button 
+                @click="resetFilters"
+                class="px-4 py-3 rounded-lg font-medium bg-gray-500 text-white hover:bg-gray-600 active:bg-gray-700 transition-colors text-center"
+              >
+                Reset
+              </button>
+              <button 
+                @click="toggleHistory"
+                :class="[
+                  'px-4 py-3 rounded-lg font-medium transition-colors text-center',
+                  showHistory 
+                    ? 'bg-green-600 text-white shadow-md' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+                ]"
+              >
+                {{ showHistory ? 'Current' : 'Histori' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Responsive Date Filter -->
+        <div class="space-y-3">
+          <!-- Desktop Date Filter -->
+          <div class="hidden md:flex items-center gap-4">
+            <div class="flex items-center gap-2">
+              <label class="text-sm font-medium text-gray-700">Date Filter:</label>
+              <select 
+                v-model="dateFilter" 
+                :disabled="showHistory"
+                class="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="1day">Last 1 Day</option>
+                <option value="7days">Last 7 Days</option>
+                <option value="30days">Last 30 Days</option>
+                <option value="all">All Time</option>
+              </select>
+            </div>
+            <div class="text-sm text-gray-600">
+              Showing: {{ getClassificationName(selectedClassification) }} 
+              {{ showHistory ? '(All Time)' : `(${dateFilter === '1day' ? 'Last 1 Day' : dateFilter === '7days' ? 'Last 7 Days' : dateFilter === '30days' ? 'Last 30 Days' : 'All Time'})` }}
+            </div>
+          </div>
+
+          <!-- Mobile Date Filter -->
+          <div class="md:hidden space-y-3">
+            <div class="flex flex-col gap-2">
+              <label class="text-sm font-medium text-gray-700">Date Filter:</label>
+              <select 
+                v-model="dateFilter" 
+                :disabled="showHistory"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                <option value="1day">Last 1 Day</option>
+                <option value="7days">Last 7 Days</option>
+                <option value="30days">Last 30 Days</option>
+                <option value="all">All Time</option>
+              </select>
+            </div>
+            <div class="text-center text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+              <span class="font-medium">Showing:</span> {{ getClassificationName(selectedClassification) }} 
+              {{ showHistory ? '(All Time)' : `(${dateFilter === '1day' ? 'Last 1 Day' : dateFilter === '7days' ? 'Last 7 Days' : dateFilter === '30days' ? 'Last 30 Days' : 'All Time'})` }}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div v-if="showUpdatesBanner"
         class="p-3 rounded bg-yellow-50 border border-yellow-200 text-yellow-800 flex items-center justify-between">
         <div>
@@ -1337,78 +1617,214 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         </div>
       </div>
 
-      <div class="p-4 bg-white rounded-lg shadow border border-gray-100">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-4">
-            <button v-if="isAdmin || isCustomerService"
-              class="px-3 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700" @click="showAdd = true">Add
-              Ticket</button>
-          </div>
-          <div class="flex items-center gap-2">
-            <div class="relative">
-              <input v-model="searchQuery" type="text" placeholder="Search tickets..."
-                class="pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-64 text-gray-900 bg-white " />
-              <svg class="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor"
-                viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
+      <!-- Responsive Ticket Display -->
+      <div class="space-y-4">
+        <!-- Desktop Header with Actions -->
+        <div class="hidden md:block bg-white rounded-lg shadow border border-gray-100 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-4">
+              <button v-if="isAdmin || isCustomerService"
+                class="px-3 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700" @click="showAdd = true">Add
+                Ticket</button>
             </div>
-            <span v-if="searchQuery" class="text-sm text-gray-500">
-              {{ filteredRows.length }} of {{ rows.length }} tickets
-            </span>
+            <div class="flex items-center gap-2">
+              <div class="relative">
+                <input v-model="searchQuery" type="text" placeholder="Search tickets..."
+                  class="pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-64 text-gray-900 bg-white " />
+                <svg class="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </div>
+              <span v-if="searchQuery" class="text-sm text-gray-500">
+                {{ filteredRows.length }} of {{ rows.length }} tickets
+              </span>
+            </div>
           </div>
         </div>
-        <div class="table-scroll-container">
-          <div class="table-scroll-content">
-            <table class="min-w-full text-sm text-gray-900">
-              <colgroup>
-                <col class="w-16">
-                <col class="w-32">
-                <col class="w-64">
-                <col class="w-24">
-                <col class="w-24">
-                <col class="w-24">
-                <col class="w-32">
-                <col class="w-64">
-                <col class="w-32">
-                <col class="w-32">
-              </colgroup>
-              <thead class="bg-gray-100">
-                <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
-                  <th class="p-2 w-16">ID</th>
-                  <th class="p-2 w-32">Customer</th>
-                  <th class="p-2 w-64">Title</th>
-                  <th class="p-2 w-64">Description</th>
-                  <th class="p-2 w-24">Type</th>
-                  <th class="p-2 w-24">Classification</th>
-                  <th class="p-2 w-24">Status</th>
-                  <th class="p-2 w-32">Assignee</th>
-                  <th class="p-2 w-32">Notes</th>
-                  <th class="p-2 w-32">Network</th>
-                  <th class="p-2 w-32">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <template v-for="(r, index) in filteredRows" :key="r?.id || index">
-                  <tr v-if="r" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70 transition-colors">
-                  <td class="p-2">{{ r.id }}</td>
-                  <td class="p-2 font-medium text-blue-600">{{ r.customer_name || 'Unknown Customer' }}</td>
-                  <td class="p-2">{{ r.title }}</td>
-                  <td class="p-2 text-gray-700 max-w-xs truncate" :title="r.description || ''">{{ r.description || '-'
-                  }}</td>
-                  <td class="p-2 capitalize">{{ r.type_name || r.type }}</td>
-                  <td class="p-2">
-                    <span v-if="r.verified_by_cs === true || r.verified_by_cs === 1"
-                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Information
+
+        <!-- Mobile Header with Actions -->
+        <div class="md:hidden bg-white rounded-lg shadow border border-gray-100 p-4">
+          <div class="flex flex-col gap-3">
+            <!-- Add Ticket Button - Full Width on Mobile -->
+            <button v-if="isAdmin || isCustomerService"
+              class="w-full px-4 py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+              @click="showAdd = true">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+              Add New Ticket
+            </button>
+            
+            <!-- Search Bar - Full Width on Mobile -->
+            <div class="relative">
+              <input v-model="searchQuery" type="text" placeholder="Search tickets by customer, title, or description..."
+                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white" />
+              <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+            
+            <!-- Results Counter -->
+            <div v-if="searchQuery" class="text-sm text-gray-600 text-center">
+              Showing {{ filteredRows.length }} of {{ rows.length }} tickets
+            </div>
+          </div>
+        </div>
+
+        <!-- Desktop Table View -->
+        <div class="hidden md:block bg-white rounded-lg shadow border border-gray-100">
+          <div class="table-scroll-container">
+            <div class="table-scroll-content">
+              <table class="min-w-full text-sm text-gray-900">
+                <colgroup>
+                  <col class="w-16">
+                  <col class="w-32">
+                  <col class="w-64">
+                  <col class="w-24">
+                  <col class="w-24">
+                  <col class="w-24">
+                  <col class="w-32">
+                  <col class="w-64">
+                  <col class="w-32">
+                  <col class="w-32">
+                </colgroup>
+                <thead class="bg-gray-100">
+                  <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
+                    <th class="p-2 w-16">ID</th>
+                    <th class="p-2 w-32">Customer</th>
+                    <th class="p-2 w-64">Title</th>
+                    <th class="p-2 w-64">Description</th>
+                    <th class="p-2 w-24">Type</th>
+                    <th class="p-2 w-24">Classification</th>
+                    <th class="p-2 w-24">Status</th>
+                    <th class="p-2 w-32">Assignee</th>
+                    <th class="p-2 w-32">Notes</th>
+                    <th class="p-2 w-32">Network</th>
+                    <th class="p-2 w-32">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template v-for="(r, index) in filteredRows" :key="r?.id || index">
+                    <tr v-if="r" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70 transition-colors">
+                    <td class="p-2">{{ r.id }}</td>
+                    <td class="p-2 font-medium text-blue-600">{{ r.customer_name || 'Unknown Customer' }}</td>
+                    <td class="p-2">{{ r.title }}</td>
+                    <td class="p-2 text-gray-700 max-w-xs truncate" :title="r.description || ''">{{ r.description || '-'
+                    }}</td>
+                    <td class="p-2 capitalize">{{ r.type_name || r.type }}</td>
+                    <td class="p-2">
+                      <span 
+                        :class="[
+                          'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
+                          (r.classification_id === 'gangguan' || r.classification === 'gangguan') ? 'bg-red-100 text-red-800' :
+                          (r.classification_id === 'psb' || r.classification === 'psb') ? 'bg-blue-100 text-blue-800' :
+                          (r.classification_id === 'dismantle' || r.classification === 'dismantle') ? 'bg-orange-100 text-orange-800' :
+                          (r.classification_id === 'lainnya' || r.classification === 'lainnya') ? 'bg-gray-100 text-gray-800' :
+                          'bg-gray-100 text-gray-800'
+                        ]"
+                      >
+                        {{ getClassificationName(r.classification_id || r.classification || 'gangguan') }}
+                      </span>
+                    </td>
+                    <td class="p-2">
+                      <span v-if="r.status === 'finished'"
+                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Finished
+                      </span>
+                      <span v-else-if="r.status === 'ongoing'"
+                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                        Ongoing
+                      </span>
+                      <span v-else
+                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 capitalize">
+                        {{ r.status || 'unknown' }}
+                      </span>
+                    </td>
+                    <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
+                    <td class="p-2 max-w-xs">
+                      <div class="flex flex-col gap-1 max-w-xs">
+                        <div v-if="r.customer_note" class="text-xs">
+                          <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">CS:</span>
+                          <span class="ml-1 text-gray-700 break-words">{{ r.customer_note }}</span>
+                        </div>
+                        <div v-if="r.technician_note" class="text-xs">
+                          <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">Tech:</span>
+                          <span class="ml-1 text-gray-700 break-words">{{ r.technician_note }}</span>
+                        </div>
+                        <div v-if="r.noc_note" class="text-xs">
+                          <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">NOC:</span>
+                          <span class="ml-1 text-gray-700 break-words">{{ r.noc_note }}</span>
+                        </div>
+                        <span v-if="!r.customer_note && !r.technician_note && !r.noc_note"
+                          class="text-gray-400 text-xs">No notes</span>
+                      </div>
+                    </td>
+                    <td class="p-2">
+                      <span v-if="r.network_architecture"
+                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {{ r.network_architecture }}
+                      </span>
+                      <span v-else class="text-gray-400 text-xs">-</span>
+                    </td>
+                    <td class="p-2">
+                      <div class="flex flex-col gap-1 min-w-[120px]">
+                        <button v-for="action in getTicketActions(r)" :key="action.label"
+                          :class="['px-3 py-1.5 text-white rounded text-xs font-medium hover:opacity-80 transition-opacity w-full text-center flex items-center justify-center gap-2', action.color]"
+                          @click="action.action" :title="action.tooltip"
+                          :disabled="actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting">
+                          <svg
+                            v-if="actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting"
+                            class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
+                          </svg>
+                          {{ actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] ||
+                            nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting ? 'Loading...' :
+                            action.label }}
+                        </button>
+                        <span v-if="getTicketActions(r).length === 0" class="text-gray-400 text-xs text-center py-1">
+                          No actions available
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-scroll-footer">
+              <span class="scroll-hint">↔ Scroll horizontally to see more columns | ↕ Scroll vertically for more
+                rows</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile Card View -->
+        <div class="md:hidden space-y-3">
+          <template v-for="(r, index) in filteredRows" :key="r?.id || index">
+            <div v-if="r" class="bg-white rounded-lg shadow border border-gray-100 p-4 hover:shadow-md transition-shadow">
+              <!-- Card Header -->
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-lg font-bold text-gray-900">#{{ r.id }}</span>
+                    <span 
+                      :class="[
+                        'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
+                        (r.classification_id === 'gangguan' || r.classification === 'gangguan') ? 'bg-red-100 text-red-800' :
+                        (r.classification_id === 'psb' || r.classification === 'psb') ? 'bg-blue-100 text-blue-800' :
+                        (r.classification_id === 'dismantle' || r.classification === 'dismantle') ? 'bg-orange-100 text-orange-800' :
+                        (r.classification_id === 'lainnya' || r.classification === 'lainnya') ? 'bg-gray-100 text-gray-800' :
+                        'bg-gray-100 text-gray-800'
+                      ]"
+                    >
+                      {{ getClassificationName(r.classification_id || r.classification || 'gangguan') }}
                     </span>
-                    <span v-else
-                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      Trouble
-                    </span>
-                  </td>
-                  <td class="p-2">
                     <span v-if="r.status === 'finished'"
                       class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       Finished
@@ -1421,65 +1837,81 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                       class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 capitalize">
                       {{ r.status || 'unknown' }}
                     </span>
-                  </td>
-                  <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
-                  <td class="p-2 max-w-xs">
-                    <div class="flex flex-col gap-1 max-w-xs">
-                      <div v-if="r.customer_note" class="text-xs">
-                        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">CS:</span>
-                        <span class="ml-1 text-gray-700 break-words">{{ r.customer_note }}</span>
-                      </div>
-                      <div v-if="r.technician_note" class="text-xs">
-                        <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">Tech:</span>
-                        <span class="ml-1 text-gray-700 break-words">{{ r.technician_note }}</span>
-                      </div>
-                      <div v-if="r.noc_note" class="text-xs">
-                        <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">NOC:</span>
-                        <span class="ml-1 text-gray-700 break-words">{{ r.noc_note }}</span>
-                      </div>
-                      <span v-if="!r.customer_note && !r.technician_note && !r.noc_note"
-                        class="text-gray-400 text-xs">No notes</span>
+                  </div>
+                  <h3 class="font-semibold text-gray-900 text-base leading-tight">{{ r.title }}</h3>
+                  <p class="text-sm text-blue-600 font-medium mt-1">{{ r.customer_name || 'Unknown Customer' }}</p>
+                </div>
+              </div>
+
+              <!-- Card Content -->
+              <div class="space-y-3">
+                <!-- Description -->
+                <div v-if="r.description">
+                  <p class="text-sm text-gray-700 leading-relaxed">{{ r.description }}</p>
+                </div>
+
+                <!-- Type and Assignee -->
+                <div class="flex flex-wrap gap-2 text-xs">
+                  <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                    Type: {{ r.type_name || r.type || 'Unknown' }}
+                  </span>
+                  <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                    Assignee: {{ r.current_assignee_name || r.current_assignee_role || 'Unassigned' }}
+                  </span>
+                  <span v-if="r.network_architecture" class="bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                    Network: {{ r.network_architecture }}
+                  </span>
+                </div>
+
+                <!-- Notes Section -->
+                <div v-if="r.customer_note || r.technician_note || r.noc_note" class="space-y-2">
+                  <div v-if="r.customer_note" class="bg-blue-50 p-2 rounded text-xs">
+                    <span class="font-medium text-blue-800">CS Note:</span>
+                    <p class="text-blue-700 mt-1">{{ r.customer_note }}</p>
+                  </div>
+                  <div v-if="r.technician_note" class="bg-orange-50 p-2 rounded text-xs">
+                    <span class="font-medium text-orange-800">Tech Note:</span>
+                    <p class="text-orange-700 mt-1">{{ r.technician_note }}</p>
+                  </div>
+                  <div v-if="r.noc_note" class="bg-purple-50 p-2 rounded text-xs">
+                    <span class="font-medium text-purple-800">NOC Note:</span>
+                    <p class="text-purple-700 mt-1">{{ r.noc_note }}</p>
+                  </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="pt-3 border-t border-gray-100">
+                  <div class="flex flex-col gap-2">
+                    <button v-for="action in getTicketActions(r)" :key="action.label"
+                      :class="['w-full px-4 py-3 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2', action.color]"
+                      @click="action.action" :title="action.tooltip"
+                      :disabled="actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting">
+                      <svg
+                        v-if="actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting"
+                        class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      {{ actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting ? 'Loading...' : action.label }}
+                    </button>
+                    <div v-if="getTicketActions(r).length === 0" class="text-center py-2 text-gray-500 text-sm">
+                      No actions available
                     </div>
-                  </td>
-                  <td class="p-2">
-                    <span v-if="r.network_architecture"
-                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {{ r.network_architecture }}
-                    </span>
-                    <span v-else class="text-gray-400 text-xs">-</span>
-                  </td>
-                  <td class="p-2">
-                    <div class="flex flex-col gap-1 min-w-[120px]">
-                      <button v-for="action in getTicketActions(r)" :key="action.label"
-                        :class="['px-3 py-1.5 text-white rounded text-xs font-medium hover:opacity-80 transition-opacity w-full text-center flex items-center justify-center gap-2', action.color]"
-                        @click="action.action" :title="action.tooltip"
-                        :disabled="actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting">
-                        <svg
-                          v-if="actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting"
-                          class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
-                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-                          </circle>
-                          <path class="opacity-75" fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                          </path>
-                        </svg>
-                        {{ actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] ||
-                          nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting ? 'Loading...' :
-                          action.label }}
-                      </button>
-                      <span v-if="getTicketActions(r).length === 0" class="text-gray-400 text-xs text-center py-1">
-                        No actions available
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-                </template>
-              </tbody>
-            </table>
-          </div>
-          <div class="table-scroll-footer">
-            <span class="scroll-hint">↔ Scroll horizontally to see more columns | ↕ Scroll vertically for more
-              rows</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- Empty State -->
+          <div v-if="filteredRows.length === 0" class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No tickets found</h3>
+            <p class="mt-1 text-sm text-gray-500">
+              {{ searchQuery ? 'Try adjusting your search criteria.' : 'No tickets match the current filters.' }}
+            </p>
           </div>
         </div>
       </div>
@@ -1513,10 +1945,10 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         </div>
       </div>
 
-      <!-- Modal Add Ticket -->
-      <div v-if="showAdd" class="fixed inset-0 z-50 flex items-center justify-center">
+      <!-- Mobile-Optimized Modal Add Ticket -->
+      <div v-if="showAdd" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
         <div class="absolute inset-0 bg-black/60" @click="showAdd = false"></div>
-        <div class="relative w-full max-w-2xl mx-4 rounded-xl shadow-xl bg-slate-900 text-slate-100 p-6">
+        <div class="relative w-full max-w-2xl mx-4 rounded-t-xl sm:rounded-xl shadow-xl bg-slate-900 text-slate-100 p-6 max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-xl font-semibold">Add New Ticket</h2>
             <button class="text-slate-300 hover:text-white" @click="showAdd = false">✕</button>
@@ -1556,18 +1988,35 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
               <label class="block text-sm text-slate-300 mb-1">Classification</label>
               <select v-model="form.classification"
                 class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none">
-                <option value="gangguan">Gangguan (Trouble)</option>
-                <option value="info">Info (Information)</option>
+                <option value="gangguan">Gangguan</option>
+                <option value="psb">PSB (Pasang Baru)</option>
+                <option value="dismantle">Dismantle</option>
+                <option value="lainnya">Lainnya</option>
               </select>
             </div>
             <div class="md:col-span-2">
-              <label class="block text-sm text-slate-300 mb-1">Upload Image (CS)</label>
+              <label class="block text-sm text-slate-300 mb-1">Upload Image (CS) - Optional</label>
               <input type="file" @change="handleImageUpload" accept="image/*"
                 class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none" />
-              <div v-if="form.img_cs" class="mt-2">
-                <img :src="`${useApiHost()}/uploads/cs-images/${form.img_cs}`" alt="Preview"
-                  class="w-32 h-32 object-cover rounded border" />
+              <div v-if="form.img_cs && !form.img_cs.startsWith('data:')" class="mt-2">
+                <div class="flex items-center gap-2 p-2 bg-green-900/20 border border-green-500/30 rounded">
+                  <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                  </svg>
+                  <span class="text-sm text-green-300">Image uploaded successfully</span>
+                  <button @click="form.img_cs = ''; selectedCSFile = undefined" class="text-red-400 hover:text-red-300 text-sm">Remove</button>
+                </div>
               </div>
+              <div v-else-if="form.img_cs && form.img_cs.startsWith('data:')" class="mt-2">
+                <div class="flex items-center gap-2 p-2 bg-yellow-900/20 border border-yellow-500/30 rounded">
+                  <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                  </svg>
+                  <span class="text-sm text-yellow-300">Image upload failed - using preview only</span>
+                  <button @click="form.img_cs = ''; selectedCSFile = undefined" class="text-red-400 hover:text-red-300 text-sm">Remove</button>
+                </div>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">PNG, JPG, GIF up to 10MB</p>
             </div>
           </div>
           <div v-else class="text-slate-300">Loading options...</div>
@@ -1591,7 +2040,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         <div class="absolute inset-0 bg-black/60" @click="showNOCNoteModal = false"></div>
         <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold text-gray-900">NOC Action</h2>
+            <h2 class="text-xl font-semibold text-gray-900">Ticket Action</h2>
             <button class="text-gray-400 hover:text-gray-600" @click="showNOCNoteModal = false">✕</button>
           </div>
           <div class="space-y-4">
@@ -1680,21 +2129,13 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
           <div class="mt-6 flex justify-end gap-2">
             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showNOCNoteModal = false"
               :disabled="nocActionSubmitting">Cancel</button>
-            <button class="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50" @click="sendToNOCFromModal"
-              v-if="isAdmin || isCustomerService" :disabled="nocActionSubmitting">
-              {{ nocActionSubmitting ? 'Sending...' : 'To NOC' }}
-            </button>
-            <button class="px-4 py-2 rounded bg-purple-600 text-white disabled:opacity-50" @click="sendToCSFromModal"
+            <button class="px-4 py-2 rounded bg-purple-600 text-white disabled:opacity-50" @click="sendToCSWithAutoAssign"
               v-if="isAdmin || isCustomerService" :disabled="nocActionSubmitting">
               {{ nocActionSubmitting ? 'Sending...' : 'To CS' }}
             </button>
             <button class="px-4 py-2 rounded bg-green-600 text-white disabled:opacity-50" @click="nocSolvedFromModal"
               v-if="isAdmin || isCustomerService" :disabled="nocActionSubmitting">
               {{ nocActionSubmitting ? 'Processing...' : 'NOC Solved' }}
-            </button>
-            <button class="px-4 py-2 rounded bg-amber-600 text-white disabled:opacity-50" @click="nocPhysicalFromModal"
-              v-if="isAdmin || isCustomerService" :disabled="nocActionSubmitting">
-              {{ nocActionSubmitting ? 'Processing...' : 'Physical' }}
             </button>
           </div>
         </div>

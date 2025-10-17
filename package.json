@@ -4,10 +4,18 @@
   "type": "module",
   "scripts": {
     "build": "nuxt build",
+    "build:local": "node switch-env.js local && nuxt build",
+    "build:production": "node switch-env.js production && nuxt build",
     "dev": "nuxt dev",
+    "dev:local": "node switch-env.js local && nuxt dev",
+    "dev:production": "node switch-env.js production && nuxt dev",
     "generate": "nuxt generate",
+    "generate:local": "node switch-env.js local && nuxt generate",
+    "generate:production": "node switch-env.js production && nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "switch:local": "node switch-env.js local",
+    "switch:production": "node switch-env.js production"
   },
   "dependencies": {
     "@i2d/nuxt-pdf-frame": "^0.5.0",

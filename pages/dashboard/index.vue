@@ -773,11 +773,11 @@ import { number } from "yup";
 
 const { show, hide } = useLoading()
 
-// Function to get new dashboard data
-const getNewDashboardData = async () => {
+// Function to get new dashboard data with optional filter parameters
+const getNewDashboardData = async (filterParams: any = {}) => {
   try {
-    // Get dashboard stats
-    const statsResponse = await dashboardAdminApi().getDashboardStats();
+    // Get dashboard stats with filter parameters
+    const statsResponse = await dashboardAdminApi().getDashboardStats(filterParams);
     dashboardStats.value = statsResponse.data;
 
     // Get recent invoices
@@ -854,8 +854,8 @@ const getNewDashboardData = async () => {
   }
 };
 
-// Get recent tickets
-const getRecentTickets = async () => {
+// Get recent tickets with optional filter parameters
+const getRecentTickets = async (filterParams: any = {}) => {
   try {
     // Load trouble type names for display mapping
     try {
@@ -994,6 +994,13 @@ async function applyDateFilter() {
   }
   
   try {
+    // Refresh dashboard cards with filter parameters
+    await getNewDashboardData(params)
+    
+    // Refresh recent tickets with filter parameters
+    await getRecentTickets(params)
+    
+    // Refresh charts with filter parameters
     const growthResponse = await dashboardAdminApi().getCustomerGrowth(params)
     customerGrowth.value = growthResponse.data
     const revenueResponse = await dashboardAdminApi().getRevenueChart(params)
@@ -1011,9 +1018,35 @@ async function applyDateFilter() {
 
 
 
-function refreshCharts() {
-  // Refresh the analytics charts data
+// Refresh data with current filter settings
+function refreshWithCurrentFilters() {
+  // Apply current filter settings and refresh data
+  applyDateFilter()
+}
+
+// Reset all filters to default and refresh data
+function resetFilters() {
+  // Reset all filter values to default
+  filterType.value = 'all-time'
+  selectedMonth.value = null
+  selectedYear.value = null
+  customDateFrom.value = ''
+  customDateTo.value = ''
+  selectedDateRange.value = 0
+  useYearRange.value = false
+  yearStart.value = null
+  yearEnd.value = null
+  
+  // Refresh data with default settings
   getNewDashboardData()
+  getRecentTickets()
+}
+
+// Legacy function for backward compatibility
+function refreshCharts() {
+  // Refresh dashboard cards, tickets, and analytics charts data
+  getNewDashboardData()
+  getRecentTickets()
 }
 
 
@@ -1048,6 +1081,155 @@ watch([useYearRange, yearStart, yearEnd], async () => {
 </script>
 
 <template>
+  <!-- Dashboard Header with Reset Button -->
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
+    <UButton icon="i-heroicons-arrow-uturn-left" color="gray" variant="soft" size="sm" @click="resetFilters"
+      title="Reset all filters to default and refresh data">
+      Reset
+    </UButton>
+  </div>
+
+  <!-- Global Dashboard Filters -->
+  <div class="bg-white border border-slate-200 rounded-2xl shadow-lg p-6 mb-6">
+    <div class="flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-800">Filter Dashboard Data</h2>
+        <div class="text-sm text-gray-500">
+          Filters apply to all dashboard cards and charts
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Filter Type Selection -->
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-gray-700">Filter Type</label>
+          <select v-model="filterType" @change="applyDateFilter"
+            class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="all-time">All Time</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+            <option value="range">Range (Days)</option>
+            <option value="custom">Custom Date Range</option>
+          </select>
+        </div>
+
+        <!-- Monthly Filter -->
+        <div v-if="filterType === 'monthly'" class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-gray-700">Year</label>
+          <select v-model.number="selectedYear" @change="applyDateFilter"
+            class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option :value="null">Select Year</option>
+            <option v-for="y in availableYears" :key="'my'+y" :value="y">{{ y }}</option>
+          </select>
+        </div>
+
+        <div v-if="filterType === 'monthly'" class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-gray-700">Month</label>
+          <select v-model.number="selectedMonth" @change="applyDateFilter"
+            class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option :value="null">Select Month</option>
+            <option v-for="month in availableMonths" :key="'mm'+month.value" :value="month.value">{{ month.label }}</option>
+          </select>
+        </div>
+
+        <!-- Yearly Filter -->
+        <div v-if="filterType === 'yearly'" class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-gray-700">Year</label>
+          <select v-model.number="selectedYear" @change="applyDateFilter"
+            class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option :value="null">Select Year</option>
+            <option v-for="y in availableYears" :key="'yy'+y" :value="y">{{ y }}</option>
+          </select>
+        </div>
+
+        <!-- Range Filter -->
+        <div v-if="filterType === 'range'" class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-gray-700">Date Range</label>
+          <select v-model="selectedDateRange" @change="applyDateFilter"
+            class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option :value="365">Last year</option>
+            <option :value="730">Last 2 years</option>
+            <option :value="1095">Last 3 years</option>
+            <option :value="0">All time</option>
+          </select>
+        </div>
+
+        <!-- Custom Date Range Filter -->
+        <div v-if="filterType === 'custom'" class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-gray-700">From Date</label>
+          <input v-model="customDateFrom" type="date" @change="applyDateFilter"
+            class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+        </div>
+
+        <div v-if="filterType === 'custom'" class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-gray-700">To Date</label>
+          <input v-model="customDateTo" type="date" @change="applyDateFilter"
+            class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+        </div>
+      </div>
+
+      <!-- Advanced Year Range Toggle -->
+      <div class="flex items-center gap-3 pt-2 border-t border-gray-200">
+        <label class="text-sm font-medium text-gray-700">Advanced Year Range:</label>
+        <input type="checkbox" v-model="useYearRange" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" title="Filter by start/end year" />
+        <span class="text-sm text-gray-500">Override other filters with year range</span>
+      </div>
+
+      <!-- Year Range Selectors -->
+      <div v-if="useYearRange" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-200">
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-gray-700">From Year</label>
+          <select v-model.number="yearStart" @change="applyDateFilter" 
+            class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option :value="null">-</option>
+            <option v-for="y in availableYears" :key="'ys'+y" :value="y">{{ y }}</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-medium text-gray-700">To Year</label>
+          <select v-model.number="yearEnd" @change="applyDateFilter" 
+            class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option :value="null">-</option>
+            <option v-for="y in availableYears" :key="'ye'+y" :value="y">{{ y }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Active Filter Display -->
+      <div class="flex items-center justify-between pt-2 border-t border-gray-200">
+        <div class="text-sm text-gray-600">
+          <span class="font-medium">Active Filter:</span>
+          <span v-if="filterType === 'monthly' && selectedYear && selectedMonth" class="text-blue-600">
+            {{ availableMonths.find(m => m.value === selectedMonth)?.label }} {{ selectedYear }}
+          </span>
+          <span v-else-if="filterType === 'yearly' && selectedYear" class="text-blue-600">
+            {{ selectedYear }}
+          </span>
+          <span v-else-if="filterType === 'range'" class="text-blue-600">
+            Last {{ selectedDateRange }} days
+          </span>
+          <span v-else-if="filterType === 'custom' && customDateFrom && customDateTo" class="text-blue-600">
+            {{ customDateFrom }} to {{ customDateTo }}
+          </span>
+          <span v-else-if="useYearRange && yearStart && yearEnd" class="text-blue-600">
+            {{ yearStart }} - {{ yearEnd }}
+          </span>
+          <span v-else class="text-gray-500">
+            All Time
+          </span>
+        </div>
+        <UButton icon="i-heroicons-arrow-path" color="blue" variant="soft" size="sm" @click="refreshWithCurrentFilters"
+          title="Refresh data with current filter settings">
+          Refresh
+        </UButton>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Stats Cards -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 py-6">
     <div
@@ -1154,8 +1336,8 @@ watch([useYearRange, yearStart, yearEnd], async () => {
     <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg">
       <div class="flex justify-between items-center mb-4">
         <h1 class="text-xl font-semibold text-slate-800">Recent Invoices</h1>
-        <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="getNewDashboardData"
-          title="Refresh Recent Invoices" />
+        <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="refreshWithCurrentFilters"
+          title="Refresh Dashboard Data" />
       </div>
       <div v-if="recentInvoices.length > 0" class="space-y-3">
         <div v-for="invoice in recentInvoices.slice(0, 5)" :key="invoice.id"
@@ -1187,8 +1369,8 @@ watch([useYearRange, yearStart, yearEnd], async () => {
     <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg">
       <div class="flex justify-between items-center mb-4">
         <h1 class="text-xl font-semibold text-slate-800">Recent Transactions</h1>
-        <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="getNewDashboardData"
-          title="Refresh Recent Transactions" />
+        <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="refreshWithCurrentFilters"
+          title="Refresh Dashboard Data" />
       </div>
       <div v-if="recentTransactions.length > 0" class="space-y-3">
         <div v-for="transaction in recentTransactions.slice(0, 5)" :key="transaction.id"
@@ -1223,8 +1405,8 @@ watch([useYearRange, yearStart, yearEnd], async () => {
   <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg mb-10">
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-xl font-semibold text-slate-800">Recent Trouble Tickets</h1>
-      <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="getRecentTickets"
-        title="Refresh Recent Tickets" />
+        <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="refreshWithCurrentFilters"
+          title="Refresh Dashboard Data" />
     </div>
     <div v-if="recentTickets.length > 0" class="overflow-x-auto">
       <table class="min-w-full text-sm">
@@ -1285,102 +1467,10 @@ watch([useYearRange, yearStart, yearEnd], async () => {
 
   <!-- Charts Section -->
   <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg">
-    <div class="flex flex-col justify-start items-start mb-6 gap-4">
+    <div class="flex justify-between items-center mb-6">
       <h1 class="text-xl font-semibold text-slate-800">Analytics Charts</h1>
-      
-      <!-- Chart Filters -->
-      <div class="flex flex-col gap-4 w-full">
-        <!-- Filter Type Selection -->
-        <div class="flex items-center gap-2">
-          <label class="text-sm font-medium text-gray-700">Filter Type:</label>
-          <select v-model="filterType" @change="applyDateFilter"
-            class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="all-time">All Time</option>
-            <option value="monthly">Monthly</option>
-            <option value="yearly">Yearly</option>
-            <option value="range">Range (Days)</option>
-            <option value="custom">Custom Date Range</option>
-          </select>
-        </div>
-
-        <!-- Monthly Filter -->
-        <div v-if="filterType === 'monthly'" class="flex items-center gap-2">
-          <label class="text-sm font-medium text-gray-700">Year:</label>
-          <select v-model.number="selectedYear" @change="applyDateFilter"
-            class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option :value="null">Select Year</option>
-            <option v-for="y in availableYears" :key="'my'+y" :value="y">{{ y }}</option>
-          </select>
-          <label class="text-sm font-medium text-gray-700">Month:</label>
-          <select v-model.number="selectedMonth" @change="applyDateFilter"
-            class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option :value="null">Select Month</option>
-            <option v-for="month in availableMonths" :key="'mm'+month.value" :value="month.value">{{ month.label }}</option>
-          </select>
-        </div>
-
-        <!-- Yearly Filter -->
-        <div v-if="filterType === 'yearly'" class="flex items-center gap-2">
-          <label class="text-sm font-medium text-gray-700">Year:</label>
-          <select v-model.number="selectedYear" @change="applyDateFilter"
-            class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option :value="null">Select Year</option>
-            <option v-for="y in availableYears" :key="'yy'+y" :value="y">{{ y }}</option>
-          </select>
-        </div>
-
-        <!-- Range Filter (Legacy) -->
-        <div v-if="filterType === 'range'" class="flex items-center gap-2">
-          <label class="text-sm font-medium text-gray-700">Date Range:</label>
-          <select v-model="selectedDateRange" @change="applyDateFilter"
-            class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 90 days</option>
-            <option :value="365">Last year</option>
-            <option :value="730">Last 2 years</option>
-            <option :value="1095">Last 3 years</option>
-            <option :value="0">All time</option>
-          </select>
-        </div>
-
-        <!-- Custom Date Range Filter -->
-        <div v-if="filterType === 'custom'" class="flex items-center gap-2">
-          <label class="text-sm font-medium text-gray-700">From:</label>
-          <input v-model="customDateFrom" type="date" @change="applyDateFilter"
-            class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <label class="text-sm font-medium text-gray-700">To:</label>
-          <input v-model="customDateTo" type="date" @change="applyDateFilter"
-            class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        </div>
-
-        <!-- Year Range Toggle (Advanced) -->
-        <div class="flex items-center gap-2">
-          <label class="text-sm font-medium text-gray-700">Advanced Year Range:</label>
-          <input type="checkbox" v-model="useYearRange" class="h-4 w-4" title="Filter by start/end year" />
-        </div>
-
-        <!-- Year Range Selectors -->
-        <div class="flex items-center gap-2" v-if="useYearRange">
-          <label class="text-sm font-medium text-gray-700">From Year</label>
-          <select v-model.number="yearStart" @change="applyDateFilter" class="px-3 py-1 text-sm border border-gray-300 rounded-md">
-            <option :value="null">-</option>
-            <option v-for="y in availableYears" :key="'ys'+y" :value="y">{{ y }}</option>
-          </select>
-          <label class="text-sm font-medium text-gray-700">To Year</label>
-          <select v-model.number="yearEnd" @change="applyDateFilter" class="px-3 py-1 text-sm border border-gray-300 rounded-md">
-            <option :value="null">-</option>
-            <option v-for="y in availableYears" :key="'ye'+y" :value="y">{{ y }}</option>
-          </select>
-        </div>
-
-        <!-- Refresh Button -->
-        <div class="flex items-center gap-2">
-          <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="refreshCharts"
-            title="Refresh Charts">
-            Refresh
-          </UButton>
-        </div>
+      <div class="text-sm text-gray-500">
+        Charts automatically update based on dashboard filters above
       </div>
     </div>
     <div class="grid gap-6 grid-cols-1">
@@ -1388,25 +1478,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
         <div class="mb-3">
           <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">
-            Customer Growth 
-            <span v-if="filterType === 'monthly' && selectedYear && selectedMonth">
-              ({{ availableMonths.find(m => m.value === selectedMonth)?.label }} {{ selectedYear }})
-            </span>
-            <span v-else-if="filterType === 'yearly' && selectedYear">
-              ({{ selectedYear }})
-            </span>
-            <span v-else-if="filterType === 'range'">
-              ({{ selectedDateRange }} days)
-            </span>
-            <span v-else-if="filterType === 'custom' && customDateFrom && customDateTo">
-              ({{ customDateFrom }} to {{ customDateTo }})
-            </span>
-            <span v-else-if="useYearRange && yearStart && yearEnd">
-              ({{ yearStart }} - {{ yearEnd }})
-            </span>
-            <span v-else>
-              (All Time)
-            </span>
+            Customer Growth
           </h2>
         </div>
         <div v-if="filteredCustomerGrowth && filteredCustomerGrowth.length > 0" class="h-80 w-full overflow-hidden">
@@ -1421,25 +1493,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
         <div class="mb-3">
           <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">
-            Revenue Chart 
-            <span v-if="filterType === 'monthly' && selectedYear && selectedMonth">
-              ({{ availableMonths.find(m => m.value === selectedMonth)?.label }} {{ selectedYear }})
-            </span>
-            <span v-else-if="filterType === 'yearly' && selectedYear">
-              ({{ selectedYear }})
-            </span>
-            <span v-else-if="filterType === 'range'">
-              ({{ selectedDateRange }} days)
-            </span>
-            <span v-else-if="filterType === 'custom' && customDateFrom && customDateTo">
-              ({{ customDateFrom }} to {{ customDateTo }})
-            </span>
-            <span v-else-if="useYearRange && yearStart && yearEnd">
-              ({{ yearStart }} - {{ yearEnd }})
-            </span>
-            <span v-else>
-              (All Time)
-            </span>
+            Revenue Chart
           </h2>
         </div>
         <div v-if="filteredRevenueChart && filteredRevenueChart.length > 0" class="h-80 w-full overflow-hidden">
@@ -1454,25 +1508,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
         <div class="mb-3">
           <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">
-            Expenses Chart 
-            <span v-if="filterType === 'monthly' && selectedYear && selectedMonth">
-              ({{ availableMonths.find(m => m.value === selectedMonth)?.label }} {{ selectedYear }})
-            </span>
-            <span v-else-if="filterType === 'yearly' && selectedYear">
-              ({{ selectedYear }})
-            </span>
-            <span v-else-if="filterType === 'range'">
-              ({{ selectedDateRange }} days)
-            </span>
-            <span v-else-if="filterType === 'custom' && customDateFrom && customDateTo">
-              ({{ customDateFrom }} to {{ customDateTo }})
-            </span>
-            <span v-else-if="useYearRange && yearStart && yearEnd">
-              ({{ yearStart }} - {{ yearEnd }})
-            </span>
-            <span v-else>
-              (All Time)
-            </span>
+            Expenses Chart
           </h2>
         </div>
         <div v-if="filteredExpensesChart && filteredExpensesChart.length > 0" class="h-80 w-full overflow-hidden">
@@ -1487,25 +1523,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
         <div class="mb-3">
           <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">
-            Unpaid & Pending Customers 
-            <span v-if="filterType === 'monthly' && selectedYear && selectedMonth">
-              ({{ availableMonths.find(m => m.value === selectedMonth)?.label }} {{ selectedYear }})
-            </span>
-            <span v-else-if="filterType === 'yearly' && selectedYear">
-              ({{ selectedYear }})
-            </span>
-            <span v-else-if="filterType === 'range'">
-              ({{ selectedDateRange }} days)
-            </span>
-            <span v-else-if="filterType === 'custom' && customDateFrom && customDateTo">
-              ({{ customDateFrom }} to {{ customDateTo }})
-            </span>
-            <span v-else-if="useYearRange && yearStart && yearEnd">
-              ({{ yearStart }} - {{ yearEnd }})
-            </span>
-            <span v-else>
-              (All Time)
-            </span>
+            Unpaid & Pending Customers
           </h2>
         </div>
         <div v-if="(filteredUnpaidCustomersChart.unpaid?.length > 0) || (filteredUnpaidCustomersChart.pending?.length > 0)" class="h-80 w-full overflow-hidden">
@@ -1522,8 +1540,8 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg">
         <div class="flex justify-between items-center mb-4">
           <h1 class="text-xl font-semibold text-slate-800">Unpaid & Pending Customers</h1>
-          <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="getNewDashboardData"
-            title="Refresh Unpaid Customers" />
+          <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="refreshWithCurrentFilters"
+            title="Refresh Dashboard Data" />
         </div>
         <div v-if="unpaidCustomersList.length > 0" class="space-y-3">
           <div v-for="customer in unpaidCustomersList.slice(0, 10)" :key="customer.id"
