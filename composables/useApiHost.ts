@@ -16,10 +16,11 @@ export const useApiHost = () => {
   }
 
   // Only force localhost if explicitly on localhost AND no API_HOST is set
-  if (process.client && window.location.hostname === 'localhost' && !config.public.API_HOST) {
-    api = 'http://localhost:3001';
-    console.log('🔧 Using localhost:3001 for local development');
-  }
+  // REMOVED: This was causing localhost to be used even on VPS
+  // if (process.client && window.location.hostname === 'localhost' && !config.public.API_HOST) {
+  //   api = 'http://localhost:3001';
+  //   console.log('🔧 Using localhost:3001 for local development');
+  // }
 
   console.log('🔗 API Host configured as:', api);
   console.log('🌐 Current window location:', process.client ? window.location.href : 'server-side');
