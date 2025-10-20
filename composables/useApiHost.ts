@@ -10,8 +10,8 @@ export const useApiHost = () => {
       api = `${proto}://${host}:${port}`;
       console.warn(`⚠️ NUXT_PUBLIC_API_HOST not set; using inferred ${api}`);
     } else {
-      console.warn('⚠️ NUXT_PUBLIC_API_HOST is not defined in .env; using fallback http://localhost:3001');
-      api = 'http://localhost:3001';
+      console.warn('⚠️ NUXT_PUBLIC_API_HOST is not defined in .env; using fallback http://rndpolije.lilly.net.id');
+      api = 'http://rndpolije.lilly.net.id';
     }
   }
 
@@ -37,8 +37,8 @@ export const useWaHost = () => {
       wa = `${proto}://${host}:${port}`;
       console.warn(`⚠️ NUXT_PUBLIC_WA_HOST not set; using inferred ${wa}`);
     } else {
-      console.warn('⚠️ NUXT_PUBLIC_WA_HOST is not defined in .env; using fallback http://localhost:3001');
-      wa = 'http://localhost:3001';
+      console.warn('⚠️ NUXT_PUBLIC_WA_HOST is not defined in .env; using fallback http://rndpolije.lilly.net.id');
+      wa = 'http://rndpolije.lilly.net.id';
     }
   }
 
