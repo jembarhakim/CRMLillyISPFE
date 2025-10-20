@@ -34,19 +34,7 @@
             @click="testURL(`${apiHost}/api/auth/login`)" 
             class="bg-green-500 text-white px-3 py-1 rounded text-sm mr-2"
           >
-            Current API Host
-          </button>
-          <button 
-            @click="testURL('http://localhost:3001/api/auth/login')" 
-            class="bg-green-500 text-white px-3 py-1 rounded text-sm mr-2"
-          >
-            localhost:3001
-          </button>
-          <button 
-            @click="testURL('http://127.0.0.1:3001/api/auth/login')" 
-            class="bg-green-500 text-white px-3 py-1 rounded text-sm mr-2"
-          >
-            127.0.0.1:3001
+            Test Current API Host
           </button>
         </div>
         <div v-if="urlTestResult" class="mt-4 p-4 bg-gray-100 rounded">
