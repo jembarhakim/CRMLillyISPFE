@@ -15,10 +15,10 @@ export const useApiHost = () => {
     }
   }
 
-  // Force localhost for development
-  if (process.client && window.location.hostname === 'localhost') {
+  // Only force localhost if explicitly on localhost AND no API_HOST is set
+  if (process.client && window.location.hostname === 'localhost' && !config.public.API_HOST) {
     api = 'http://localhost:3001';
-    console.log('🔧 Forcing localhost:3001 for development');
+    console.log('🔧 Using localhost:3001 for local development');
   }
 
   console.log('🔗 API Host configured as:', api);

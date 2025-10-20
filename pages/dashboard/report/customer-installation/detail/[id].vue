@@ -1384,26 +1384,29 @@ function getDocumentPhotoUrl(documentPhoto: string | undefined) {
     return documentPhoto;
   }
 
+  // Get the API host from environment
+  const apiHost = useApiHost();
+
   // Normalize the path by removing any duplicated upload directories
   let normalizedPath = normalizeDocumentPhotoPath(documentPhoto);
   console.log('getDocumentPhotoUrl: Normalized path:', documentPhoto, '->', normalizedPath);
 
   // If it starts with uploads/, add the backend base URL
   if (normalizedPath.startsWith('uploads/')) {
-    const url = `http://localhost:3001/${normalizedPath}`;
+    const url = `${apiHost}/${normalizedPath}`;
     console.log('getDocumentPhotoUrl: Generated URL:', url);
     return url;
   }
 
   // If it's just a filename, assume it's in uploads/installations/documents/
   if (!normalizedPath.includes('/')) {
-    const url = `http://localhost:3001/uploads/installations/documents/${normalizedPath}`;
+    const url = `${apiHost}/uploads/installations/documents/${normalizedPath}`;
     console.log('getDocumentPhotoUrl: Generated URL for filename:', url);
     return url;
   }
 
   // Default: prepend backend URL
-  const url = `http://localhost:3001/${normalizedPath}`;
+  const url = `${apiHost}/${normalizedPath}`;
   console.log('getDocumentPhotoUrl: Generated default URL:', url);
   return url;
 }
@@ -1580,9 +1583,9 @@ function getTechnicianPhotoUrl(photoPath: string) {
     return photoPath;
   }
   
-  // Construct the full URL using the same pattern as document photos
-  const baseUrl = 'http://localhost:3001'; // Use the same backend URL as document photos
-  return `${baseUrl}/${photoPath}`;
+  // Get the API host from environment
+  const apiHost = useApiHost();
+  return `${apiHost}/${photoPath}`;
 }
 
 function openTechnicianPhotoModal(photo: string, index: number) {
