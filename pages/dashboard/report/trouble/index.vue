@@ -430,7 +430,7 @@ async function sendToCS(ticket: any) {
 </script>
 
 <template>
-  <div class="space-y-6 text-gray-900">
+  <div class="space-y-6 text-gray-900 pt-4">
     <h1 class="text-2xl font-semibold text-gray-900">Trouble Reports</h1>
 
     <!-- Action Buttons -->
@@ -511,7 +511,7 @@ async function sendToCS(ticket: any) {
              <label class="text-sm font-medium text-gray-700">Filter Waktu:</label>
              <select 
                v-model="selectedTimeFilter" 
-               class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+               class="px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
                @change="fetchSnapshot"
              >
                <option v-for="option in timeFilterOptions" :key="option.value" :value="option.value">
@@ -553,79 +553,181 @@ async function sendToCS(ticket: any) {
       </div>
     </div>
 
-    <!-- Detailed Table -->
-    <div class="p-4 bg-white rounded-lg shadow border border-gray-100">
+    <!-- Responsive Trouble Tickets Display -->
+    <div class="bg-white rounded-lg shadow border border-gray-100 p-4">
       <h2 class="mb-4 font-semibold text-gray-800">All Trouble Tickets</h2>
-      <div class="table-scroll-container">
-        <div class="table-scroll-content">
-          <table class="min-w-full text-sm text-gray-900">
-            <thead class="bg-gray-100">
-              <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
-                <th class="p-2">ID</th>
-                <th class="p-2">Title</th>
-                <th class="p-2">Type</th>
-                <th class="p-2">Status</th>
-                <th class="p-2">Accumulation</th>
-                <th class="p-2">Assignee</th>
-                <th class="p-2">Created</th>
-                <th class="p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="r in rows" :key="r.id" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70">
-                <td class="p-2">{{ r.id }}</td>
-                <td class="p-2">{{ r.title }}</td>
-                <td class="p-2 capitalize">{{ typeNameMap[r.type] || r.type }}</td>
-                <td class="p-2 capitalize">
+      
+      <!-- Desktop Table View -->
+      <div class="hidden md:block">
+        <div class="table-scroll-container">
+          <div class="table-scroll-content">
+            <table class="min-w-full text-sm text-gray-900">
+              <thead class="bg-gray-100">
+                <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
+                  <th class="p-2">ID</th>
+                  <th class="p-2">Title</th>
+                  <th class="p-2">Type</th>
+                  <th class="p-2">Status</th>
+                  <th class="p-2">Accumulation</th>
+                  <th class="p-2">Assignee</th>
+                  <th class="p-2">Created</th>
+                  <th class="p-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in rows" :key="r.id" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70">
+                  <td class="p-2">{{ r.id }}</td>
+                  <td class="p-2">{{ r.title }}</td>
+                  <td class="p-2 capitalize">{{ typeNameMap[r.type] || r.type }}</td>
+                  <td class="p-2">
+                    <span v-if="r.status === 'finished'"
+                      class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-green-600 text-white shadow-lg border-2 border-green-700">
+                      ✅ Finished
+                    </span>
+                    <span v-else-if="r.status === 'ongoing'"
+                      class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-orange-600 text-white shadow-lg border-2 border-orange-700 animate-pulse">
+                      🔄 Ongoing
+                    </span>
+                    <span v-else
+                      class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-red-600 text-white shadow-lg border-2 border-red-700 animate-pulse">
+                      ⚠️ Unfinished
+                    </span>
+                  </td>
+                  <td class="p-2">
+                    <div class="flex items-center space-x-2">
+                      <span :class="{
+                        'px-2 py-1 rounded-full text-xs font-medium': true,
+                        'bg-blue-100 text-blue-800': r.accumulation === 1,
+                        'bg-orange-100 text-orange-800': r.accumulation > 1 && r.accumulation <= 5,
+                        'bg-red-100 text-red-800': r.accumulation > 5 && r.accumulation <= 50,
+                        'bg-red-200 text-red-900': r.accumulation > 50 && r.accumulation <= 100,
+                        'bg-red-300 text-red-950': r.accumulation > 100 && r.accumulation <= 500,
+                        'bg-red-400 text-white font-bold': r.accumulation > 500
+                      }">
+                        {{ formatAccumulation(r.accumulation || 1) }}
+                      </span>
+                      <button 
+                        @click="editAccumulation(r)"
+                        class="text-blue-600 hover:text-blue-800 text-xs underline"
+                        title="Edit accumulation"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </td>
+                  <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
+                  <td class="p-2">{{ r.created_at?.slice?.(0,10) }}</td>
+                  <td class="p-2">
+                    <button 
+                      @click="sendToCS(r)"
+                      class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs"
+                      title="Send to Customer Service"
+                    >
+                      To CS
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-scroll-footer">
+            <span class="scroll-hint">↔ Scroll horizontally to see more columns | ↕ Scroll vertically for more rows</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Card View -->
+      <div class="md:hidden space-y-3">
+        <template v-for="r in rows" :key="r.id">
+          <div class="bg-white rounded-lg shadow border border-gray-100 p-4 hover:shadow-md transition-shadow">
+            <!-- Card Header -->
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-lg font-bold text-gray-900">#{{ r.id }}</span>
+                  <span v-if="r.status === 'finished'"
+                    class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-green-600 text-white shadow-lg border-2 border-green-700">
+                    ✅ Finished
+                  </span>
+                  <span v-else-if="r.status === 'ongoing'"
+                    class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-orange-600 text-white shadow-lg border-2 border-orange-700 animate-pulse">
+                    🔄 Ongoing
+                  </span>
+                  <span v-else
+                    class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-red-600 text-white shadow-lg border-2 border-red-700 animate-pulse">
+                    ⚠️ Unfinished
+                  </span>
+                </div>
+                <h3 class="font-semibold text-gray-900 text-base leading-tight">{{ r.title }}</h3>
+              </div>
+            </div>
+
+            <!-- Card Content -->
+            <div class="space-y-3">
+              <!-- Type and Assignee -->
+              <div class="flex flex-wrap gap-2 text-xs">
+                <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                  Type: {{ typeNameMap[r.type] || r.type || 'Unknown' }}
+                </span>
+                <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                  Assignee: {{ r.current_assignee_name || r.current_assignee_role || 'Unassigned' }}
+                </span>
+                <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                  Created: {{ r.created_at?.slice?.(0,10) }}
+                </span>
+              </div>
+
+              <!-- Accumulation -->
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-700">Accumulation:</span>
+                <div class="flex items-center space-x-2">
                   <span :class="{
                     'px-2 py-1 rounded-full text-xs font-medium': true,
-                    'bg-red-100 text-red-800': r.status === 'unfinished',
-                    'bg-yellow-100 text-yellow-800': r.status === 'ongoing',
-                    'bg-green-100 text-green-800': r.status === 'finished',
-                    'bg-gray-100 text-gray-800': !['unfinished', 'ongoing', 'finished'].includes(r.status)
+                    'bg-blue-100 text-blue-800': r.accumulation === 1,
+                    'bg-orange-100 text-orange-800': r.accumulation > 1 && r.accumulation <= 5,
+                    'bg-red-100 text-red-800': r.accumulation > 5 && r.accumulation <= 50,
+                    'bg-red-200 text-red-900': r.accumulation > 50 && r.accumulation <= 100,
+                    'bg-red-300 text-red-950': r.accumulation > 100 && r.accumulation <= 500,
+                    'bg-red-400 text-white font-bold': r.accumulation > 500
                   }">
-                    {{ r.status }}
+                    {{ formatAccumulation(r.accumulation || 1) }}
                   </span>
-                </td>
-                <td class="p-2">
-                  <div class="flex items-center space-x-2">
-                    <span :class="{
-                      'px-2 py-1 rounded-full text-xs font-medium': true,
-                      'bg-blue-100 text-blue-800': r.accumulation === 1,
-                      'bg-orange-100 text-orange-800': r.accumulation > 1 && r.accumulation <= 5,
-                      'bg-red-100 text-red-800': r.accumulation > 5 && r.accumulation <= 50,
-                      'bg-red-200 text-red-900': r.accumulation > 50 && r.accumulation <= 100,
-                      'bg-red-300 text-red-950': r.accumulation > 100 && r.accumulation <= 500,
-                      'bg-red-400 text-white font-bold': r.accumulation > 500
-                    }">
-                      {{ formatAccumulation(r.accumulation || 1) }}
-                    </span>
-                    <button 
-                      @click="editAccumulation(r)"
-                      class="text-blue-600 hover:text-blue-800 text-xs underline"
-                      title="Edit accumulation"
-                    >
-                      Edit
-                    </button>
-                  </div>
-                </td>
-                <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
-                <td class="p-2">{{ r.created_at?.slice?.(0,10) }}</td>
-                <td class="p-2">
                   <button 
-                    @click="sendToCS(r)"
-                    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs"
-                    title="Send to Customer Service"
+                    @click="editAccumulation(r)"
+                    class="text-blue-600 hover:text-blue-800 text-xs underline"
+                    title="Edit accumulation"
                   >
-                    To CS
+                    Edit
                   </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="table-scroll-footer">
-          <span class="scroll-hint">↔ Scroll horizontally to see more columns | ↕ Scroll vertically for more rows</span>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="pt-3 border-t border-gray-100">
+                <button 
+                  @click="sendToCS(r)"
+                  class="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  title="Send to Customer Service"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                  </svg>
+                  Send to CS
+                </button>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Empty State -->
+        <div v-if="rows.length === 0" class="text-center py-12">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+            </path>
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No tickets found</h3>
+          <p class="mt-1 text-sm text-gray-500">No trouble tickets match the current filters.</p>
         </div>
       </div>
     </div>

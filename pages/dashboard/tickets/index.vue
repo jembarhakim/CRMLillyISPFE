@@ -1,5 +1,3 @@
-
-
 import { Bar } from 'vue-chartjs'
 import {
 Chart as ChartJS,
@@ -71,7 +69,7 @@ const activeTab = ref(0)
 const isLoading = ref(true)
 
 // New classification system state
-const selectedClassification = ref<string>('gangguan')
+const selectedClassification = ref<string>('gangguan') // Default to gangguan
 const dateFilter = ref<string>('1day') // '1day', '7days', '30days', 'all'
 const showHistory = ref(false)
 
@@ -341,43 +339,158 @@ async function saveNetworkArchitecture() {
   }
 }
 
+// Helper function to filter tickets by date
+const getDateFilteredTickets = (tickets: any[]) => {
+  if (dateFilter.value === 'all' || showHistory.value) {
+    return tickets
+  }
+
+  const now = new Date()
+  const filterDate = new Date()
+
+  switch (dateFilter.value) {
+    case '1day':
+      filterDate.setDate(now.getDate() - 1)
+      break
+    case '7days':
+      filterDate.setDate(now.getDate() - 7)
+      break
+    case '30days':
+      filterDate.setDate(now.getDate() - 30)
+      break
+  }
+
+  return tickets.filter(ticket => {
+    if (!ticket || !ticket.created_at) return false
+    const ticketDate = new Date(ticket.created_at)
+    return ticketDate >= filterDate
+  })
+}
+
+// Get count of unfinished and ongoing tickets for each classification
+const getClassificationCounts = computed(() => {
+  const safeRows = Array.isArray(rows.value) ? rows.value : []
+  const dateFilteredTickets = getDateFilteredTickets(safeRows)
+  
+  const counts: Record<string, { unfinished: number; ongoing: number }> = {
+    gangguan: { unfinished: 0, ongoing: 0 },
+    psb: { unfinished: 0, ongoing: 0 },
+    dismantle: { unfinished: 0, ongoing: 0 },
+    lainnya: { unfinished: 0, ongoing: 0 }
+  }
+
+  dateFilteredTickets.forEach(ticket => {
+    if (!ticket) return
+    
+    const classification = ticket.classification_id || ticket.classification || 'gangguan'
+    
+    if (ticket.status === 'unfinished') {
+      // Apply role-based filtering for unfinished tickets
+      let shouldCount = false
+      
+      if (isTechnician.value) {
+        const currentUserId = authStore.user?.user_id
+        shouldCount = ticket.assigned_to === currentUserId
+      } else if (isAdmin.value || isCustomerService.value) {
+        shouldCount = true
+      } else {
+        shouldCount = false
+      }
+      
+      if (shouldCount && counts.hasOwnProperty(classification)) {
+        counts[classification].unfinished++
+      }
+    } else if (ticket.status === 'ongoing') {
+      // Apply role-based filtering for ongoing tickets
+      let shouldCount = false
+      
+      if (isTechnician.value) {
+        const currentUserId = authStore.user?.user_id
+        shouldCount = ticket.assigned_to === currentUserId
+      } else if (isAdmin.value || isCustomerService.value) {
+        shouldCount = true
+      } else {
+        shouldCount = false
+      }
+      
+      if (shouldCount && counts.hasOwnProperty(classification)) {
+        counts[classification].ongoing++
+      }
+    }
+  })
+
+  return counts
+})
+
 // Filtered tickets based on classification, date filter, and search query
 const filteredRows = computed(() => {
   // Ensure rows.value is always an array
   const safeRows = Array.isArray(rows.value) ? rows.value : []
-  
+
   let filtered = safeRows
 
   // Filter by classification
   if (selectedClassification.value) {
     filtered = filtered.filter(ticket => {
       if (!ticket) return false
-      return ticket.classification_id === selectedClassification.value || 
-             ticket.classification === selectedClassification.value
+      return ticket.classification_id === selectedClassification.value ||
+        ticket.classification === selectedClassification.value
     })
   }
 
-  // Filter by date
-  if (dateFilter.value !== 'all' && !showHistory.value) {
-    const now = new Date()
-    const filterDate = new Date()
-    
-    switch (dateFilter.value) {
-      case '1day':
-        filterDate.setDate(now.getDate() - 1)
-        break
-      case '7days':
-        filterDate.setDate(now.getDate() - 7)
-        break
-      case '30days':
-        filterDate.setDate(now.getDate() - 30)
-        break
-    }
-    
+  // Apply date filter
+  filtered = getDateFilteredTickets(filtered)
+
+  // Filter by status: Only show unfinished tickets when not in history mode
+  if (!showHistory.value) {
     filtered = filtered.filter(ticket => {
-      if (!ticket || !ticket.created_at) return false
-      const ticketDate = new Date(ticket.created_at)
-      return ticketDate >= filterDate
+      if (!ticket) return false
+      
+      // If ticket is finished, don't show it in current view
+      if (ticket.status === 'finished') {
+        return false
+      }
+      
+      // Role-based filtering for both unfinished and ongoing tickets
+      if (ticket.status === 'unfinished') {
+        // For technicians: only show unfinished tickets assigned to them
+        if (isTechnician.value) {
+          const currentUserId = authStore.user?.user_id
+          const isAssignedToMe = ticket.assigned_to === currentUserId
+          console.log(`Technician filtering unfinished ticket ${ticket.id}: assigned_to=${ticket.assigned_to}, my_id=${currentUserId}, show=${isAssignedToMe}`)
+          return isAssignedToMe
+        }
+        // For admin and customer service: show all unfinished tickets
+        else if (isAdmin.value || isCustomerService.value) {
+          console.log(`Admin/CS can see unfinished ticket ${ticket.id}`)
+          return true
+        }
+        // For other roles: don't show unfinished tickets
+        else {
+          console.log(`Other role cannot see unfinished ticket ${ticket.id}`)
+          return false
+        }
+      } else if (ticket.status === 'ongoing') {
+        // For technicians: only show ongoing tickets assigned to them
+        if (isTechnician.value) {
+          const currentUserId = authStore.user?.user_id
+          const isAssignedToMe = ticket.assigned_to === currentUserId
+          console.log(`Technician filtering ongoing ticket ${ticket.id}: assigned_to=${ticket.assigned_to}, my_id=${currentUserId}, show=${isAssignedToMe}`)
+          return isAssignedToMe
+        }
+        // For admin and customer service: show all ongoing tickets for monitoring
+        else if (isAdmin.value || isCustomerService.value) {
+          console.log(`Admin/CS can see ongoing ticket ${ticket.id}`)
+          return true
+        }
+        // For other roles: don't show ongoing tickets
+        else {
+          console.log(`Other role cannot see ongoing ticket ${ticket.id}`)
+          return false
+        }
+      }
+      
+      return false
     })
   }
 
@@ -386,7 +499,7 @@ const filteredRows = computed(() => {
     const query = searchQuery.value.toLowerCase().trim()
     filtered = filtered.filter(ticket => {
       if (!ticket) return false
-      
+
       return (
         ticket.id?.toString().includes(query) ||
         ticket.customer_name?.toLowerCase().includes(query) ||
@@ -486,21 +599,21 @@ function actPrepareResolve(id: number) {
 function actPrepareNOC(id: number) {
   console.log('actPrepareNOC called with id:', id)
   selectedId.value = id;
-  
+
   // Find and set the selected ticket
   const ticket = rows.value.find(t => t.id === id)
   selectedTicket.value = ticket
-  
+
   nocNote.value = '';
   nocSelectedType.value = troubleTypes.value[0]?.id || ''
   nocImageFile.value = null;
   nocImagePreview.value = '';
   showNewType.value = false; // Reset new type form
   newTypeName.value = ''; // Clear new type name
-  
+
   // Initialize accumulation with current ticket value
   nocAccumulation.value = ticket?.accumulation || 1
-  
+
   showNOCNoteModal.value = true
   console.log('showNOCNoteModal set to:', showNOCNoteModal.value)
   console.log('selectedTicket set to:', selectedTicket.value)
@@ -743,13 +856,13 @@ async function updateAccumulationFromModal() {
   try {
     nocActionSubmitting.value = true
     await ticketsApi().updateAccumulation([selectedTicket.value.id], nocAccumulation.value)
-    
+
     // Update the ticket in the local data
     const ticketIndex = rows.value.findIndex(t => t.id === selectedTicket.value.id)
     if (ticketIndex !== -1) {
       rows.value[ticketIndex].accumulation = nocAccumulation.value
     }
-    
+
     notification.success('Success', `Accumulation updated to ${nocAccumulation.value} customers`, 3000)
   } catch (error: any) {
     console.error('updateAccumulationFromModal error:', error)
@@ -847,7 +960,7 @@ async function sendToCSWithAutoAssign() {
 
     // First, send to CS
     await ticketsApi().sendToCS(selectedId.value, nocNote.value, nocSelectedType.value || undefined, nocImageFile.value || undefined)
-    
+
     // Then automatically assign technician (since it's always a technician problem when pressing "To CS")
     try {
       await ticketsApi().assignTechnician(selectedId.value)
@@ -856,7 +969,7 @@ async function sendToCSWithAutoAssign() {
       console.warn('Auto-assign technician failed:', assignError)
       notification.success('Sent to CS', 'Ticket sent to CS. Note: Auto-assign technician failed.', 3000)
     }
-    
+
     showNOCNoteModal.value = false
     await refresh()
   } catch (e: any) {
@@ -872,11 +985,11 @@ async function sendToCSWithAutoAssign() {
 function selectClassification(classification: string) {
   selectedClassification.value = classification
   showHistory.value = false
-  dateFilter.value = '1day' // Reset to default when switching classification
+  // Don't reset dateFilter - keep the user's selected date filter
 }
 
 function resetFilters() {
-  selectedClassification.value = 'gangguan'
+  selectedClassification.value = 'gangguan' // Always reset to gangguan
   dateFilter.value = '1day'
   showHistory.value = false
   searchQuery.value = ''
@@ -1070,7 +1183,7 @@ const getTicketActions = (ticket: any) => {
       ticket.assigned_to === authStore.user?.user_id ||
       ticket.assigned_to === authStore.user?.user_id ||
       ticket.assigned_to === actualUserID
-    )) {        
+    )) {
 
       // For technicians who are assigned to the ticket
       if (ticket.assigned_to && (ticket.assigned_to === actualUserID)) {
@@ -1315,7 +1428,7 @@ async function handleImageUpload(event: Event) {
 
     try {
       selectedCSFile = file
-      
+
       // Upload file using existing API
       const uploadData = {
         name: `ticket_cs_${Date.now()}`,
@@ -1338,7 +1451,7 @@ async function handleImageUpload(event: Event) {
     } catch (error: any) {
       console.error('Error uploading image:', error)
       notification.error('Upload failed', `Failed to upload image: ${error?.message || 'Unknown error'}`, 5000)
-      
+
       // Clear the form field and file input
       form.value.img_cs = ''
       selectedCSFile = undefined
@@ -1433,7 +1546,7 @@ async function fetchAllTickets(params: any) {
     .list()
     .then((response: any) => {
       const data = response.data || response
-      
+
       // Check if data is an array and not null/undefined
       if (Array.isArray(data)) {
         data.forEach((t: any, idx: number) => {
@@ -1480,80 +1593,152 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
       <div class="bg-white rounded-lg shadow border border-gray-100 p-4">
         <!-- Responsive Classification Buttons -->
         <div class="space-y-3">
-          <!-- Desktop Classification Buttons -->
-          <div class="hidden md:flex flex-wrap gap-2">
-            <button 
-              v-for="classification in ['gangguan', 'psb', 'dismantle', 'lainnya']" 
-              :key="classification"
-              @click="selectClassification(classification)"
-              :class="[
-                'px-4 py-2 rounded-lg font-medium transition-colors',
-                selectedClassification === classification 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              ]"
-            >
-              {{ getClassificationName(classification) }}
+          <!-- Desktop Classification Cards -->
+          <div class="hidden md:grid grid-cols-4 gap-4 mb-4">
+            <button v-for="classification in ['gangguan', 'psb', 'dismantle', 'lainnya']" :key="classification"
+              @click="selectClassification(classification)" :class="[
+                'p-6 rounded-lg transition-all duration-200 hover:shadow-lg relative overflow-hidden',
+                selectedClassification === classification
+                  ? 'shadow-xl transform scale-105'
+                  : 'shadow-md hover:shadow-lg'
+              ]">
+              <!-- Background Gradient -->
+              <div :class="[
+                'absolute inset-0 rounded-lg',
+                classification === 'gangguan' ? 'bg-gradient-to-r from-red-500 to-red-600' :
+                classification === 'psb' ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
+                classification === 'dismantle' ? 'bg-gradient-to-r from-orange-500 to-orange-600' :
+                'bg-gradient-to-r from-gray-500 to-gray-600'
+              ]"></div>
+              
+              <!-- Content -->
+              <div class="relative z-10 text-white">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-xs font-medium uppercase tracking-wide opacity-90">
+                    {{ getClassificationName(classification) }}
+                  </div>
+                </div>
+                
+                <!-- Split into two sections -->
+                <div class="grid grid-cols-2 gap-2">
+                  <!-- Unfinished Section -->
+                  <div class="text-center">
+                    <div class="text-lg font-bold">
+                      {{ getClassificationCounts[classification].unfinished }}
+                    </div>
+                    <div class="text-xs opacity-75">
+                      Unfinished
+                    </div>
+                  </div>
+                  
+                  <!-- Ongoing Section -->
+                  <div class="text-center">
+                    <div class="text-lg font-bold">
+                      {{ getClassificationCounts[classification].ongoing }}
+                    </div>
+                    <div class="text-xs opacity-75">
+                      Ongoing
+                    </div>
+                  </div>
+                </div>
+              </div>
             </button>
-            
-            <!-- Reset and Histori buttons -->
-            <div class="flex gap-2 ml-auto">
-              <button 
-                @click="resetFilters"
-                class="px-4 py-2 rounded-lg font-medium bg-gray-500 text-white hover:bg-gray-600 transition-colors"
-              >
-                Reset
-              </button>
-              <button 
-                @click="toggleHistory"
-                :class="[
-                  'px-4 py-2 rounded-lg font-medium transition-colors',
-                  showHistory 
-                    ? 'bg-green-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                ]"
-              >
-                {{ showHistory ? 'Current' : 'Histori' }}
-              </button>
-            </div>
+          </div>
+          
+          <!-- Desktop Action Buttons -->
+          <div class="hidden md:flex gap-3 justify-end">
+            <button @click="resetFilters"
+              class="px-4 py-2 rounded-lg font-medium bg-gray-500 text-white hover:bg-gray-600 transition-colors flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              Reset
+            </button>
+            <button @click="toggleHistory" :class="[
+              'px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2',
+              showHistory
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            ]">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              {{ showHistory ? 'Current' : 'Histori' }}
+            </button>
           </div>
 
-          <!-- Mobile Classification Buttons -->
+          <!-- Mobile Classification Cards -->
           <div class="md:hidden space-y-3">
-            <!-- Classification Buttons - 2x2 Grid on Mobile -->
-            <div class="grid grid-cols-2 gap-2">
-              <button 
-                v-for="classification in ['gangguan', 'psb', 'dismantle', 'lainnya']" 
-                :key="classification"
-                @click="selectClassification(classification)"
-                :class="[
-                  'px-4 py-3 rounded-lg font-medium transition-colors text-center',
-                  selectedClassification === classification 
-                    ? 'bg-blue-600 text-white shadow-md' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
-                ]"
-              >
-                {{ getClassificationName(classification) }}
+            <!-- Classification Cards - 2x2 Grid on Mobile -->
+            <div class="grid grid-cols-2 gap-3">
+              <button v-for="classification in ['gangguan', 'psb', 'dismantle', 'lainnya']" :key="classification"
+                @click="selectClassification(classification)" :class="[
+                  'p-4 rounded-lg transition-all duration-200 hover:shadow-lg relative overflow-hidden',
+                  selectedClassification === classification
+                    ? 'shadow-xl transform scale-105'
+                    : 'shadow-md hover:shadow-lg'
+                ]">
+                <!-- Background Gradient -->
+                <div :class="[
+                  'absolute inset-0 rounded-lg',
+                  classification === 'gangguan' ? 'bg-gradient-to-r from-red-500 to-red-600' :
+                  classification === 'psb' ? 'bg-gradient-to-r from-blue-500 to-blue-600' :
+                  classification === 'dismantle' ? 'bg-gradient-to-r from-orange-500 to-orange-600' :
+                  'bg-gradient-to-r from-gray-500 to-gray-600'
+                ]"></div>
+                
+                <!-- Content -->
+                <div class="relative z-10 text-white">
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="text-xs font-medium uppercase tracking-wide opacity-90">
+                      {{ getClassificationName(classification) }}
+                    </div>
+                  </div>
+                  
+                  <!-- Split into two sections -->
+                  <div class="grid grid-cols-2 gap-2">
+                    <!-- Unfinished Section -->
+                    <div class="text-center">
+                      <div class="text-xl font-bold">
+                        {{ getClassificationCounts[classification].unfinished }}
+                      </div>
+                      <div class="text-xs opacity-75">
+                        Unfinished
+                      </div>
+                    </div>
+                    
+                    <!-- Ongoing Section -->
+                    <div class="text-center">
+                      <div class="text-xl font-bold">
+                        {{ getClassificationCounts[classification].ongoing }}
+                      </div>
+                      <div class="text-xs opacity-75">
+                        Ongoing
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </button>
             </div>
-            
+
             <!-- Reset and Histori buttons - Full Width on Mobile -->
-            <div class="grid grid-cols-2 gap-2">
-              <button 
-                @click="resetFilters"
-                class="px-4 py-3 rounded-lg font-medium bg-gray-500 text-white hover:bg-gray-600 active:bg-gray-700 transition-colors text-center"
-              >
+            <div class="grid grid-cols-2 gap-3">
+              <button @click="resetFilters"
+                class="px-4 py-3 rounded-lg font-medium bg-gray-500 text-white hover:bg-gray-600 active:bg-gray-700 transition-colors text-center flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
                 Reset
               </button>
-              <button 
-                @click="toggleHistory"
-                :class="[
-                  'px-4 py-3 rounded-lg font-medium transition-colors text-center',
-                  showHistory 
-                    ? 'bg-green-600 text-white shadow-md' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
-                ]"
-              >
+              <button @click="toggleHistory" :class="[
+                'px-4 py-3 rounded-lg font-medium transition-colors text-center flex items-center justify-center gap-2',
+                showHistory
+                  ? 'bg-green-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300'
+              ]">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
                 {{ showHistory ? 'Current' : 'Histori' }}
               </button>
             </div>
@@ -1566,11 +1751,8 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
           <div class="hidden md:flex items-center gap-4">
             <div class="flex items-center gap-2">
               <label class="text-sm font-medium text-gray-700">Date Filter:</label>
-              <select 
-                v-model="dateFilter" 
-                :disabled="showHistory"
-                class="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
+              <select v-model="dateFilter" :disabled="showHistory"
+                class="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900">
                 <option value="1day">Last 1 Day</option>
                 <option value="7days">Last 7 Days</option>
                 <option value="30days">Last 30 Days</option>
@@ -1578,7 +1760,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
               </select>
             </div>
             <div class="text-sm text-gray-600">
-              Showing: {{ getClassificationName(selectedClassification) }} 
+              Showing: {{ getClassificationName(selectedClassification) }}
               {{ showHistory ? '(All Time)' : `(${dateFilter === '1day' ? 'Last 1 Day' : dateFilter === '7days' ? 'Last 7 Days' : dateFilter === '30days' ? 'Last 30 Days' : 'All Time'})` }}
             </div>
           </div>
@@ -1587,11 +1769,8 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
           <div class="md:hidden space-y-3">
             <div class="flex flex-col gap-2">
               <label class="text-sm font-medium text-gray-700">Date Filter:</label>
-              <select 
-                v-model="dateFilter" 
-                :disabled="showHistory"
-                class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              >
+              <select v-model="dateFilter" :disabled="showHistory"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900">
                 <option value="1day">Last 1 Day</option>
                 <option value="7days">Last 7 Days</option>
                 <option value="30days">Last 30 Days</option>
@@ -1599,7 +1778,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
               </select>
             </div>
             <div class="text-center text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-              <span class="font-medium">Showing:</span> {{ getClassificationName(selectedClassification) }} 
+              <span class="font-medium">Showing:</span> {{ getClassificationName(selectedClassification) }}
               {{ showHistory ? '(All Time)' : `(${dateFilter === '1day' ? 'Last 1 Day' : dateFilter === '7days' ? 'Last 7 Days' : dateFilter === '30days' ? 'Last 30 Days' : 'All Time'})` }}
             </div>
           </div>
@@ -1656,16 +1835,19 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
               </svg>
               Add New Ticket
             </button>
-            
+
             <!-- Search Bar - Full Width on Mobile -->
             <div class="relative">
-              <input v-model="searchQuery" type="text" placeholder="Search tickets by customer, title, or description..."
+              <input v-model="searchQuery" type="text"
+                placeholder="Search tickets by customer, title, or description..."
                 class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white" />
-              <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
             </div>
-            
+
             <!-- Results Counter -->
             <div v-if="searchQuery" class="text-sm text-gray-600 text-center">
               Showing {{ filteredRows.length }} of {{ rows.length }} tickets
@@ -1707,92 +1889,92 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                 </thead>
                 <tbody>
                   <template v-for="(r, index) in filteredRows" :key="r?.id || index">
-                    <tr v-if="r" class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70 transition-colors">
-                    <td class="p-2">{{ r.id }}</td>
-                    <td class="p-2 font-medium text-blue-600">{{ r.customer_name || 'Unknown Customer' }}</td>
-                    <td class="p-2">{{ r.title }}</td>
-                    <td class="p-2 text-gray-700 max-w-xs truncate" :title="r.description || ''">{{ r.description || '-'
-                    }}</td>
-                    <td class="p-2 capitalize">{{ r.type_name || r.type }}</td>
-                    <td class="p-2">
-                      <span 
-                        :class="[
+                    <tr v-if="r"
+                      class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70 transition-colors">
+                      <td class="p-2">{{ r.id }}</td>
+                      <td class="p-2 font-medium text-blue-600">{{ r.customer_name || 'Unknown Customer' }}</td>
+                      <td class="p-2">{{ r.title }}</td>
+                      <td class="p-2 text-gray-700 max-w-xs truncate" :title="r.description || ''">{{ r.description ||
+                        '-'
+                        }}</td>
+                      <td class="p-2 capitalize">{{ r.type_name || r.type }}</td>
+                      <td class="p-2">
+                        <span :class="[
                           'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
                           (r.classification_id === 'gangguan' || r.classification === 'gangguan') ? 'bg-red-100 text-red-800' :
-                          (r.classification_id === 'psb' || r.classification === 'psb') ? 'bg-blue-100 text-blue-800' :
-                          (r.classification_id === 'dismantle' || r.classification === 'dismantle') ? 'bg-orange-100 text-orange-800' :
-                          (r.classification_id === 'lainnya' || r.classification === 'lainnya') ? 'bg-gray-100 text-gray-800' :
-                          'bg-gray-100 text-gray-800'
-                        ]"
-                      >
-                        {{ getClassificationName(r.classification_id || r.classification || 'gangguan') }}
-                      </span>
-                    </td>
+                            (r.classification_id === 'psb' || r.classification === 'psb') ? 'bg-blue-100 text-blue-800' :
+                              (r.classification_id === 'dismantle' || r.classification === 'dismantle') ? 'bg-orange-100 text-orange-800' :
+                                (r.classification_id === 'lainnya' || r.classification === 'lainnya') ? 'bg-gray-100 text-gray-800' :
+                                  'bg-gray-100 text-gray-800'
+                        ]">
+                          {{ getClassificationName(r.classification_id || r.classification || 'gangguan') }}
+                        </span>
+                      </td>
                     <td class="p-2">
                       <span v-if="r.status === 'finished'"
-                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Finished
+                        class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-green-600 text-white shadow-lg border-2 border-green-700">
+                        ✅ Finished
                       </span>
                       <span v-else-if="r.status === 'ongoing'"
-                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                        Ongoing
+                        class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-orange-600 text-white shadow-lg border-2 border-orange-700 animate-pulse">
+                        🔄 Ongoing
                       </span>
                       <span v-else
-                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 capitalize">
-                        {{ r.status || 'unknown' }}
+                        class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-red-600 text-white shadow-lg border-2 border-red-700 animate-pulse">
+                        ⚠️ Unfinished
                       </span>
                     </td>
-                    <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
-                    <td class="p-2 max-w-xs">
-                      <div class="flex flex-col gap-1 max-w-xs">
-                        <div v-if="r.customer_note" class="text-xs">
-                          <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">CS:</span>
-                          <span class="ml-1 text-gray-700 break-words">{{ r.customer_note }}</span>
+                      <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
+                      <td class="p-2 max-w-xs">
+                        <div class="flex flex-col gap-1 max-w-xs">
+                          <div v-if="r.customer_note" class="text-xs">
+                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">CS:</span>
+                            <span class="ml-1 text-gray-700 break-words">{{ r.customer_note }}</span>
+                          </div>
+                          <div v-if="r.technician_note" class="text-xs">
+                            <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">Tech:</span>
+                            <span class="ml-1 text-gray-700 break-words">{{ r.technician_note }}</span>
+                          </div>
+                          <div v-if="r.noc_note" class="text-xs">
+                            <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">NOC:</span>
+                            <span class="ml-1 text-gray-700 break-words">{{ r.noc_note }}</span>
+                          </div>
+                          <span v-if="!r.customer_note && !r.technician_note && !r.noc_note"
+                            class="text-gray-400 text-xs">No notes</span>
                         </div>
-                        <div v-if="r.technician_note" class="text-xs">
-                          <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">Tech:</span>
-                          <span class="ml-1 text-gray-700 break-words">{{ r.technician_note }}</span>
-                        </div>
-                        <div v-if="r.noc_note" class="text-xs">
-                          <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">NOC:</span>
-                          <span class="ml-1 text-gray-700 break-words">{{ r.noc_note }}</span>
-                        </div>
-                        <span v-if="!r.customer_note && !r.technician_note && !r.noc_note"
-                          class="text-gray-400 text-xs">No notes</span>
-                      </div>
-                    </td>
-                    <td class="p-2">
-                      <span v-if="r.network_architecture"
-                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {{ r.network_architecture }}
-                      </span>
-                      <span v-else class="text-gray-400 text-xs">-</span>
-                    </td>
-                    <td class="p-2">
-                      <div class="flex flex-col gap-1 min-w-[120px]">
-                        <button v-for="action in getTicketActions(r)" :key="action.label"
-                          :class="['px-3 py-1.5 text-white rounded text-xs font-medium hover:opacity-80 transition-opacity w-full text-center flex items-center justify-center gap-2', action.color]"
-                          @click="action.action" :title="action.tooltip"
-                          :disabled="actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting">
-                          <svg
-                            v-if="actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting"
-                            class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-                            </circle>
-                            <path class="opacity-75" fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                            </path>
-                          </svg>
-                          {{ actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] ||
-                            nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting ? 'Loading...' :
-                            action.label }}
-                        </button>
-                        <span v-if="getTicketActions(r).length === 0" class="text-gray-400 text-xs text-center py-1">
-                          No actions available
+                      </td>
+                      <td class="p-2">
+                        <span v-if="r.network_architecture"
+                          class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {{ r.network_architecture }}
                         </span>
-                      </div>
-                    </td>
-                  </tr>
+                        <span v-else class="text-gray-400 text-xs">-</span>
+                      </td>
+                      <td class="p-2">
+                        <div class="flex flex-col gap-1 min-w-[120px]">
+                          <button v-for="action in getTicketActions(r)" :key="action.label"
+                            :class="['px-3 py-1.5 text-white rounded text-xs font-medium hover:opacity-80 transition-opacity w-full text-center flex items-center justify-center gap-2', action.color]"
+                            @click="action.action" :title="action.tooltip"
+                            :disabled="actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting">
+                            <svg
+                              v-if="actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting"
+                              class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                              </circle>
+                              <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                              </path>
+                            </svg>
+                            {{ actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] ||
+                              nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting ? 'Loading...' :
+                              action.label }}
+                          </button>
+                          <span v-if="getTicketActions(r).length === 0" class="text-gray-400 text-xs text-center py-1">
+                            No actions available
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
                   </template>
                 </tbody>
               </table>
@@ -1807,35 +1989,34 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         <!-- Mobile Card View -->
         <div class="md:hidden space-y-3">
           <template v-for="(r, index) in filteredRows" :key="r?.id || index">
-            <div v-if="r" class="bg-white rounded-lg shadow border border-gray-100 p-4 hover:shadow-md transition-shadow">
+            <div v-if="r"
+              class="bg-white rounded-lg shadow border border-gray-100 p-4 hover:shadow-md transition-shadow">
               <!-- Card Header -->
               <div class="flex items-start justify-between mb-3">
                 <div class="flex-1">
                   <div class="flex items-center gap-2 mb-1">
                     <span class="text-lg font-bold text-gray-900">#{{ r.id }}</span>
-                    <span 
-                      :class="[
-                        'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
-                        (r.classification_id === 'gangguan' || r.classification === 'gangguan') ? 'bg-red-100 text-red-800' :
+                    <span :class="[
+                      'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
+                      (r.classification_id === 'gangguan' || r.classification === 'gangguan') ? 'bg-red-100 text-red-800' :
                         (r.classification_id === 'psb' || r.classification === 'psb') ? 'bg-blue-100 text-blue-800' :
-                        (r.classification_id === 'dismantle' || r.classification === 'dismantle') ? 'bg-orange-100 text-orange-800' :
-                        (r.classification_id === 'lainnya' || r.classification === 'lainnya') ? 'bg-gray-100 text-gray-800' :
-                        'bg-gray-100 text-gray-800'
-                      ]"
-                    >
+                          (r.classification_id === 'dismantle' || r.classification === 'dismantle') ? 'bg-orange-100 text-orange-800' :
+                            (r.classification_id === 'lainnya' || r.classification === 'lainnya') ? 'bg-gray-100 text-gray-800' :
+                              'bg-gray-100 text-gray-800'
+                    ]">
                       {{ getClassificationName(r.classification_id || r.classification || 'gangguan') }}
                     </span>
                     <span v-if="r.status === 'finished'"
-                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Finished
+                      class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-green-600 text-white shadow-lg border-2 border-green-700">
+                      ✅ Finished
                     </span>
                     <span v-else-if="r.status === 'ongoing'"
-                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                      Ongoing
+                      class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-orange-600 text-white shadow-lg border-2 border-orange-700 animate-pulse">
+                      🔄 Ongoing
                     </span>
                     <span v-else
-                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 capitalize">
-                      {{ r.status || 'unknown' }}
+                      class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-red-600 text-white shadow-lg border-2 border-red-700 animate-pulse">
+                      ⚠️ Unfinished
                     </span>
                   </div>
                   <h3 class="font-semibold text-gray-900 text-base leading-tight">{{ r.title }}</h3>
@@ -1889,10 +2070,15 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                       <svg
                         v-if="actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting"
                         class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
                       </svg>
-                      {{ actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] || nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting ? 'Loading...' : action.label }}
+                      {{ actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] ||
+                        nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting ? 'Loading...' : action.label
+                      }}
                     </button>
                     <div v-if="getTicketActions(r).length === 0" class="text-center py-2 text-gray-500 text-sm">
                       No actions available
@@ -1906,7 +2092,9 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
           <!-- Empty State -->
           <div v-if="filteredRows.length === 0" class="text-center py-12">
             <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+              </path>
             </svg>
             <h3 class="mt-2 text-sm font-medium text-gray-900">No tickets found</h3>
             <p class="mt-1 text-sm text-gray-500">
@@ -1928,9 +2116,9 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
             <div class="text-sm"><span class="font-medium">Customer:</span> {{ selectedLocation?.customer_name || '-' }}
             </div>
             <div class="text-sm"><span class="font-medium">Customer ID:</span> {{ selectedLocation?.customer_id || '-'
-            }}</div>
+              }}</div>
             <div class="text-sm"><span class="font-medium">Address:</span> {{ selectedLocation?.customer_address || '-'
-            }}</div>
+              }}</div>
             <div class="text-sm"><span class="font-medium">Phone:</span> {{ selectedLocation?.customer_phone || '-' }}
             </div>
             <div class="text-sm"><span class="font-medium">Latitude:</span> {{ selectedLocation?.lat ?? '-' }}</div>
@@ -1948,7 +2136,8 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
       <!-- Mobile-Optimized Modal Add Ticket -->
       <div v-if="showAdd" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
         <div class="absolute inset-0 bg-black/60" @click="showAdd = false"></div>
-        <div class="relative w-full max-w-2xl mx-4 rounded-t-xl sm:rounded-xl shadow-xl bg-slate-900 text-slate-100 p-6 max-h-[90vh] overflow-y-auto">
+        <div
+          class="relative w-full max-w-2xl mx-4 rounded-t-xl sm:rounded-xl shadow-xl bg-slate-900 text-slate-100 p-6 max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-xl font-semibold">Add New Ticket</h2>
             <button class="text-slate-300 hover:text-white" @click="showAdd = false">✕</button>
@@ -2001,19 +2190,25 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
               <div v-if="form.img_cs && !form.img_cs.startsWith('data:')" class="mt-2">
                 <div class="flex items-center gap-2 p-2 bg-green-900/20 border border-green-500/30 rounded">
                   <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    <path fill-rule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clip-rule="evenodd"></path>
                   </svg>
                   <span class="text-sm text-green-300">Image uploaded successfully</span>
-                  <button @click="form.img_cs = ''; selectedCSFile = undefined" class="text-red-400 hover:text-red-300 text-sm">Remove</button>
+                  <button @click="form.img_cs = ''; selectedCSFile = undefined"
+                    class="text-red-400 hover:text-red-300 text-sm">Remove</button>
                 </div>
               </div>
               <div v-else-if="form.img_cs && form.img_cs.startsWith('data:')" class="mt-2">
                 <div class="flex items-center gap-2 p-2 bg-yellow-900/20 border border-yellow-500/30 rounded">
                   <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    <path fill-rule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clip-rule="evenodd"></path>
                   </svg>
                   <span class="text-sm text-yellow-300">Image upload failed - using preview only</span>
-                  <button @click="form.img_cs = ''; selectedCSFile = undefined" class="text-red-400 hover:text-red-300 text-sm">Remove</button>
+                  <button @click="form.img_cs = ''; selectedCSFile = undefined"
+                    class="text-red-400 hover:text-red-300 text-sm">Remove</button>
                 </div>
               </div>
               <p class="text-xs text-slate-400 mt-1">PNG, JPG, GIF up to 10MB</p>
@@ -2059,14 +2254,16 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                     || t.id }}</option>
                 </select>
                 <button type="button" class="px-3 py-2 rounded bg-blue-600 text-white text-sm"
-                  @click="showNewType = true">Add New Type</button>
+                  @click="showNewType = true">Add
+                  New Type</button>
               </div>
               <div v-else class="space-y-2">
                 <input v-model="newTypeName" placeholder="Display Name (optional)"
                   class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900" />
                 <div class="flex gap-2">
                   <button type="button" class="px-3 py-2 bg-emerald-600 text-white rounded text-sm"
-                    @click="saveNewType">Save Type</button>
+                    @click="saveNewType">Save
+                    Type</button>
                   <button type="button" class="px-3 py-2 bg-gray-300 text-gray-700 rounded text-sm"
                     @click="showNewType = false">Cancel</button>
                 </div>
@@ -2075,18 +2272,12 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
             <div v-if="isAdmin || isCustomerService">
               <label class="block text-sm font-medium text-gray-700 mb-1">Accumulation (Customers Affected)</label>
               <div class="flex items-center space-x-2">
-                <input 
-                  v-model.number="nocAccumulation" 
-                  type="number" 
-                  min="1" 
+                <input v-model.number="nocAccumulation" type="number" min="1"
                   placeholder="Enter number of customers affected"
-                  class="flex-1 rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
-                />
-                <button 
-                  @click="updateAccumulationFromModal"
+                  class="flex-1 rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900" />
+                <button @click="updateAccumulationFromModal"
                   class="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                  :disabled="nocAccumulation === null || nocAccumulation === undefined || nocAccumulation < 1"
-                >
+                  :disabled="nocAccumulation === null || nocAccumulation === undefined || nocAccumulation < 1">
                   Update
                 </button>
               </div>
@@ -2129,8 +2320,8 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
           <div class="mt-6 flex justify-end gap-2">
             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showNOCNoteModal = false"
               :disabled="nocActionSubmitting">Cancel</button>
-            <button class="px-4 py-2 rounded bg-purple-600 text-white disabled:opacity-50" @click="sendToCSWithAutoAssign"
-              v-if="isAdmin || isCustomerService" :disabled="nocActionSubmitting">
+            <button class="px-4 py-2 rounded bg-purple-600 text-white disabled:opacity-50"
+              @click="sendToCSWithAutoAssign" v-if="isAdmin || isCustomerService" :disabled="nocActionSubmitting">
               {{ nocActionSubmitting ? 'Sending...' : 'To CS' }}
             </button>
             <button class="px-4 py-2 rounded bg-green-600 text-white disabled:opacity-50" @click="nocSolvedFromModal"
@@ -2422,8 +2613,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
             </button>
           </div>
           <TechnicianChecklist v-if="selectedTicketForChecklist" :ticket-id="selectedTicketForChecklist"
-            :technician-id="selectedTechnicianForChecklist"
-            :read-only="selectedChecklistReadOnly || !(isTechnician)"
+            :technician-id="selectedTechnicianForChecklist" :read-only="selectedChecklistReadOnly || !(isTechnician)"
             @job-completed="() => { showTechnicianChecklist = false; refresh() }" />
         </div>
       </div>

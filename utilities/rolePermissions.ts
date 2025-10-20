@@ -71,8 +71,6 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
       'tickets:view',
       'tickets:manage',
       'tickets:create',
-      'trouble_reports:view',
-      'trouble_reports:manage'
     ]
   },
   [ROLES.NOC]: {
@@ -85,7 +83,6 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
       'report:view',
       'tickets:view',
       'tickets:manage',
-      'trouble_reports:view'
     ]
   },
   [ROLES.TECHNICIAN]: {
@@ -97,7 +94,6 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
       'customer:view',
       'tickets:view',
       'tickets:manage',
-      'trouble_reports:view'
     ]
   },
   [ROLES.FINANCE]: {
@@ -191,13 +187,6 @@ export const MAIN_MENU: MenuItem[] = [
     link: '/dashboard/tickets',
     feature: 'tickets',
     description: 'Support ticket management'
-  },
-  {
-    label: 'Trouble Reports',
-    icon: 'i-heroicons-exclamation-triangle-16-solid',
-    link: '/dashboard/trouble-reports',
-    feature: 'trouble_reports',
-    description: 'Trouble report management'
   },
   {
     label: 'User Management',
