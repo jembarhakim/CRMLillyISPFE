@@ -21,8 +21,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      API_HOST: process.env.NUXT_PUBLIC_API_HOST || 'http://localhost:3001',
-      WA_HOST: process.env.NUXT_PUBLIC_WA_HOST || 'http://localhost:3001',
+      API_HOST: process.env.NUXT_PUBLIC_API_HOST || 'http://rndpolije.lilly.net.id',
+      WA_HOST: process.env.NUXT_PUBLIC_WA_HOST || 'http://rndpolije.lilly.net.id',
     },
   },
   // Remove automatic middleware assignment to prevent race conditions
