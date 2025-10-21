@@ -1082,7 +1082,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
   <!-- Dashboard Header with Reset Button -->
   <div class="flex justify-between items-center mb-6">
     <h1 class="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
-    <UButton icon="i-heroicons-arrow-uturn-left" color="gray" variant="soft" size="sm" @click="resetFilters"
+    <UButton icon="i-lucide-undo-2" color="gray" variant="soft" size="sm" @click="resetFilters"
       title="Reset all filters to default and refresh data">
       Reset
     </UButton>
@@ -1220,7 +1220,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
             All Time
           </span>
         </div>
-        <UButton icon="i-heroicons-arrow-path" color="blue" variant="soft" size="sm" @click="refreshWithCurrentFilters"
+        <UButton icon="i-lucide-refresh-cw" color="blue" variant="soft" size="sm" @click="refreshWithCurrentFilters"
           title="Refresh data with current filter settings">
           Refresh
         </UButton>
@@ -1334,7 +1334,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
     <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg">
       <div class="flex justify-between items-center mb-4">
         <h1 class="text-xl font-semibold text-slate-800">Recent Invoices</h1>
-        <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="refreshWithCurrentFilters"
+        <UButton icon="i-lucide-refresh-cw" color="gray" variant="soft" size="sm" @click="refreshWithCurrentFilters"
           title="Refresh Dashboard Data" />
       </div>
       <div v-if="recentInvoices.length > 0" class="space-y-3">
@@ -1367,7 +1367,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
     <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg">
       <div class="flex justify-between items-center mb-4">
         <h1 class="text-xl font-semibold text-slate-800">Recent Transactions</h1>
-        <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="refreshWithCurrentFilters"
+        <UButton icon="i-lucide-refresh-cw" color="gray" variant="soft" size="sm" @click="refreshWithCurrentFilters"
           title="Refresh Dashboard Data" />
       </div>
       <div v-if="recentTransactions.length > 0" class="space-y-3">
@@ -1403,7 +1403,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
   <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg mb-10">
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-xl font-semibold text-slate-800">Recent Trouble Tickets</h1>
-        <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="refreshWithCurrentFilters"
+        <UButton icon="i-lucide-refresh-cw" color="gray" variant="soft" size="sm" @click="refreshWithCurrentFilters"
           title="Refresh Dashboard Data" />
     </div>
     <div v-if="recentTickets.length > 0" class="overflow-x-auto">
@@ -1538,7 +1538,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg">
         <div class="flex justify-between items-center mb-4">
           <h1 class="text-xl font-semibold text-slate-800">Unpaid & Pending Customers</h1>
-          <UButton icon="i-heroicons-arrow-path" color="gray" variant="soft" size="sm" @click="refreshWithCurrentFilters"
+          <UButton icon="i-lucide-refresh-cw" color="gray" variant="soft" size="sm" @click="refreshWithCurrentFilters"
             title="Refresh Dashboard Data" />
         </div>
         <div v-if="unpaidCustomersList.length > 0" class="space-y-3">
