@@ -9,9 +9,10 @@ import { useNotification } from "@/composables/useNotification";
 
 const notification = useNotification();
 
-// Apply auth middleware
+// Apply auth middleware and layout
 definePageMeta({
-  middleware: 'auth'
+  middleware: 'auth',
+  layout: false
 })
 
 // Set page title
@@ -488,9 +489,6 @@ const optionCardArea = ref();
 const optionCardReportCash = ref();
 
 
-definePageMeta({
-  layout: false,
-});
 
 const data = ref<{ y: number[]; x: string[]; label: string }[]>([]);
 let cards = ref<{ name: string; total: number }[]>([]);
