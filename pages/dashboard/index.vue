@@ -1180,7 +1180,7 @@ onUnmounted(() => {
       <div v-if="useYearRange" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-200">
         <div class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">From Year</label>
-          <select v-model.number="yearStart" @change="applyDateFilter"
+          <select v-model.number="yearStart"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">-</option>
             <option v-for="y in availableYears" :key="'ys'+y" :value="y">{{ y }}</option>
@@ -1188,7 +1188,7 @@ onUnmounted(() => {
         </div>
         <div class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">To Year</label>
-          <select v-model.number="yearEnd" @change="applyDateFilter"
+          <select v-model.number="yearEnd"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">-</option>
             <option v-for="y in availableYears" :key="'ye'+y" :value="y">{{ y }}</option>
