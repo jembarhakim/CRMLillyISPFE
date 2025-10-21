@@ -10,9 +10,11 @@ import { useNotification } from "@/composables/useNotification";
 const notification = useNotification();
 
 // Apply auth middleware and layout
+// Disable SSR to prevent server-side infinite loop
 definePageMeta({
   middleware: 'auth',
-  layout: false
+  layout: false,
+  ssr: false
 })
 
 // Set page title
