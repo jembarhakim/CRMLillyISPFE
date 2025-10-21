@@ -173,29 +173,29 @@ const items = (row: RecurringInvoice) => [
   [
     {
       label: "View",
-      icon: "i-heroicons-eye-20-solid",
+      icon: "i-lucide-eye-20-solid",
       click: () => viewRecurringInvoice(row),
     },
     {
       label: "Edit",
-      icon: "i-heroicons-pencil-20-solid",
+      icon: "i-lucide-pencil-20-solid",
       click: () => openModalAddRecurringInvoice(true, row),
     },
     {
       label: "Generate Invoice",
-      icon: "i-heroicons-document-plus-20-solid",
+      icon: "i-lucide-file-plus-20-solid",
       click: () => generateInvoice(row),
     },
   ],
   [
     {
       label: row.status === "active" ? "Stop Recurring" : "Resume",
-      icon: row.status === "active" ? "i-heroicons-stop-20-solid" : "i-heroicons-play-20-solid",
+      icon: row.status === "active" ? "i-lucide-stop-20-solid" : "i-lucide-play-20-solid",
       click: () => toggleRecurringStatus(row),
     },
     {
       label: "Delete",
-      icon: "i-heroicons-trash-20-solid",
+      icon: "i-lucide-trash-2-20-solid",
       click: () => deleteRecurringInvoice(row.id),
     },
   ],
@@ -415,7 +415,7 @@ onMounted(() => {
         :columns="columns"
         :loading="loading"
         :empty-state="{
-          icon: 'i-heroicons-document-text',
+          icon: 'i-lucide-file-text',
           label: 'No recurring invoices found'
         }"
       >
@@ -460,7 +460,7 @@ onMounted(() => {
             <UButton 
               color="gray" 
               variant="ghost" 
-              icon="i-heroicons-ellipsis-horizontal"
+              icon="i-lucide-ellipsis-horizontal"
             />
           </UDropdown>
         </template>

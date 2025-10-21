@@ -49,14 +49,14 @@ const items = (row: Role) => [
   [
     {
       label: "Edit",
-      icon: "i-heroicons-pencil-square-20-solid",
+      icon: "i-lucide-pencil-square-20-solid",
       click: () => openEditUserModal(row.id.toString()),
     },
   ],
   [
     {
       label: "Delete",
-      icon: "i-heroicons-trash-20-solid",
+      icon: "i-lucide-trash-2-20-solid",
       click: () => deleteRole(row.id.toString()),
     },
   ],
@@ -127,7 +127,7 @@ async function deleteRole(roleId: string) {
         <UButton
           color="gray"
           variant="ghost"
-          icon="i-heroicons-ellipsis-horizontal-20-solid"
+          icon="i-lucide-ellipsis-horizontal-20-solid"
         />
       </UDropdown>
     </template>

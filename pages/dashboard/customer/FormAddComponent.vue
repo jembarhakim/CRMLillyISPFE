@@ -429,7 +429,7 @@ select:focus {
           size="sm"
           class="text-white hover:bg-white/20"
         >
-          <UIcon name="i-heroicons-x-mark" class="w-5 h-5" />
+          <UIcon name="i-lucide-x" class="w-5 h-5" />
         </UButton>
       </div>
 
@@ -441,7 +441,7 @@ select:focus {
             <!-- Customer Information Section -->
             <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
-                <UIcon name="i-heroicons-user" class="w-5 h-5 text-blue-600" />
+                <UIcon name="i-lucide-user" class="w-5 h-5 text-blue-600" />
                 Customer Information
               </h3>
               
@@ -509,7 +509,7 @@ select:focus {
             <!-- Business Information Section -->
             <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
-                <UIcon name="i-heroicons-building-office-2" class="w-5 h-5 text-green-600" />
+                <UIcon name="i-lucide-building-2" class="w-5 h-5 text-green-600" />
                 Business Information
               </h3>
               
@@ -551,7 +551,7 @@ select:focus {
           <div class="flex-1">
             <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700 h-fit">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
-                <UIcon name="i-heroicons-map-pin" class="w-5 h-5 text-red-600" />
+                <UIcon name="i-lucide-map-pin" class="w-5 h-5 text-red-600" />
                 Location & Address
               </h3>
               
@@ -578,7 +578,7 @@ select:focus {
                       color="blue"
                       class="mb-2"
                     >
-                      <UIcon name="i-heroicons-map-pin" class="w-4 h-4 mr-1" />
+                      <UIcon name="i-lucide-map-pin" class="w-4 h-4 mr-1" />
                       My Position
                     </UButton>
                   </LControl>
@@ -627,7 +627,7 @@ select:focus {
         <!-- Submit Button -->
         <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <div class="text-sm text-gray-600 dark:text-gray-400">
-            <UIcon name="i-heroicons-information-circle" class="w-4 h-4 inline mr-1" />
+            <UIcon name="i-lucide-info" class="w-4 h-4 inline mr-1" />
             All fields marked with * are required
           </div>
           <div class="flex gap-3 w-full sm:w-auto">
@@ -639,7 +639,7 @@ select:focus {
               size="lg"
               class="flex-1 sm:flex-initial"
             >
-              <UIcon name="i-heroicons-x-mark" class="mr-2 w-4 h-4" />
+              <UIcon name="i-lucide-x" class="mr-2 w-4 h-4" />
               Cancel
             </UButton>
             <UButton 
@@ -648,7 +648,7 @@ select:focus {
               size="lg"
               class="flex-1 sm:flex-initial bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
             >
-              <UIcon name="i-heroicons-check" class="mr-2 w-4 h-4" />
+              <UIcon name="i-lucide-check" class="mr-2 w-4 h-4" />
               Submit
             </UButton>
           </div>

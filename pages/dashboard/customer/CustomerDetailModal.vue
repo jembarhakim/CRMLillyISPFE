@@ -23,7 +23,7 @@
             <p class="text-xs text-gray-400">ID: {{ props.customerId }}</p>
           </div>
         </div>
-        <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" @click="$emit('close')"
+        <UButton color="gray" variant="ghost" icon="i-lucide-x-20-solid" @click="$emit('close')"
           class="absolute top-4 right-4 sm:relative sm:top-0 sm:right-0" />
       </div>
 
@@ -177,17 +177,17 @@
                 <div class="flex flex-col sm:flex-row gap-2 sm:gap-2">
                   <UButton size="sm" color="blue" variant="outline" @click="loginAsCustomer"
                     class="w-full sm:w-auto flex-shrink-0">
-                    <UIcon name="i-heroicons-arrow-right-on-rectangle" class="w-4 h-4 mr-2" />
+                    <UIcon name="i-lucide-arrow-right-on-rectangle" class="w-4 h-4 mr-2" />
                     Login As Customer
                   </UButton>
                   <UButton size="sm" color="red" variant="outline" @click="revokeAutoLogin"
                     class="w-full sm:w-auto flex-shrink-0">
-                    <UIcon name="i-heroicons-x-mark" class="w-4 h-4 mr-2" />
+                    <UIcon name="i-lucide-x" class="w-4 h-4 mr-2" />
                     Revoke Auto Login
                   </UButton>
                   <UButton size="sm" color="gray" variant="outline" @click="regenerateUrl"
                     class="w-full sm:w-auto flex-shrink-0">
-                    <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2" />
+                    <UIcon name="i-lucide-refresh-cw" class="w-4 h-4 mr-2" />
                     Regenerate URL
                   </UButton>
                 </div>
@@ -196,7 +196,7 @@
                 <div class="block sm:hidden">
                   <UButton size="sm" color="green" variant="outline" @click="copyAutoLoginUrlToClipboard"
                     class="w-full">
-                    <UIcon name="i-heroicons-clipboard-document" class="w-4 h-4 mr-2" />
+                    <UIcon name="i-lucide-clipboard-document" class="w-4 h-4 mr-2" />
                     Copy URL
                   </UButton>
                 </div>
@@ -471,13 +471,13 @@
                           {{ getDeviceConnectionStatus(device).toUpperCase() }}
                         </span>
                         <span v-if="getDeviceConnectionStatus(device) === 'up'" class="text-xs text-green-600">
-                          <UIcon name="i-heroicons-wifi" class="w-3 h-3" />
+                          <UIcon name="i-lucide-wifi" class="w-3 h-3" />
                         </span>
                         <span v-else-if="getDeviceConnectionStatus(device) === 'down'" class="text-xs text-red-600">
-                          <UIcon name="i-heroicons-wifi-slash" class="w-3 h-3" />
+                          <UIcon name="i-lucide-wifi-slash" class="w-3 h-3" />
                         </span>
                         <span v-else class="text-xs text-gray-500">
-                          <UIcon name="i-heroicons-question-mark-circle" class="w-3 h-3" />
+                          <UIcon name="i-lucide-question-mark-circle" class="w-3 h-3" />
                         </span>
                       </div>
                       <p class="text-xs text-gray-500 mt-1">
@@ -520,7 +520,7 @@
                 <h3 class="text-lg font-medium text-gray-900">Installation Reports ({{
                   customerDetail.installations.length }})</h3>
                 <UButton color="green" size="sm" @click="addNewInstallationReport">
-                  <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1" />
+                  <UIcon name="i-lucide-plus" class="w-4 h-4 mr-1" />
                   Add Report
                 </UButton>
               </div>
@@ -616,7 +616,7 @@
                     will be available after creating an installation report.</p>
                 </div>
                 <UButton color="green" size="sm" @click="addNewInstallationReport">
-                  <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1" />
+                  <UIcon name="i-lucide-plus" class="w-4 h-4 mr-1" />
                   Add First Report
                 </UButton>
               </div>
@@ -674,12 +674,12 @@
                   <div class="flex space-x-2">
                     <UButton v-if="getCustomerMacAddresses().length > 0" :loading="isConnecting"
                       :disabled="isConnecting" @click="isolateCustomer" color="red" variant="outline" size="sm">
-                      <UIcon name="i-heroicons-lock-closed" class="w-4 h-4 mr-1" />
+                      <UIcon name="i-lucide-lock-closed" class="w-4 h-4 mr-1" />
                       Isolate Customer
                     </UButton>
                     <UButton v-if="getCustomerMacAddresses().length > 0" :loading="isConnecting"
                       :disabled="isConnecting" @click="restoreCustomer" color="green" variant="outline" size="sm">
-                      <UIcon name="i-heroicons-lock-open" class="w-4 h-4 mr-1" />
+                      <UIcon name="i-lucide-lock-open" class="w-4 h-4 mr-1" />
                       Restore Access
                     </UButton>
                   </div>
@@ -697,7 +697,7 @@
                         <p v-if="device.ip_static" class="text-xs text-gray-500">IP: {{ device.ip_static }}</p>
                       </div>
                       <UButton @click="copyMacAddress(device.mac_address)" variant="ghost" size="sm" color="blue">
-                        <UIcon name="i-heroicons-clipboard-document" class="w-4 h-4" />
+                        <UIcon name="i-lucide-clipboard-document" class="w-4 h-4" />
                       </UButton>
                     </div>
                   </div>
@@ -706,7 +706,7 @@
                 <!-- No MAC Address Warning -->
                 <div v-else class="p-3 bg-yellow-50 rounded-lg">
                   <div class="flex items-center">
-                    <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-yellow-600 mr-2" />
+                    <UIcon name="i-lucide-alert-triangle" class="w-5 h-5 text-yellow-600 mr-2" />
                     <div>
                       <p class="text-sm font-medium text-yellow-900">No MAC Addresses Found</p>
                       <p class="text-sm text-yellow-700">Customer network devices with MAC addresses are required for
@@ -727,7 +727,7 @@
                     customerDetail.customer.status_user === 'active' ? 'bg-green-100' : 'bg-red-100'
                   ]">
                     <UIcon
-                      :name="customerDetail.customer.status_user === 'active' ? 'i-heroicons-user-check' : 'i-heroicons-user-x-mark'"
+                      :name="customerDetail.customer.status_user === 'active' ? 'i-lucide-user-check' : 'i-lucide-user-x-mark'"
                       :class="[
                         'w-8 h-8',
                         customerDetail.customer.status_user === 'active' ? 'text-green-600' : 'text-red-600'
@@ -743,7 +743,7 @@
                 </div>
                 <div class="text-center">
                   <div class="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center bg-blue-100">
-                    <UIcon name="i-heroicons-calendar" class="w-8 h-8 text-blue-600" />
+                    <UIcon name="i-lucide-calendar" class="w-8 h-8 text-blue-600" />
                   </div>
                   <h4 class="text-sm font-semibold text-gray-900">Installation Date</h4>
                   <p class="text-sm text-gray-600">{{ formatDate(customerDetail.customer.installation_date) }}</p>
@@ -840,8 +840,8 @@
                             getDeviceConnectionStatus(device) === 'down' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
                         ]">
                           <UIcon
-                            :name="getDeviceConnectionStatus(device) === 'up' ? 'i-heroicons-wifi' :
-                              getDeviceConnectionStatus(device) === 'down' ? 'i-heroicons-wifi-slash' : 'i-heroicons-question-mark-circle'"
+                            :name="getDeviceConnectionStatus(device) === 'up' ? 'i-lucide-wifi' :
+                              getDeviceConnectionStatus(device) === 'down' ? 'i-lucide-wifi-slash' : 'i-lucide-question-mark-circle'"
                             class="w-3 h-3 mr-1" />
                           Status: {{ getDeviceConnectionStatus(device).toUpperCase() }}
                         </span>
@@ -859,12 +859,12 @@
             <div v-else-if="!customerDetail.installations || customerDetail.installations.length === 0"
               class="bg-white border border-gray-200 rounded-lg p-6">
               <div class="text-center">
-                <UIcon name="i-heroicons-document-plus" class="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                <UIcon name="i-lucide-file-plus" class="w-12 h-12 text-blue-400 mx-auto mb-4" />
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">Network Devices Not Available</h3>
                 <p class="text-gray-600 mb-4">Network devices will appear after creating an installation report for this
                   customer.</p>
                 <UButton color="blue" size="sm" @click="addNewInstallationReport">
-                  <UIcon name="i-heroicons-plus" class="w-4 h-4 mr-1" />
+                  <UIcon name="i-lucide-plus" class="w-4 h-4 mr-1" />
                   Create Installation Report
                 </UButton>
               </div>
@@ -873,7 +873,7 @@
             <!-- No Devices Message (when has installation but no devices) -->
             <div v-else class="bg-white border border-gray-200 rounded-lg p-6">
               <div class="text-center">
-                <UIcon name="i-heroicons-wifi" class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <UIcon name="i-lucide-wifi" class="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">No Network Devices</h3>
                 <p class="text-gray-600">This customer has installation reports but no network devices configured yet.
                 </p>
@@ -1204,26 +1204,26 @@ const getPrimaryTechnicianName = (installation: any) => {
 
 // Tab configuration
 const tabs = computed(() => [
-  { id: 'summary', name: 'Summary', icon: 'i-heroicons-chart-bar' },
-  { id: 'connection', name: 'Connection Status', icon: 'i-heroicons-signal' },
-  { id: 'activity', name: 'Activity', icon: 'i-heroicons-clock' },
-  { id: 'invoices', name: 'Invoices', icon: 'i-heroicons-document-text', count: customerInvoices.value.length },
-  { id: 'quotes', name: 'Quotes', icon: 'i-heroicons-document-duplicate', count: 0 },
-  { id: 'tickets', name: 'Trouble Tickets', icon: 'i-heroicons-exclamation-triangle', count: customerTickets.value.length },
-  { id: 'orders', name: 'Orders', icon: 'i-heroicons-shopping-bag' },
-  { id: 'files', name: 'Files', icon: 'i-heroicons-document' },
-  { id: 'transactions', name: 'Transactions', icon: 'i-heroicons-currency-dollar' },
-  { id: 'edit', name: 'Edit', icon: 'i-heroicons-pencil-square' }
+  { id: 'summary', name: 'Summary', icon: 'i-lucide-bar-chart' },
+  { id: 'connection', name: 'Connection Status', icon: 'i-lucide-signal' },
+  { id: 'activity', name: 'Activity', icon: 'i-lucide-clock' },
+  { id: 'invoices', name: 'Invoices', icon: 'i-lucide-file-text', count: customerInvoices.value.length },
+  { id: 'quotes', name: 'Quotes', icon: 'i-lucide-file-duplicate', count: 0 },
+  { id: 'tickets', name: 'Trouble Tickets', icon: 'i-lucide-alert-triangle', count: customerTickets.value.length },
+  { id: 'orders', name: 'Orders', icon: 'i-lucide-shopping-bag' },
+  { id: 'files', name: 'Files', icon: 'i-lucide-file' },
+  { id: 'transactions', name: 'Transactions', icon: 'i-lucide-dollar-sign' },
+  { id: 'edit', name: 'Edit', icon: 'i-lucide-pencil-square' }
 ])
 
 // Mobile tab configuration (shorter names for mobile)
 const mobileTabs = computed(() => [
-  { id: 'summary', name: 'Summary', icon: 'i-heroicons-chart-bar' },
-  { id: 'connection', name: 'Connection', icon: 'i-heroicons-signal' },
-  { id: 'activity', name: 'Activity', icon: 'i-heroicons-clock' },
-  { id: 'invoices', name: 'Invoices', icon: 'i-heroicons-document-text', count: customerInvoices.value.length },
-  { id: 'tickets', name: 'Tickets', icon: 'i-heroicons-exclamation-triangle', count: customerTickets.value.length },
-  { id: 'edit', name: 'Edit', icon: 'i-heroicons-pencil-square' }
+  { id: 'summary', name: 'Summary', icon: 'i-lucide-bar-chart' },
+  { id: 'connection', name: 'Connection', icon: 'i-lucide-signal' },
+  { id: 'activity', name: 'Activity', icon: 'i-lucide-clock' },
+  { id: 'invoices', name: 'Invoices', icon: 'i-lucide-file-text', count: customerInvoices.value.length },
+  { id: 'tickets', name: 'Tickets', icon: 'i-lucide-alert-triangle', count: customerTickets.value.length },
+  { id: 'edit', name: 'Edit', icon: 'i-lucide-pencil-square' }
 ])
 
 // Recent activity (mock data for now)

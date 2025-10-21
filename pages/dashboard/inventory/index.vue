@@ -211,7 +211,7 @@ onMounted(() => {
       </template>
       
       <div v-if="loading" class="text-center py-4">
-        <UIcon name="i-heroicons-arrow-path" class="animate-spin h-6 w-6 mx-auto" />
+        <UIcon name="i-lucide-refresh-cw" class="animate-spin h-6 w-6 mx-auto" />
         <p class="mt-2">Loading inventory data...</p>
       </div>
       

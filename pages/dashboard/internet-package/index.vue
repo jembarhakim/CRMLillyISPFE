@@ -103,14 +103,14 @@ const items = (row: any) => [
     [
         {
             label: "Edit",
-            icon: "i-heroicons-pencil-square-20-solid",
+            icon: "i-lucide-pencil-square-20-solid",
             click: () => openModal(true, row),
         },
     ],
     [
         {
             label: "Delete",
-            icon: "i-heroicons-trash-20-solid",
+            icon: "i-lucide-trash-2-20-solid",
             click: () => deletePacket(row.id.toString()),
         },
     ],
@@ -129,7 +129,7 @@ const items = (row: any) => [
     <UTable :rows="internetPackageList" :columns="column">
         <template #actions-data="{ row }">
             <UDropdown :items="items(row)">
-                <UButton color="gray" variant="ghost" icon="i-heroicons-ellipsis-horizontal-20-solid" />
+                <UButton color="gray" variant="ghost" icon="i-lucide-ellipsis-horizontal-20-solid" />
             </UDropdown>
         </template>
         <template #price-data="{ row }">

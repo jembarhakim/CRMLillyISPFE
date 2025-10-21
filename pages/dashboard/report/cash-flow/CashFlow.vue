@@ -164,12 +164,12 @@ const deleteTransaction = async (row: any) => {
       <UInput v-model="q" placeholder="Search transactions..." class="w-64" />
       <UButton
         label="Add Transaction"
-        icon="i-heroicons-plus"
+        icon="i-lucide-plus"
         color="green"
         @click="openModal"
       />
       <UButton
-        icon="i-heroicons-arrow-path"
+        icon="i-lucide-refresh-cw"
         color="gray"
         variant="soft"
         :loading="isLoading"
@@ -179,7 +179,7 @@ const deleteTransaction = async (row: any) => {
     </div>
     <UButton
       label="Generate PDF"
-      icon="i-heroicons-document-arrow-down"
+      icon="i-lucide-file-arrow-down"
       color="blue"
       @click="navigateTo('/dashboard/psf')"
     />
@@ -200,7 +200,7 @@ const deleteTransaction = async (row: any) => {
           size="xs" 
           color="green" 
           variant="soft"
-          icon="i-heroicons-pencil"
+          icon="i-lucide-pencil"
           @click="editTransaction(row)"
           title="Edit"
         />
@@ -208,7 +208,7 @@ const deleteTransaction = async (row: any) => {
           size="xs" 
           color="red" 
           variant="soft"
-          icon="i-heroicons-trash"
+          icon="i-lucide-trash-2"
           @click="deleteTransaction(row)"
           title="Delete"
         />

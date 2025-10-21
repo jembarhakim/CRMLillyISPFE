@@ -45,14 +45,14 @@ const items = (row: User) => [
   [
     {
       label: "Edit",
-      icon: "i-heroicons-pencil-square-20-solid",
+      icon: "i-lucide-pencil-square-20-solid",
       click: () => console.log("Edit", row.id),
     },
   ],
   [
     {
       label: "Delete",
-      icon: "i-heroicons-trash-20-solid",
+      icon: "i-lucide-trash-2-20-solid",
     },
   ],
 ];
@@ -70,7 +70,7 @@ const items = (row: User) => [
         <UButton
           color="gray"
           variant="ghost"
-          icon="i-heroicons-ellipsis-horizontal-20-solid"
+          icon="i-lucide-ellipsis-horizontal-20-solid"
         />
       </UDropdown>
     </template>

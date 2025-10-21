@@ -113,84 +113,84 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
 export const MAIN_MENU: MenuItem[] = [
   {
     label: 'Dashboard',
-    icon: 'i-heroicons-home',
+    icon: 'i-lucide-home',
     link: '/dashboard',
     feature: 'dashboard',
     description: 'Main dashboard overview'
   },
   {
     label: 'Customer',
-    icon: 'i-heroicons-user-circle-16-solid',
+    icon: 'i-lucide-user-circle-16-solid',
     link: '/dashboard/customer',
     feature: 'customer',
     description: 'Customer management'
   },
   {
     label: 'Area',
-    icon: 'i-heroicons-map',
+    icon: 'i-lucide-map',
     link: '/dashboard/area',
     feature: 'area',
     description: 'Geographic area management'
   },
   {
     label: 'Report',
-    icon: 'i-heroicons-book-open-solid',
+    icon: 'i-lucide-book-open-solid',
     link: '/dashboard/report',
     feature: 'report',
     description: 'System reports and analytics'
   },
   {
     label: 'Internet Package',
-    icon: 'i-heroicons-wifi-16-solid',
+    icon: 'i-lucide-wifi-16-solid',
     link: '/dashboard/internet-package',
     feature: 'internet_package',
     description: 'Internet package management'
   },
   {
     label: 'Assets',
-    icon: 'i-heroicons-arrow-down-on-square-stack',
+    icon: 'i-lucide-arrow-down-on-square-stack',
     link: '/dashboard/asset',
     feature: 'assets',
     description: 'Asset inventory management'
   },
   {
     label: 'Company',
-    icon: 'i-heroicons-building-office-16-solid',
+    icon: 'i-lucide-building-16-solid',
     link: '/dashboard/companies',
     feature: 'company',
     description: 'Company management'
   },
   {
     label: 'Invoice',
-    icon: 'i-heroicons-document-currency-dollar-16-solid',
+    icon: 'i-lucide-file-currency-dollar-16-solid',
     link: '/dashboard/invoice',
     feature: 'invoice',
     description: 'Invoice management'
   },
   {
     label: 'Recurring Invoices',
-    icon: 'i-heroicons-arrow-path-16-solid',
+    icon: 'i-lucide-refresh-cw-16-solid',
     link: '/dashboard/recurring-invoice',
     feature: 'invoice',
     description: 'Recurring invoice management'
   },
   {
     label: 'Transaction',
-    icon: 'i-heroicons-document-currency-dollar-16-solid',
+    icon: 'i-lucide-file-currency-dollar-16-solid',
     link: '/dashboard/transaction',
     feature: 'transaction',
     description: 'Financial transactions'
   },
   {
     label: 'Tickets',
-    icon: 'i-heroicons-exclamation-triangle-16-solid',
+    icon: 'i-lucide-alert-triangle-16-solid',
     link: '/dashboard/tickets',
     feature: 'tickets',
     description: 'Support ticket management'
   },
   {
     label: 'User Management',
-    icon: 'i-heroicons-user-circle-16-solid',
+    icon: 'i-lucide-user-circle-16-solid',
     link: '/dashboard/user-management',
     feature: 'user_management',
     description: 'User and role management'
