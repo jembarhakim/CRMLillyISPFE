@@ -52,10 +52,10 @@ export default defineNuxtConfig({
     "@nuxtjs/leaflet",
     "@i2d/nuxt-pdf-frame",
     "nuxt-echarts",
-    "@nuxt/icon"
+    "@nuxtjs/icon"
   ],
   icon: {
-    serverBundle: 'local', // Use local icons instead of API
+    serverBundle: 'local',
     clientBundle: 'local'
   },
   imports: {
