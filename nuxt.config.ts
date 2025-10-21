@@ -50,8 +50,14 @@ export default defineNuxtConfig({
     "@pinia/nuxt",
     "@nuxt/ui",
     "@nuxtjs/leaflet",
-    "@i2d/nuxt-pdf-frame"
+    "@i2d/nuxt-pdf-frame",
+    "@nuxt/icon"
   ],
+  icon: {
+    serverBundle: 'local',
+    clientBundle: 'local',
+    collections: ['heroicons']
+  },
   imports: {
     dirs: ["composables", "stores"],
   },

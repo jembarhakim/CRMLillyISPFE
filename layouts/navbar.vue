@@ -80,7 +80,7 @@
                     : 'hover:bg-gray-100 text-gray-700'
                 ]" 
                 @click="navigateTo(item.link)">
-                <IconComponent :name="item.icon" class="w-6 h-6 transition-colors duration-200" 
+                <UIcon :name="item.icon" class="w-6 h-6 transition-colors duration-200" 
                   :style="isActiveMenuItem(item.link) 
                     ? 'color: #1d4ed8 !important; fill: #1d4ed8 !important; stroke: #1d4ed8 !important;' 
                     : 'color: black !important; fill: black !important; stroke: black !important;'" />
@@ -142,7 +142,7 @@
   </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, defineComponent, h } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useRolePermissions } from '@/composables/useRolePermissions'
@@ -163,36 +163,6 @@ const authStore = useAuthStore()
 // Role permissions composable
 const { userMenu, loadFeaturePermissions, isLoadingPermissions } = useRolePermissions()
 
-// Icon component to replace UIcon
-const IconComponent = defineComponent({
-  props: {
-    name: String
-  },
-  setup(props) {
-    const iconMap: Record<string, string> = {
-      'i-heroicons-home': 'M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z',
-      'i-heroicons-user-circle-16-solid': 'M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z',
-      'i-heroicons-map': 'M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7',
-      'i-heroicons-book-open-solid': 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
-      'i-heroicons-wifi-16-solid': 'M1.42 9L9 1.42 16.58 9 9 16.58 1.42 9z',
-      'i-heroicons-arrow-down-on-square-stack': 'M7 16V4m0 0L3 8m4-4l4 4m6 0v12a2 2 0 01-2 2H9a2 2 0 01-2-2V8a2 2 0 012-2h8a2 2 0 012 2z',
-      'i-heroicons-building-office-16-solid': 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
-      'i-heroicons-document-currency-dollar-16-solid': 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
-      'i-heroicons-arrow-path-16-solid': 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15',
-      'i-heroicons-exclamation-triangle-16-solid': 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z'
-    }
-    
-    return () => h('svg', {
-      class: 'w-6 h-6',
-      fill: 'currentColor',
-      viewBox: '0 0 24 24'
-    }, [
-      h('path', {
-        d: iconMap[props.name || ''] || iconMap['i-heroicons-home']
-      })
-    ])
-  }
-})
 
 // Modal state for logout confirmation
 const showLogoutModal = ref(false)
