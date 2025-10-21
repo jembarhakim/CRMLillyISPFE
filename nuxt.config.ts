@@ -50,8 +50,7 @@ export default defineNuxtConfig({
     "@pinia/nuxt",
     "@nuxt/ui",
     "@nuxtjs/leaflet",
-    "@i2d/nuxt-pdf-frame",
-    "nuxt-echarts"
+    "@i2d/nuxt-pdf-frame"
   ],
   imports: {
     dirs: ["composables", "stores"],
