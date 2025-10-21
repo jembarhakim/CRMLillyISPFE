@@ -12,7 +12,8 @@ const notification = useNotification();
 // Apply auth middleware and layout
 definePageMeta({
   middleware: 'auth',
-  layout: false
+  layout: false,
+  ssr: false  // Disable SSR to prevent Icon component infinite recursion
 })
 
 // Set page title
