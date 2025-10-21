@@ -1066,16 +1066,18 @@ onUnmounted(() => {
 })
 
 // React to filter changes immediately
+// Use flush: 'post' to avoid infinite loops when applyDateFilter modifies watched values
 watch([filterType, selectedMonth, selectedYear, customDateFrom, customDateTo], async () => {
   await applyDateFilter()
-})
+}, { flush: 'post' })
 
 // React to year range changes immediately
+// Use flush: 'post' to avoid infinite loops when applyDateFilter modifies yearStart/yearEnd
 watch([useYearRange, yearStart, yearEnd], async () => {
   if (useYearRange.value) {
     await applyDateFilter()
   }
-})
+}, { flush: 'post' })
 
 
 </script>
@@ -1104,7 +1106,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
         <!-- Filter Type Selection -->
         <div class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">Filter Type</label>
-          <select v-model="filterType" @change="applyDateFilter"
+          <select v-model="filterType"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="all-time">All Time</option>
             <option value="monthly">Monthly</option>
@@ -1117,7 +1119,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
         <!-- Monthly Filter -->
         <div v-if="filterType === 'monthly'" class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">Year</label>
-          <select v-model.number="selectedYear" @change="applyDateFilter"
+          <select v-model.number="selectedYear"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">Select Year</option>
             <option v-for="y in availableYears" :key="'my'+y" :value="y">{{ y }}</option>
@@ -1126,7 +1128,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
 
         <div v-if="filterType === 'monthly'" class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">Month</label>
-          <select v-model.number="selectedMonth" @change="applyDateFilter"
+          <select v-model.number="selectedMonth"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">Select Month</option>
             <option v-for="month in availableMonths" :key="'mm'+month.value" :value="month.value">{{ month.label }}</option>
@@ -1136,7 +1138,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
         <!-- Yearly Filter -->
         <div v-if="filterType === 'yearly'" class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">Year</label>
-          <select v-model.number="selectedYear" @change="applyDateFilter"
+          <select v-model.number="selectedYear"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">Select Year</option>
             <option v-for="y in availableYears" :key="'yy'+y" :value="y">{{ y }}</option>
@@ -1146,7 +1148,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
         <!-- Range Filter -->
         <div v-if="filterType === 'range'" class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">Date Range</label>
-          <select v-model="selectedDateRange" @change="applyDateFilter"
+          <select v-model="selectedDateRange"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="7">Last 7 days</option>
             <option value="30">Last 30 days</option>
@@ -1161,13 +1163,13 @@ watch([useYearRange, yearStart, yearEnd], async () => {
         <!-- Custom Date Range Filter -->
         <div v-if="filterType === 'custom'" class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">From Date</label>
-          <input v-model="customDateFrom" type="date" @change="applyDateFilter"
+          <input v-model="customDateFrom" type="date"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
         </div>
 
         <div v-if="filterType === 'custom'" class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">To Date</label>
-          <input v-model="customDateTo" type="date" @change="applyDateFilter"
+          <input v-model="customDateTo" type="date"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
         </div>
       </div>
@@ -1183,7 +1185,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       <div v-if="useYearRange" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-200">
         <div class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">From Year</label>
-          <select v-model.number="yearStart" @change="applyDateFilter" 
+          <select v-model.number="yearStart"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">-</option>
             <option v-for="y in availableYears" :key="'ys'+y" :value="y">{{ y }}</option>
@@ -1191,7 +1193,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
         </div>
         <div class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">To Year</label>
-          <select v-model.number="yearEnd" @change="applyDateFilter" 
+          <select v-model.number="yearEnd"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">-</option>
             <option v-for="y in availableYears" :key="'ye'+y" :value="y">{{ y }}</option>
