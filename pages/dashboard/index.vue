@@ -1063,19 +1063,8 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
 })
 
-// React to filter changes immediately
-// Use flush: 'post' to avoid infinite loops when applyDateFilter modifies watched values
-watch([filterType, selectedMonth, selectedYear, customDateFrom, customDateTo], async () => {
-  await applyDateFilter()
-}, { flush: 'post' })
-
-// React to year range changes immediately
-// Use flush: 'post' to avoid infinite loops when applyDateFilter modifies yearStart/yearEnd
-watch([useYearRange, yearStart, yearEnd], async () => {
-  if (useYearRange.value) {
-    await applyDateFilter()
-  }
-}, { flush: 'post' })
+// REMOVED WATCHERS - They were causing infinite loops
+// Now using only @change events in the template to trigger applyDateFilter
 
 
 </script>
@@ -1104,7 +1093,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
         <!-- Filter Type Selection -->
         <div class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">Filter Type</label>
-          <select v-model="filterType"
+          <select v-model="filterType" @change="applyDateFilter"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="all-time">All Time</option>
             <option value="monthly">Monthly</option>
@@ -1117,7 +1106,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
         <!-- Monthly Filter -->
         <div v-if="filterType === 'monthly'" class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">Year</label>
-          <select v-model.number="selectedYear"
+          <select v-model.number="selectedYear" @change="applyDateFilter"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">Select Year</option>
             <option v-for="y in availableYears" :key="'my'+y" :value="y">{{ y }}</option>
@@ -1126,7 +1115,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
 
         <div v-if="filterType === 'monthly'" class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">Month</label>
-          <select v-model.number="selectedMonth"
+          <select v-model.number="selectedMonth" @change="applyDateFilter"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">Select Month</option>
             <option v-for="month in availableMonths" :key="'mm'+month.value" :value="month.value">{{ month.label }}</option>
@@ -1136,7 +1125,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
         <!-- Yearly Filter -->
         <div v-if="filterType === 'yearly'" class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">Year</label>
-          <select v-model.number="selectedYear"
+          <select v-model.number="selectedYear" @change="applyDateFilter"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">Select Year</option>
             <option v-for="y in availableYears" :key="'yy'+y" :value="y">{{ y }}</option>
@@ -1146,7 +1135,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
         <!-- Range Filter -->
         <div v-if="filterType === 'range'" class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">Date Range</label>
-          <select v-model="selectedDateRange"
+          <select v-model="selectedDateRange" @change="applyDateFilter"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="7">Last 7 days</option>
             <option value="30">Last 30 days</option>
@@ -1161,13 +1150,13 @@ watch([useYearRange, yearStart, yearEnd], async () => {
         <!-- Custom Date Range Filter -->
         <div v-if="filterType === 'custom'" class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">From Date</label>
-          <input v-model="customDateFrom" type="date"
+          <input v-model="customDateFrom" type="date" @change="applyDateFilter"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
         </div>
 
         <div v-if="filterType === 'custom'" class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">To Date</label>
-          <input v-model="customDateTo" type="date"
+          <input v-model="customDateTo" type="date" @change="applyDateFilter"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
         </div>
       </div>
@@ -1175,7 +1164,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       <!-- Advanced Year Range Toggle -->
       <div class="flex items-center gap-3 pt-2 border-t border-gray-200">
         <label class="text-sm font-medium text-gray-700">Advanced Year Range:</label>
-        <input type="checkbox" v-model="useYearRange" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" title="Filter by start/end year" />
+        <input type="checkbox" v-model="useYearRange" @change="applyDateFilter" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" title="Filter by start/end year" />
         <span class="text-sm text-gray-500">Override other filters with year range</span>
       </div>
 
@@ -1183,7 +1172,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       <div v-if="useYearRange" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-200">
         <div class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">From Year</label>
-          <select v-model.number="yearStart"
+          <select v-model.number="yearStart" @change="applyDateFilter"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">-</option>
             <option v-for="y in availableYears" :key="'ys'+y" :value="y">{{ y }}</option>
@@ -1191,7 +1180,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
         </div>
         <div class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">To Year</label>
-          <select v-model.number="yearEnd"
+          <select v-model.number="yearEnd" @change="applyDateFilter"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">-</option>
             <option v-for="y in availableYears" :key="'ye'+y" :value="y">{{ y }}</option>
