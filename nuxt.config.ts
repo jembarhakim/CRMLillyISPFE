@@ -51,13 +51,8 @@ export default defineNuxtConfig({
     "@nuxt/ui",
     "@nuxtjs/leaflet",
     "@i2d/nuxt-pdf-frame",
-    "nuxt-echarts",
-    "@nuxtjs/icon"
+    "nuxt-echarts"
   ],
-  icon: {
-    serverBundle: 'local',
-    clientBundle: 'local'
-  },
   imports: {
     dirs: ["composables", "stores"],
   },
