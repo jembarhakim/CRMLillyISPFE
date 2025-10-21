@@ -942,56 +942,63 @@ function handleKeydown(event: KeyboardEvent) {
 // Removed logout confirmation handlers
 
 // Filter functions
+// Flag to prevent infinite loops
+let isApplyingFilter = false;
+
 async function applyDateFilter() {
-  // Reset year range when using day-based range
-  if (!useYearRange.value) {
-    yearStart.value = null;
-    yearEnd.value = null;
-  }
-  
-  // Build params based on filter type
-  let params: any = {};
-  
-  switch (filterType.value) {
-    case 'monthly':
-      if (selectedYear.value && selectedMonth.value) {
-        params = { 
-          year: selectedYear.value, 
-          month: selectedMonth.value 
-        };
-      }
-      break;
-    case 'yearly':
-      if (selectedYear.value) {
-        params = { year: selectedYear.value };
-      }
-      break;
-    case 'custom':
-      if (customDateFrom.value && customDateTo.value) {
-        params = { 
-          date_from: customDateFrom.value, 
-          date_to: customDateTo.value 
-        };
-      }
-      break;
-    case 'range':
-      params = { days: Number(selectedDateRange.value) };
-      break;
-    case 'all-time':
-    default:
-      params = { days: 0 }; // All time
-      break;
-  }
-  
-  // Override with year range if active
-  if (useYearRange.value && yearStart.value !== null && yearEnd.value !== null) {
-    params = { 
-      year_start: Math.min(yearStart.value, yearEnd.value), 
-      year_end: Math.max(yearStart.value, yearEnd.value) 
-    };
-  }
+  // Prevent recursive calls
+  if (isApplyingFilter) return;
+  isApplyingFilter = true;
   
   try {
+    // Reset year range when using day-based range
+    if (!useYearRange.value) {
+      yearStart.value = null;
+      yearEnd.value = null;
+    }
+    
+    // Build params based on filter type
+    let params: any = {};
+    
+    switch (filterType.value) {
+      case 'monthly':
+        if (selectedYear.value && selectedMonth.value) {
+          params = { 
+            year: selectedYear.value, 
+            month: selectedMonth.value 
+          };
+        }
+        break;
+      case 'yearly':
+        if (selectedYear.value) {
+          params = { year: selectedYear.value };
+        }
+        break;
+      case 'custom':
+        if (customDateFrom.value && customDateTo.value) {
+          params = { 
+            date_from: customDateFrom.value, 
+            date_to: customDateTo.value 
+          };
+        }
+        break;
+      case 'range':
+        params = { days: Number(selectedDateRange.value) };
+        break;
+      case 'all-time':
+      default:
+        params = { days: 0 }; // All time
+        break;
+    }
+    
+    // Override with year range if active
+    if (useYearRange.value && yearStart.value !== null && yearEnd.value !== null) {
+      params = { 
+        year_start: Math.min(yearStart.value, yearEnd.value), 
+        year_end: Math.max(yearStart.value, yearEnd.value) 
+      };
+    }
+    
     // Refresh dashboard cards with filter parameters
     await getNewDashboardData(params)
     
@@ -1009,6 +1016,11 @@ async function applyDateFilter() {
     unpaidCustomersChart.value = unpaidResponse.data
   } catch (e) {
     console.error('Failed to refresh charts with params', params, e)
+  } finally {
+    // Reset flag after a delay to allow the change to complete
+    setTimeout(() => {
+      isApplyingFilter = false;
+    }, 100);
   }
 }
 
