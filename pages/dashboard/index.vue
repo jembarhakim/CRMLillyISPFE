@@ -951,11 +951,8 @@ async function applyDateFilter() {
   isApplyingFilter = true;
   
   try {
-    // Reset year range when using day-based range
-    if (!useYearRange.value) {
-      yearStart.value = null;
-      yearEnd.value = null;
-    }
+    // REMOVED: Don't modify yearStart/yearEnd to prevent infinite loop
+    // User can manually change them if needed
     
     // Build params based on filter type
     let params: any = {};
