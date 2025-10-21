@@ -488,8 +488,6 @@ const optionCardPacketPopular = ref();
 const optionCardArea = ref();
 const optionCardReportCash = ref();
 
-
-
 const data = ref<{ y: number[]; x: string[]; label: string }[]>([]);
 let cards = ref<{ name: string; total: number }[]>([]);
 const CardList = [
