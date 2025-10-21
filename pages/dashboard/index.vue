@@ -1041,8 +1041,7 @@ function resetFilters() {
   customDateTo.value = ''
   selectedDateRange.value = 0
   useYearRange.value = false
-  yearStart.value = null
-  yearEnd.value = null
+  // REMOVED: yearStart.value = null and yearEnd.value = null to prevent infinite loop
   
   // Refresh data with default settings
   getNewDashboardData()
