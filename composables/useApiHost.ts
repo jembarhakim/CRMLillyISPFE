@@ -5,16 +5,22 @@ export const useApiHost = () => {
   if (!api || api.trim() === '') {
     if (process.client && typeof window !== 'undefined') {
       const proto = window.location.protocol === 'https:' ? 'https' : 'http';
-      const host = window.location.hostname;
-      // Use the configured Nginx port for the backend, which is 80 (or 443 for https)
-      // Since Nginx proxies to 3001, the client should just use the domain/IP
-      api = `${proto}://${host}`;
+      const host = window.location.hostname; // works with LAN IP when accessed from phone
+      const port = '3001';
+      api = `${proto}://${host}:${port}`;
       console.warn(`⚠️ NUXT_PUBLIC_API_HOST not set; using inferred ${api}`);
     } else {
       console.warn('⚠️ NUXT_PUBLIC_API_HOST is not defined in .env; using fallback http://rndpolije.lilly.net.id');
       api = 'http://rndpolije.lilly.net.id';
     }
   }
+
+  // Only force localhost if explicitly on localhost AND no API_HOST is set
+  // REMOVED: This was causing localhost to be used even on VPS
+  // if (process.client && window.location.hostname === 'localhost' && !config.public.API_HOST) {
+  //   api = 'http://localhost:3001';
+  //   console.log('🔧 Using localhost:3001 for local development');
+  // }
 
   console.log('🔗 API Host configured as:', api);
   console.log('🌐 Current window location:', process.client ? window.location.href : 'server-side');
@@ -28,8 +34,8 @@ export const useWaHost = () => {
     if (process.client && typeof window !== 'undefined') {
       const proto = window.location.protocol === 'https:' ? 'https' : 'http';
       const host = window.location.hostname;
-      // Use the same logic as API_HOST - no port needed as Nginx handles routing
-      wa = `${proto}://${host}`;
+      const port = '3001';
+      wa = `${proto}://${host}:${port}`;
       console.warn(`⚠️ NUXT_PUBLIC_WA_HOST not set; using inferred ${wa}`);
     } else {
       console.warn('⚠️ NUXT_PUBLIC_WA_HOST is not defined in .env; using fallback http://rndpolije.lilly.net.id');

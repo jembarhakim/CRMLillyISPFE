@@ -9,12 +9,9 @@ import { useNotification } from "@/composables/useNotification";
 
 const notification = useNotification();
 
-// Apply auth middleware and layout
-// Disable SSR to prevent server-side infinite loop
+// Apply auth middleware
 definePageMeta({
-  middleware: 'auth',
-  layout: false,
-  ssr: false
+  middleware: 'auth'
 })
 
 // Set page title
@@ -490,6 +487,11 @@ const optionCardPacketPopular = ref();
 const optionCardArea = ref();
 const optionCardReportCash = ref();
 
+
+definePageMeta({
+  layout: false,
+});
+
 const data = ref<{ y: number[]; x: string[]; label: string }[]>([]);
 let cards = ref<{ name: string; total: number }[]>([]);
 const CardList = [
@@ -942,60 +944,56 @@ function handleKeydown(event: KeyboardEvent) {
 // Removed logout confirmation handlers
 
 // Filter functions
-// Flag to prevent infinite loops
-let isApplyingFilter = false;
-
 async function applyDateFilter() {
-  // Prevent recursive calls
-  if (isApplyingFilter) return;
-  isApplyingFilter = true;
+  // Reset year range when using day-based range
+  if (!useYearRange.value) {
+    yearStart.value = null;
+    yearEnd.value = null;
+  }
+  
+  // Build params based on filter type
+  let params: any = {};
+  
+  switch (filterType.value) {
+    case 'monthly':
+      if (selectedYear.value && selectedMonth.value) {
+        params = { 
+          year: selectedYear.value, 
+          month: selectedMonth.value 
+        };
+      }
+      break;
+    case 'yearly':
+      if (selectedYear.value) {
+        params = { year: selectedYear.value };
+      }
+      break;
+    case 'custom':
+      if (customDateFrom.value && customDateTo.value) {
+        params = { 
+          date_from: customDateFrom.value, 
+          date_to: customDateTo.value 
+        };
+      }
+      break;
+    case 'range':
+      params = { days: Number(selectedDateRange.value) };
+      break;
+    case 'all-time':
+    default:
+      params = { days: 0 }; // All time
+      break;
+  }
+  
+  // Override with year range if active
+  if (useYearRange.value && yearStart.value !== null && yearEnd.value !== null) {
+    params = { 
+      year_start: Math.min(yearStart.value, yearEnd.value), 
+      year_end: Math.max(yearStart.value, yearEnd.value) 
+    };
+  }
   
   try {
-    // REMOVED: Don't modify yearStart/yearEnd to prevent infinite loop
-    // User can manually change them if needed
-    
-    // Build params based on filter type
-    let params: any = {};
-    
-    switch (filterType.value) {
-      case 'monthly':
-        if (selectedYear.value && selectedMonth.value) {
-          params = { 
-            year: selectedYear.value, 
-            month: selectedMonth.value 
-          };
-        }
-        break;
-      case 'yearly':
-        if (selectedYear.value) {
-          params = { year: selectedYear.value };
-        }
-        break;
-      case 'custom':
-        if (customDateFrom.value && customDateTo.value) {
-          params = { 
-            date_from: customDateFrom.value, 
-            date_to: customDateTo.value 
-          };
-        }
-        break;
-      case 'range':
-        params = { days: Number(selectedDateRange.value) };
-        break;
-      case 'all-time':
-      default:
-        params = { days: 0 }; // All time
-        break;
-    }
-    
-    // Override with year range if active
-    if (useYearRange.value && yearStart.value !== null && yearEnd.value !== null) {
-      params = { 
-        year_start: Math.min(yearStart.value, yearEnd.value), 
-        year_end: Math.max(yearStart.value, yearEnd.value) 
-      };
-    }
-    
     // Refresh dashboard cards with filter parameters
     await getNewDashboardData(params)
     
@@ -1013,11 +1011,6 @@ async function applyDateFilter() {
     unpaidCustomersChart.value = unpaidResponse.data
   } catch (e) {
     console.error('Failed to refresh charts with params', params, e)
-  } finally {
-    // Reset flag after a delay to allow the change to complete
-    setTimeout(() => {
-      isApplyingFilter = false;
-    }, 100);
   }
 }
 
@@ -1041,7 +1034,8 @@ function resetFilters() {
   customDateTo.value = ''
   selectedDateRange.value = 0
   useYearRange.value = false
-  // REMOVED: yearStart.value = null and yearEnd.value = null to prevent infinite loop
+  yearStart.value = null
+  yearEnd.value = null
   
   // Refresh data with default settings
   getNewDashboardData()
@@ -1071,8 +1065,17 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
 })
 
-// REMOVED WATCHERS - They were causing infinite loops
-// Now using only @change events in the template to trigger applyDateFilter
+// React to filter changes immediately
+watch([filterType, selectedMonth, selectedYear, customDateFrom, customDateTo], async () => {
+  await applyDateFilter()
+})
+
+// React to year range changes immediately
+watch([useYearRange, yearStart, yearEnd], async () => {
+  if (useYearRange.value) {
+    await applyDateFilter()
+  }
+})
 
 
 </script>
@@ -1172,7 +1175,7 @@ onUnmounted(() => {
       <!-- Advanced Year Range Toggle -->
       <div class="flex items-center gap-3 pt-2 border-t border-gray-200">
         <label class="text-sm font-medium text-gray-700">Advanced Year Range:</label>
-        <input type="checkbox" v-model="useYearRange" @change="applyDateFilter" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" title="Filter by start/end year" />
+        <input type="checkbox" v-model="useYearRange" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" title="Filter by start/end year" />
         <span class="text-sm text-gray-500">Override other filters with year range</span>
       </div>
 
@@ -1180,7 +1183,7 @@ onUnmounted(() => {
       <div v-if="useYearRange" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-200">
         <div class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">From Year</label>
-          <select v-model.number="yearStart"
+          <select v-model.number="yearStart" @change="applyDateFilter" 
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">-</option>
             <option v-for="y in availableYears" :key="'ys'+y" :value="y">{{ y }}</option>
@@ -1188,7 +1191,7 @@ onUnmounted(() => {
         </div>
         <div class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">To Year</label>
-          <select v-model.number="yearEnd"
+          <select v-model.number="yearEnd" @change="applyDateFilter" 
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">-</option>
             <option v-for="y in availableYears" :key="'ye'+y" :value="y">{{ y }}</option>

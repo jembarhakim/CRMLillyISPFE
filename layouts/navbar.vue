@@ -163,7 +163,6 @@ const authStore = useAuthStore()
 // Role permissions composable
 const { userMenu, loadFeaturePermissions, isLoadingPermissions } = useRolePermissions()
 
-
 // Modal state for logout confirmation
 const showLogoutModal = ref(false)
 
