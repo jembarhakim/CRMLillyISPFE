@@ -32,6 +32,7 @@
     "jspdf": "^3.0.1",
     "Math": "^0.0.1-security",
     "nuxt": "^3.15.4",
+    "nuxt-icon": "^1.0.0-beta.7",
     "nuxt-storage": "^1.2.2",
     "ohash": "^2.0.11",
     "pinia": "^3.0.1",
