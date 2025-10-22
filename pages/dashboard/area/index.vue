@@ -104,7 +104,7 @@ async function deleteData(id: string){
 
 <template>
   <div class="flex gap-2">
-    <UButton icon="i-heroicons-plus" color="blue" label="Add New Area" @click="openModal(false,null)" />
+    <UButton icon="heroicons:plus" color="blue" label="Add New Area" @click="openModal(false,null)" />
   </div>
   <div class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700">
     <UInput v-model="q" placeholder="Filter Area..." />
@@ -118,8 +118,8 @@ async function deleteData(id: string){
     </template>
     <template #actions-data="{ row }">
       <div class="flex gap-2">
-        <UButton icon="i-heroicons-pencil" color="yellow" label="Edit" @click="openModal(true,row)" />
-        <UButton icon="i-heroicons-trash" color="red" label="Delete" @click="deleteData(row.id)" />
+        <UButton icon="heroicons:pencil" color="yellow" label="Edit" @click="openModal(true,row)" />
+        <UButton icon="heroicons:trash" color="red" label="Delete" @click="deleteData(row.id)" />
       </div>
     </template>
   </UTable>

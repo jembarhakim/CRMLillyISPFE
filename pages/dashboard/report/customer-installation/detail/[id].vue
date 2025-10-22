@@ -13,18 +13,18 @@
               <UButton @click="handleBackNavigation" 
                        color="white" variant="outline" size="sm" 
                        class="backdrop-blur-sm bg-white/10 border-white/20 text-white hover:bg-white/20 w-full sm:w-auto">
-                <UIcon name="i-heroicons-arrow-left" class="mr-2" />
+                <UIcon name="heroicons:arrow-left" class="mr-2" />
                 {{ backNavigationLabel }}
               </UButton>
               <UButton @click="printReport" color="white" variant="solid" size="sm"
                        class="bg-white/20 backdrop-blur-sm hover:bg-white/30 w-full sm:w-auto">
-                <UIcon name="i-heroicons-printer" class="mr-2" />
+                <UIcon name="heroicons:printer" class="mr-2" />
                 Print Report
               </UButton>
               <UButton @click="deleteInstallationReport" color="white" variant="solid" size="sm"
                        class="bg-red-500/80 backdrop-blur-sm hover:bg-red-600/80 w-full sm:w-auto"
                        :loading="deleting">
-                <UIcon name="i-heroicons-trash" class="mr-2" />
+                <UIcon name="heroicons:trash" class="mr-2" />
                 Delete Report
               </UButton>
             </div>
@@ -36,7 +36,7 @@
       <div v-if="loading" class="flex justify-center py-12 sm:py-16">
         <div class="text-center">
           <div class="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-full mb-4">
-            <UIcon name="i-heroicons-arrow-path" class="animate-spin text-xl sm:text-2xl text-blue-600" />
+            <UIcon name="heroicons:arrow-path" class="animate-spin text-xl sm:text-2xl text-blue-600" />
           </div>
           <p class="text-gray-600 text-sm sm:text-lg">Loading installation report...</p>
         </div>
@@ -45,7 +45,7 @@
       <!-- Not Found State -->
       <div v-else-if="!report" class="text-center py-12 sm:py-16">
         <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full mb-4 sm:mb-6">
-          <UIcon name="i-heroicons-document-text" class="text-2xl sm:text-3xl text-gray-400" />
+          <UIcon name="heroicons:document-text" class="text-2xl sm:text-3xl text-gray-400" />
         </div>
         <h3 class="text-lg sm:text-xl font-semibold text-gray-700 mb-2">Report Not Found</h3>
         <p class="text-gray-500 text-sm sm:text-base">The installation report you're looking for doesn't exist or has been removed.</p>
@@ -76,7 +76,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="i-heroicons-calendar-days" class="mr-3 text-xl" />
+              <UIcon name="heroicons:calendar-days" class="mr-3 text-xl" />
               PSB (Pasang Baru) Information
             </h3>
           </div>
@@ -86,7 +86,7 @@
               <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-calendar" class="text-white text-lg" />
+                    <UIcon name="heroicons:calendar" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-purple-800">PSB Request Date</h4>
                 </div>
@@ -100,7 +100,7 @@
               <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-xl border border-indigo-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-check-circle" class="text-white text-lg" />
+                    <UIcon name="heroicons:check-circle" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-indigo-800">Installation Completed</h4>
                 </div>
@@ -114,7 +114,7 @@
               <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-xl border border-emerald-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-clock" class="text-white text-lg" />
+                    <UIcon name="heroicons:clock" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-emerald-800">PSB Duration</h4>
                 </div>

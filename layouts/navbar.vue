@@ -80,7 +80,7 @@
                     : 'hover:bg-gray-100 text-gray-700'
                 ]" 
                 @click="navigateTo(item.link)">
-                <UIcon :name="item.icon" class="w-6 h-6 transition-colors duration-200" 
+                <UIcon :name="`heroicons:${item.icon}`" class="w-6 h-6 transition-colors duration-200" 
                   :class="isActiveMenuItem(item.link) 
                     ? 'text-blue-600' 
                     : 'text-gray-600'" />
