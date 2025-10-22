@@ -53,6 +53,10 @@ export default defineNuxtConfig({
     "@i2d/nuxt-pdf-frame",
     "nuxt-echarts"
   ],
+  // Fix Icon component SSR infinite recursion by using Lucide icons
+  ui: {
+    icons: ['lucide']
+  },
   imports: {
     dirs: ["composables", "stores"],
   },
