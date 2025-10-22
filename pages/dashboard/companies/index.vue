@@ -147,14 +147,14 @@ const items = (row: Person) => [
     [
         {
             label: "Edit",
-            icon: "i-lucide-pencil-square-20-solid",
+            icon: "pencil-square-20-solid",
             click: () => openEditCompanyModal(row.id.toString()),
         },
     ],
     [
         {
             label: "Delete",
-            icon: "i-lucide-trash-2-20-solid",
+            icon: "trash-2-20-solid",
             click: () => deleteCompany(row.id.toString()),
         },
     ],
@@ -178,7 +178,7 @@ const modal = useModal();
                 </template>
                 <template #actions-data="{ row }">
                     <UDropdown :items="items(row)">
-                        <UButton color="gray" variant="ghost" icon="i-lucide-ellipsis-horizontal-20-solid" />
+                        <UButton color="gray" variant="ghost" icon="ellipsis-horizontal-20-solid" />
                     </UDropdown>
                 </template>
             </UTable>

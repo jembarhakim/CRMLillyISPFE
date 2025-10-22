@@ -67,14 +67,14 @@ const items = (row: User) => [
   [
     {
       label: "Edit",
-      icon: "i-lucide-pencil-square-20-solid",
+      icon: "pencil-square-20-solid",
       click: () => console.log("Edit", row.id),
     },
   ],
   [
     {
       label: "Delete",
-      icon: "i-lucide-trash-2-20-solid",
+      icon: "trash-2-20-solid",
     },
   ],
 ];
@@ -100,7 +100,7 @@ const items = (row: User) => [
   <UTable :rows="dataTableList" :columns="columns">
     <template #actions-data="{ row }">
       <UDropdown :items="items(row)">
-        <UButton color="gray" variant="ghost" icon="i-lucide-ellipsis-horizontal-20-solid" />
+        <UButton color="gray" variant="ghost" icon="ellipsis-horizontal-20-solid" />
       </UDropdown>
     </template>
     <template #date-data="{ row }">

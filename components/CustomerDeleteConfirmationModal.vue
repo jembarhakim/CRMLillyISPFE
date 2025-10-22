@@ -7,19 +7,19 @@
           <UButton
             color="gray"
             variant="ghost"
-            icon="i-lucide-x"
+            icon="x"
             @click="closeModal"
           />
         </div>
       </template>
 
       <div v-if="loading" class="text-center py-8">
-        <UIcon name="i-lucide-refresh-cw" class="animate-spin text-2xl mx-auto mb-4" />
+        <UIcon name="refresh-cw" class="animate-spin text-2xl mx-auto mb-4" />
         <p class="text-gray-600">Loading customer data...</p>
       </div>
 
       <div v-else-if="error" class="text-center py-8">
-        <UIcon name="i-lucide-alert-triangle" class="text-red-500 text-2xl mx-auto mb-4" />
+        <UIcon name="alert-triangle" class="text-red-500 text-2xl mx-auto mb-4" />
         <p class="text-red-600 mb-4">{{ error }}</p>
         <UButton @click="closeModal" color="gray">Close</UButton>
       </div>
@@ -29,7 +29,7 @@
         <div class="mb-6">
           <div class="flex items-center gap-4 mb-4">
             <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-              <UIcon name="i-lucide-user" class="text-red-600 text-2xl" />
+              <UIcon name="user" class="text-red-600 text-2xl" />
             </div>
             <div>
               <h4 class="text-lg font-semibold text-white">{{ customerName }}</h4>
@@ -41,7 +41,7 @@
         <!-- Warning Message -->
         <div class="bg-red-50 border border-red-200 rounded-lg p-5 mb-6">
           <div class="flex items-start">
-            <UIcon name="i-lucide-alert-triangle" class="text-red-500 text-xl mr-3 mt-0.5" />
+            <UIcon name="alert-triangle" class="text-red-500 text-xl mr-3 mt-0.5" />
             <div>
               <h5 class="text-red-800 font-semibold mb-2">Warning: This action cannot be undone!</h5>
               <p class="text-red-900 text-sm leading-relaxed">
@@ -56,7 +56,7 @@
         <div v-if="relatedRecords && relatedRecords.installations > 0" class="mb-6">
           <div class="bg-red-50 border border-red-200 rounded-lg p-4">
             <div class="flex items-start">
-              <UIcon name="i-lucide-x-circle" class="text-red-500 text-xl mr-3 mt-0.5" />
+              <UIcon name="x-circle" class="text-red-500 text-xl mr-3 mt-0.5" />
               <div>
                 <h5 class="text-red-800 font-semibold mb-2">🚫 Cannot Delete Customer</h5>
                 <p class="text-red-900 text-sm leading-relaxed mb-3">
@@ -82,7 +82,7 @@
           <div class="grid grid-cols-2 gap-3">
             <div v-if="relatedRecords.invoices > 0" class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
               <div class="flex items-center">
-                <UIcon name="i-lucide-file-text" class="text-red-500 mr-2" />
+                <UIcon name="file-text" class="text-red-500 mr-2" />
                 <span class="text-sm font-medium text-gray-900">Invoices</span>
               </div>
               <span class="text-sm font-bold text-red-600">{{ relatedRecords.invoices }}</span>
@@ -90,7 +90,7 @@
             
             <div v-if="relatedRecords.installations > 0" class="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded-lg">
               <div class="flex items-center">
-                <UIcon name="i-lucide-wrench-screwdriver" class="text-orange-500 mr-2" />
+                <UIcon name="wrench-screwdriver" class="text-orange-500 mr-2" />
                 <span class="text-sm font-medium text-gray-900">Installation Reports</span>
               </div>
               <span class="text-sm font-bold text-orange-600">{{ relatedRecords.installations }}</span>
@@ -98,7 +98,7 @@
             
             <div v-if="relatedRecords.network_devices > 0" class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
               <div class="flex items-center">
-                <UIcon name="i-lucide-cpu-chip" class="text-red-500 mr-2" />
+                <UIcon name="cpu-chip" class="text-red-500 mr-2" />
                 <span class="text-sm font-medium text-gray-900">Network Devices</span>
               </div>
               <span class="text-sm font-bold text-red-600">{{ relatedRecords.network_devices }}</span>
@@ -106,7 +106,7 @@
             
             <div v-if="relatedRecords.customer_services > 0" class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
               <div class="flex items-center">
-                <UIcon name="i-lucide-settings-6-tooth" class="text-red-500 mr-2" />
+                <UIcon name="settings-6-tooth" class="text-red-500 mr-2" />
                 <span class="text-sm font-medium text-gray-900">Services</span>
               </div>
               <span class="text-sm font-bold text-red-600">{{ relatedRecords.customer_services }}</span>
@@ -114,7 +114,7 @@
             
             <div v-if="relatedRecords.asset_transactions > 0" class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
               <div class="flex items-center">
-                <UIcon name="i-lucide-dollar-sign" class="text-red-500 mr-2" />
+                <UIcon name="dollar-sign" class="text-red-500 mr-2" />
                 <span class="text-sm font-medium text-gray-900">Asset Transactions</span>
               </div>
               <span class="text-sm font-bold text-red-600">{{ relatedRecords.asset_transactions }}</span>
@@ -122,7 +122,7 @@
             
             <div v-if="relatedRecords.cables > 0" class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
               <div class="flex items-center">
-                <UIcon name="i-lucide-cable" class="text-red-500 mr-2" />
+                <UIcon name="cable" class="text-red-500 mr-2" />
                 <span class="text-sm font-medium text-gray-900">Cables</span>
               </div>
               <span class="text-sm font-bold text-red-600">{{ relatedRecords.cables }}</span>
@@ -130,7 +130,7 @@
             
             <div v-if="relatedRecords.images > 0" class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
               <div class="flex items-center">
-                <UIcon name="i-lucide-photo" class="text-red-500 mr-2" />
+                <UIcon name="photo" class="text-red-500 mr-2" />
                 <span class="text-sm font-medium text-gray-900">Images</span>
               </div>
               <span class="text-sm font-bold text-red-600">{{ relatedRecords.images }}</span>
@@ -169,7 +169,7 @@
             :loading="deleting"
             :disabled="!confirmationChecked || !!(relatedRecords && relatedRecords.installations > 0)"
           >
-            <UIcon name="i-lucide-trash-2" class="mr-2" />
+            <UIcon name="trash-2" class="mr-2" />
             {{ (relatedRecords && relatedRecords.installations > 0) ? 'Blocked (Installation Reports)' : 'Delete Customer' }}
           </UButton>
         </div>

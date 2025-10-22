@@ -113,84 +113,84 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
 export const MAIN_MENU: MenuItem[] = [
   {
     label: 'Dashboard',
-    icon: 'i-lucide-home',
+    icon: 'home',
     link: '/dashboard',
     feature: 'dashboard',
     description: 'Main dashboard overview'
   },
   {
     label: 'Customer',
-    icon: 'i-lucide-user-circle',
+    icon: 'user-circle',
     link: '/dashboard/customer',
     feature: 'customer',
     description: 'Customer management'
   },
   {
     label: 'Area',
-    icon: 'i-lucide-map',
+    icon: 'map',
     link: '/dashboard/area',
     feature: 'area',
     description: 'Geographic area management'
   },
   {
     label: 'Report',
-    icon: 'i-lucide-book-open',
+    icon: 'book-open',
     link: '/dashboard/report',
     feature: 'report',
     description: 'System reports and analytics'
   },
   {
     label: 'Internet Package',
-    icon: 'i-lucide-wifi',
+    icon: 'wifi',
     link: '/dashboard/internet-package',
     feature: 'internet_package',
     description: 'Internet package management'
   },
   {
     label: 'Assets',
-    icon: 'i-lucide-archive',
+    icon: 'archive',
     link: '/dashboard/asset',
     feature: 'assets',
     description: 'Asset inventory management'
   },
   {
     label: 'Company',
-    icon: 'i-lucide-building',
+    icon: 'building',
     link: '/dashboard/companies',
     feature: 'company',
     description: 'Company management'
   },
   {
     label: 'Invoice',
-    icon: 'i-lucide-circle-dollar-sign',
+    icon: 'circle-dollar-sign',
     link: '/dashboard/invoice',
     feature: 'invoice',
     description: 'Invoice management'
   },
   {
     label: 'Recurring Invoices',
-    icon: 'i-lucide-refresh-cw',
+    icon: 'refresh-cw',
     link: '/dashboard/recurring-invoice',
     feature: 'invoice',
     description: 'Recurring invoice management'
   },
   {
     label: 'Transaction',
-    icon: 'i-lucide-circle-dollar-sign',
+    icon: 'circle-dollar-sign',
     link: '/dashboard/transaction',
     feature: 'transaction',
     description: 'Financial transactions'
   },
   {
     label: 'Tickets',
-    icon: 'i-lucide-alert-triangle',
+    icon: 'alert-triangle',
     link: '/dashboard/tickets',
     feature: 'tickets',
     description: 'Support ticket management'
   },
   {
     label: 'User Management',
-    icon: 'i-lucide-user-circle',
+    icon: 'user-circle',
     link: '/dashboard/user-management',
     feature: 'user_management',
     description: 'User and role management'

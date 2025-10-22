@@ -5,14 +5,14 @@
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-semibold text-red-800 flex items-center">
             <div class="bg-red-100 p-2 rounded-lg mr-3">
-              <UIcon name="i-lucide-trash-2" class="w-5 h-5 text-red-600" />
+              <UIcon name="trash-2" class="w-5 h-5 text-red-600" />
             </div>
             Delete Installation Report
           </h3>
           <UButton
             color="gray"
             variant="ghost"
-            icon="i-lucide-x"
+            icon="x"
             @click="closeModal"
             :disabled="deleting"
           />
@@ -20,7 +20,7 @@
       </template>
 
       <div v-if="loading" class="text-center py-8">
-        <UIcon name="i-lucide-refresh-cw" class="animate-spin text-2xl text-red-600 mx-auto mb-4" />
+        <UIcon name="refresh-cw" class="animate-spin text-2xl text-red-600 mx-auto mb-4" />
         <p class="text-gray-600">Loading report information...</p>
       </div>
 
@@ -29,7 +29,7 @@
         <div class="mb-6">
           <div class="flex items-center gap-4 mb-4">
             <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-              <UIcon name="i-lucide-user" class="text-red-600 text-2xl" />
+              <UIcon name="user" class="text-red-600 text-2xl" />
             </div>
             <div>
               <h4 class="text-lg font-semibold text-gray-900">{{ customerName }}</h4>
@@ -41,7 +41,7 @@
         <!-- Warning Message -->
         <div class="bg-red-50 border border-red-200 rounded-lg p-5 mb-6">
           <div class="flex items-start">
-            <UIcon name="i-lucide-alert-triangle" class="text-red-500 text-xl mr-3 mt-0.5 flex-shrink-0" />
+            <UIcon name="alert-triangle" class="text-red-500 text-xl mr-3 mt-0.5 flex-shrink-0" />
             <div>
               <h5 class="text-red-800 font-semibold mb-2">⚠️ Warning: This action cannot be undone!</h5>
               <p class="text-red-900 text-sm leading-relaxed mb-3">
@@ -63,7 +63,7 @@
         <!-- Impact Summary -->
         <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
           <h6 class="text-sm font-semibold text-gray-800 mb-3 flex items-center">
-            <UIcon name="i-lucide-info" class="w-4 h-4 mr-2 text-gray-600" />
+            <UIcon name="info" class="w-4 h-4 mr-2 text-gray-600" />
             Impact Summary
           </h6>
           <div class="grid grid-cols-2 gap-3 text-sm">
@@ -114,7 +114,7 @@
             :disabled="deleting"
             class="w-full sm:w-auto"
           >
-            <UIcon name="i-lucide-x" class="mr-2" />
+            <UIcon name="x" class="mr-2" />
             Cancel
           </UButton>
           <UButton
@@ -126,7 +126,7 @@
             :disabled="!confirmationChecked"
             class="w-full sm:w-auto bg-red-600 hover:bg-red-700"
           >
-            <UIcon name="i-lucide-trash-2" class="mr-2" />
+            <UIcon name="trash-2" class="mr-2" />
             {{ deleting ? 'Deleting...' : 'Delete Installation Report' }}
           </UButton>
         </div>

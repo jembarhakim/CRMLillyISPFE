@@ -434,11 +434,11 @@ const items = (row: Customer) => {
     const baseItems = [
         [{
             label: 'View Detail Customer',
-            icon: 'i-lucide-eye-20-solid',
+            icon: 'eye-20-solid',
             click: () => OpenCustomerDetailModal(row.id)
         }, {
             label: 'Edit',
-            icon: 'i-lucide-pencil-square-20-solid',
+            icon: 'pencil-square-20-solid',
             click: () => OpenModalAddCustomer(true, row)
         }]
     ]
@@ -446,7 +446,7 @@ const items = (row: Customer) => {
     // Always show "Add Report Installation" - multiple reports are now supported
     baseItems.push([{
         label: row.hasInstallationReport ? 'Add Another Installation' : 'Add Installation Report',
-        icon: 'i-lucide-archive-box-20-solid',
+        icon: 'archive-box-20-solid',
         click: () => OpenModalReportInstallation(true, row)
     }])
 
@@ -465,7 +465,7 @@ const items = (row: Customer) => {
         // Number them in reverse order so newest report has highest number
         const installationMenuItems = customerReports.map((report: any, index: number) => ({
             label: `Installation #${customerReports.length - index} (${report.installation_status || 'Unknown'}) - ${formatDate(report.installation_completed_at || report.on_air_date)}`,
-            icon: 'i-lucide-file-text-20-solid',
+            icon: 'file-text-20-solid',
             click: () => viewInstallationReportDetail(report.installation_id)
         }))
         
@@ -477,11 +477,11 @@ const items = (row: Customer) => {
 
     baseItems.push([{
         label: 'View Maps',
-        icon: 'i-lucide-arrow-right-circle-20-solid',
+        icon: 'arrow-right-circle-20-solid',
         click: () => window.open(row.gmaps_link, '_blank')
     }], [{
         label: 'Delete',
-        icon: 'i-lucide-trash-2-20-solid',
+        icon: 'trash-2-20-solid',
         click: () => openDeleteConfirmation(row)
     }])
 
@@ -617,27 +617,27 @@ function debugModal() {
       <div class="flex flex-col sm:flex-row gap-2">
         <UButton 
           label="Add Customer" 
-          icon="i-lucide-plus"
+          icon="plus"
           @click="OpenModalAddCustomer(false, null)"
           class="w-full sm:w-auto"
         />
         <UButton 
           label="Add Installation Report" 
-          icon="i-lucide-file-plus"
+          icon="file-plus"
           @click="OpenModalReportInstallation(false, null)"
           class="w-full sm:w-auto"
           color="green"
         />
         <UButton 
           label="Debug Modal" 
-          icon="i-lucide-bug-ant"
+          icon="bug-ant"
           @click="debugModal"
           class="w-full sm:w-auto"
           color="orange"
         />
         <UButton 
           label="Refresh Device Status" 
-          icon="i-lucide-refresh-cw"
+          icon="refresh-cw"
           @click="refreshDeviceStatuses"
           class="w-full sm:w-auto"
           color="blue"
@@ -645,7 +645,7 @@ function debugModal() {
         />
         <UButton 
           label="Show Down Devices" 
-          icon="i-lucide-x-circle"
+          icon="x-circle"
           @click="statusFilter = 'down'"
           class="w-full sm:w-auto"
           color="red"
@@ -654,7 +654,7 @@ function debugModal() {
         <UButton 
           v-if="statusFilter !== 'all'"
           label="Clear Filter" 
-          icon="i-lucide-x"
+          icon="x"
           @click="statusFilter = 'all'"
           class="w-full sm:w-auto"
           color="gray"
@@ -669,7 +669,7 @@ function debugModal() {
         <UInput 
           v-model="q" 
           placeholder="Search customers by name, email, phone..." 
-          icon="i-lucide-search"
+          icon="search"
           class="w-full"
         />
       </div>
@@ -751,7 +751,7 @@ function debugModal() {
             <div class="flex items-center gap-2 mt-1">
               <span v-if="customer.hasInstallationReport" 
                     class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                <UIcon name="i-lucide-check-circle" class="w-3 h-3 mr-1" />
+                <UIcon name="check-circle" class="w-3 h-3 mr-1" />
                 {{ customer.installationReportCount > 1 ? `${customer.installationReportCount} Reports` : 'Report' }}
               </span>
               <!-- Device Status Indicator -->
@@ -767,28 +767,28 @@ function debugModal() {
                         : 'bg-gray-100 text-gray-800'
                     ]"
                     :title="`Device Status: ${getCustomerDeviceStatus(customer).toUpperCase()}`">
-                <UIcon :name="getCustomerDeviceStatus(customer) === 'down' ? 'i-lucide-x-circle' : getCustomerDeviceStatus(customer) === 'mixed' ? 'i-lucide-alert-triangle' : getCustomerDeviceStatus(customer) === 'up' ? 'i-lucide-check-circle' : 'i-lucide-question-mark-circle'" class="w-3 h-3 mr-1" />
+                <UIcon :name="getCustomerDeviceStatus(customer) === 'down' ? 'x-circle' : getCustomerDeviceStatus(customer) === 'mixed' ? 'alert-triangle' : getCustomerDeviceStatus(customer) === 'up' ? 'check-circle' : 'question-mark-circle'" class="w-3 h-3 mr-1" />
                 {{ getCustomerDeviceStatus(customer).toUpperCase() }}
               </span>
             </div>
           </div>
           <UDropdown :items="items(customer)">
-            <UButton color="gray" variant="ghost" icon="i-lucide-ellipsis-horizontal-20-solid" />
+            <UButton color="gray" variant="ghost" icon="ellipsis-horizontal-20-solid" />
           </UDropdown>
         </div>
 
         <!-- Customer Details -->
         <div class="space-y-2 text-sm">
           <div class="flex items-center gap-2">
-            <UIcon name="i-lucide-phone" class="w-4 h-4 text-gray-400" />
+            <UIcon name="phone" class="w-4 h-4 text-gray-400" />
             <span class="text-gray-600">{{ customer.phone }}</span>
           </div>
           <div class="flex items-center gap-2">
-            <UIcon name="i-lucide-map-pin" class="w-4 h-4 text-gray-400" />
+            <UIcon name="map-pin" class="w-4 h-4 text-gray-400" />
             <span class="text-gray-600">{{ customer.address }}</span>
           </div>
           <div v-if="customer.area" class="flex items-center gap-2">
-            <UIcon name="i-lucide-building" class="w-4 h-4 text-gray-400" />
+            <UIcon name="building" class="w-4 h-4 text-gray-400" />
             <span class="text-gray-600">{{ customer.area.name_city }}</span>
             <span v-if="customer.area.code_name" 
                   class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
@@ -797,7 +797,7 @@ function debugModal() {
           </div>
           <!-- NEW: Packet Internet Information -->
           <div class="flex items-start gap-2">
-            <UIcon name="i-lucide-wifi" class="w-4 h-4 text-gray-400 mt-0.5" />
+            <UIcon name="wifi" class="w-4 h-4 text-gray-400 mt-0.5" />
             <div class="flex-1">
               <div v-if="customer.products && customer.products.length > 0" class="space-y-1">
                 <div v-for="(product, index) in customer.products" :key="product.id" 
@@ -845,7 +845,7 @@ function debugModal() {
               <span v-if="row.hasInstallationReport" 
                     class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
                     :title="`Has ${row.installationReportCount} Installation Report(s)`">
-                <UIcon name="i-lucide-check-circle" class="w-3 h-3 mr-1" />
+                <UIcon name="check-circle" class="w-3 h-3 mr-1" />
                 {{ row.installationReportCount > 1 ? `${row.installationReportCount} Reports` : 'Report' }}
               </span>
               <!-- Device Status Indicator -->
@@ -861,7 +861,7 @@ function debugModal() {
                         : 'bg-gray-100 text-gray-800'
                     ]"
                     :title="`Device Status: ${getCustomerDeviceStatus(row).toUpperCase()}`">
-                <UIcon :name="getCustomerDeviceStatus(row) === 'down' ? 'i-lucide-x-circle' : getCustomerDeviceStatus(row) === 'mixed' ? 'i-lucide-alert-triangle' : getCustomerDeviceStatus(row) === 'up' ? 'i-lucide-check-circle' : 'i-lucide-question-mark-circle'" class="w-3 h-3 mr-1" />
+                <UIcon :name="getCustomerDeviceStatus(row) === 'down' ? 'x-circle' : getCustomerDeviceStatus(row) === 'mixed' ? 'alert-triangle' : getCustomerDeviceStatus(row) === 'up' ? 'check-circle' : 'question-mark-circle'" class="w-3 h-3 mr-1" />
                 {{ getCustomerDeviceStatus(row).toUpperCase() }}
               </span>
             </div>
@@ -901,7 +901,7 @@ function debugModal() {
 
           <template #actions-data="{ row }">
             <UDropdown :items="items(row)">
-              <UButton color="gray" variant="outline" icon="i-lucide-ellipsis-horizontal-20-solid" />
+              <UButton color="gray" variant="outline" icon="ellipsis-horizontal-20-solid" />
             </UDropdown>
           </template>
         </UTable>
@@ -938,7 +938,7 @@ function debugModal() {
           <div class="flex justify-between items-center">
             <h3 class="text-lg font-semibold">Installation Report</h3>
             <UButton @click="closeInstallationModal" variant="ghost" size="sm">
-              <UIcon name="i-lucide-x" />
+              <UIcon name="x" />
             </UButton>
           </div>
         </template>

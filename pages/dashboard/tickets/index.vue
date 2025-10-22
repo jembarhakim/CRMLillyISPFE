@@ -733,7 +733,7 @@ async function sendToNOC() {
     try {
       const toast = useToast();
       const msg = e?.data?.message || e?.message || 'Failed to send to NOC'
-      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'i-lucide-alert-triangle', timeout: 5000 })
+      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'alert-triangle', timeout: 5000 })
     } catch { }
   } finally {
     actionLoading.value[actionKey] = false
@@ -1253,7 +1253,7 @@ const items = (row: any) => {
   if (isAdmin.value || isCustomerService.value) {
     actions.push([{
       label: 'Delete',
-      icon: 'i-lucide-trash-2-20-solid',
+      icon: 'trash-2-20-solid',
       click: () => showDeleteConfirmation(row)
     }])
   }
@@ -1264,12 +1264,12 @@ const items = (row: any) => {
 // Helper function to get icon for action
 function getActionIcon(actionLabel: string): string {
   switch (actionLabel) {
-    case 'To NOC': return 'i-lucide-arrow-right-20-solid'
-    case 'To CS': return 'i-lucide-arrow-left-20-solid'
-    case 'Assign Tech': return 'i-lucide-user-plus-20-solid'
-    case 'Add Tech Note': return 'i-lucide-file-text-20-solid'
-    case 'Resolve': return 'i-lucide-check-circle-20-solid'
-    default: return 'i-lucide-settings-6-tooth-20-solid'
+    case 'To NOC': return 'arrow-right-20-solid'
+    case 'To CS': return 'arrow-left-20-solid'
+    case 'Assign Tech': return 'user-plus-20-solid'
+    case 'Add Tech Note': return 'file-text-20-solid'
+    case 'Resolve': return 'check-circle-20-solid'
+    default: return 'settings-6-tooth-20-solid'
   }
 }
 
@@ -2441,7 +2441,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
             <div class="flex items-center gap-3">
               <div class="flex-shrink-0">
                 <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                  <i class="i-lucide-alert-triangle text-red-600 text-xl"></i>
+                  <i class="alert-triangle text-red-600 text-xl"></i>
                 </div>
               </div>
               <div>

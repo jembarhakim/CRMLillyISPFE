@@ -7,13 +7,13 @@ export default defineAppConfig({
         // Override default Nuxt UI icons to use Lucide instead of Heroicons
         button: {
             default: {
-                loadingIcon: 'i-lucide-loader-2'
+                loadingIcon: 'loader-2'
             }
         },
         notification: {
             default: {
                 closeButton: {
-                    icon: 'i-lucide-x'
+                    icon: 'x'
                 }
             }
         },
@@ -23,7 +23,7 @@ export default defineAppConfig({
             },
             default: {
                 closeButton: {
-                    icon: 'i-lucide-x'
+                    icon: 'x'
                 }
             }
         }

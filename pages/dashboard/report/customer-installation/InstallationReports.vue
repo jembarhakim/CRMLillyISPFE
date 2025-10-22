@@ -4,7 +4,7 @@
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-800">Installation Reports</h1>
         <UButton @click="navigateTo('/dashboard/report/customer-installation/add')" color="blue">
-          <UIcon name="i-lucide-plus" class="mr-2" />
+          <UIcon name="plus" class="mr-2" />
           Add Report Installation
         </UButton>
       </div>
@@ -13,7 +13,7 @@
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div class="bg-blue-50 p-4 rounded-lg">
           <div class="flex items-center">
-            <UIcon name="i-lucide-building" class="text-blue-600 text-2xl mr-3" />
+            <UIcon name="building" class="text-blue-600 text-2xl mr-3" />
             <div>
               <p class="text-sm text-blue-600">Total Customers</p>
               <p class="text-2xl font-bold text-blue-800">{{ summaryStats.totalCustomers }}</p>
@@ -23,7 +23,7 @@
         
         <div class="bg-green-50 p-4 rounded-lg">
           <div class="flex items-center">
-            <UIcon name="i-lucide-check-circle" class="text-green-600 text-2xl mr-3" />
+            <UIcon name="check-circle" class="text-green-600 text-2xl mr-3" />
             <div>
               <p class="text-sm text-green-600">Completed</p>
               <p class="text-2xl font-bold text-green-800">{{ summaryStats.completedInstallations }}</p>
@@ -33,7 +33,7 @@
         
         <div class="bg-yellow-50 p-4 rounded-lg">
           <div class="flex items-center">
-            <UIcon name="i-lucide-clock" class="text-yellow-600 text-2xl mr-3" />
+            <UIcon name="clock" class="text-yellow-600 text-2xl mr-3" />
             <div>
               <p class="text-sm text-yellow-600">Pending</p>
               <p class="text-2xl font-bold text-yellow-800">{{ summaryStats.pendingInstallations }}</p>
@@ -43,7 +43,7 @@
         
         <div class="bg-purple-50 p-4 rounded-lg">
           <div class="flex items-center">
-            <UIcon name="i-lucide-wrench-screwdriver" class="text-purple-600 text-2xl mr-3" />
+            <UIcon name="wrench-screwdriver" class="text-purple-600 text-2xl mr-3" />
             <div>
               <p class="text-sm text-purple-600">In Progress</p>
               <p class="text-2xl font-bold text-purple-800">{{ summaryStats.inProgressInstallations }}</p>
@@ -311,22 +311,22 @@ const tabs = [
   {
     key: 'customer-summary',
     label: 'Customer Summary',
-    icon: 'i-lucide-building'
+    icon: 'building'
   },
   {
     key: 'technician-report',
     label: 'Technician Report',
-    icon: 'i-lucide-wrench-screwdriver'
+    icon: 'wrench-screwdriver'
   },
   {
     key: 'asset-report',
     label: 'Asset Report',
-    icon: 'i-lucide-cube'
+    icon: 'cube'
   },
   {
     key: 'complete-reports',
     label: 'Complete Installation Reports',
-    icon: 'i-lucide-file-text'
+    icon: 'file-text'
   }
 ];
 

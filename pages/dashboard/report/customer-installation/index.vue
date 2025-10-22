@@ -14,7 +14,7 @@
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
           <div class="bg-blue-50 p-3 sm:p-4 rounded-lg">
             <div class="flex items-center">
-              <UIcon name="i-lucide-building" class="text-blue-600 text-xl sm:text-2xl mr-2 sm:mr-3" />
+              <UIcon name="building" class="text-blue-600 text-xl sm:text-2xl mr-2 sm:mr-3" />
               <div>
                 <p class="text-xs sm:text-sm text-blue-600">Total Installations</p>
                 <p class="text-lg sm:text-2xl font-bold text-blue-800">{{ stats.totalInstallations }}</p>
@@ -24,7 +24,7 @@
           
           <div class="bg-green-50 p-3 sm:p-4 rounded-lg">
             <div class="flex items-center">
-              <UIcon name="i-lucide-check-circle" class="text-green-600 text-xl sm:text-2xl mr-2 sm:mr-3" />
+              <UIcon name="check-circle" class="text-green-600 text-xl sm:text-2xl mr-2 sm:mr-3" />
               <div>
                 <p class="text-xs sm:text-sm text-green-600">Completed</p>
                 <p class="text-lg sm:text-2xl font-bold text-green-800">{{ stats.completed }}</p>
@@ -34,7 +34,7 @@
           
           <div class="bg-yellow-50 p-3 sm:p-4 rounded-lg">
             <div class="flex items-center">
-              <UIcon name="i-lucide-clock" class="text-yellow-600 text-xl sm:text-2xl mr-2 sm:mr-3" />
+              <UIcon name="clock" class="text-yellow-600 text-xl sm:text-2xl mr-2 sm:mr-3" />
               <div>
                 <p class="text-xs sm:text-sm text-yellow-600">Pending</p>
                 <p class="text-lg sm:text-2xl font-bold text-yellow-800">{{ stats.pending }}</p>
@@ -44,7 +44,7 @@
           
           <div class="bg-purple-50 p-3 sm:p-4 rounded-lg">
             <div class="flex items-center">
-              <UIcon name="i-lucide-wrench-screwdriver" class="text-purple-600 text-xl sm:text-2xl mr-2 sm:mr-3" />
+              <UIcon name="wrench-screwdriver" class="text-purple-600 text-xl sm:text-2xl mr-2 sm:mr-3" />
               <div>
                 <p class="text-xs sm:text-sm text-purple-600">In Progress</p>
                 <p class="text-lg sm:text-2xl font-bold text-purple-800">{{ stats.inProgress }}</p>
@@ -58,7 +58,7 @@
           <!-- Add Report Installation -->
           <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-4 sm:p-6 rounded-lg text-white">
             <div class="flex items-center mb-3 sm:mb-4">
-              <UIcon name="i-lucide-file-plus" class="text-2xl sm:text-3xl mr-2 sm:mr-3" />
+              <UIcon name="file-plus" class="text-2xl sm:text-3xl mr-2 sm:mr-3" />
               <h3 class="text-lg sm:text-xl font-semibold">Add Report Installation</h3>
             </div>
             <p class="text-blue-100 mb-3 sm:mb-4 text-sm sm:text-base">
@@ -74,7 +74,7 @@
           <!-- View Reports -->
           <div class="bg-gradient-to-br from-green-500 to-green-600 p-4 sm:p-6 rounded-lg text-white">
             <div class="flex items-center mb-3 sm:mb-4">
-              <UIcon name="i-lucide-bar-chart" class="text-2xl sm:text-3xl mr-2 sm:mr-3" />
+              <UIcon name="bar-chart" class="text-2xl sm:text-3xl mr-2 sm:mr-3" />
               <h3 class="text-lg sm:text-xl font-semibold">View Reports</h3>
             </div>
             <p class="text-green-100 mb-3 sm:mb-4 text-sm sm:text-base">
@@ -91,7 +91,7 @@
           <!-- Asset Tracking -->
           <div class="bg-gradient-to-br from-orange-500 to-orange-600 p-4 sm:p-6 rounded-lg text-white">
             <div class="flex items-center mb-3 sm:mb-4">
-              <UIcon name="i-lucide-cube" class="text-2xl sm:text-3xl mr-2 sm:mr-3" />
+              <UIcon name="cube" class="text-2xl sm:text-3xl mr-2 sm:mr-3" />
               <h3 class="text-lg sm:text-xl font-semibold">Asset Tracking</h3>
             </div>
             <p class="text-orange-100 mb-3 sm:mb-4 text-sm sm:text-base">
@@ -107,7 +107,7 @@
           <!-- Customer Management -->
           <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 sm:p-6 rounded-lg text-white">
             <div class="flex items-center mb-3 sm:mb-4">
-              <UIcon name="i-lucide-users" class="text-2xl sm:text-3xl mr-2 sm:mr-3" />
+              <UIcon name="users" class="text-2xl sm:text-3xl mr-2 sm:mr-3" />
               <h3 class="text-lg sm:text-xl font-semibold">Customer Management</h3>
             </div>
             <p class="text-indigo-100 mb-3 sm:mb-4 text-sm sm:text-base">
@@ -123,7 +123,7 @@
           <!-- Technician Management -->
           <div class="bg-gradient-to-br from-teal-500 to-teal-600 p-4 sm:p-6 rounded-lg text-white">
             <div class="flex items-center mb-3 sm:mb-4">
-              <UIcon name="i-lucide-wrench-screwdriver" class="text-2xl sm:text-3xl mr-2 sm:mr-3" />
+              <UIcon name="wrench-screwdriver" class="text-2xl sm:text-3xl mr-2 sm:mr-3" />
               <h3 class="text-lg sm:text-xl font-semibold">Technician Management</h3>
             </div>
             <p class="text-teal-100 mb-3 sm:mb-4 text-sm sm:text-base">
@@ -142,7 +142,7 @@
           <h2 class="text-lg sm:text-xl font-semibold text-gray-800 mb-4">Recent Installations</h2>
           <div class="bg-gray-50 rounded-lg p-3 sm:p-4">
             <div v-if="recentInstallations.length === 0" class="text-center py-6 sm:py-8 text-gray-500">
-              <UIcon name="i-lucide-file-text" class="text-3xl sm:text-4xl mb-2" />
+              <UIcon name="file-text" class="text-3xl sm:text-4xl mb-2" />
               <p class="text-sm sm:text-base">No recent installations found</p>
             </div>
             <div v-else class="space-y-3">

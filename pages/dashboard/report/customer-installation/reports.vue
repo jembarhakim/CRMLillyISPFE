@@ -12,13 +12,13 @@
             <UButton @click="navigateTo('/dashboard/report/customer-installation')" 
                      color="gray" variant="outline"
                      class="w-full sm:w-auto">
-              <UIcon name="i-lucide-arrow-left" class="mr-2" />
+              <UIcon name="arrow-left" class="mr-2" />
               Back to Dashboard
             </UButton>
             <UButton @click="exportReports" 
                      color="green" variant="outline"
                      class="w-full sm:w-auto">
-              <UIcon name="i-lucide-file-arrow-down" class="mr-2" />
+              <UIcon name="file-arrow-down" class="mr-2" />
               Export Reports
             </UButton>
           </div>
@@ -28,20 +28,20 @@
         <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-6 rounded-xl border border-blue-200 mb-6">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <h3 class="text-base sm:text-lg font-semibold text-blue-800 flex items-center">
-              <UIcon name="i-lucide-funnel" class="mr-2" />
+              <UIcon name="funnel" class="mr-2" />
               Filters
             </h3>
             <div class="flex flex-col sm:flex-row gap-2">
               <UButton @click="clearFilters" 
                        color="gray" variant="outline" size="sm"
                        class="w-full sm:w-auto">
-                <UIcon name="i-lucide-x" class="mr-1" />
+                <UIcon name="x" class="mr-1" />
                 Clear All
               </UButton>
               <UButton @click="applyFilters" 
                        color="blue" size="sm"
                        class="w-full sm:w-auto">
-                <UIcon name="i-lucide-search" class="mr-1" />
+                <UIcon name="search" class="mr-1" />
                 Apply Filters
               </UButton>
             </div>
@@ -59,7 +59,7 @@
                 class="w-full"
               >
                 <template #leading>
-                  <UIcon name="i-lucide-search" />
+                  <UIcon name="search" />
                 </template>
               </UInput>
             </UFormGroup>
@@ -126,31 +126,31 @@
             <span v-if="filters.search" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
               Search: "{{ filters.search }}"
               <button @click="clearFilter('search')" class="ml-1 hover:text-indigo-600">
-                <UIcon name="i-lucide-x" class="w-3 h-3" />
+                <UIcon name="x" class="w-3 h-3" />
               </button>
             </span>
             <span v-if="filters.status" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
               Status: {{ getStatusLabel(filters.status) }}
               <button @click="clearFilter('status')" class="ml-1 hover:text-blue-600">
-                <UIcon name="i-lucide-x" class="w-3 h-3" />
+                <UIcon name="x" class="w-3 h-3" />
               </button>
             </span>
             <span v-if="filters.installation_type" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
               Type: {{ getInstallationTypeLabel(filters.installation_type) }}
               <button @click="clearFilter('installation_type')" class="ml-1 hover:text-green-600">
-                <UIcon name="i-lucide-x" class="w-3 h-3" />
+                <UIcon name="x" class="w-3 h-3" />
               </button>
             </span>
             <span v-if="filters.date_from" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
               From: {{ formatFilterDate(filters.date_from) }}
               <button @click="clearFilter('date_from')" class="ml-1 hover:text-purple-600">
-                <UIcon name="i-lucide-x" class="w-3 h-3" />
+                <UIcon name="x" class="w-3 h-3" />
               </button>
             </span>
             <span v-if="filters.date_to" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
               To: {{ formatFilterDate(filters.date_to) }}
               <button @click="clearFilter('date_to')" class="ml-1 hover:text-purple-600">
-                <UIcon name="i-lucide-x" class="w-3 h-3" />
+                <UIcon name="x" class="w-3 h-3" />
               </button>
             </span>
           </div>
@@ -160,11 +160,11 @@
         <!-- Mobile Card View -->
         <div class="block sm:hidden space-y-4">
           <div v-if="loading" class="text-center py-8">
-            <UIcon name="i-lucide-refresh-cw" class="animate-spin text-2xl text-blue-600 mb-2" />
+            <UIcon name="refresh-cw" class="animate-spin text-2xl text-blue-600 mb-2" />
             <p class="text-gray-600">Loading reports...</p>
           </div>
           <div v-else-if="filteredReports.length === 0" class="text-center py-8 text-gray-500">
-            <UIcon name="i-lucide-file-text" class="text-4xl mb-2" />
+            <UIcon name="file-text" class="text-4xl mb-2" />
             <p>No installation reports found</p>
           </div>
           <div v-else v-for="report in paginatedReports" :key="report.installation_id" 
@@ -189,37 +189,37 @@
             <!-- Report Details -->
             <div class="space-y-2 text-xs">
               <div class="flex items-center gap-2">
-                <UIcon name="i-lucide-user" class="w-3 h-3 text-gray-400" />
+                <UIcon name="user" class="w-3 h-3 text-gray-400" />
                 <span class="text-gray-600">Technician: {{ report.technician_name || 'Unknown' }}</span>
               </div>
               <div class="flex items-center gap-2">
-                <UIcon name="i-lucide-phone" class="w-3 h-3 text-gray-400" />
+                <UIcon name="phone" class="w-3 h-3 text-gray-400" />
                 <span class="text-gray-600">{{ report.technician_phone || '-' }}</span>
               </div>
               <div class="flex items-center gap-2">
-                <UIcon name="i-lucide-calendar" class="w-3 h-3 text-gray-400" />
+                <UIcon name="calendar" class="w-3 h-3 text-gray-400" />
                 <span class="text-gray-600">PSB: {{ formatDate(report.tgl_permintaan_psb) }}</span>
               </div>
               <div class="flex items-center gap-2">
-                <UIcon name="i-lucide-check-circle" class="w-3 h-3 text-gray-400" />
+                <UIcon name="check-circle" class="w-3 h-3 text-gray-400" />
                 <span class="text-gray-600">Completed: {{ formatDate(report.installation_completed_at) }}</span>
               </div>
               <div v-if="report.durasi_psb !== null && report.durasi_psb !== undefined" class="flex items-center gap-2">
-                <UIcon name="i-lucide-clock" class="w-3 h-3 text-gray-400" />
+                <UIcon name="clock" class="w-3 h-3 text-gray-400" />
                 <span class="text-gray-600">Duration: {{ report.durasi_psb }} hari</span>
               </div>
               <div v-if="report.status_psb" class="flex items-center gap-2">
-                <UIcon name="i-lucide-flag" class="w-3 h-3 text-gray-400" />
+                <UIcon name="flag" class="w-3 h-3 text-gray-400" />
                 <span :class="report.status_psb === 'Tepat Waktu' ? 'text-green-600' : 'text-red-600'" class="font-medium">
                   PSB: {{ report.status_psb }}
                 </span>
               </div>
               <div class="flex items-center gap-2">
-                <UIcon name="i-lucide-cube" class="w-3 h-3 text-gray-400" />
+                <UIcon name="cube" class="w-3 h-3 text-gray-400" />
                 <span class="text-gray-600">{{ report.router_brand || '-' }} {{ report.router_model || '' }}</span>
               </div>
               <div v-if="report.mac_address" class="flex items-center gap-2">
-                <UIcon name="i-lucide-computer-desktop" class="w-3 h-3 text-gray-400" />
+                <UIcon name="computer-desktop" class="w-3 h-3 text-gray-400" />
                 <span class="text-gray-600 font-mono text-xs">{{ report.mac_address }}</span>
               </div>
             </div>
@@ -229,19 +229,19 @@
               <UButton @click="viewReport(report.installation_id)" 
                        size="sm" color="blue" variant="outline"
                        class="flex-1">
-                <UIcon name="i-lucide-eye" class="w-3 h-3 mr-1" />
+                <UIcon name="eye" class="w-3 h-3 mr-1" />
                 View
               </UButton>
               <UButton @click="editReport(report.installation_id)" 
                        size="sm" color="green" variant="outline"
                        class="flex-1">
-                <UIcon name="i-lucide-pencil" class="w-3 h-3 mr-1" />
+                <UIcon name="pencil" class="w-3 h-3 mr-1" />
                 Edit
               </UButton>
               <UButton @click="deleteReport(report.installation_id)" 
                        size="sm" color="red" variant="outline"
                        class="flex-1">
-                <UIcon name="i-lucide-trash-2" class="w-3 h-3 mr-1" />
+                <UIcon name="trash-2" class="w-3 h-3 mr-1" />
                 Delete
               </UButton>
             </div>
@@ -289,7 +289,7 @@
               <tr v-if="loading" class="text-center">
                 <td colspan="10" class="px-6 py-4">
                   <div class="flex justify-center">
-                    <UIcon name="i-lucide-refresh-cw" class="animate-spin text-2xl" />
+                    <UIcon name="refresh-cw" class="animate-spin text-2xl" />
                   </div>
                 </td>
               </tr>

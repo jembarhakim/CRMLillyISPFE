@@ -45,7 +45,7 @@ export default defineNuxtConfig({
   },
   compatibilityDate: "2024-11-01",
   devtools: { enabled: true },
-  ssr: true, // Re-enable SSR after removing conflicting @nuxt/icon package
+  ssr: false, // Disable SSR to prevent icon recursion
   modules: [
     "@pinia/nuxt",
     "@nuxt/ui",
@@ -54,6 +54,17 @@ export default defineNuxtConfig({
     "@i2d/nuxt-pdf-frame",
     "nuxt-echarts"
   ],
+  ui: {
+    icons: ['lucide']
+  },
+  // Configure nuxt-icon properly
+  icon: {
+    serverBundle: 'local',
+    clientBundle: {
+      scan: true,
+      includeCustomCollections: true
+    }
+  },
   imports: {
     dirs: ["composables", "stores"],
   },

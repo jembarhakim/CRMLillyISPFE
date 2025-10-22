@@ -121,11 +121,11 @@ function OpenModalAddAssetItem(isEdit: boolean, data: any) {
 const items = (row: any) => [
     [{
         label: 'Edit',
-        icon: 'i-lucide-pencil-square-20-solid',
+        icon: 'pencil-square-20-solid',
         click: () => OpenModalAddAssetItem(true, row)
     }, {
         label: 'Delete',
-        icon: 'i-lucide-trash-2-20-solid',
+        icon: 'trash-2-20-solid',
         click: () => deleteAssetItem(row.id)
     }]
 ]
@@ -166,7 +166,7 @@ const items = (row: any) => [
                     </template>
                     <template #actions-data="{ row }">
                         <UDropdown :items="items(row)">
-                            <UButton color="gray" variant="ghost" icon="i-lucide-ellipsis-horizontal-20-solid" />
+                            <UButton color="gray" variant="ghost" icon="ellipsis-horizontal-20-solid" />
                         </UDropdown>
                     </template>
                 </UTable>

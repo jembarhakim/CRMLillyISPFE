@@ -573,12 +573,12 @@ const items = (row: any) => [
   [
     {
       label: "Send Whatsapp",
-      icon: "i-lucide-chat-bubble-left-ellipsis-20-solid",
+      icon: "chat-bubble-left-ellipsis-20-solid",
       click: () => sendWhatsapp(row.customer.phone, row.id),
     },
     {
       label: isPdfViewed(row.id) ? "PDF Sudah Dilihat" : "Download PDF",
-      icon: isPdfViewed(row.id) ? "i-lucide-eye-slash-20-solid" : "i-lucide-arrow-down-on-square-20-solid",
+      icon: isPdfViewed(row.id) ? "eye-slash-20-solid" : "arrow-down-on-square-20-solid",
       disabled: isPdfViewed(row.id),
       click: () => handlePdfView(row.id),
     },
@@ -589,21 +589,21 @@ const items = (row: any) => [
       const available = (!cid) || !activeRecurringCustomerIds.value.has(cid)
       return {
         label: available ? "Start Recurring" : "Already Recurring",
-        icon: "i-lucide-refresh-cw-20-solid",
+        icon: "refresh-cw-20-solid",
         disabled: !available,
         click: () => available && openStartRecurringModal(row),
       }
     })(),
     {
       label: "Edit",
-      icon: "i-lucide-pencil-20-solid",
+      icon: "pencil-20-solid",
       click: () => OpenModalAddCustomer(true, row),
     },
   ],
   [
     {
       label: "Delete",
-      icon: "i-lucide-trash-2-20-solid",
+      icon: "trash-2-20-solid",
       click: () => deleteData(row.id),
     },
   ],
@@ -716,7 +716,7 @@ async function printAllUnpaidInvoices() {
     <div class="flex gap-2 mb-4">
     <UButton label="Add Invoice" @click="OpenModalAddCustomer(false, null)" />
     <UButton 
-      icon="i-lucide-refresh-cw" 
+      icon="refresh-cw" 
       color="gray" 
       variant="soft"
       :loading="isLoading"
@@ -727,7 +727,7 @@ async function printAllUnpaidInvoices() {
     <UButton 
       label="Print All Unpaid" 
       color="orange" 
-      icon="i-lucide-printer"
+      icon="printer"
       @click="printAllUnpaidInvoices"
       :loading="printing"
     />
@@ -785,7 +785,7 @@ async function printAllUnpaidInvoices() {
         <UButton
           color="gray"
           variant="ghost"
-          icon="i-lucide-ellipsis-horizontal-20-solid"
+          icon="ellipsis-horizontal-20-solid"
         />
       </UDropdown>
     </template>

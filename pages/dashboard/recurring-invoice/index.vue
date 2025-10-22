@@ -173,29 +173,29 @@ const items = (row: RecurringInvoice) => [
   [
     {
       label: "View",
-      icon: "i-lucide-eye-20-solid",
+      icon: "eye-20-solid",
       click: () => viewRecurringInvoice(row),
     },
     {
       label: "Edit",
-      icon: "i-lucide-pencil-20-solid",
+      icon: "pencil-20-solid",
       click: () => openModalAddRecurringInvoice(true, row),
     },
     {
       label: "Generate Invoice",
-      icon: "i-lucide-file-plus-20-solid",
+      icon: "file-plus-20-solid",
       click: () => generateInvoice(row),
     },
   ],
   [
     {
       label: row.status === "active" ? "Stop Recurring" : "Resume",
-      icon: row.status === "active" ? "i-lucide-stop-20-solid" : "i-lucide-play-20-solid",
+      icon: row.status === "active" ? "stop-20-solid" : "play-20-solid",
       click: () => toggleRecurringStatus(row),
     },
     {
       label: "Delete",
-      icon: "i-lucide-trash-2-20-solid",
+      icon: "trash-2-20-solid",
       click: () => deleteRecurringInvoice(row.id),
     },
   ],
@@ -415,7 +415,7 @@ onMounted(() => {
         :columns="columns"
         :loading="loading"
         :empty-state="{
-          icon: 'i-lucide-file-text',
+          icon: 'file-text',
           label: 'No recurring invoices found'
         }"
       >
@@ -460,7 +460,7 @@ onMounted(() => {
             <UButton 
               color="gray" 
               variant="ghost" 
-              icon="i-lucide-ellipsis-horizontal"
+              icon="ellipsis-horizontal"
             />
           </UDropdown>
         </template>

@@ -49,7 +49,7 @@
             <!-- Total Connection Up -->
             <div class="text-center">
               <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center bg-green-100">
-                <UIcon name="i-lucide-check-circle" class="w-8 h-8 text-green-600" />
+                <UIcon name="check-circle" class="w-8 h-8 text-green-600" />
               </div>
               <h4 class="text-lg font-semibold text-gray-900">Total Connection Up</h4>
               <p class="text-2xl font-bold text-green-600">{{ connectionSummary.totalUp || 0 }}</p>
@@ -59,7 +59,7 @@
             <!-- Total Connection Down -->
             <div class="text-center">
               <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center bg-red-100">
-                <UIcon name="i-lucide-x-circle" class="w-8 h-8 text-red-600" />
+                <UIcon name="x-circle" class="w-8 h-8 text-red-600" />
               </div>
               <h4 class="text-lg font-semibold text-gray-900">Total Connection Down</h4>
               <p class="text-2xl font-bold text-red-600">{{ connectionSummary.totalDown || 0 }}</p>
@@ -69,7 +69,7 @@
             <!-- Total Connection Off -->
             <div class="text-center">
               <div class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center bg-gray-100">
-                <UIcon name="i-lucide-power" class="w-8 h-8 text-gray-600" />
+                <UIcon name="power" class="w-8 h-8 text-gray-600" />
               </div>
               <h4 class="text-lg font-semibold text-gray-900">Total Connection Off</h4>
               <p class="text-2xl font-bold text-gray-600">{{ connectionSummary.totalOff || 0 }}</p>
@@ -93,7 +93,7 @@
                   placeholder="Search customers..."
                   class="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <UIcon name="i-lucide-search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                <UIcon name="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
               </div>
               
               <!-- Status Filter -->
@@ -136,7 +136,7 @@
                 <tr v-if="loading" class="text-center">
                   <td colspan="5" class="px-6 py-4">
                     <div class="flex items-center justify-center">
-                      <UIcon name="i-lucide-refresh-cw" class="w-6 h-6 text-gray-400 animate-spin mr-2" />
+                      <UIcon name="refresh-cw" class="w-6 h-6 text-gray-400 animate-spin mr-2" />
                       <span class="text-gray-500">Loading customers...</span>
                     </div>
                   </td>
@@ -151,7 +151,7 @@
                     <div class="flex items-center">
                       <div class="flex-shrink-0 h-10 w-10">
                         <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                          <UIcon name="i-lucide-user" class="w-5 h-5 text-gray-600" />
+                          <UIcon name="user" class="w-5 h-5 text-gray-600" />
                         </div>
                       </div>
                       <div class="ml-4">
@@ -237,7 +237,7 @@
                 :disabled="loading"
                 class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <UIcon name="i-lucide-refresh-cw" class="w-4 h-4 mr-2" />
+                <UIcon name="refresh-cw" class="w-4 h-4 mr-2" />
                 {{ loading ? 'Refreshing...' : 'Refresh' }}
               </button>
             </div>
@@ -249,11 +249,11 @@
           <div class="mb-6">
             <div class="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
               <div v-if="loading" class="text-center">
-                <UIcon name="i-lucide-refresh-cw" class="w-8 h-8 text-gray-400 animate-spin mx-auto mb-2" />
+                <UIcon name="refresh-cw" class="w-8 h-8 text-gray-400 animate-spin mx-auto mb-2" />
                 <p class="text-gray-500">Loading chart...</p>
               </div>
               <div v-else-if="connectionHistory.length === 0" class="text-center text-gray-500">
-                <UIcon name="i-lucide-bar-chart" class="w-8 h-8 mx-auto mb-2" />
+                <UIcon name="bar-chart" class="w-8 h-8 mx-auto mb-2" />
                 <p>No connection history available</p>
               </div>
               <div v-else class="w-full h-full">
@@ -276,7 +276,7 @@
           <!-- Recent Events -->
           <div class="max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
             <div v-if="connectionHistory.length === 0" class="p-8 text-center text-gray-500">
-              <UIcon name="i-lucide-info" class="w-8 h-8 mx-auto mb-2" />
+              <UIcon name="info" class="w-8 h-8 mx-auto mb-2" />
               <p>No connection events available</p>
             </div>
             
@@ -327,7 +327,7 @@
       <div class="flex items-center justify-between">
         <span>{{ alert.message }}</span>
         <button @click="closeAlert" class="ml-4 text-white hover:text-gray-200">
-          <UIcon name="i-lucide-x" class="w-4 h-4" />
+          <UIcon name="x" class="w-4 h-4" />
         </button>
       </div>
     </div>

@@ -445,7 +445,7 @@ onMounted(() => {
                   color="red"
                   variant="outline"
                   size="sm"
-                  icon="i-lucide-trash-2"
+                  icon="trash-2"
                 />
               </div>
             </div>

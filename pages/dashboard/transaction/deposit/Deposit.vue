@@ -61,14 +61,14 @@ const items = (row: Deposit) => [
   [
     {
       label: "Edit",
-      icon: "i-lucide-pencil-square-20-solid",
+      icon: "pencil-square-20-solid",
       click: () => openEditDepositModal(row.id.toString()),
     },
   ],
   [
     {
       label: "Delete",
-      icon: "i-lucide-trash-2-20-solid",
+      icon: "trash-2-20-solid",
       click: () => deleteDeposit(row.id.toString()),
     },
   ],
@@ -132,7 +132,7 @@ async function deleteDeposit(transactionId: string) {
   <UTable :rows="depositesList" :columns="columns">
     <template #actions-data="{ row }">
       <UDropdown :items="items(row)">
-        <UButton color="gray" variant="ghost" icon="i-lucide-ellipsis-horizontal-20-solid" />
+        <UButton color="gray" variant="ghost" icon="ellipsis-horizontal-20-solid" />
       </UDropdown>
     </template>
     <template #amount-data="{ row }">

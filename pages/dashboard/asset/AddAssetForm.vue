@@ -147,7 +147,7 @@ async function onSubmit(event: FormSubmitEvent<AssetSchema>) {
 
         <UFormGroup label="Date" name="date">
           <UPopover :popper="{ placement: 'bottom-start' }">
-            <UButton icon="i-lucide-calendar-days-20-solid" :label="format(state.date, 'd MMM, yyy')" class="w-full"
+            <UButton icon="calendar-days-20-solid" :label="format(state.date, 'd MMM, yyy')" class="w-full"
               color="gray" />
 
             <template #panel="{ close }">
