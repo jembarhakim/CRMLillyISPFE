@@ -4,16 +4,16 @@ export default defineAppConfig({
             // Show toasts at the center of the screen
             position: 'top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2'
         },
-        // Override default Nuxt UI icons to use Lucide instead of Heroicons
+        // Override default Nuxt UI icons to use Heroicons
         button: {
             default: {
-                loadingIcon: 'loader-2'
+                loadingIcon: 'i-heroicons-arrow-path'
             }
         },
         notification: {
             default: {
                 closeButton: {
-                    icon: 'x'
+                    icon: 'i-heroicons-x-mark'
                 }
             }
         },
@@ -23,7 +23,7 @@ export default defineAppConfig({
             },
             default: {
                 closeButton: {
-                    icon: 'x'
+                    icon: 'i-heroicons-x-mark'
                 }
             }
         }

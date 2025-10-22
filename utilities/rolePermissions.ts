@@ -113,84 +113,84 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
 export const MAIN_MENU: MenuItem[] = [
   {
     label: 'Dashboard',
-    icon: 'home',
+    icon: 'i-heroicons-home',
     link: '/dashboard',
     feature: 'dashboard',
     description: 'Main dashboard overview'
   },
   {
     label: 'Customer',
-    icon: 'user-circle',
+    icon: 'i-heroicons-user-circle',
     link: '/dashboard/customer',
     feature: 'customer',
     description: 'Customer management'
   },
   {
     label: 'Area',
-    icon: 'map',
+    icon: 'i-heroicons-map',
     link: '/dashboard/area',
     feature: 'area',
     description: 'Geographic area management'
   },
   {
     label: 'Report',
-    icon: 'book-open',
+    icon: 'i-heroicons-document-text',
     link: '/dashboard/report',
     feature: 'report',
     description: 'System reports and analytics'
   },
   {
     label: 'Internet Package',
-    icon: 'wifi',
+    icon: 'i-heroicons-wifi',
     link: '/dashboard/internet-package',
     feature: 'internet_package',
     description: 'Internet package management'
   },
   {
     label: 'Assets',
-    icon: 'archive',
+    icon: 'i-heroicons-archive-box',
     link: '/dashboard/asset',
     feature: 'assets',
     description: 'Asset inventory management'
   },
   {
     label: 'Company',
-    icon: 'building',
+    icon: 'i-heroicons-building-office',
     link: '/dashboard/companies',
     feature: 'company',
     description: 'Company management'
   },
   {
     label: 'Invoice',
-    icon: 'circle-dollar-sign',
+    icon: 'i-heroicons-currency-dollar',
     link: '/dashboard/invoice',
     feature: 'invoice',
     description: 'Invoice management'
   },
   {
     label: 'Recurring Invoices',
-    icon: 'refresh-cw',
+    icon: 'i-heroicons-arrow-path',
     link: '/dashboard/recurring-invoice',
     feature: 'invoice',
     description: 'Recurring invoice management'
   },
   {
     label: 'Transaction',
-    icon: 'circle-dollar-sign',
+    icon: 'i-heroicons-currency-dollar',
     link: '/dashboard/transaction',
     feature: 'transaction',
     description: 'Financial transactions'
   },
   {
     label: 'Tickets',
-    icon: 'alert-triangle',
+    icon: 'i-heroicons-exclamation-triangle',
     link: '/dashboard/tickets',
     feature: 'tickets',
     description: 'Support ticket management'
   },
   {
     label: 'User Management',
-    icon: 'user-circle',
+    icon: 'i-heroicons-users',
     link: '/dashboard/user-management',
     feature: 'user_management',
     description: 'User and role management'

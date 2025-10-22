@@ -49,21 +49,12 @@ export default defineNuxtConfig({
   modules: [
     "@pinia/nuxt",
     "@nuxt/ui",
-    "nuxt-icon",  // Nuxt 3 compatible icon module
     "@nuxtjs/leaflet",
     "@i2d/nuxt-pdf-frame",
     "nuxt-echarts"
   ],
   ui: {
-    icons: ['lucide']
-  },
-  // Configure nuxt-icon properly
-  icon: {
-    serverBundle: 'local',
-    clientBundle: {
-      scan: true,
-      includeCustomCollections: true
-    }
+    icons: ['heroicons']
   },
   imports: {
     dirs: ["composables", "stores"],

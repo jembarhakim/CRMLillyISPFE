@@ -80,10 +80,10 @@
                     : 'hover:bg-gray-100 text-gray-700'
                 ]" 
                 @click="navigateTo(item.link)">
-                <LucideIcon :name="item.icon" class="w-6 h-6 transition-colors duration-200" 
-                  :style="isActiveMenuItem(item.link) 
-                    ? 'color: #1d4ed8 !important; fill: #1d4ed8 !important; stroke: #1d4ed8 !important;' 
-                    : 'color: black !important; fill: black !important; stroke: black !important;'" />
+                <UIcon :name="item.icon" class="w-6 h-6 transition-colors duration-200" 
+                  :class="isActiveMenuItem(item.link) 
+                    ? 'text-blue-600' 
+                    : 'text-gray-600'" />
                 <span class="font-medium transition-colors duration-200"
                   :class="isActiveMenuItem(item.link) ? 'text-blue-800' : 'text-gray-800'">
                   {{ item.label }}
