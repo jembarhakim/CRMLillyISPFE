@@ -21,8 +21,11 @@ const { isVisible, currentTitle, currentMessage, currentType, currentDuration, c
       </NuxtLayout>
       <NuxtPage v-if="route.path == '/login' || route.path == '/customer' || route.path.startsWith('/invoice')" />
     </NuxtLayout>
-    <UModals />
-    <UNotifications />
+    <!-- Wrap UI components in ClientOnly to prevent Icon SSR recursion -->
+    <ClientOnly>
+      <UModals />
+      <UNotifications />
+    </ClientOnly>
     
     <!-- Custom Notification Modal -->
     <NotificationModal
