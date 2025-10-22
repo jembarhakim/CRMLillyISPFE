@@ -45,7 +45,7 @@ export default defineNuxtConfig({
   },
   compatibilityDate: "2024-11-01",
   devtools: { enabled: true },
-  ssr: true, // Enable SSR for proper API calls
+  ssr: false, // Disable SSR globally to prevent Nuxt UI Icon component recursion bug
   modules: [
     "@pinia/nuxt",
     "@nuxt/ui",
