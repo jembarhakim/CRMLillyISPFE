@@ -45,7 +45,7 @@ export default defineNuxtConfig({
   },
   compatibilityDate: "2024-11-01",
   devtools: { enabled: true },
-  ssr: false, // Disable SSR globally to prevent Nuxt UI Icon component recursion bug
+  ssr: true, // Re-enable SSR after removing conflicting @nuxt/icon package
   modules: [
     "@pinia/nuxt",
     "@nuxt/ui",
@@ -53,10 +53,6 @@ export default defineNuxtConfig({
     "@i2d/nuxt-pdf-frame",
     "nuxt-echarts"
   ],
-  // Fix Icon component SSR infinite recursion by using Lucide icons
-  ui: {
-    icons: ['lucide']
-  },
   imports: {
     dirs: ["composables", "stores"],
   },
