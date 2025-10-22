@@ -120,7 +120,7 @@ export const MAIN_MENU: MenuItem[] = [
   },
   {
     label: 'Customer',
-    icon: 'i-lucide-user-circle-16-solid',
+    icon: 'i-lucide-user-circle',
     link: '/dashboard/customer',
     feature: 'customer',
     description: 'Customer management'
@@ -134,63 +134,63 @@ export const MAIN_MENU: MenuItem[] = [
   },
   {
     label: 'Report',
-    icon: 'i-lucide-book-open-solid',
+    icon: 'i-lucide-book-open',
     link: '/dashboard/report',
     feature: 'report',
     description: 'System reports and analytics'
   },
   {
     label: 'Internet Package',
-    icon: 'i-lucide-wifi-16-solid',
+    icon: 'i-lucide-wifi',
     link: '/dashboard/internet-package',
     feature: 'internet_package',
     description: 'Internet package management'
   },
   {
     label: 'Assets',
-    icon: 'i-lucide-arrow-down-on-square-stack',
+    icon: 'i-lucide-archive',
     link: '/dashboard/asset',
     feature: 'assets',
     description: 'Asset inventory management'
   },
   {
     label: 'Company',
-    icon: 'i-lucide-building-16-solid',
+    icon: 'i-lucide-building',
     link: '/dashboard/companies',
     feature: 'company',
     description: 'Company management'
   },
   {
     label: 'Invoice',
-    icon: 'i-lucide-file-currency-dollar-16-solid',
+    icon: 'i-lucide-circle-dollar-sign',
     link: '/dashboard/invoice',
     feature: 'invoice',
     description: 'Invoice management'
   },
   {
     label: 'Recurring Invoices',
-    icon: 'i-lucide-refresh-cw-16-solid',
+    icon: 'i-lucide-refresh-cw',
     link: '/dashboard/recurring-invoice',
     feature: 'invoice',
     description: 'Recurring invoice management'
   },
   {
     label: 'Transaction',
-    icon: 'i-lucide-file-currency-dollar-16-solid',
+    icon: 'i-lucide-circle-dollar-sign',
     link: '/dashboard/transaction',
     feature: 'transaction',
     description: 'Financial transactions'
   },
   {
     label: 'Tickets',
-    icon: 'i-lucide-alert-triangle-16-solid',
+    icon: 'i-lucide-alert-triangle',
     link: '/dashboard/tickets',
     feature: 'tickets',
     description: 'Support ticket management'
   },
   {
     label: 'User Management',
-    icon: 'i-lucide-user-circle-16-solid',
+    icon: 'i-lucide-user-circle',
     link: '/dashboard/user-management',
     feature: 'user_management',
     description: 'User and role management'

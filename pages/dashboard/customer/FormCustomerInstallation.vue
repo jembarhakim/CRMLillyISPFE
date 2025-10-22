@@ -1433,7 +1433,7 @@ onMounted(async () => {
                   <span class="text-base font-semibold text-gray-700 dark:text-gray-200">Technician {{ index + 1 }}</span>
                 </div>
                 <div v-if="tech.is_primary" class="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full text-xs font-bold">
-                  <UIcon name="i-lucide-star-solid" class="w-4 h-4" />
+                  <UIcon name="i-lucide-star" class="w-4 h-4" />
                   PRIMARY
                 </div>
               </div>
@@ -1495,7 +1495,7 @@ onMounted(async () => {
                         class="flex-1 min-w-0"
                         :disabled="tech.is_primary"
                       >
-                        <UIcon :name="tech.is_primary ? 'i-lucide-star-solid' : 'i-lucide-star'" class="mr-1 w-4 h-4" />
+                        <UIcon :name="tech.is_primary ? 'i-lucide-star' : 'i-lucide-star'" class="mr-1 w-4 h-4" />
                         <span class="hidden xs:inline">{{ tech.is_primary ? 'Primary' : 'Set Primary' }}</span>
                         <span class="xs:hidden">Primary</span>
                       </UButton>
@@ -1975,7 +1975,7 @@ onMounted(async () => {
         <!-- Customer Service Information -->
         <div class="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
           <h3 class="text-lg font-semibold text-orange-800 dark:text-orange-200 mb-4 flex items-center">
-            <UIcon name="i-lucide-wrench-screwdriver" class="mr-2" />
+            <UIcon name="i-lucide-wrench" class="mr-2" />
             Customer Service Information
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

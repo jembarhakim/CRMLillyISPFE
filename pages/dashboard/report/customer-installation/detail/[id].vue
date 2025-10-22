@@ -207,7 +207,7 @@
                           <h5 class="font-semibold text-gray-800 text-sm">{{ technician.technician_name }}</h5>
                           <span v-if="technician.is_primary" 
                                 class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <UIcon name="i-lucide-star-solid" class="w-2 h-2 mr-0.5" />
+                            <UIcon name="i-lucide-star" class="w-2 h-2 mr-0.5" />
                             Primary
                           </span>
                         </div>
@@ -651,7 +651,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-orange-500 to-red-500 px-8 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="i-lucide-wrench-screwdriver" class="mr-3 text-xl" />
+              <UIcon name="i-lucide-wrench" class="mr-3 text-xl" />
               Customer Service Information
             </h3>
           </div>
