@@ -49,18 +49,11 @@ export default defineNuxtConfig({
   modules: [
     "@pinia/nuxt",
     "@nuxt/ui",
+    "@nuxtjs/icon",  // Nuxt 3 compatible icon module
     "@nuxtjs/leaflet",
     "@i2d/nuxt-pdf-frame",
     "nuxt-echarts"
   ],
-  // Configure Nuxt UI icons - bundle instead of dynamic loading
-  icon: {
-    serverBundle: 'local',  // Bundle icons in build instead of API endpoint
-    clientBundle: {
-      scan: true,          // Scan and bundle all icons used in the app
-      includeCustomCollections: true
-    }
-  },
   imports: {
     dirs: ["composables", "stores"],
   },
