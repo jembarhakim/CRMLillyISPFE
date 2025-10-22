@@ -80,7 +80,7 @@
                     : 'hover:bg-gray-100 text-gray-700'
                 ]" 
                 @click="navigateTo(item.link)">
-                <UIcon :name="`heroicons:${item.icon}`" class="w-6 h-6 transition-colors duration-200" 
+                <component :is="getIcon(item.icon)" class="w-6 h-6 transition-colors duration-200" 
                   :class="isActiveMenuItem(item.link) 
                     ? 'text-blue-600' 
                     : 'text-gray-600'" />
@@ -142,10 +142,18 @@
   </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useRolePermissions } from '@/composables/useRolePermissions'
+
+// Iconify dynamic icon loader
+const getIcon = (iconName: string) => {
+  const [collection, name] = iconName.split(':')
+  return defineAsyncComponent(() =>
+    import(`~icons/${collection}/${name}`)
+  )
+}
 
 // Type definitions
 interface ProfileDropdownItem {

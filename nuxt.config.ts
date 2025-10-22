@@ -1,7 +1,16 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import type { NuxtPage } from "nuxt/schema";
+import Icons from 'unplugin-icons/vite'
 
 export default defineNuxtConfig({
+  vite: {
+    plugins: [
+      Icons({
+        autoInstall: true,
+        compiler: 'vue3'
+      })
+    ]
+  },
   css: [
     "~/assets/css/tailwind.css",
     "~/assets/css/global.css",
@@ -53,6 +62,10 @@ export default defineNuxtConfig({
     "@i2d/nuxt-pdf-frame",
     "nuxt-echarts"
   ],
+  // Completely disable Nuxt UI icon system to prevent recursion
+  ui: {
+    icons: false
+  },
   imports: {
     dirs: ["composables", "stores"],
   },
