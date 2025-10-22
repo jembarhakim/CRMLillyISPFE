@@ -20,7 +20,7 @@
   "dependencies": {
     "@i2d/nuxt-pdf-frame": "^0.5.0",
     "@nuxt/ui": "2.21.1",
-    "@nuxtjs/icon": "^1.5.6",
+    "@nuxtjs/icon": "^1.5.1",
     "@nuxtjs/leaflet": "^1.2.6",
     "@nuxtjs/tailwindcss": "^6.13.1",
     "@pinia/nuxt": "^0.10.1",
