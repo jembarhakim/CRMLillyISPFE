@@ -4,6 +4,11 @@ useHead({
   title: 'CRM System'
 })
 
+// Disable SSR to prevent Icon component infinite recursion
+definePageMeta({
+  ssr: false
+})
+
 // Always redirect to login page immediately
 onMounted(async () => {
   console.log('Redirecting to login page')
