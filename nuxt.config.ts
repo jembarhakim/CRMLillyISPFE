@@ -49,7 +49,7 @@ export default defineNuxtConfig({
   modules: [
     "@pinia/nuxt",
     "@nuxt/ui",
-    "nuxt-icon",  // Add back nuxt-icon - required by Nuxt UI
+    "@nuxt/icon",  // Use @nuxt/icon - required by Nuxt UI 2.21.1
     "@nuxtjs/leaflet",
     "@i2d/nuxt-pdf-frame",
     "nuxt-echarts"
