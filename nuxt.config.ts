@@ -67,7 +67,22 @@ export default defineNuxtConfig({
         dir: 'public',
         maxAge: 60 * 60 * 24 * 7 // 7 days
       }
-    ]
+    ],
+    // Configure static asset serving
+    storage: {
+      redis: {
+        driver: 'redis',
+        // Redis configuration if needed
+      }
+    },
+    // Ensure proper MIME types
+    routeRules: {
+      '/_nuxt/**': { 
+        headers: { 
+          'Cache-Control': 'public, max-age=31536000, immutable' 
+        } 
+      }
+    }
   },
   modules: [
     "@pinia/nuxt",

@@ -40,6 +40,7 @@ import { areaAdminApi } from '@/api/admin/area'
 import { useAuthStore } from '@/stores/auth'
 import { useRolePermissions } from '@/composables/useRolePermissions'
 import { useNotification } from '@/composables/useNotification'
+import { useApiHost } from '@/composables/useApiHost'
 import TechnicianChecklist from '@/components/TechnicianChecklist.vue'
 
 const authStore = useAuthStore()
@@ -576,6 +577,7 @@ onMounted(async () => {
   await loadLookups()
   startPolling()
 })
+
 
 function dismissUpdates() {
   showUpdatesBanner.value = false
@@ -1318,6 +1320,17 @@ async function deleteTicket(id: number) {
 const showAdd = ref(false)
 const form = ref({ customer_id: '', title: '', description: '', img_cs: '', classification: 'gangguan' })
 
+function openAddModal() {
+  showAdd.value = true
+}
+
+function closeAddModal() {
+  showAdd.value = false
+  form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', img_cs: '', classification: 'gangguan' }
+  selectedCSFile = undefined
+  csImagePreview.value = ''
+}
+
 // Keyword-based trouble type classification
 const classifyTroubleType = (text: string): string => {
   const lowerText = text.toLowerCase()
@@ -1359,6 +1372,53 @@ const filteredCustomers = computed(() => {
       (customer as any).areaId === selectedAreaId.value
   })
 })
+
+// Computed properties for select options
+const areaOptions = computed(() => [
+  { label: 'All Areas', value: '' },
+  ...areas.value.map(area => ({
+    label: `${area.name_city} - ${area.name_subdistrict}`,
+    value: area.id
+  }))
+])
+
+const customerOptions = computed(() => 
+  filteredCustomers.value.map(customer => ({
+    label: customer.name,
+    value: customer.id
+  }))
+)
+
+const classificationOptions = computed(() => [
+  { label: 'Gangguan', value: 'gangguan' },
+  { label: 'PSB (Pasang Baru)', value: 'psb' },
+  { label: 'Dismantle', value: 'dismantle' },
+  { label: 'Lainnya', value: 'lainnya' }
+])
+
+// Helper functions for image URLs
+const getCSImageUrl = (ticketId: number, filename: string | null | undefined) => {
+  if (!filename) return ''
+  const apiHost = useApiHost()
+  // The filename is already the complete filename (e.g., "ticket_cs_1756262705972.png")
+  return `${apiHost}/uploads/cs-images/${filename}`
+}
+
+const getNOCImageUrl = (ticketId: number, filename: string | null | undefined) => {
+  if (!filename) return ''
+  const apiHost = useApiHost()
+  // The filename is already the complete filename (e.g., "ticket_noc_1756262705972.png")
+  return `${apiHost}/uploads/noc-images/${filename}`
+}
+
+
+// Helper function to handle image error
+const handleImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement
+  if (target) {
+    target.style.display = 'none'
+  }
+}
 
 async function loadLookups() {
   try {
@@ -1409,10 +1469,17 @@ const saveNewType = async () => {
 }
 
 let selectedCSFile: File | undefined
+let csImagePreview = ref('')
 
 async function handleImageUpload(event: Event) {
   const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
+  const file = target?.files?.[0]
+  
+  if (!file) {
+    console.log('No file selected')
+    return
+  }
+  
   if (file) {
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
@@ -1429,6 +1496,13 @@ async function handleImageUpload(event: Event) {
     try {
       selectedCSFile = file
 
+      // Create image preview immediately
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        csImagePreview.value = e.target?.result as string
+      }
+      reader.readAsDataURL(file)
+
       // Upload file using existing API
       const uploadData = {
         name: `ticket_cs_${Date.now()}`,
@@ -1437,9 +1511,9 @@ async function handleImageUpload(event: Event) {
       }
 
       const response = await uploadFileAdminApi().createUploadFile(uploadData)
-      if (response.data && response.data.file) {
+      if (response.data && response.data.filename) {
         // Store only the filename (should be under 60 characters)
-        const fileName = response.data.file
+        const fileName = response.data.filename
         if (fileName.length > 60) {
           throw new Error('Generated filename is too long')
         }
@@ -1455,6 +1529,7 @@ async function handleImageUpload(event: Event) {
       // Clear the form field and file input
       form.value.img_cs = ''
       selectedCSFile = undefined
+      csImagePreview.value = ''
       if (target) {
         target.value = ''
       }
@@ -1526,6 +1601,7 @@ async function createTicket() {
     showAdd.value = false
     form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', img_cs: '', classification: 'gangguan' }
     selectedCSFile = undefined // Clear the selected file
+    csImagePreview.value = '' // Clear the image preview
     notification.success('Success!', 'Ticket created successfully', 3000)
     await refresh()
   } catch (error: any) {
@@ -1803,7 +1879,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-4">
               <button v-if="isAdmin || isCustomerService"
-                class="px-3 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700" @click="showAdd = true">Add
+                class="px-3 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700" @click="openAddModal">Add
                 Ticket</button>
             </div>
             <div class="flex items-center gap-2">
@@ -1829,7 +1905,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
             <!-- Add Ticket Button - Full Width on Mobile -->
             <button v-if="isAdmin || isCustomerService"
               class="w-full px-4 py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
-              @click="showAdd = true">
+              @click="openAddModal">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
               </svg>
@@ -1926,20 +2002,46 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                     </td>
                       <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
                       <td class="p-2 max-w-xs">
-                        <div class="flex flex-col gap-1 max-w-xs">
-                          <div v-if="r.customer_note" class="text-xs">
-                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">CS:</span>
-                            <span class="ml-1 text-gray-700 break-words">{{ r.customer_note }}</span>
+                        <div class="flex flex-col gap-2 max-w-xs">
+                          <!-- CS Note with Image -->
+                          <div v-if="r.customer_note || r.img_cs" class="text-xs">
+                            <div class="flex items-center gap-1 mb-1">
+                              <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">CS:</span>
+                              <span v-if="r.customer_note" class="text-gray-700 break-words">{{ r.customer_note }}</span>
+                            </div>
+                            <div v-if="r.img_cs" class="mt-1">
+                              <img :src="getCSImageUrl(r.id, r.img_cs)" 
+                                :alt="`CS Image for ticket ${r.id}`"
+                                class="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
+                                @click="openImageModal(getCSImageUrl(r.id, r.img_cs))"
+                                @error="handleImageError" />
+                            </div>
                           </div>
+                          
+                          <!-- Technician Note -->
                           <div v-if="r.technician_note" class="text-xs">
-                            <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">Tech:</span>
-                            <span class="ml-1 text-gray-700 break-words">{{ r.technician_note }}</span>
+                            <div class="flex items-center gap-1 mb-1">
+                              <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">Tech:</span>
+                              <span class="text-gray-700 break-words">{{ r.technician_note }}</span>
+                            </div>
                           </div>
-                          <div v-if="r.noc_note" class="text-xs">
-                            <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">NOC:</span>
-                            <span class="ml-1 text-gray-700 break-words">{{ r.noc_note }}</span>
+                          
+                          <!-- NOC Note with Image -->
+                          <div v-if="r.noc_note || r.img_noc" class="text-xs">
+                            <div class="flex items-center gap-1 mb-1">
+                              <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">NOC:</span>
+                              <span v-if="r.noc_note" class="text-gray-700 break-words">{{ r.noc_note }}</span>
+                            </div>
+                            <div v-if="r.img_noc" class="mt-1">
+                              <img :src="getNOCImageUrl(r.id, r.img_noc)" 
+                                :alt="`NOC Image for ticket ${r.id}`"
+                                class="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
+                                @click="openImageModal(getNOCImageUrl(r.id, r.img_noc))"
+                                @error="handleImageError" />
+                            </div>
                           </div>
-                          <span v-if="!r.customer_note && !r.technician_note && !r.noc_note"
+                          
+                          <span v-if="!r.customer_note && !r.technician_note && !r.noc_note && !r.img_cs && !r.img_noc"
                             class="text-gray-400 text-xs">No notes</span>
                         </div>
                       </td>
@@ -2045,18 +2147,37 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                 </div>
 
                 <!-- Notes Section -->
-                <div v-if="r.customer_note || r.technician_note || r.noc_note" class="space-y-2">
-                  <div v-if="r.customer_note" class="bg-blue-50 p-2 rounded text-xs">
+                <div v-if="r.customer_note || r.technician_note || r.noc_note || r.img_cs || r.img_noc" class="space-y-2">
+                  <!-- CS Note with Image -->
+                  <div v-if="r.customer_note || r.img_cs" class="bg-blue-50 p-2 rounded text-xs">
                     <span class="font-medium text-blue-800">CS Note:</span>
-                    <p class="text-blue-700 mt-1">{{ r.customer_note }}</p>
+                    <p v-if="r.customer_note" class="text-blue-700 mt-1">{{ r.customer_note }}</p>
+                    <div v-if="r.img_cs" class="mt-2">
+                      <img :src="getCSImageUrl(r.id, r.img_cs)" 
+                        :alt="`CS Image for ticket ${r.id}`"
+                        class="w-20 h-20 object-cover rounded border border-blue-300 cursor-pointer hover:opacity-80 transition-opacity"
+                        @click="openImageModal(getCSImageUrl(r.id, r.img_cs))"
+                        @error="handleImageError" />
+                    </div>
                   </div>
+                  
+                  <!-- Technician Note -->
                   <div v-if="r.technician_note" class="bg-orange-50 p-2 rounded text-xs">
                     <span class="font-medium text-orange-800">Tech Note:</span>
                     <p class="text-orange-700 mt-1">{{ r.technician_note }}</p>
                   </div>
-                  <div v-if="r.noc_note" class="bg-purple-50 p-2 rounded text-xs">
+                  
+                  <!-- NOC Note with Image -->
+                  <div v-if="r.noc_note || r.img_noc" class="bg-purple-50 p-2 rounded text-xs">
                     <span class="font-medium text-purple-800">NOC Note:</span>
-                    <p class="text-purple-700 mt-1">{{ r.noc_note }}</p>
+                    <p v-if="r.noc_note" class="text-purple-700 mt-1">{{ r.noc_note }}</p>
+                    <div v-if="r.img_noc" class="mt-2">
+                      <img :src="getNOCImageUrl(r.id, r.img_noc)" 
+                        :alt="`NOC Image for ticket ${r.id}`"
+                        class="w-20 h-20 object-cover rounded border border-purple-300 cursor-pointer hover:opacity-80 transition-opacity"
+                        @click="openImageModal(getNOCImageUrl(r.id, r.img_noc))"
+                        @error="handleImageError" />
+                    </div>
                   </div>
                 </div>
 
@@ -2133,98 +2254,83 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         </div>
       </div>
 
-      <!-- Mobile-Optimized Modal Add Ticket -->
-      <div v-if="showAdd" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-        <div class="absolute inset-0 bg-black/60" @click="showAdd = false"></div>
-        <div
-          class="relative w-full max-w-2xl mx-4 rounded-t-xl sm:rounded-xl shadow-xl bg-slate-900 text-slate-100 p-6 max-h-[90vh] overflow-y-auto">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold">Add New Ticket</h2>
-            <button class="text-slate-300 hover:text-white" @click="showAdd = false">✕</button>
-          </div>
+      <!-- Add New Ticket Modal -->
+      <UModal v-model="showAdd" :prevent-close="false">
+        <UCard class="max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-900 text-white">
+          <template #header>
+            <div class="flex justify-between items-center">
+              <h3 class="text-xl font-semibold">Add New Ticket</h3>
+              <UButton @click="closeAddModal" variant="ghost" size="sm">
+                <UIcon name="x" />
+              </UButton>
+            </div>
+          </template>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4" v-if="!loadingLookups">
             <div>
-              <label class="block text-sm text-slate-300 mb-1">Area</label>
-              <select v-model="selectedAreaId"
-                class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none">
-                <option value="">All Areas</option>
-                <option v-for="area in areas" :key="area.id" :value="area.id">
-                  {{ area.name_city }} - {{ area.name_subdistrict }}
-                </option>
-              </select>
+              <label class="block text-sm font-medium text-white mb-1">Area</label>
+              <USelect v-model="selectedAreaId" :options="areaOptions" placeholder="All Areas" />
             </div>
             <div>
-              <label class="block text-sm text-slate-300 mb-1">Customer</label>
-              <select v-model="form.customer_id"
-                class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none">
-                <option v-for="c in filteredCustomers" :key="c.id" :value="c.id">
-                  {{ c.name }}
-                </option>
-              </select>
+              <label class="block text-sm font-medium text-white mb-1">Customer</label>
+              <USelect v-model="form.customer_id" :options="customerOptions" placeholder="Select customer" />
             </div>
             <div class="md:col-span-2">
-              <label class="block text-sm text-slate-300 mb-1">Title</label>
-              <input v-model="form.title"
-                class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none"
-                placeholder="Enter trouble description..." />
+              <label class="block text-sm font-medium text-white mb-1">Title</label>
+              <UInput v-model="form.title" placeholder="Enter trouble description..." />
             </div>
             <div class="md:col-span-2">
-              <label class="block text-sm text-slate-300 mb-1">Description</label>
-              <textarea v-model="form.description"
-                class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none"></textarea>
+              <label class="block text-sm font-medium text-white mb-1">Description</label>
+              <UTextarea v-model="form.description" placeholder="Enter detailed description..." />
             </div>
             <div class="md:col-span-2">
-              <label class="block text-sm text-slate-300 mb-1">Classification</label>
-              <select v-model="form.classification"
-                class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none">
-                <option value="gangguan">Gangguan</option>
-                <option value="psb">PSB (Pasang Baru)</option>
-                <option value="dismantle">Dismantle</option>
-                <option value="lainnya">Lainnya</option>
-              </select>
+              <label class="block text-sm font-medium text-white mb-1">Classification</label>
+              <USelect v-model="form.classification" :options="classificationOptions" />
             </div>
             <div class="md:col-span-2">
-              <label class="block text-sm text-slate-300 mb-1">Upload Image (CS) - Optional</label>
-              <input type="file" @change="handleImageUpload" accept="image/*"
-                class="w-full rounded px-3 py-2 bg-slate-800 border border-slate-700 focus:outline-none" />
-              <div v-if="form.img_cs && !form.img_cs.startsWith('data:')" class="mt-2">
-                <div class="flex items-center gap-2 p-2 bg-green-900/20 border border-green-500/30 rounded">
-                  <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clip-rule="evenodd"></path>
-                  </svg>
-                  <span class="text-sm text-green-300">Image uploaded successfully</span>
-                  <button @click="form.img_cs = ''; selectedCSFile = undefined"
-                    class="text-red-400 hover:text-red-300 text-sm">Remove</button>
+              <label class="block text-sm font-medium text-white mb-1">Upload Image (CS) - Optional</label>
+              <input type="file" @change="handleImageUpload" accept="image/*" 
+                class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900" />
+              <!-- Image Preview - Show when file is selected -->
+              <div v-if="csImagePreview" class="mt-2">
+                <UAlert color="green" variant="soft" class="mb-2">
+                  <template #title>Image selected</template>
+                  <template #actions>
+                    <UButton @click="form.img_cs = ''; selectedCSFile = undefined; csImagePreview = ''" 
+                      variant="ghost" size="xs" color="red">Remove</UButton>
+                  </template>
+                </UAlert>
+                <!-- Image Preview -->
+                <div class="mt-3">
+                  <img :src="csImagePreview" alt="CS Image Preview" 
+                    class="w-32 h-32 object-cover rounded border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
+                    @click="openImageModal(csImagePreview)" />
+                  <p class="text-xs text-gray-300 mt-1">Click to view full size</p>
                 </div>
               </div>
               <div v-else-if="form.img_cs && form.img_cs.startsWith('data:')" class="mt-2">
-                <div class="flex items-center gap-2 p-2 bg-yellow-900/20 border border-yellow-500/30 rounded">
-                  <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd"
-                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                      clip-rule="evenodd"></path>
-                  </svg>
-                  <span class="text-sm text-yellow-300">Image upload failed - using preview only</span>
-                  <button @click="form.img_cs = ''; selectedCSFile = undefined"
-                    class="text-red-400 hover:text-red-300 text-sm">Remove</button>
-                </div>
+                <UAlert color="yellow" variant="soft" class="mb-2">
+                  <template #title>Image upload failed - using preview only</template>
+                  <template #actions>
+                    <UButton @click="form.img_cs = ''; selectedCSFile = undefined; csImagePreview = ''" 
+                      variant="ghost" size="xs" color="red">Remove</UButton>
+                  </template>
+                </UAlert>
               </div>
-              <p class="text-xs text-slate-400 mt-1">PNG, JPG, GIF up to 10MB</p>
+              <p class="text-xs text-gray-300 mt-1">PNG, JPG, GIF up to 10MB</p>
             </div>
           </div>
-          <div v-else class="text-slate-300">Loading options...</div>
-          <div class="mt-4 flex justify-end gap-2">
-            <button class="px-4 py-2 rounded bg-gray-600 text-white" @click="showAdd = false"
-              :disabled="createTicketSubmitting">Cancel</button>
-            <button class="px-4 py-2 rounded bg-emerald-600 text-white disabled:opacity-50" @click="createTicket"
-              :disabled="createTicketSubmitting">
-              {{ createTicketSubmitting ? 'Creating...' : 'Submit' }}
-            </button>
-          </div>
-        </div>
-      </div>
+          <div v-else class="text-gray-300">Loading options...</div>
+          
+          <template #footer>
+            <div class="flex justify-end gap-2">
+              <UButton @click="closeAddModal" :disabled="createTicketSubmitting">Cancel</UButton>
+              <UButton @click="createTicket" color="green" :disabled="createTicketSubmitting" :loading="createTicketSubmitting">
+                {{ createTicketSubmitting ? 'Creating...' : 'Submit' }}
+              </UButton>
+            </div>
+          </template>
+        </UCard>
+      </UModal>
 
 
 
@@ -2410,24 +2516,6 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
         </div>
       </div>
 
-      <!-- Modal Image Viewer -->
-      <div v-if="showImageModal" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/80" @click="showImageModal = false"></div>
-        <div class="relative w-full max-w-4xl mx-4 rounded-xl shadow-xl bg-white p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold text-gray-900">CS Image</h2>
-            <button class="text-gray-400 hover:text-gray-600" @click="showImageModal = false">✕</button>
-          </div>
-          <div class="flex justify-center">
-            <img :src="selectedImageUrl" alt="CS Image" class="max-w-full max-h-96 object-contain rounded" />
-          </div>
-          <div class="mt-4 flex justify-end">
-            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showImageModal = false">
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
 
       <!-- Modal Delete Confirmation -->
       <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center">
@@ -2580,7 +2668,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
       </div>
 
       <!-- Image Modal -->
-      <div v-if="showImageModal" class="fixed inset-0 z-50 flex items-center justify-center">
+      <div v-if="showImageModal" class="fixed inset-0 z-[99999] flex items-center justify-center">
         <div class="absolute inset-0 bg-black/80" @click="showImageModal = false"></div>
         <div class="relative max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden">
           <div class="flex items-center justify-between p-4 border-b">
