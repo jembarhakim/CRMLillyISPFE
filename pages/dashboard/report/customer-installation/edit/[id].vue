@@ -7,7 +7,7 @@
           <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div class="flex items-center space-x-3 sm:space-x-4">
               <div class="bg-white/20 p-2 sm:p-3 rounded-xl">
-                <UIcon name="heroicons:wrench-screwdriver" class="text-white text-xl sm:text-2xl" />
+                <LucideIcon name="wrench" :size="24" class="text-white" />
               </div>
               <div>
                 <h1 class="text-lg sm:text-2xl font-bold text-white">Edit Installation Report</h1>
@@ -16,7 +16,7 @@
             </div>
             <UButton @click="$router.back()" variant="outline" color="white" 
                      class="border-white/30 text-white hover:bg-white/10 w-full sm:w-auto">
-              <UIcon name="heroicons:arrow-left" class="mr-2" />
+              <LucideIcon name="arrow-left" :size="16" class="mr-2" />
               Back
             </UButton>
           </div>
@@ -25,7 +25,7 @@
         <!-- Loading State -->
         <div v-if="loading" class="flex justify-center items-center py-12 sm:py-16">
           <div class="text-center">
-            <UIcon name="heroicons:arrow-path" class="animate-spin text-3xl sm:text-4xl text-emerald-500 mb-4" />
+            <LucideIcon name="rotate-ccw" :size="32" class="animate-spin text-emerald-500 mb-4" />
             <p class="text-gray-600 text-sm sm:text-base">Loading installation report...</p>
           </div>
         </div>
@@ -36,7 +36,7 @@
           <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-6 rounded-xl border border-blue-100">
             <div class="flex items-center mb-4 sm:mb-6">
               <div class="bg-blue-500 p-2 rounded-lg mr-2 sm:mr-3">
-                <UIcon name="heroicons:information-circle" class="text-white text-sm sm:text-lg" />
+                <LucideIcon name="info" :size="16" class="text-white" />
               </div>
               <h2 class="text-lg sm:text-xl font-bold text-gray-800">Basic Installation Information</h2>
             </div>
@@ -697,6 +697,7 @@ import { assetItemAdminApi } from '@/api/admin/asset-item'
 import { userManagementAdminApi } from '@/api/admin/user-management'
 import { uploadFileAdminApi } from '@/api/admin/file-upload'
 import type { UpdateCompleteInstallationReportRequest } from '@/types/requests/installation-report'
+import LucideIcon from '@/components/LucideIcon.vue'
 // Remove the custom compression import - we'll use the existing compression function
 
 // Apply auth middleware

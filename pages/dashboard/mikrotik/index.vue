@@ -79,7 +79,7 @@
               :disabled="connectionStatus === 'connected' || connectionStatus === 'connecting'"
               class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <UIcon name="heroicons:plug" class="w-4 h-4 mr-2" />
+              <LucideIcon name="plug" :size="16" class="mr-2" />
               {{ connectionStatus === 'connecting' ? 'Connecting...' : 'Connect' }}
             </button>
             <button
@@ -87,7 +87,7 @@
               :disabled="connectionStatus !== 'connected'"
               class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <UIcon name="heroicons:x-mark" class="w-4 h-4 mr-2" />
+              <LucideIcon name="x" :size="16" class="mr-2" />
               Disconnect
             </button>
             <button
@@ -95,7 +95,7 @@
               :disabled="connectionStatus !== 'connected'"
               class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <UIcon name="heroicons:arrow-path" class="w-4 h-4 mr-2" />
+              <LucideIcon name="rotate-ccw" :size="16" class="mr-2" />
               Refresh Logs
             </button>
           </div>
@@ -148,7 +148,7 @@
           <!-- Logs Container -->
           <div class="max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
             <div v-if="logs.length === 0" class="p-8 text-center text-gray-500">
-              <UIcon name="heroicons:information-circle" class="w-12 h-12 mb-4 text-gray-400" />
+              <LucideIcon name="info" :size="48" class="mb-4 text-gray-400" />
               <p>No logs available. Connect to MikroTik to view logs.</p>
             </div>
             
@@ -204,14 +204,14 @@
               :disabled="connectionStatus !== 'connected'"
               class="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
-              <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-1" />
+              <LucideIcon name="rotate-ccw" :size="16" class="mr-1" />
               Refresh
             </button>
           </div>
         </div>
         <div class="p-6">
           <div v-if="netwatchDevices.length === 0" class="text-center py-8 text-gray-500">
-            <UIcon name="heroicons:globe-alt" class="w-12 h-12 mb-4 text-gray-400" />
+            <LucideIcon name="globe" :size="48" class="mb-4 text-gray-400" />
             <p>No Netwatch devices found. Connect to MikroTik to view devices.</p>
           </div>
           <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -281,7 +281,7 @@
       <div class="flex items-center justify-between">
         <span>{{ alert.message }}</span>
         <button @click="closeAlert" class="ml-4 text-white hover:text-gray-200">
-          <UIcon name="heroicons:x-mark" class="w-4 h-4" />
+          <LucideIcon name="x" :size="16" />
         </button>
       </div>
     </div>
@@ -292,6 +292,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useApiHost } from '~/composables/useApiHost'
 import { useAuthStore } from '~/stores/auth'
+import LucideIcon from '@/components/LucideIcon.vue'
 
 // Set page title
 useHead({

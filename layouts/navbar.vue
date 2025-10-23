@@ -64,8 +64,10 @@
           <div
             class="toggle-header hidden lg:flex justify-center items-center p-4 border-b cursor-pointer hover:bg-gray-100 transition-colors duration-200 bg-white min-h-[60px] z-20"
             @click="toggleSidebar" role="button" aria-label="Toggle sidebar" title="Toggle sidebar">
-            <UIcon :name="'i-line-md-arrow-open-right'"
-              class="w-6 h-6 transition-colors duration-200" 
+            <LucideIcon 
+              name="chevron-right"
+              :size="24"
+              class="transition-colors duration-200" 
               :class="{ 'rotate-180': !showSidebar }"
               style="color: black !important; fill: black !important; stroke: black !important;" />
           </div>
@@ -80,7 +82,10 @@
                     : 'hover:bg-gray-100 text-gray-700'
                 ]" 
                 @click="navigateTo(item.link)">
-                <component :is="getIcon(item.icon)" class="w-6 h-6 transition-colors duration-200" 
+                <LucideIcon 
+                  :name="getIconName(item.icon)" 
+                  :size="20"
+                  class="transition-colors duration-200" 
                   :class="isActiveMenuItem(item.link) 
                     ? 'text-blue-600' 
                     : 'text-gray-600'" />
@@ -110,7 +115,7 @@
                 <li v-for="(item, index) in ProfileDropdown[0]" :key="'profile-' + index"
                   class="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-100 text-gray-700"
                   @click="() => { item.click(); showMobileSidebar = false }">
-                                     <UIcon name="i-line-md-account" class="w-6 h-6" style="color: black !important; fill: black !important; stroke: black !important;" />
+                  <LucideIcon name="user-circle" :size="20" class="text-gray-600" />
                   <span class="font-medium text-gray-800">{{ item.label }}</span>
                 </li>
               </ul>
@@ -146,13 +151,14 @@ import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useRolePermissions } from '@/composables/useRolePermissions'
+import LucideIcon from '@/components/LucideIcon.vue'
 
-// Iconify dynamic icon loader
-const getIcon = (iconName: string) => {
-  const [collection, name] = iconName.split(':')
-  return defineAsyncComponent(() =>
-    import(`~icons/${collection}/${name}`)
-  )
+// Convert heroicons:icon-name to icon-name for LucideIcon
+const getIconName = (iconName: string) => {
+  if (iconName.startsWith('heroicons:')) {
+    return iconName.replace('heroicons:', '')
+  }
+  return iconName
 }
 
 // Type definitions

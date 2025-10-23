@@ -31,6 +31,7 @@
     "echarts": "^5.6.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.1",
+    "lucide-vue-next": "^0.546.0",
     "Math": "^0.0.1-security",
     "nuxt": "^3.15.4",
     "nuxt-storage": "^1.2.2",
