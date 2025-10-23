@@ -54,7 +54,21 @@ export default defineNuxtConfig({
   },
   compatibilityDate: "2024-11-01",
   devtools: { enabled: true },
-  ssr: false, // Disable SSR to prevent icon recursion
+  ssr: true, // Enable SSR for better production performance
+  nitro: {
+    // Configure Nitro for better production builds
+    experimental: {
+      wasm: true
+    },
+    // Ensure proper static asset handling
+    publicAssets: [
+      {
+        baseURL: '/_nuxt',
+        dir: 'public',
+        maxAge: 60 * 60 * 24 * 7 // 7 days
+      }
+    ]
+  },
   modules: [
     "@pinia/nuxt",
     "@nuxt/ui",
@@ -89,5 +103,23 @@ export default defineNuxtConfig({
   devServer: {
     host: '0.0.0.0', // Allow connections from any IP
     port: 3000
+  },
+  // Configure build for better production handling
+  build: {
+    // Ensure proper chunking for dynamic imports
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['vue', 'vue-router'],
+          ui: ['@nuxt/ui']
+        }
+      }
+    }
+  },
+  // Configure router for better SPA handling
+  router: {
+    options: {
+      hashMode: false
+    }
   },
 });
