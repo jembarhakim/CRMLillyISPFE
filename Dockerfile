@@ -1,22 +1,28 @@
 FROM node:22.16.0 as build
 
-# Create app directory
 WORKDIR /usr/src/app
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-# Copying this separately prevents re-running npm install on every code change
+
+# Copy package files first for better caching
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
+
+# Copy source code
 COPY . .
 
-RUN yarn
-
+# Build the application
 RUN yarn build
 
 FROM node:22.16.0 as production
 
 WORKDIR /usr/src/app
 
-COPY --from=build /usr/src/app/.nuxt ./.nuxt
+# Copy built application
 COPY --from=build /usr/src/app/.output ./.output
+COPY --from=build /usr/src/app/package.json ./
 
-CMD node .output/server/index.mjs
+# Install only production dependencies
+RUN yarn install --production --frozen-lockfile
+
 EXPOSE 3000
+
+CMD ["node", ".output/server/index.mjs"]
