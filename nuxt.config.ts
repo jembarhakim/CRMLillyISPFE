@@ -38,13 +38,18 @@ export default defineNuxtConfig({
         { name: "viewport", content: "width=device-width, initial-scale=1.0" },
         { name: "description", content: "Customer Relationship Management System" },
       ],
+      link: [
+        {
+          rel: "stylesheet",
+          href: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        }
+      ]
     },
   },
   typescript: {
     typeCheck: false,
   },
   compatibilityDate: "2024-11-01",
-  devtools: { enabled: true },
   ssr: true, // Enable SSR for proper API calls
   modules: [
     "@pinia/nuxt",
