@@ -11,7 +11,8 @@ useHead({
 
 // Apply guest middleware to prevent logged-in users from accessing login page
 definePageMeta({
-  middleware: 'guest'
+  middleware: 'guest',
+  ssr: false  // Disable SSR to prevent Icon component infinite recursion
 })
 
 const state = reactive({

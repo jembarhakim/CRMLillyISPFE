@@ -1,3 +1,5 @@
+import { useAuthStore } from '~/stores/auth'
+
 export default defineNuxtRouteMiddleware(async (to, from) => {
   // Only run on client side to avoid SSR issues
   if (!process.client) {

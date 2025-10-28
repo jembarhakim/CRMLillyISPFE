@@ -1295,7 +1295,7 @@ onMounted(async () => {
       <!-- Header -->
       <div class="mb-8 text-center pb-6 border-b-2 border-blue-200 dark:border-blue-800">
         <div class="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-indigo-600 p-3 rounded-2xl mb-4 shadow-lg">
-          <UIcon name="i-heroicons-document-plus" class="w-10 h-10 text-white" />
+          <UIcon name="file-plus" class="w-10 h-10 text-white" />
         </div>
         <h1 class="text-3xl font-black text-gray-900 dark:text-gray-100 mb-2">
           Add Installation Report
@@ -1311,7 +1311,7 @@ onMounted(async () => {
             @click="loadTestData"
             class="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
           >
-            <UIcon name="i-heroicons-beaker" class="w-5 h-5" />
+            <UIcon name="beaker" class="w-5 h-5" />
             Load Test Data (Debug)
           </button>
         </div>
@@ -1326,7 +1326,7 @@ onMounted(async () => {
         <!-- Basic Installation Information -->
         <div class="bg-blue-50 dark:bg-blue-900/20 p-4 sm:p-6 rounded-lg">
           <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4 flex items-center">
-            <UIcon name="i-heroicons-information-circle" class="mr-2" />
+            <UIcon name="info" class="mr-2" />
             Basic Installation Information
           </h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1351,7 +1351,7 @@ onMounted(async () => {
                 class="bg-gray-100 dark:bg-gray-700"
               />
               <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                <UIcon name="i-heroicons-information-circle" class="inline mr-1" />
+                <UIcon name="info" class="inline mr-1" />
                 Installation reports are always "completed" since technicians document after finishing the work
               </p>
             </UFormGroup>
@@ -1364,7 +1364,7 @@ onMounted(async () => {
                 class="bg-gray-100 dark:bg-gray-700"
               />
               <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                <UIcon name="i-heroicons-information-circle" class="inline mr-1" />
+                <UIcon name="info" class="inline mr-1" />
                 This form is for new installations only. Use separate forms for maintenance (from trouble tickets) or upgrades
               </p>
             </UFormGroup>
@@ -1401,7 +1401,7 @@ onMounted(async () => {
             <div>
               <h3 class="text-xl font-bold text-indigo-900 dark:text-indigo-100 flex items-center gap-2">
                 <div class="bg-indigo-500 p-2 rounded-lg">
-                  <UIcon name="i-heroicons-user-group" class="text-white w-5 h-5" />
+                  <UIcon name="user-group" class="text-white w-5 h-5" />
                 </div>
                 Installation Team
                 <span class="text-red-500">*</span>
@@ -1409,13 +1409,13 @@ onMounted(async () => {
               <p class="text-sm text-indigo-700 dark:text-indigo-300 mt-1">Assign technicians with their roles and responsibilities</p>
             </div>
             <UButton @click="addTechnician" size="lg" color="indigo">
-              <UIcon name="i-heroicons-plus-circle" class="mr-2 w-5 h-5" />
+              <UIcon name="plus-circle" class="mr-2 w-5 h-5" />
               Add Technician
             </UButton>
           </div>
           
           <div v-if="state.technicians.length === 0" class="text-center py-8 px-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-indigo-200 dark:border-indigo-700">
-            <UIcon name="i-heroicons-user-group" class="w-16 h-16 text-indigo-300 dark:text-indigo-600 mx-auto mb-3" />
+            <UIcon name="user-group" class="w-16 h-16 text-indigo-300 dark:text-indigo-600 mx-auto mb-3" />
             <p class="text-gray-600 dark:text-gray-300 font-medium">No technicians assigned yet</p>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Click "Add Technician" to assign your installation team</p>
           </div>
@@ -1433,7 +1433,7 @@ onMounted(async () => {
                   <span class="text-base font-semibold text-gray-700 dark:text-gray-200">Technician {{ index + 1 }}</span>
                 </div>
                 <div v-if="tech.is_primary" class="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full text-xs font-bold">
-                  <UIcon name="i-heroicons-star-solid" class="w-4 h-4" />
+                  <UIcon name="star" class="w-4 h-4" />
                   PRIMARY
                 </div>
               </div>
@@ -1495,7 +1495,7 @@ onMounted(async () => {
                         class="flex-1 min-w-0"
                         :disabled="tech.is_primary"
                       >
-                        <UIcon :name="tech.is_primary ? 'i-heroicons-star-solid' : 'i-heroicons-star'" class="mr-1 w-4 h-4" />
+                        <UIcon :name="tech.is_primary ? 'star' : 'star'" class="mr-1 w-4 h-4" />
                         <span class="hidden xs:inline">{{ tech.is_primary ? 'Primary' : 'Set Primary' }}</span>
                         <span class="xs:hidden">Primary</span>
                       </UButton>
@@ -1507,7 +1507,7 @@ onMounted(async () => {
                         class="flex-shrink-0"
                         :disabled="state.technicians.length === 1"
                       >
-                        <UIcon name="i-heroicons-trash" class="w-4 h-4" />
+                        <UIcon name="trash-2" class="w-4 h-4" />
                       </UButton>
                     </div>
                   </div>
@@ -1531,7 +1531,7 @@ onMounted(async () => {
           
           <div class="mt-4 p-4 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg border border-indigo-200 dark:border-indigo-700">
             <div class="flex items-start gap-2">
-              <UIcon name="i-heroicons-information-circle" class="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
+              <UIcon name="info" class="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
               <div class="text-sm text-indigo-900 dark:text-indigo-100">
                 <p class="font-semibold mb-1">Team Requirements:</p>
                 <ul class="list-disc list-inside space-y-1 text-indigo-800 dark:text-indigo-200">
@@ -1549,7 +1549,7 @@ onMounted(async () => {
           <div class="mb-5">
             <h3 class="text-xl font-bold text-cyan-900 dark:text-cyan-100 flex items-center gap-2">
               <div class="bg-cyan-500 p-2 rounded-lg">
-                <UIcon name="i-heroicons-server-stack" class="text-white w-5 h-5" />
+                <UIcon name="server-stack" class="text-white w-5 h-5" />
               </div>
               MikroTik Auto-Provisioning
               <span class="text-xs font-normal text-gray-600 dark:text-gray-400 ml-2">(Optional)</span>
@@ -1584,17 +1584,17 @@ onMounted(async () => {
                   v-model="state.max_limit" 
                   placeholder="10M/10M"
                   size="lg"
-                  icon="i-heroicons-arrow-trending-up"
+                  icon="arrow-trending-up"
                   :readonly="!!state.product_id"
                   :class="state.product_id ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600' : ''"
                 />
                 <div v-if="state.product_id" class="absolute inset-y-0 right-0 flex items-center pr-3">
-                  <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-green-500" />
+                  <UIcon name="check-circle" class="w-5 h-5 text-green-500" />
                 </div>
               </div>
               <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
                 <span v-if="state.product_id" class="text-green-600">
-                  <UIcon name="i-heroicons-information-circle" class="inline mr-1" />
+                  <UIcon name="info" class="inline mr-1" />
                   Bandwidth automatically set from selected package. Select a package above to override.
                 </span>
                 <span v-else>Format: Download/Upload (e.g., 10M/10M, 50M/50M). Select a package above for automatic configuration.</span>
@@ -1608,7 +1608,7 @@ onMounted(async () => {
               <div class="toggle-switch flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-cyan-200 dark:border-cyan-700">
                 <div class="flex items-center gap-3">
                   <div class="bg-cyan-100 dark:bg-cyan-900/50 p-2 rounded-lg">
-                    <UIcon name="i-heroicons-bolt" class="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                    <UIcon name="bolt" class="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                   </div>
                   <div>
                     <label for="auto_provision" class="text-sm font-bold text-gray-900 dark:text-gray-100 cursor-pointer">
@@ -1631,7 +1631,7 @@ onMounted(async () => {
               >
                 <div class="flex items-center gap-3">
                   <div class="bg-orange-100 dark:bg-orange-900/50 p-2 rounded-lg">
-                    <UIcon name="i-heroicons-eye" class="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                    <UIcon name="eye" class="w-5 h-5 text-orange-600 dark:text-orange-400" />
                   </div>
                   <div>
                     <label for="dry_run" class="text-sm font-bold text-gray-900 dark:text-gray-100 cursor-pointer" :class="!state.auto_provision && 'opacity-50'">
@@ -1661,7 +1661,7 @@ onMounted(async () => {
                   : 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700'"
               >
                 <UIcon 
-                  :name="state.dry_run ? 'i-heroicons-eye' : 'i-heroicons-check-badge'" 
+                  :name="state.dry_run ? 'eye' : 'check-badge'" 
                   class="w-6 h-6 flex-shrink-0"
                   :class="state.dry_run ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'"
                 />
@@ -1683,7 +1683,7 @@ onMounted(async () => {
             
             <div v-else class="md:col-span-2 mt-2">
               <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 flex items-start gap-3">
-                <UIcon name="i-heroicons-power" class="w-6 h-6 text-gray-400 flex-shrink-0" />
+                <UIcon name="power" class="w-6 h-6 text-gray-400 flex-shrink-0" />
                 <div>
                   <p class="font-bold text-sm text-gray-900 dark:text-gray-100">
                     Auto-Provisioning Disabled
@@ -1700,7 +1700,7 @@ onMounted(async () => {
         <!-- Document Information -->
         <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg document-info-section">
           <h3 class="text-lg font-semibold text-green-800 dark:text-green-200 mb-4 flex items-center">
-            <UIcon name="i-heroicons-document-text" class="mr-2" />
+            <UIcon name="file-text" class="mr-2" />
             Document Information
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1744,7 +1744,7 @@ onMounted(async () => {
         <div class="bg-gradient-to-r from-amber-50 to-orange-50 dark:bg-gradient-to-br dark:from-amber-900/30 dark:to-orange-900/30 p-4 sm:p-6 rounded-xl border-2 border-amber-100 dark:border-amber-800 shadow-sm technician-photo-section">
           <div class="flex items-center mb-6">
             <div class="bg-amber-500 p-2 rounded-lg mr-3">
-              <UIcon name="i-heroicons-camera" class="text-white text-lg" />
+              <UIcon name="camera" class="text-white text-lg" />
             </div>
             <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">Technician Photo Documentation</h3>
           </div>
@@ -1771,7 +1771,7 @@ onMounted(async () => {
                   class="w-full h-32 object-cover"
                 />
                 <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
-                  <UIcon name="i-heroicons-eye" class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xl" />
+                  <UIcon name="eye" class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xl" />
                 </div>
                 <UButton
                   @click.stop="removeTechnicianPhoto(index)"
@@ -1780,7 +1780,7 @@ onMounted(async () => {
                   variant="solid"
                   class="absolute -top-2 -right-2 shadow-lg"
                 >
-                  <UIcon name="i-heroicons-x-mark" />
+                  <UIcon name="x" />
                 </UButton>
                 <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-2">
                   <div class="flex justify-between items-center">
@@ -1798,7 +1798,7 @@ onMounted(async () => {
                 @click="triggerTechnicianPhotoUpload"
               >
                 <div class="text-center">
-                  <UIcon name="i-heroicons-plus" class="text-gray-400 dark:text-gray-500 text-3xl mb-2" />
+                  <UIcon name="plus" class="text-gray-400 dark:text-gray-500 text-3xl mb-2" />
                   <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Add Photo</p>
                   <p class="text-xs text-gray-400 dark:text-gray-500">{{ state.technician_photo_previews.length }}/10</p>
                 </div>
@@ -1816,7 +1816,7 @@ onMounted(async () => {
             
             <div v-if="state.technician_photo_previews.length > 0" class="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
               <div class="flex items-center text-sm text-amber-800 dark:text-amber-200">
-                <UIcon name="i-heroicons-information-circle" class="mr-2" />
+                <UIcon name="info" class="mr-2" />
                 <span>
                   {{ state.technician_photo_previews.length }} photo(s) uploaded. 
                   Total size: {{ formatFileSize(totalTechnicianPhotoSize) }}
@@ -1829,7 +1829,7 @@ onMounted(async () => {
         <!-- Network Device Information -->
         <div class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
           <h3 class="text-lg font-semibold text-purple-800 dark:text-purple-200 mb-4 flex items-center">
-            <UIcon name="i-heroicons-cpu-chip" class="mr-2" />
+            <UIcon name="cpu-chip" class="mr-2" />
             Network Device Information
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1859,7 +1859,7 @@ onMounted(async () => {
                 :search-attributes="['name', 'description']"
               />
               <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                <UIcon name="i-heroicons-information-circle" class="inline mr-1" />
+                <UIcon name="info" class="inline mr-1" />
                 Package selection will automatically set the bandwidth limit for MikroTik provisioning
               </p>
             </UFormGroup>
@@ -1889,7 +1889,7 @@ onMounted(async () => {
                   :disabled="!state.assets_id || (availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length === 0)"
                 />
                 <div v-if="state.assets_id && availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length === 0" class="text-xs text-red-500 mt-1 flex items-center">
-                  <UIcon name="i-heroicons-exclamation-triangle" class="w-3 h-3 mr-1" />
+                  <UIcon name="alert-triangle" class="w-3 h-3 mr-1" />
                   No available devices for this asset
                 </div>
                 <div v-else-if="state.assets_id && availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length > 0" class="text-xs text-green-600 mt-1">
@@ -1914,7 +1914,7 @@ onMounted(async () => {
                   :disabled="!state.mac_address"
                   title="Fetch actual IP address from MikroTik DHCP lease"
                 >
-                  <UIcon name="i-heroicons-arrow-path" class="mr-1" />
+                  <UIcon name="refresh-cw" class="mr-1" />
                   Fetch DHCP
                 </UButton>
               </div>
@@ -1922,7 +1922,7 @@ onMounted(async () => {
                 {{ state.dhcpStatus.message }}
               </p>
               <p v-else class="text-xs text-gray-500 mt-1">
-                <UIcon name="i-heroicons-information-circle" class="inline mr-1" />
+                <UIcon name="info" class="inline mr-1" />
                 This button will fetch the actual IP address assigned by your MikroTik router's DHCP server
               </p>
             </UFormGroup>
@@ -1975,7 +1975,7 @@ onMounted(async () => {
         <!-- Customer Service Information -->
         <div class="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
           <h3 class="text-lg font-semibold text-orange-800 dark:text-orange-200 mb-4 flex items-center">
-            <UIcon name="i-heroicons-wrench-screwdriver" class="mr-2" />
+            <UIcon name="wrench" class="mr-2" />
             Customer Service Information
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2054,11 +2054,11 @@ onMounted(async () => {
             <div class="text-sm text-gray-700 dark:text-gray-300">
               <div class="flex items-center gap-2">
                 <div v-if="!state.customer_id || state.technicians.length === 0 || !state.assets_id || !state.product_id" class="flex items-center gap-2 text-orange-600 dark:text-orange-400">
-                  <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5" />
+                  <UIcon name="alert-triangle" class="w-5 h-5" />
                   <span class="font-semibold">Please complete required fields (Customer, Technicians, Asset, Package)</span>
                 </div>
                 <div v-else class="flex items-center gap-2 text-green-600 dark:text-green-400">
-                  <UIcon name="i-heroicons-check-circle" class="w-5 h-5" />
+                  <UIcon name="check-circle" class="w-5 h-5" />
                   <span class="font-semibold">Ready to submit</span>
                 </div>
               </div>
@@ -2074,7 +2074,7 @@ onMounted(async () => {
                 @click="closeModal"
                 class="flex-1 sm:flex-initial"
               >
-                <UIcon name="i-heroicons-x-circle" class="mr-2 w-5 h-5" />
+                <UIcon name="x-circle" class="mr-2 w-5 h-5" />
                 Cancel
               </UButton>
               <UButton 
@@ -2085,7 +2085,7 @@ onMounted(async () => {
                 :disabled="!state.customer_id || state.technicians.length === 0 || !state.assets_id || !state.product_id"
                 class="flex-1 sm:flex-initial bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
               >
-                <UIcon name="i-heroicons-document-check" class="mr-2 w-5 h-5" />
+                <UIcon name="file-check" class="mr-2 w-5 h-5" />
                 <span class="font-bold">Create Installation Report</span>
               </UButton>
             </div>
@@ -2101,7 +2101,7 @@ onMounted(async () => {
         <div class="flex justify-between items-center">
           <h3 class="text-lg font-semibold">Technician Photo Preview</h3>
           <UButton @click="state.showTechnicianModal = false" variant="ghost" size="sm">
-            <UIcon name="i-heroicons-x-mark" />
+            <UIcon name="x" />
           </UButton>
         </div>
       </template>

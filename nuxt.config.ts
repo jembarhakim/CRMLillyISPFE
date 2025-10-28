@@ -1,7 +1,26 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import type { NuxtPage } from "nuxt/schema";
+import Icons from 'unplugin-icons/vite'
 
 export default defineNuxtConfig({
+  vite: {
+    plugins: [
+      Icons({
+        autoInstall: true,
+        compiler: 'vue3'
+      })
+    ],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['vue', 'vue-router'],
+            ui: ['@nuxt/ui']
+          }
+        }
+      }
+    }
+  },
   css: [
     "~/assets/css/tailwind.css",
     "~/assets/css/global.css",
@@ -21,8 +40,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      API_HOST: process.env.NUXT_PUBLIC_API_HOST || 'http://localhost:3001',
-      WA_HOST: process.env.NUXT_PUBLIC_WA_HOST || 'http://localhost:3001',
+      API_HOST: process.env.NUXT_PUBLIC_API_HOST || 'http://rndpolije.lilly.net.id',
+      WA_HOST: process.env.NUXT_PUBLIC_WA_HOST || 'http://rndpolije.lilly.net.id',
     },
   },
   // Remove automatic middleware assignment to prevent race conditions
@@ -56,8 +75,10 @@ export default defineNuxtConfig({
     "@nuxt/ui",
     "@nuxtjs/leaflet",
     "@i2d/nuxt-pdf-frame",
-    "nuxt-echarts",
+    "nuxt-echarts"
   ],
+  // Nuxt UI configuration
+  // Note: Icon configuration is handled via unplugin-icons in Vite plugins
   imports: {
     dirs: ["composables", "stores"],
   },
@@ -81,5 +102,12 @@ export default defineNuxtConfig({
   devServer: {
     host: '0.0.0.0', // Allow connections from any IP
     port: 3000
+  },
+
+  // Configure router for better SPA handling
+  router: {
+    options: {
+      hashMode: false
+    }
   },
 });

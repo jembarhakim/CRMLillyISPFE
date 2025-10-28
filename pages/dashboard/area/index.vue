@@ -4,6 +4,7 @@ import AddAreaFrom from "./AddAreaForm.vue";
 import { areaAdminApi } from "@/api/admin/area";
 import AddAreaForm from "./AddAreaForm.vue";
 import { useNotification } from '@/composables/useNotification';
+import LucideIcon from '@/components/LucideIcon.vue';
 
 // Set page title
 useHead({
@@ -104,7 +105,11 @@ async function deleteData(id: string){
 
 <template>
   <div class="flex gap-2">
-    <UButton icon="fa-plus" color="blue" label="Add New Area" @click="openModal(false,null)" />
+    <UButton color="blue" label="Add New Area" @click="openModal(false,null)">
+      <template #leading>
+        <LucideIcon name="plus" :size="16" />
+      </template>
+    </UButton>
   </div>
   <div class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700">
     <UInput v-model="q" placeholder="Filter Area..." />
@@ -118,8 +123,16 @@ async function deleteData(id: string){
     </template>
     <template #actions-data="{ row }">
       <div class="flex gap-2">
-        <UButton icon="fa-pencil" color="yellow" label="Edit" @click="openModal(true,row)" />
-        <UButton icon="fa-trash" color="red" label="Delete" @click="deleteData(row.id)" />
+        <UButton color="yellow" label="Edit" @click="openModal(true,row)">
+          <template #leading>
+            <LucideIcon name="pencil" :size="16" />
+          </template>
+        </UButton>
+        <UButton color="red" label="Delete" @click="deleteData(row.id)">
+          <template #leading>
+            <LucideIcon name="trash" :size="16" />
+          </template>
+        </UButton>
       </div>
     </template>
   </UTable>

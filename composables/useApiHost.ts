@@ -10,16 +10,17 @@ export const useApiHost = () => {
       api = `${proto}://${host}:${port}`;
       console.warn(`⚠️ NUXT_PUBLIC_API_HOST not set; using inferred ${api}`);
     } else {
-      console.warn('⚠️ NUXT_PUBLIC_API_HOST is not defined in .env; using fallback http://localhost:3001');
-      api = 'http://localhost:3001';
+      console.warn('⚠️ NUXT_PUBLIC_API_HOST is not defined in .env; using fallback http://rndpolije.lilly.net.id');
+      api = 'http://rndpolije.lilly.net.id';
     }
   }
 
-  // Force localhost for development
-  if (process.client && window.location.hostname === 'localhost') {
-    api = 'http://localhost:3001';
-    console.log('🔧 Forcing localhost:3001 for development');
-  }
+  // Only force localhost if explicitly on localhost AND no API_HOST is set
+  // REMOVED: This was causing localhost to be used even on VPS
+  // if (process.client && window.location.hostname === 'localhost' && !config.public.API_HOST) {
+  //   api = 'http://localhost:3001';
+  //   console.log('🔧 Using localhost:3001 for local development');
+  // }
 
   console.log('🔗 API Host configured as:', api);
   console.log('🌐 Current window location:', process.client ? window.location.href : 'server-side');
@@ -37,8 +38,8 @@ export const useWaHost = () => {
       wa = `${proto}://${host}:${port}`;
       console.warn(`⚠️ NUXT_PUBLIC_WA_HOST not set; using inferred ${wa}`);
     } else {
-      console.warn('⚠️ NUXT_PUBLIC_WA_HOST is not defined in .env; using fallback http://localhost:3001');
-      wa = 'http://localhost:3001';
+      console.warn('⚠️ NUXT_PUBLIC_WA_HOST is not defined in .env; using fallback http://rndpolije.lilly.net.id');
+      wa = 'http://rndpolije.lilly.net.id';
     }
   }
 

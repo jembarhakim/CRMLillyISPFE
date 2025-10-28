@@ -82,14 +82,14 @@ const items = (row: User) => [
   [
     {
       label: "Edit",
-      icon: "i-heroicons-pencil-square-20-solid",
+      icon: "pencil-square-20-solid",
       click: () => openEditUserModal(row.id.toString()),
     },
   ],
   [
     {
       label: "Delete",
-      icon: "i-heroicons-trash-20-solid",
+      icon: "trash-2-20-solid",
       click: () => deleteUser(row.id.toString()),
     },
   ],
@@ -153,7 +153,7 @@ async function deleteUser(companyId: string) {
     </template>
     <template #actions-data="{ row }">
       <UDropdown :items="items(row)">
-        <UButton color="gray" variant="ghost" icon="i-heroicons-ellipsis-horizontal-20-solid" />
+        <UButton color="gray" variant="ghost" icon="ellipsis-horizontal-20-solid" />
       </UDropdown>
     </template>
   </UTable>

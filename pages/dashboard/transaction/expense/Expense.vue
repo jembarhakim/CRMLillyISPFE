@@ -56,14 +56,14 @@ const items = (row: User) => [
   [
     {
       label: "Edit",
-      icon: "i-heroicons-pencil-square-20-solid",
+      icon: "pencil-square-20-solid",
       click: () => console.log("Edit", row.id),
     },
   ],
   [
     {
       label: "Delete",
-      icon: "i-heroicons-trash-20-solid",
+      icon: "trash-2-20-solid",
     },
   ],
 ];
@@ -124,7 +124,7 @@ async function deleteExpense(transactionId: string) {
   <UTable :rows="rows" :columns="columns">
     <template #actions-data="{ row }">
       <UDropdown :items="items(row)">
-        <UButton color="gray" variant="ghost" icon="i-heroicons-ellipsis-horizontal-20-solid" />
+        <UButton color="gray" variant="ghost" icon="ellipsis-horizontal-20-solid" />
       </UDropdown>
     </template>
     <template #amount-data="{ row }">

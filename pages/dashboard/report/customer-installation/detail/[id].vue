@@ -13,18 +13,18 @@
               <UButton @click="handleBackNavigation" 
                        color="white" variant="outline" size="sm" 
                        class="backdrop-blur-sm bg-white/10 border-white/20 text-white hover:bg-white/20 w-full sm:w-auto">
-                <UIcon name="i-heroicons-arrow-left" class="mr-2" />
+                <LucideIcon name="arrow-left" :size="16" class="mr-2" />
                 {{ backNavigationLabel }}
               </UButton>
               <UButton @click="printReport" color="white" variant="solid" size="sm"
                        class="bg-white/20 backdrop-blur-sm hover:bg-white/30 w-full sm:w-auto">
-                <UIcon name="i-heroicons-printer" class="mr-2" />
+                <LucideIcon name="printer" :size="16" class="mr-2" />
                 Print Report
               </UButton>
               <UButton @click="deleteInstallationReport" color="white" variant="solid" size="sm"
                        class="bg-red-500/80 backdrop-blur-sm hover:bg-red-600/80 w-full sm:w-auto"
                        :loading="deleting">
-                <UIcon name="i-heroicons-trash" class="mr-2" />
+                <LucideIcon name="trash" :size="16" class="mr-2" />
                 Delete Report
               </UButton>
             </div>
@@ -36,7 +36,7 @@
       <div v-if="loading" class="flex justify-center py-12 sm:py-16">
         <div class="text-center">
           <div class="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-full mb-4">
-            <UIcon name="i-heroicons-arrow-path" class="animate-spin text-xl sm:text-2xl text-blue-600" />
+            <LucideIcon name="rotate-ccw" :size="24" class="animate-spin text-blue-600" />
           </div>
           <p class="text-gray-600 text-sm sm:text-lg">Loading installation report...</p>
         </div>
@@ -45,7 +45,7 @@
       <!-- Not Found State -->
       <div v-else-if="!report" class="text-center py-12 sm:py-16">
         <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full mb-4 sm:mb-6">
-          <UIcon name="i-heroicons-document-text" class="text-2xl sm:text-3xl text-gray-400" />
+          <LucideIcon name="file-text" :size="32" class="text-gray-400" />
         </div>
         <h3 class="text-lg sm:text-xl font-semibold text-gray-700 mb-2">Report Not Found</h3>
         <p class="text-gray-500 text-sm sm:text-base">The installation report you're looking for doesn't exist or has been removed.</p>
@@ -76,7 +76,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-8 py-6">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="i-heroicons-calendar-days" class="mr-3 text-xl" />
+              <LucideIcon name="calendar" :size="20" class="mr-3" />
               PSB (Pasang Baru) Information
             </h3>
           </div>
@@ -86,7 +86,7 @@
               <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-calendar" class="text-white text-lg" />
+                    <LucideIcon name="calendar" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-purple-800">PSB Request Date</h4>
                 </div>
@@ -100,7 +100,7 @@
               <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-xl border border-indigo-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-check-circle" class="text-white text-lg" />
+                    <LucideIcon name="check-circle" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-indigo-800">Installation Completed</h4>
                 </div>
@@ -114,7 +114,7 @@
               <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-xl border border-emerald-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-clock" class="text-white text-lg" />
+                    <LucideIcon name="clock" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-emerald-800">PSB Duration</h4>
                 </div>
@@ -133,7 +133,7 @@
               <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl border border-orange-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-flag" class="text-white text-lg" />
+                    <UIcon name="flag" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-orange-800">PSB Status</h4>
                 </div>
@@ -155,7 +155,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="i-heroicons-information-circle" class="mr-3 text-xl" />
+              <UIcon name="info" class="mr-3 text-xl" />
               Basic Installation Information
             </h3>
           </div>
@@ -165,7 +165,7 @@
               <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-user" class="text-white text-lg" />
+                    <UIcon name="user" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-blue-800">Customer Information</h4>
                 </div>
@@ -189,7 +189,7 @@
               <div class="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-user-group" class="text-white text-lg" />
+                    <UIcon name="user-group" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-amber-800">Installation Team</h4>
                 </div>
@@ -207,7 +207,7 @@
                           <h5 class="font-semibold text-gray-800 text-sm">{{ technician.technician_name }}</h5>
                           <span v-if="technician.is_primary" 
                                 class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <UIcon name="i-heroicons-star-solid" class="w-2 h-2 mr-0.5" />
+                            <UIcon name="star" class="w-2 h-2 mr-0.5" />
                             Primary
                           </span>
                         </div>
@@ -219,11 +219,11 @@
                         </div>
                         <div class="text-xs text-gray-600 space-y-1">
                           <div class="flex items-center">
-                            <UIcon name="i-heroicons-phone" class="w-3 h-3 mr-1" />
+                            <UIcon name="phone" class="w-3 h-3 mr-1" />
                             {{ technician.technician_phone || '-' }}
                           </div>
                           <div class="flex items-center">
-                            <UIcon name="i-heroicons-envelope" class="w-3 h-3 mr-1" />
+                            <UIcon name="mail" class="w-3 h-3 mr-1" />
                             {{ technician.technician_email || '-' }}
                           </div>
                         </div>
@@ -249,7 +249,7 @@
                 
                 <!-- No technicians found -->
                 <div v-else class="text-center py-4">
-                  <UIcon name="i-heroicons-user-group" class="w-12 h-12 text-amber-300 mx-auto mb-2" />
+                  <UIcon name="user-group" class="w-12 h-12 text-amber-300 mx-auto mb-2" />
                   <p class="text-gray-600 text-sm">No technician information available</p>
                 </div>
               </div>
@@ -258,7 +258,7 @@
               <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl border border-green-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-cog-6-tooth" class="text-white text-lg" />
+                    <UIcon name="settings-6-tooth" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-green-800">Installation Details</h4>
                 </div>
@@ -290,7 +290,7 @@
             <!-- Installation Notes -->
             <div v-if="report.installation_notes" class="mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200">
               <div class="flex items-center mb-3">
-                <UIcon name="i-heroicons-document-text" class="text-gray-600 mr-2" />
+                <UIcon name="file-text" class="text-gray-600 mr-2" />
                 <label class="text-sm font-medium text-gray-600">Installation Notes</label>
               </div>
               <p class="text-gray-700 leading-relaxed">{{ report.installation_notes }}</p>
@@ -302,7 +302,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-emerald-500 to-teal-500 px-8 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="i-heroicons-document-text" class="mr-3 text-xl" />
+              <UIcon name="file-text" class="mr-3 text-xl" />
               Document Information
             </h3>
           </div>
@@ -312,7 +312,7 @@
               <div class="bg-gradient-to-br from-emerald-50 to-teal-50 p-6 rounded-xl border border-emerald-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-document" class="text-white text-lg" />
+                    <UIcon name="file" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-emerald-800">Document Type</h4>
                 </div>
@@ -327,7 +327,7 @@
               <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-photo" class="text-white text-lg" />
+                    <UIcon name="photo" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-amber-800">Document Photo</h4>
                 </div>
@@ -341,14 +341,14 @@
                       @error="handleImageError"
                     />
                     <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 rounded-xl transition-all duration-200 flex items-center justify-center pointer-events-none">
-                      <UIcon name="i-heroicons-magnifying-glass-plus" class="text-white text-2xl opacity-0 hover:opacity-100 transition-opacity" />
+                      <UIcon name="search-plus" class="text-white text-2xl opacity-0 hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
                   <p class="text-sm text-amber-600 mt-3 font-medium">Click to view full size</p>
                 </div>
                 <div v-else class="text-center py-8">
                   <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <UIcon name="i-heroicons-photo" class="text-amber-500 text-2xl" />
+                    <UIcon name="photo" class="text-amber-500 text-2xl" />
                   </div>
                   <p class="text-amber-600 font-medium">No document photo uploaded</p>
                   <p class="text-amber-500 text-sm mt-1">Document photo will appear here when uploaded</p>
@@ -362,7 +362,7 @@
         <div v-if="technicianPhotos.length > 0 || report.technician_photos_notes" class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="i-heroicons-camera" class="mr-3 text-xl" />
+              <UIcon name="camera" class="mr-3 text-xl" />
               Technician Photo Documentation
             </h3>
           </div>
@@ -372,7 +372,7 @@
               <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-document-text" class="text-white text-lg" />
+                    <UIcon name="file-text" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-amber-800">Progress Notes</h4>
                 </div>
@@ -384,7 +384,7 @@
             <div v-if="technicianPhotos.length > 0" class="mb-6">
               <div class="flex items-center justify-between mb-4">
                 <h4 class="text-lg font-semibold text-gray-800 flex items-center">
-                  <UIcon name="i-heroicons-photo" class="mr-2 text-amber-600" />
+                  <UIcon name="photo" class="mr-2 text-amber-600" />
                   Progress Photos ({{ technicianPhotos.length }})
                 </h4>
                 <div class="text-sm text-gray-500">
@@ -406,12 +406,12 @@
                     @error="handleTechnicianPhotoError"
                   />
                   <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
-                    <UIcon name="i-heroicons-eye" class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xl" />
+                    <UIcon name="eye" class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xl" />
                   </div>
                   <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-2">
                     <div class="flex justify-between items-center">
                       <span>Photo {{ index + 1 }}</span>
-                      <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-3 h-3" />
+                      <UIcon name="arrow-top-right-on-square" class="w-3 h-3" />
                     </div>
                   </div>
                 </div>
@@ -421,7 +421,7 @@
             <!-- No Photos State -->
             <div v-else class="text-center py-8">
               <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <UIcon name="i-heroicons-camera" class="text-amber-500 text-2xl" />
+                <UIcon name="camera" class="text-amber-500 text-2xl" />
               </div>
               <p class="text-amber-600 font-medium">No technician photos uploaded</p>
               <p class="text-amber-500 text-sm mt-1">Technician progress photos will appear here when uploaded</p>
@@ -433,7 +433,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-emerald-500 to-teal-500 px-8 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="i-heroicons-shopping-bag" class="mr-3 text-xl" />
+              <UIcon name="shopping-bag" class="mr-3 text-xl" />
               Product Package Information
             </h3>
           </div>
@@ -444,7 +444,7 @@
               <div class="bg-gradient-to-br from-emerald-50 to-teal-50 p-6 rounded-xl border border-emerald-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-shopping-bag" class="text-white text-lg" />
+                    <UIcon name="shopping-bag" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-emerald-800">Package Details</h4>
                 </div>
@@ -470,7 +470,7 @@
               <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-bolt" class="text-white text-lg" />
+                    <UIcon name="bolt" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-blue-800">Speed Configuration</h4>
                 </div>
@@ -501,7 +501,7 @@
               <div class="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-document-text" class="text-white text-lg" />
+                    <UIcon name="file-text" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-purple-800">Package Summary</h4>
                 </div>
@@ -533,7 +533,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-purple-500 to-indigo-500 px-8 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="i-heroicons-cpu-chip" class="mr-3 text-xl" />
+              <UIcon name="cpu-chip" class="mr-3 text-xl" />
               Network Device Information
             </h3>
           </div>
@@ -543,7 +543,7 @@
               <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-cpu-chip" class="text-white text-lg" />
+                    <UIcon name="cpu-chip" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-purple-800">Router Information</h4>
                 </div>
@@ -571,7 +571,7 @@
               <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-xl border border-indigo-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-wifi" class="text-white text-lg" />
+                    <UIcon name="wifi" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-indigo-800">Network Configuration</h4>
                 </div>
@@ -599,7 +599,7 @@
               <div class="bg-gradient-to-br from-cyan-50 to-cyan-100 p-6 rounded-xl border border-cyan-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-globe-alt" class="text-white text-lg" />
+                    <UIcon name="globe-alt" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-cyan-800">Network Addresses</h4>
                 </div>
@@ -619,7 +619,7 @@
               <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl border border-orange-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-signal" class="text-white text-lg" />
+                    <UIcon name="signal" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-orange-800">Device Status</h4>
                 </div>
@@ -651,7 +651,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-orange-500 to-red-500 px-8 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="i-heroicons-wrench-screwdriver" class="mr-3 text-xl" />
+              <UIcon name="wrench" class="mr-3 text-xl" />
               Customer Service Information
             </h3>
           </div>
@@ -661,7 +661,7 @@
               <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl border border-orange-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-user-circle" class="text-white text-lg" />
+                    <UIcon name="user-circle" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-orange-800">User Account</h4>
                 </div>
@@ -691,7 +691,7 @@
                       class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-lg"
                       :disabled="!report.ip_static"
                     >
-                      <UIcon name="i-heroicons-computer-desktop" class="mr-2" />
+                      <UIcon name="computer-desktop" class="mr-2" />
                       Remote Router Access
                     </UButton>
                     <p class="text-xs text-orange-600 mt-1 text-center">
@@ -705,7 +705,7 @@
               <div class="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-xl border border-red-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-cable" class="text-white text-lg" />
+                    <UIcon name="cable" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-red-800">Cable Information</h4>
                 </div>
@@ -735,7 +735,7 @@
               <div v-if="report.service_notes" class="bg-gradient-to-br from-pink-50 to-pink-100 p-6 rounded-xl border border-pink-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-document-text" class="text-white text-lg" />
+                    <UIcon name="file-text" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-pink-800">Service Notes</h4>
                 </div>
@@ -749,7 +749,7 @@
         <div v-if="report.installation_team_name || report.installation_team_phone" class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-indigo-500 to-purple-500 px-8 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="i-heroicons-users" class="mr-3 text-xl" />
+              <UIcon name="users" class="mr-3 text-xl" />
               Installation Team Information
             </h3>
           </div>
@@ -758,7 +758,7 @@
               <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-xl border border-indigo-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-user-group" class="text-white text-lg" />
+                    <UIcon name="user-group" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-indigo-800">Team Name</h4>
                 </div>
@@ -767,7 +767,7 @@
               <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-phone" class="text-white text-lg" />
+                    <UIcon name="phone" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-purple-800">Team Phone</h4>
                 </div>
@@ -781,7 +781,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-gray-600 to-gray-700 px-8 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="i-heroicons-clock" class="mr-3 text-xl" />
+              <UIcon name="clock" class="mr-3 text-xl" />
               Timestamps
             </h3>
           </div>
@@ -790,7 +790,7 @@
               <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-calendar-days" class="text-white text-lg" />
+                    <UIcon name="calendar-days" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-gray-800">Created At</h4>
                 </div>
@@ -799,7 +799,7 @@
               <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="i-heroicons-pencil-square" class="text-white text-lg" />
+                    <UIcon name="pencil-square" class="text-white text-lg" />
                   </div>
                   <h4 class="text-lg font-semibold text-gray-800">Last Updated</h4>
                 </div>
@@ -818,13 +818,13 @@
           <div class="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-4 -m-6 mb-6">
             <div class="flex items-center justify-between">
               <h3 class="text-xl font-bold text-white flex items-center">
-                <UIcon name="i-heroicons-photo" class="mr-3 text-xl" />
+                <UIcon name="photo" class="mr-3 text-xl" />
                 Document Photo - {{ report?.document_type || 'Document' }}
               </h3>
               <UButton
                 color="white"
                 variant="ghost"
-                icon="i-heroicons-x-mark"
+                icon="x"
                 @click="() => { console.log('Modal close button clicked'); showDocumentModal = false; }"
                 class="text-white hover:bg-white/20"
               />
@@ -879,7 +879,7 @@
               @click="showDocumentModal = false"
               size="lg"
             >
-              <UIcon name="i-heroicons-x-mark" class="mr-2" />
+              <UIcon name="x" class="mr-2" />
               Close
             </UButton>
             <UButton
@@ -887,7 +887,7 @@
               @click="downloadDocumentPhoto"
               size="lg"
             >
-              <UIcon name="i-heroicons-arrow-down-tray" class="mr-2" />
+              <UIcon name="download" class="mr-2" />
               Download
             </UButton>
           </div>
@@ -902,7 +902,7 @@
           <div class="flex justify-between items-center">
             <h3 class="text-lg font-semibold">Technician Photo {{ selectedTechnicianPhotoIndex + 1 }}</h3>
             <UButton @click="showTechnicianPhotoModal = false" variant="ghost" size="sm">
-              <UIcon name="i-heroicons-x-mark" />
+              <UIcon name="x" />
             </UButton>
           </div>
         </template>
@@ -919,13 +919,13 @@
           
           <!-- Loading state -->
           <div v-if="!technicianPhotoModalLoaded && selectedTechnicianPhoto" class="text-center p-8">
-            <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl text-amber-600 mx-auto mb-4" />
+            <UIcon name="refresh-cw" class="animate-spin text-2xl text-amber-600 mx-auto mb-4" />
             <p class="text-gray-600">Loading photo...</p>
           </div>
           
           <!-- Error state -->
           <div v-if="technicianPhotoModalError" class="text-center p-8 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300">
-            <UIcon name="i-heroicons-exclamation-triangle" class="text-2xl text-red-500 mx-auto mb-4" />
+            <UIcon name="alert-triangle" class="text-2xl text-red-500 mx-auto mb-4" />
             <p class="text-lg text-gray-600 mb-2">Photo could not be loaded</p>
             <p class="text-sm text-gray-500">The image may be corrupted or the path may be incorrect.</p>
           </div>
@@ -939,7 +939,7 @@
               @click="showTechnicianPhotoModal = false"
               size="lg"
             >
-              <UIcon name="i-heroicons-x-mark" class="mr-2" />
+              <UIcon name="x" class="mr-2" />
               Close
             </UButton>
             <UButton
@@ -948,7 +948,7 @@
               size="lg"
               :disabled="!selectedTechnicianPhoto"
             >
-              <UIcon name="i-heroicons-arrow-down-tray" class="mr-2" />
+              <UIcon name="download" class="mr-2" />
               Download
             </UButton>
           </div>
@@ -963,14 +963,14 @@
            <div class="flex items-center justify-between bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 p-4 -m-4 mb-4 rounded-t-lg">
              <h3 class="text-xl font-bold text-red-700 dark:text-red-300 flex items-center">
                <div class="bg-red-500 p-3 rounded-xl mr-4 shadow-lg">
-                 <UIcon name="i-heroicons-trash" class="w-6 h-6 text-white" />
+                 <UIcon name="trash-2" class="w-6 h-6 text-white" />
                </div>
                Delete Installation Report
              </h3>
              <UButton
                color="gray"
                variant="ghost"
-               icon="i-heroicons-x-mark"
+               icon="x"
                @click="closeDeleteModal"
                :disabled="deleting"
                class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -983,7 +983,7 @@
            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-5 border-2 border-blue-200 dark:border-blue-700">
              <div class="flex items-center gap-4">
                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
-                 <UIcon name="i-heroicons-user" class="text-white text-2xl" />
+                 <UIcon name="user" class="text-white text-2xl" />
                </div>
                <div>
                  <h4 class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ report?.customer_name || 'Unknown Customer' }}</h4>
@@ -998,7 +998,7 @@
            <div class="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/30 dark:to-pink-900/30 border-2 border-red-300 dark:border-red-600 rounded-xl p-6 shadow-lg">
              <div class="flex items-start">
                <div class="bg-red-500 p-3 rounded-full mr-4 flex-shrink-0 shadow-lg">
-                 <UIcon name="i-heroicons-exclamation-triangle" class="text-white text-2xl" />
+                 <UIcon name="alert-triangle" class="text-white text-2xl" />
                </div>
                <div class="flex-1">
                  <h5 class="text-xl font-bold text-red-800 dark:text-red-200 mb-3">⚠️ CRITICAL WARNING</h5>
@@ -1007,32 +1007,32 @@
                  </p>
                  <div class="bg-white dark:bg-gray-800 border-2 border-red-400 dark:border-red-500 rounded-lg p-4 shadow-inner">
                    <p class="text-red-800 dark:text-red-200 text-base font-bold mb-3 flex items-center">
-                     <UIcon name="i-heroicons-list-bullet" class="w-5 h-5 mr-2" />
+                     <UIcon name="list-bullet" class="w-5 h-5 mr-2" />
                      This action will:
                    </p>
                    <ul class="text-red-700 dark:text-red-300 text-sm list-disc list-inside space-y-2 font-medium">
                      <li class="flex items-start">
-                       <UIcon name="i-heroicons-trash" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                       <UIcon name="trash-2" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
                        <strong>Delete the installation report and clean up all Mikrotik RouterOS configurations</strong>
                      </li>
                      <li class="flex items-start">
-                       <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                       <UIcon name="refresh-cw" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
                        <strong>Update the MAC address status back to "in_stock"</strong>
                      </li>
                      <li class="flex items-start">
-                       <UIcon name="i-heroicons-user-group" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                       <UIcon name="user-group" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
                        <strong>Remove all related technician assignments and asset transactions</strong>
                      </li>
                      <li class="flex items-start">
-                       <UIcon name="i-heroicons-cpu-chip" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                       <UIcon name="cpu-chip" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
                        <strong>Delete all associated network devices, cables, and images</strong>
                      </li>
                      <li class="flex items-start">
-                       <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                       <UIcon name="refresh-cw" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
                        <strong>Delete all associated recurring invoices</strong>
                      </li>
                      <li class="flex items-start">
-                       <UIcon name="i-heroicons-cog-6-tooth" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                       <UIcon name="settings-6-tooth" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
                        <strong>Remove Mikrotik configurations: queue rules, hotspot bindings, netwatch entries, schedulers, scripts, and DHCP leases</strong>
                      </li>
                    </ul>
@@ -1045,7 +1045,7 @@
            <div class="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-700 dark:to-slate-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl p-5 shadow-lg">
              <h6 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
                <div class="bg-gray-500 p-2 rounded-lg mr-3">
-                 <UIcon name="i-heroicons-information-circle" class="w-5 h-5 text-white" />
+                 <UIcon name="info" class="w-5 h-5 text-white" />
                </div>
                Impact Summary
              </h6>
@@ -1091,7 +1091,7 @@
                    and all associated data.
                  </p>
                  <p class="text-sm text-red-600 dark:text-red-400 font-semibold mt-2 flex items-center">
-                   <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 mr-1" />
+                   <UIcon name="alert-triangle" class="w-4 h-4 mr-1" />
                    This action CANNOT be undone!
                  </p>
                </div>
@@ -1108,7 +1108,7 @@
                :disabled="deleting"
                class="w-full sm:w-auto border-2 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold"
              >
-               <UIcon name="i-heroicons-x-mark" class="mr-2" />
+               <UIcon name="x" class="mr-2" />
                Cancel
              </UButton>
              <UButton
@@ -1120,7 +1120,7 @@
                :disabled="!deleteConfirmationChecked"
                class="w-full sm:w-auto bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 border-2 border-red-500 shadow-lg font-bold"
              >
-               <UIcon name="i-heroicons-trash" class="mr-2" />
+               <UIcon name="trash-2" class="mr-2" />
                {{ deleting ? 'Deleting...' : 'Delete Installation Report' }}
              </UButton>
            </div>
@@ -1135,6 +1135,7 @@ import { ref, watch, onMounted, computed } from 'vue';
 import { customerAdminApi } from "@/api/admin/customer";
 import type { CompleteInstallationReportWithTechnicianPhotosResponse, InstallationTechnicianTeamResponse } from "@/types/requests/installation-report";
 import { useNavigationContext } from "@/composables/useNavigationContext";
+import LucideIcon from '@/components/LucideIcon.vue';
 
 // Apply auth middleware
 definePageMeta({
@@ -1384,26 +1385,29 @@ function getDocumentPhotoUrl(documentPhoto: string | undefined) {
     return documentPhoto;
   }
 
+  // Get the API host from environment
+  const apiHost = useApiHost();
+
   // Normalize the path by removing any duplicated upload directories
   let normalizedPath = normalizeDocumentPhotoPath(documentPhoto);
   console.log('getDocumentPhotoUrl: Normalized path:', documentPhoto, '->', normalizedPath);
 
   // If it starts with uploads/, add the backend base URL
   if (normalizedPath.startsWith('uploads/')) {
-    const url = `http://localhost:3001/${normalizedPath}`;
+    const url = `${apiHost}/${normalizedPath}`;
     console.log('getDocumentPhotoUrl: Generated URL:', url);
     return url;
   }
 
   // If it's just a filename, assume it's in uploads/installations/documents/
   if (!normalizedPath.includes('/')) {
-    const url = `http://localhost:3001/uploads/installations/documents/${normalizedPath}`;
+    const url = `${apiHost}/uploads/installations/documents/${normalizedPath}`;
     console.log('getDocumentPhotoUrl: Generated URL for filename:', url);
     return url;
   }
 
   // Default: prepend backend URL
-  const url = `http://localhost:3001/${normalizedPath}`;
+  const url = `${apiHost}/${normalizedPath}`;
   console.log('getDocumentPhotoUrl: Generated default URL:', url);
   return url;
 }
@@ -1580,9 +1584,9 @@ function getTechnicianPhotoUrl(photoPath: string) {
     return photoPath;
   }
   
-  // Construct the full URL using the same pattern as document photos
-  const baseUrl = 'http://localhost:3001'; // Use the same backend URL as document photos
-  return `${baseUrl}/${photoPath}`;
+  // Get the API host from environment
+  const apiHost = useApiHost();
+  return `${apiHost}/${photoPath}`;
 }
 
 function openTechnicianPhotoModal(photo: string, index: number) {
@@ -1604,7 +1608,7 @@ function handleTechnicianPhotoError(event: Event) {
     errorMsg.className = 'technician-photo-error text-center p-4 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300';
     errorMsg.innerHTML = `
       <div class="text-gray-500 mb-2">
-        <UIcon name="i-heroicons-exclamation-triangle" class="w-8 h-8 mx-auto mb-2" />
+        <UIcon name="alert-triangle" class="w-8 h-8 mx-auto mb-2" />
       </div>
       <p class="text-sm text-gray-600">Photo could not be loaded</p>
     `;

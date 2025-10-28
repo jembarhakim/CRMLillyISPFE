@@ -71,8 +71,6 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
       'tickets:view',
       'tickets:manage',
       'tickets:create',
-      'trouble_reports:view',
-      'trouble_reports:manage'
     ]
   },
   [ROLES.NOC]: {
@@ -85,7 +83,6 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
       'report:view',
       'tickets:view',
       'tickets:manage',
-      'trouble_reports:view'
     ]
   },
   [ROLES.TECHNICIAN]: {
@@ -97,7 +94,6 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
       'customer:view',
       'tickets:view',
       'tickets:manage',
-      'trouble_reports:view'
     ]
   },
   [ROLES.FINANCE]: {
@@ -117,91 +113,84 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
 export const MAIN_MENU: MenuItem[] = [
   {
     label: 'Dashboard',
-    icon: 'i-heroicons-home',
+    icon: 'heroicons:home',
     link: '/dashboard',
     feature: 'dashboard',
     description: 'Main dashboard overview'
   },
   {
     label: 'Customer',
-    icon: 'i-heroicons-user-circle-16-solid',
+    icon: 'heroicons:user-circle',
     link: '/dashboard/customer',
     feature: 'customer',
     description: 'Customer management'
   },
   {
     label: 'Area',
-    icon: 'i-heroicons-map',
+    icon: 'heroicons:map',
     link: '/dashboard/area',
     feature: 'area',
     description: 'Geographic area management'
   },
   {
     label: 'Report',
-    icon: 'i-heroicons-book-open-solid',
+    icon: 'heroicons:document-text',
     link: '/dashboard/report',
     feature: 'report',
     description: 'System reports and analytics'
   },
   {
     label: 'Internet Package',
-    icon: 'i-heroicons-wifi-16-solid',
+    icon: 'heroicons:signal',
     link: '/dashboard/internet-package',
     feature: 'internet_package',
     description: 'Internet package management'
   },
   {
     label: 'Assets',
-    icon: 'i-heroicons-arrow-down-on-square-stack',
+    icon: 'heroicons:archive-box',
     link: '/dashboard/asset',
     feature: 'assets',
     description: 'Asset inventory management'
   },
   {
     label: 'Company',
-    icon: 'i-heroicons-building-office-16-solid',
+    icon: 'heroicons:building-office',
     link: '/dashboard/companies',
     feature: 'company',
     description: 'Company management'
   },
   {
     label: 'Invoice',
-    icon: 'i-heroicons-document-currency-dollar-16-solid',
+    icon: 'heroicons:currency-dollar',
     link: '/dashboard/invoice',
     feature: 'invoice',
     description: 'Invoice management'
   },
   {
     label: 'Recurring Invoices',
-    icon: 'i-heroicons-arrow-path-16-solid',
+    icon: 'heroicons:arrow-path',
     link: '/dashboard/recurring-invoice',
     feature: 'invoice',
     description: 'Recurring invoice management'
   },
   {
     label: 'Transaction',
-    icon: 'i-heroicons-document-currency-dollar-16-solid',
+    icon: 'heroicons:credit-card',
     link: '/dashboard/transaction',
     feature: 'transaction',
     description: 'Financial transactions'
   },
   {
     label: 'Tickets',
-    icon: 'i-heroicons-exclamation-triangle-16-solid',
+    icon: 'heroicons:ticket',
     link: '/dashboard/tickets',
     feature: 'tickets',
     description: 'Support ticket management'
   },
   {
-    label: 'Trouble Reports',
-    icon: 'i-heroicons-exclamation-triangle-16-solid',
-    link: '/dashboard/trouble-reports',
-    feature: 'trouble_reports',
-    description: 'Trouble report management'
-  },
-  {
     label: 'User Management',
-    icon: 'i-heroicons-user-circle-16-solid',
+    icon: 'heroicons:users',
     link: '/dashboard/user-management',
     feature: 'user_management',
     description: 'User and role management'

@@ -9,8 +9,13 @@ const environments = {
     NUXT_PUBLIC_WA_HOST: 'http://localhost:3001'
   },
   production: {
-    NUXT_PUBLIC_API_HOST: 'https://crm-be-production-cfa1.up.railway.app',
-    NUXT_PUBLIC_WA_HOST: 'https://crm-be-production-cfa1.up.railway.app'
+    // VPS Production - Using domain or IP
+    NUXT_PUBLIC_API_HOST: 'http://api.rndpolije.lilly.net.id',
+    NUXT_PUBLIC_WA_HOST: 'http://api.rndpolije.lilly.net.id'
+    
+    // Alternative: If domain is not configured yet, use direct IP:
+    // NUXT_PUBLIC_API_HOST: 'http://103.148.18.190:3001',
+    // NUXT_PUBLIC_WA_HOST: 'http://103.148.18.190:3001'
   }
 };
 

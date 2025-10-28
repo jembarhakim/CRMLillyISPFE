@@ -7,7 +7,7 @@
           <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div class="flex items-center space-x-3 sm:space-x-4">
               <div class="bg-white/20 p-2 sm:p-3 rounded-xl">
-                <UIcon name="i-heroicons-wrench-screwdriver" class="text-white text-xl sm:text-2xl" />
+                <LucideIcon name="wrench" :size="24" class="text-white" />
               </div>
               <div>
                 <h1 class="text-lg sm:text-2xl font-bold text-white">Edit Installation Report</h1>
@@ -16,7 +16,7 @@
             </div>
             <UButton @click="$router.back()" variant="outline" color="white" 
                      class="border-white/30 text-white hover:bg-white/10 w-full sm:w-auto">
-              <UIcon name="i-heroicons-arrow-left" class="mr-2" />
+              <LucideIcon name="arrow-left" :size="16" class="mr-2" />
               Back
             </UButton>
           </div>
@@ -25,7 +25,7 @@
         <!-- Loading State -->
         <div v-if="loading" class="flex justify-center items-center py-12 sm:py-16">
           <div class="text-center">
-            <UIcon name="i-heroicons-arrow-path" class="animate-spin text-3xl sm:text-4xl text-emerald-500 mb-4" />
+            <LucideIcon name="rotate-ccw" :size="32" class="animate-spin text-emerald-500 mb-4" />
             <p class="text-gray-600 text-sm sm:text-base">Loading installation report...</p>
           </div>
         </div>
@@ -36,7 +36,7 @@
           <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-6 rounded-xl border border-blue-100">
             <div class="flex items-center mb-4 sm:mb-6">
               <div class="bg-blue-500 p-2 rounded-lg mr-2 sm:mr-3">
-                <UIcon name="i-heroicons-information-circle" class="text-white text-sm sm:text-lg" />
+                <LucideIcon name="info" :size="16" class="text-white" />
               </div>
               <h2 class="text-lg sm:text-xl font-bold text-gray-800">Basic Installation Information</h2>
             </div>
@@ -144,7 +144,7 @@
           <div class="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-100">
             <div class="flex items-center mb-6">
               <div class="bg-purple-500 p-2 rounded-lg mr-3">
-                <UIcon name="i-heroicons-users" class="text-white text-lg" />
+                <UIcon name="users" class="text-white text-lg" />
               </div>
               <h2 class="text-xl font-bold text-gray-800">Installation Team Information</h2>
             </div>
@@ -154,7 +154,7 @@
                    class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
                 <div class="flex justify-between items-center mb-2">
                   <h4 class="text-lg font-semibold text-gray-700 flex items-center">
-                    <UIcon name="i-heroicons-user" class="mr-2 text-purple-500" />
+                    <UIcon name="user" class="mr-2 text-purple-500" />
                     {{ member.technician?.name || 'Unknown Technician' }}
                     <span v-if="member.is_primary" class="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
                       Lead
@@ -178,7 +178,7 @@
               </div>
             </div>
             <div v-else class="text-center py-8 text-gray-500">
-              <UIcon name="i-heroicons-users" class="text-4xl mb-2" />
+              <UIcon name="users" class="text-4xl mb-2" />
               <p>No installation team members assigned</p>
             </div>
           </div>
@@ -187,7 +187,7 @@
           <div class="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-xl border border-orange-100">
             <div class="flex items-center mb-6">
               <div class="bg-orange-500 p-2 rounded-lg mr-3">
-                <UIcon name="i-heroicons-document-text" class="text-white text-lg" />
+                <UIcon name="file-text" class="text-white text-lg" />
               </div>
               <h2 class="text-xl font-bold text-gray-800">Document Information</h2>
             </div>
@@ -227,7 +227,7 @@
           <div class="bg-gradient-to-r from-cyan-50 to-blue-50 p-6 rounded-xl border border-cyan-100">
             <div class="flex items-center mb-6">
               <div class="bg-cyan-500 p-2 rounded-lg mr-3">
-                <UIcon name="i-heroicons-cpu-chip" class="text-white text-lg" />
+                <UIcon name="cpu-chip" class="text-white text-lg" />
               </div>
               <h2 class="text-xl font-bold text-gray-800">Network Device Configuration</h2>
             </div>
@@ -236,7 +236,7 @@
               <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-gray-700">Network Devices</h3>
                 <UButton @click="addNetworkDevice" size="sm" color="cyan" class="shadow-md">
-                  <UIcon name="i-heroicons-plus" class="mr-1" />
+                  <UIcon name="plus" class="mr-1" />
                   Add Device
                 </UButton>
               </div>
@@ -244,11 +244,11 @@
               <div v-for="(device, index) in state.network_devices" :key="index" class="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm">
                 <div class="flex justify-between items-center mb-4">
                   <h4 class="text-lg font-semibold text-gray-700 flex items-center">
-                    <UIcon name="i-heroicons-cpu-chip" class="mr-2 text-cyan-500" />
+                    <UIcon name="cpu-chip" class="mr-2 text-cyan-500" />
                     Network Device {{ index + 1 }}
                   </h4>
                   <UButton @click="removeNetworkDevice(index)" size="sm" color="red" variant="outline" class="hover:bg-red-50">
-                    <UIcon name="i-heroicons-trash" />
+                    <UIcon name="trash-2" />
                   </UButton>
                 </div>
               
@@ -302,7 +302,7 @@
                       class="custom-select"
                     />
                     <div v-if="device.assets_id && availableAssetItems[device.assets_id] && availableAssetItems[device.assets_id].length === 0" class="text-xs text-red-500 mt-1 flex items-center">
-                      <UIcon name="i-heroicons-exclamation-triangle" class="w-3 h-3 mr-1" />
+                      <UIcon name="alert-triangle" class="w-3 h-3 mr-1" />
                       No available devices for this asset
                     </div>
                     <div v-else-if="device.assets_id && availableAssetItems[device.assets_id] && availableAssetItems[device.assets_id].length > 0" class="text-xs text-green-600 mt-1">
@@ -345,7 +345,7 @@
           <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-100">
             <div class="flex items-center mb-6">
               <div class="bg-green-500 p-2 rounded-lg mr-3">
-                <UIcon name="i-heroicons-wifi" class="text-white text-lg" />
+                <UIcon name="wifi" class="text-white text-lg" />
               </div>
               <h2 class="text-xl font-bold text-gray-800">Customer Services</h2>
             </div>
@@ -354,7 +354,7 @@
               <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-gray-700">Customer Services</h3>
                 <UButton @click="addCustomerService" size="sm" color="green" class="shadow-md">
-                  <UIcon name="i-heroicons-plus" class="mr-1" />
+                  <UIcon name="plus" class="mr-1" />
                   Add Service
                 </UButton>
               </div>
@@ -362,11 +362,11 @@
               <div v-for="(service, index) in state.customer_services" :key="index" class="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm">
                 <div class="flex justify-between items-center mb-4">
                   <h4 class="text-lg font-semibold text-gray-700 flex items-center">
-                    <UIcon name="i-heroicons-wifi" class="mr-2 text-green-500" />
+                    <UIcon name="wifi" class="mr-2 text-green-500" />
                     Customer Service {{ index + 1 }}
                   </h4>
                   <UButton @click="removeCustomerService(index)" size="sm" color="red" variant="outline" class="hover:bg-red-50">
-                    <UIcon name="i-heroicons-trash" />
+                    <UIcon name="trash-2" />
                   </UButton>
                 </div>
                 
@@ -417,7 +417,7 @@
           <div class="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-xl border border-yellow-100">
             <div class="flex items-center mb-6">
               <div class="bg-yellow-500 p-2 rounded-lg mr-3">
-                <UIcon name="i-heroicons-cable" class="text-white text-lg" />
+                <UIcon name="cable" class="text-white text-lg" />
               </div>
               <h2 class="text-xl font-bold text-gray-800">Cables</h2>
             </div>
@@ -426,7 +426,7 @@
               <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-gray-700">Cables</h3>
                 <UButton @click="addCable" size="sm" color="yellow" class="shadow-md">
-                  <UIcon name="i-heroicons-plus" class="mr-1" />
+                  <UIcon name="plus" class="mr-1" />
                   Add Cable
                 </UButton>
               </div>
@@ -434,11 +434,11 @@
               <div v-for="(cable, index) in state.cables" :key="index" class="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm">
                 <div class="flex justify-between items-center mb-4">
                   <h4 class="text-lg font-semibold text-gray-700 flex items-center">
-                    <UIcon name="i-heroicons-cable" class="mr-2 text-yellow-500" />
+                    <UIcon name="cable" class="mr-2 text-yellow-500" />
                     Cable {{ index + 1 }}
                   </h4>
                   <UButton @click="removeCable(index)" size="sm" color="red" variant="outline" class="hover:bg-red-50">
-                    <UIcon name="i-heroicons-trash" />
+                    <UIcon name="trash-2" />
                   </UButton>
                 </div>
                 
@@ -474,7 +474,7 @@
           <div class="bg-gradient-to-r from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-100">
             <div class="flex items-center mb-6">
               <div class="bg-amber-500 p-2 rounded-lg mr-3">
-                <UIcon name="i-heroicons-camera" class="text-white text-lg" />
+                <UIcon name="camera" class="text-white text-lg" />
               </div>
               <h2 class="text-xl font-bold text-gray-800">Technician Photo Documentation</h2>
             </div>
@@ -508,7 +508,7 @@
                     class="w-full h-32 object-cover"
                   />
                   <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
-                    <UIcon name="i-heroicons-eye" class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xl" />
+                    <UIcon name="eye" class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xl" />
                   </div>
                   <UButton
                     @click.stop="removeTechnicianPhoto(index)"
@@ -517,7 +517,7 @@
                     variant="solid"
                     class="absolute -top-2 -right-2 shadow-lg"
                   >
-                    <UIcon name="i-heroicons-x-mark" />
+                    <UIcon name="x" />
                   </UButton>
                   <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-2">
                     <div class="flex justify-between items-center">
@@ -535,7 +535,7 @@
                   @click="triggerTechnicianPhotoUpload"
                 >
                   <div class="text-center">
-                    <UIcon name="i-heroicons-plus" class="text-gray-400 text-3xl mb-2" />
+                    <UIcon name="plus" class="text-gray-400 text-3xl mb-2" />
                     <p class="text-sm text-gray-500 font-medium">Add Photo</p>
                     <p class="text-xs text-gray-400">{{ state.technician_photo_previews.length }}/10</p>
                   </div>
@@ -553,7 +553,7 @@
               
               <div v-if="state.technician_photo_previews.length > 0" class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                 <div class="flex items-center text-sm text-amber-800">
-                  <UIcon name="i-heroicons-information-circle" class="mr-2" />
+                  <UIcon name="info" class="mr-2" />
                   <span>
                     {{ state.technician_photo_previews.length }} photo(s) uploaded. 
                     Total size: {{ formatFileSize(totalTechnicianPhotoSize) }}
@@ -567,7 +567,7 @@
           <div class="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100">
             <div class="flex items-center mb-6">
               <div class="bg-indigo-500 p-2 rounded-lg mr-3">
-                <UIcon name="i-heroicons-photo" class="text-white text-lg" />
+                <UIcon name="photo" class="text-white text-lg" />
               </div>
               <h2 class="text-xl font-bold text-gray-800">Installation Images</h2>
             </div>
@@ -586,7 +586,7 @@
                     class="w-full h-32 object-cover"
                   />
                   <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
-                    <UIcon name="i-heroicons-eye" class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xl" />
+                    <UIcon name="eye" class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xl" />
                   </div>
                   <UButton
                     @click.stop="removeImage(index)"
@@ -595,7 +595,7 @@
                     variant="solid"
                     class="absolute -top-2 -right-2 shadow-lg"
                   >
-                    <UIcon name="i-heroicons-x-mark" />
+                    <UIcon name="x" />
                   </UButton>
                 </div>
                 
@@ -605,7 +605,7 @@
                   @click="triggerFileUpload"
                 >
                   <div class="text-center">
-                    <UIcon name="i-heroicons-plus" class="text-gray-400 text-3xl mb-2" />
+                    <UIcon name="plus" class="text-gray-400 text-3xl mb-2" />
                     <p class="text-sm text-gray-500 font-medium">Add Image</p>
                   </div>
                 </div>
@@ -627,12 +627,12 @@
             <div class="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
               <UButton @click="$router.back()" variant="outline" color="gray" size="sm" 
                        class="w-full sm:w-auto px-6 sm:px-8">
-                <UIcon name="i-heroicons-x-mark" class="mr-2" />
+                <UIcon name="x" class="mr-2" />
                 Cancel
               </UButton>
               <UButton type="submit" :loading="isSubmitting" color="emerald" size="sm" 
                        class="w-full sm:w-auto px-6 sm:px-8 shadow-lg">
-                <UIcon name="i-heroicons-check" class="mr-2" />
+                <UIcon name="check" class="mr-2" />
                 Update Installation Report
               </UButton>
             </div>
@@ -649,7 +649,7 @@
           <div class="flex justify-between items-center">
             <h3 class="text-lg font-semibold">Image Preview</h3>
             <UButton @click="state.showModal = false" variant="ghost" size="sm">
-              <UIcon name="i-heroicons-x-mark" />
+              <UIcon name="x" />
             </UButton>
           </div>
         </template>
@@ -671,7 +671,7 @@
           <div class="flex justify-between items-center">
             <h3 class="text-lg font-semibold">Technician Photo Preview</h3>
             <UButton @click="state.showTechnicianModal = false" variant="ghost" size="sm">
-              <UIcon name="i-heroicons-x-mark" />
+              <UIcon name="x" />
             </UButton>
           </div>
         </template>
@@ -697,6 +697,7 @@ import { assetItemAdminApi } from '@/api/admin/asset-item'
 import { userManagementAdminApi } from '@/api/admin/user-management'
 import { uploadFileAdminApi } from '@/api/admin/file-upload'
 import type { UpdateCompleteInstallationReportRequest } from '@/types/requests/installation-report'
+import LucideIcon from '@/components/LucideIcon.vue'
 // Remove the custom compression import - we'll use the existing compression function
 
 // Apply auth middleware

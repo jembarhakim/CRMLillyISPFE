@@ -64,8 +64,10 @@
           <div
             class="toggle-header hidden lg:flex justify-center items-center p-4 border-b cursor-pointer hover:bg-gray-100 transition-colors duration-200 bg-white min-h-[60px] z-20"
             @click="toggleSidebar" role="button" aria-label="Toggle sidebar" title="Toggle sidebar">
-            <UIcon :name="'i-line-md-arrow-open-right'"
-              class="w-6 h-6 transition-colors duration-200" 
+            <LucideIcon 
+              name="chevron-right"
+              :size="24"
+              class="transition-colors duration-200" 
               :class="{ 'rotate-180': !showSidebar }"
               style="color: black !important; fill: black !important; stroke: black !important;" />
           </div>
@@ -80,10 +82,13 @@
                     : 'hover:bg-gray-100 text-gray-700'
                 ]" 
                 @click="navigateTo(item.link)">
-                <UIcon :name="item.icon" class="w-6 h-6 transition-colors duration-200" 
-                  :style="isActiveMenuItem(item.link) 
-                    ? 'color: #1d4ed8 !important; fill: #1d4ed8 !important; stroke: #1d4ed8 !important;' 
-                    : 'color: black !important; fill: black !important; stroke: black !important;'" />
+                <LucideIcon 
+                  :name="getIconName(item.icon)" 
+                  :size="20"
+                  class="transition-colors duration-200" 
+                  :class="isActiveMenuItem(item.link) 
+                    ? 'text-blue-600' 
+                    : 'text-gray-600'" />
                 <span class="font-medium transition-colors duration-200"
                   :class="isActiveMenuItem(item.link) ? 'text-blue-800' : 'text-gray-800'">
                   {{ item.label }}
@@ -110,7 +115,7 @@
                 <li v-for="(item, index) in ProfileDropdown[0]" :key="'profile-' + index"
                   class="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-100 text-gray-700"
                   @click="() => { item.click(); showMobileSidebar = false }">
-                                     <UIcon name="i-line-md-account" class="w-6 h-6" style="color: black !important; fill: black !important; stroke: black !important;" />
+                  <LucideIcon name="user-circle" :size="20" class="text-gray-600" />
                   <span class="font-medium text-gray-800">{{ item.label }}</span>
                 </li>
               </ul>
@@ -142,10 +147,19 @@
   </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useRolePermissions } from '@/composables/useRolePermissions'
+import LucideIcon from '@/components/LucideIcon.vue'
+
+// Convert heroicons:icon-name to icon-name for LucideIcon
+const getIconName = (iconName: string) => {
+  if (iconName.startsWith('heroicons:')) {
+    return iconName.replace('heroicons:', '')
+  }
+  return iconName
+}
 
 // Type definitions
 interface ProfileDropdownItem {
@@ -401,220 +415,47 @@ function handleLogoutCancel() {
     background: white !important;
   }
 
-  /* Make ALL icons black for visibility on desktop - GLOBAL OVERRIDE */
-  .sidebar-fix .flex-1 ul li .w-6,
-  .sidebar-fix .flex-1 ul li .w-6 *,
-  .sidebar-fix .flex-1 ul li svg,
-  .sidebar-fix .flex-1 ul li svg *,
-  .sidebar-fix .flex-1 ul li i,
-  .sidebar-fix .flex-1 ul li i *,
-  .sidebar-fix .flex-1 ul li [class*="i-"],
-  .sidebar-fix .flex-1 ul li [class*="i-"] *,
-  .sidebar-fix .flex-1 ul li [class*="i-heroicons"],
-  .sidebar-fix .flex-1 ul li [class*="i-heroicons"] *,
-  .sidebar-fix .flex-1 ul li [class*="i-line-md"],
-  .sidebar-fix .flex-1 ul li [class*="i-line-md"] *,
-  /* Target UIcon component specifically */
-  .sidebar-fix .flex-1 ul li .u-icon,
-  .sidebar-fix .flex-1 ul li .u-icon *,
-  .sidebar-fix .flex-1 ul li [data-icon],
-  .sidebar-fix .flex-1 ul li [data-icon] * {
-    color: black !important;
-    fill: black !important;
-    stroke: black !important;
+  /* Clean icon styling for desktop - remove excessive overrides */
+  .sidebar-fix .flex-1 ul li svg {
+    color: #374151;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
   }
   
-  /* NUCLEAR OPTION - Force ALL elements in sidebar to be black */
-  .sidebar-fix .flex-1 ul li *,
-  .sidebar-fix .flex-1 ul li svg,
-  .sidebar-fix .flex-1 ul li svg *,
-  .sidebar-fix .flex-1 ul li i,
-  .sidebar-fix .flex-1 ul li i *,
-  .sidebar-fix .flex-1 ul li span,
-  .sidebar-fix .flex-1 ul li div,
-  .sidebar-fix .flex-1 ul li button,
-  .sidebar-fix .flex-1 ul li a {
-    color: black !important;
-    fill: black !important;
-    stroke: black !important;
+  /* Clean text styling for desktop */
+  .sidebar-fix .flex-1 ul li .text-gray-700,
+  .sidebar-fix .flex-1 ul li .text-gray-900,
+  .sidebar-fix .flex-1 ul li .text-white,
+  .sidebar-fix .flex-1 ul li .text-gray-500 {
+    color: #374151;
   }
-  
-  /* Target any element with icon-related classes */
-  .sidebar-fix .flex-1 ul li [class*="icon"],
-  .sidebar-fix .flex-1 ul li [class*="Icon"],
-  .sidebar-fix .flex-1 ul li [class*="i-"] {
-    color: black !important;
-    fill: black !important;
-    stroke: black !important;
-  }
-  
-  /* Force ALL elements in sidebar to be black on desktop */
-  .sidebar-fix .flex-1 ul li,
-  .sidebar-fix .flex-1 ul li * {
-    color: black !important;
-  }
-  
-     /* Override any existing color classes on desktop */
-   .sidebar-fix .flex-1 ul li .text-gray-700,
-   .sidebar-fix .flex-1 ul li .text-gray-900,
-   .sidebar-fix .flex-1 ul li .text-white,
-   .sidebar-fix .flex-1 ul li .text-gray-500 {
-     color: black !important;
-   }
    
-   /* Force the expand/collapse arrow icon to be black */
-   .sidebar-fix .toggle-header .i-line-md\\:arrow-open-right,
-   .sidebar-fix .toggle-header .i-line-md\\:arrow-close-left,
-   .sidebar-fix .toggle-header [class*="i-line-md:arrow"],
-   .sidebar-fix .toggle-header .iconify,
-   .sidebar-fix .toggle-header .text-gray-700,
-   .sidebar-fix .toggle-header .text-gray-900,
-   .sidebar-fix .toggle-header span[class*="i-line-md"],
-   .sidebar-fix .toggle-header span.iconify {
-     color: black !important;
-     fill: black !important;
-     stroke: black !important;
-   }
-   
-   /* NUCLEAR OPTION - Force ALL elements in toggle header to be black */
-   .sidebar-fix .toggle-header *,
-   .sidebar-fix .toggle-header span,
-   .sidebar-fix .toggle-header span * {
-     color: black !important;
-   }
-   
-   .sidebar-fix .toggle-header svg,
-   .sidebar-fix .toggle-header svg * {
-     fill: black !important;
-     stroke: black !important;
-   }
-   
-   /* VUE SCOPED OVERRIDE - Force icons to be black even with Vue scoped styles */
-   .sidebar-fix .toggle-header [data-v-c5ed0577],
-   .sidebar-fix .toggle-header [data-v-c5ed0577] *,
-   .sidebar-fix .toggle-header span[data-v-c5ed0577],
-   .sidebar-fix .toggle-header span[data-v-c5ed0577] * {
-     color: black !important;
-     fill: black !important;
-     stroke: black !important;
-   }
-   
-   /* Target the exact element structure from dev tools */
-   .sidebar-fix .toggle-header span.iconify.i-line-md\\:arrow-open-right,
-   .sidebar-fix .toggle-header span.iconify.i-line-md\\:arrow-close-left {
-     color: black !important;
-     fill: black !important;
-     stroke: black !important;
-   }
-   
-   /* Force the toggle icon to be black */
-   .sidebar-fix .toggle-header .iconify,
-   .sidebar-fix .toggle-header .iconify *,
-   .sidebar-fix .toggle-header span.iconify,
-   .sidebar-fix .toggle-header span.iconify *,
-   .sidebar-fix .toggle-header [class*="i-line-md"],
-   .sidebar-fix .toggle-header [class*="i-line-md"] * {
-     color: black !important;
-     fill: black !important;
-     stroke: black !important;
-   }
-   
-   /* NUCLEAR OPTION for toggle header */
-   .sidebar-fix .toggle-header *,
-   .sidebar-fix .toggle-header span,
-   .sidebar-fix .toggle-header span * {
-     color: black !important;
-   }
-   
-   .sidebar-fix .toggle-header svg,
-   .sidebar-fix .toggle-header svg * {
-     fill: black !important;
-     stroke: black !important;
-   }
-
-  /* Ensure icons are black in collapsed state - HEROICONS SPECIFIC */
-  .sidebar-fix.w-16 .flex-1 ul li .w-6,
-  .sidebar-fix.w-16 .flex-1 ul li .w-6 *,
-  .sidebar-fix.w-16 .flex-1 ul li svg,
-  .sidebar-fix.w-16 .flex-1 ul li svg *,
-  .sidebar-fix.w-16 .flex-1 ul li i,
-  .sidebar-fix.w-16 .flex-1 ul li i *,
-  .sidebar-fix.w-16 .flex-1 ul li [class*="i-"],
-  .sidebar-fix.w-16 .flex-1 ul li [class*="i-"] *,
-  .sidebar-fix.w-16 .flex-1 ul li [class*="i-heroicons"],
-  .sidebar-fix.w-16 .flex-1 ul li [class*="i-heroicons"] *,
-  .sidebar-fix.w-16 .flex-1 ul li [class*="i-line-md"],
-  .sidebar-fix.w-16 .flex-1 ul li [class*="i-line-md"] * {
-    color: black !important;
-    fill: black !important;
-    stroke: black !important;
-  }
-  
-  /* NUCLEAR OPTION for collapsed sidebar icons */
-  .sidebar-fix.w-16 .flex-1 ul li *,
-  .sidebar-fix.w-16 .flex-1 ul li span,
-  .sidebar-fix.w-16 .flex-1 ul li div,
-  .sidebar-fix.w-16 .flex-1 ul li button,
-  .sidebar-fix.w-16 .flex-1 ul li a {
-    color: black !important;
-  }
-  
-  .sidebar-fix.w-16 .flex-1 ul li svg,
-  .sidebar-fix.w-16 .flex-1 ul li svg * {
-    fill: black !important;
-    stroke: black !important;
-  }
-  
-  /* Force ALL elements in collapsed sidebar to be black */
-  .sidebar-fix.w-16 .flex-1 ul li,
-  .sidebar-fix.w-16 .flex-1 ul li * {
-    color: black !important;
-  }
-  
-  /* Target UIcon component specifically in collapsed state */
-  .sidebar-fix.w-16 .flex-1 ul li .u-icon,
-  .sidebar-fix.w-16 .flex-1 ul li .u-icon *,
-  .sidebar-fix.w-16 .flex-1 ul li [data-icon],
-  .sidebar-fix.w-16 .flex-1 ul li [data-icon] * {
-    color: black !important;
-    fill: black !important;
-    stroke: black !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-  }
-  
-  /* Force icons to be visible in collapsed state */
-  .sidebar-fix.w-16 .flex-1 ul li .w-6,
-  .sidebar-fix.w-16 .flex-1 ul li .w-6 *,
-  .sidebar-fix.w-16 .flex-1 ul li svg,
-  .sidebar-fix.w-16 .flex-1 ul li svg *,
-  .sidebar-fix.w-16 .flex-1 ul li i,
-  .sidebar-fix.w-16 .flex-1 ul li i * {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    color: black !important;
-    fill: black !important;
-    stroke: black !important;
+  /* Clean toggle header styling */
+  .sidebar-fix .toggle-header svg {
+    color: #374151;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
   }
 
-  /* Ensure icons are black in expanded state - HEROICONS SPECIFIC */
-  .sidebar-fix:not(.w-16) .flex-1 ul li .w-6,
-  .sidebar-fix:not(.w-16) .flex-1 ul li .w-6 *,
-  .sidebar-fix:not(.w-16) .flex-1 ul li svg,
-  .sidebar-fix:not(.w-16) .flex-1 ul li svg *,
-  .sidebar-fix:not(.w-16) .flex-1 ul li i,
-  .sidebar-fix:not(.w-16) .flex-1 ul li i *,
-  .sidebar-fix:not(.w-16) .flex-1 ul li [class*="i-"],
-  .sidebar-fix:not(.w-16) .flex-1 ul li [class*="i-"] *,
-  .sidebar-fix:not(.w-16) .flex-1 ul li [class*="i-heroicons"],
-  .sidebar-fix:not(.w-16) .flex-1 ul li [class*="i-heroicons"] *,
-  .sidebar-fix:not(.w-16) .flex-1 ul li [class*="i-line-md"],
-  .sidebar-fix:not(.w-16) .flex-1 ul li [class*="i-line-md"] * {
-    color: black !important;
-    fill: black !important;
-    stroke: black !important;
+  /* Clean collapsed state styling */
+  .sidebar-fix.w-16 .flex-1 ul li svg {
+    color: #374151;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    display: block;
+    visibility: visible;
+    opacity: 1;
+  }
+
+  /* Clean expanded state styling */
+  .sidebar-fix:not(.w-16) .flex-1 ul li svg {
+    color: #374151;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
   }
 
   /* Position content exactly where sidebar ends */
@@ -631,40 +472,12 @@ function handleLogoutCancel() {
     background: #f9fafb !important;
   }
 
-     /* GLOBAL ICON COLOR OVERRIDE - Force all icons to be black */
-   .sidebar-fix .flex-1 ul li * {
-     color: black !important;
-   }
-
-   .sidebar-fix .flex-1 ul li svg,
-   .sidebar-fix .flex-1 ul li svg * {
-     fill: black !important;
-     stroke: black !important;
-   }
-   
-   /* NUCLEAR OPTION - Force ALL elements in sidebar to be black */
-   .sidebar-fix .flex-1 ul li,
-   .sidebar-fix .flex-1 ul li *,
-   .sidebar-fix .flex-1 ul li svg,
-   .sidebar-fix .flex-1 ul li svg *,
-   .sidebar-fix .flex-1 ul li i,
-   .sidebar-fix .flex-1 ul li i *,
-   .sidebar-fix .flex-1 ul li span,
-   .sidebar-fix .flex-1 ul li div,
-   .sidebar-fix .flex-1 ul li button,
-   .sidebar-fix .flex-1 ul li a {
-     color: black !important;
-     fill: black !important;
-     stroke: black !important;
-   }
-   
-   /* Target any element with icon-related classes */
-   .sidebar-fix .flex-1 ul li [class*="icon"],
-   .sidebar-fix .flex-1 ul li [class*="Icon"],
-   .sidebar-fix .flex-1 ul li [class*="i-"] {
-     color: black !important;
-     fill: black !important;
-     stroke: black !important;
-   }
+  /* Clean global icon styling */
+  .sidebar-fix .flex-1 ul li svg {
+    color: #374151;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+  }
 }
 </style>
