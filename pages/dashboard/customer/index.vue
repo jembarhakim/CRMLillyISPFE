@@ -147,6 +147,8 @@ type Customer = {
     packet_internet: string
     hasInstallationReport?: boolean
     installationReportCount?: number
+    is_internet?: string
+    is_collaborator?: string
     // NEW: Product-related fields from installation reports
     products?: Array<{
         id: string
@@ -159,6 +161,13 @@ type Customer = {
     product_names?: string[]
     product_name?: string
     product_count?: number
+}
+
+type DropdownItem = {
+    label: string
+    icon: string
+    click: () => void
+    disabled?: boolean
 }
 
 
@@ -205,8 +214,15 @@ async function refreshDeviceStatuses() {
 
 async function loadInstallationReports() {
     try {
+        console.log('🔍 [DEBUG] Loading installation reports...');
         const response = await customerAdminApi().getInstallationReportComplete()
         installationReports.value = response.data || []
+        
+        console.log('🔍 [DEBUG] Installation reports loaded:', {
+            totalReports: installationReports.value.length,
+            sampleReport: installationReports.value[0],
+            allReports: installationReports.value
+        });
         
         // Update customer data with installation report status (for display purposes only)
         customer.value.forEach((customerItem: any) => {
@@ -215,12 +231,18 @@ async function loadInstallationReports() {
             ).length
             customerItem.hasInstallationReport = reportCount > 0
             customerItem.installationReportCount = reportCount
+            
+            if (reportCount > 0) {
+                console.log(`🔍 [DEBUG] Customer ${customerItem.name} has ${reportCount} installation reports:`, 
+                    installationReports.value.filter((report: any) => report.customer_id === customerItem.id)
+                );
+            }
         })
         
         // Refresh device statuses after loading installation reports
         await refreshDeviceStatuses()
     } catch (error) {
-        console.error("Failed to load installation reports:", error)
+        console.error("❌ [ERROR] Failed to load installation reports:", error)
         // Set all customers as not having installation reports if API fails
         customer.value.forEach((customerItem: any) => {
             customerItem.hasInstallationReport = false
@@ -349,6 +371,9 @@ const columns = [
         key: 'product_name',
         label: 'Packet Internet'
     }, {
+        key: 'customer_type',
+        label: 'Customer Type'
+    }, {
         key: 'actions',
         label: 'Actions'
     }
@@ -431,7 +456,7 @@ const showDetailModal = ref(false)
 const selectedCustomerId = ref<string | null>(null)
 
 const items = (row: Customer) => {
-    const baseItems = [
+    const baseItems: DropdownItem[][] = [
         [{
             label: 'View Detail Customer',
             icon: 'eye-20-solid',
@@ -443,15 +468,27 @@ const items = (row: Customer) => {
         }]
     ]
 
-    // Always show "Add Report Installation" - multiple reports are now supported
-    baseItems.push([{
-        label: row.hasInstallationReport ? 'Add Another Installation' : 'Add Installation Report',
-        icon: 'archive-box-20-solid',
-        click: () => OpenModalReportInstallation(true, row)
-    }])
+    // Only show "Add Report Installation" for internet customers (not collaborator-only)
+    if (row.is_internet === 'yes') {
+        baseItems.push([{
+            label: row.hasInstallationReport ? 'Add Another Installation' : 'Add Installation Report',
+            icon: 'archive-box-20-solid',
+            click: () => OpenModalReportInstallation(true, row)
+        }])
+    } else if (row.is_collaborator === 'yes' && row.is_internet !== 'yes') {
+        // Show disabled option for collaborator-only customers
+        baseItems.push([{
+            label: 'Installation Report (Not Available)',
+            icon: 'archive-box-20-solid',
+            disabled: true,
+            click: () => {
+                notification.warning('Installation Report', 'Installation reports are not available for collaborator-only customers. Only internet customers can have installation reports.')
+            }
+        }])
+    }
 
-    // Add "View Installation Reports" if customer has reports
-    if (row.hasInstallationReport) {
+    // Add "View Installation Reports" if customer has reports and is internet customer
+    if (row.hasInstallationReport && row.is_internet === 'yes') {
         // Get installation reports for this customer and sort by date (most recent first)
         const customerReports = installationReports.value
             .filter((report: any) => report.customer_id === row.id)
@@ -463,11 +500,24 @@ const items = (row: Customer) => {
         
         // Create individual menu items for each installation report
         // Number them in reverse order so newest report has highest number
-        const installationMenuItems = customerReports.map((report: any, index: number) => ({
-            label: `Installation #${customerReports.length - index} (${report.installation_status || 'Unknown'}) - ${formatDate(report.installation_completed_at || report.on_air_date)}`,
-            icon: 'file-text-20-solid',
-            click: () => viewInstallationReportDetail(report.installation_id)
-        }))
+        const installationMenuItems = customerReports.map((report: any, index: number) => {
+            console.log('🔍 [DEBUG] Creating menu item for report:', {
+                index,
+                reportId: report.installation_id,
+                status: report.installation_status,
+                date: report.installation_completed_at || report.on_air_date,
+                fullReport: report
+            });
+            
+            return {
+                label: `Installation #${customerReports.length - index} (${report.installation_status || 'Unknown'}) - ${formatDate(report.installation_completed_at || report.on_air_date)}`,
+                icon: 'file-text-20-solid',
+                click: () => {
+                    console.log('🔍 [DEBUG] Menu item clicked for report:', report.installation_id);
+                    viewInstallationReportDetail(report.installation_id)
+                }
+            };
+        })
         
         // Add each report as a separate menu item
         installationMenuItems.forEach((item, index) => {
@@ -548,6 +598,15 @@ function navigateToInstallationReports(customerId: string) {
 }
 
 function viewInstallationReportDetail(installationId: string) {
+    console.log('🔍 [DEBUG] viewInstallationReportDetail called with installationId:', installationId);
+    
+    // Check if installationId is valid
+    if (!installationId) {
+        console.error('❌ [ERROR] installationId is empty or undefined');
+        notification.error('Error', 'Installation ID is missing. Cannot open installation report.');
+        return;
+    }
+    
     // Set navigation context to indicate we came from customer page
     const { setNavigationContext } = useNavigationContext();
     setNavigationContext({
@@ -556,8 +615,15 @@ function viewInstallationReportDetail(installationId: string) {
         returnLabel: 'Back to Customer'
     });
     
-    // Navigate to the specific installation report detail page
-    navigateTo(`/dashboard/report/customer-installation/detail/${installationId}`)
+    console.log('🔍 [DEBUG] Navigating to installation report detail page:', `/dashboard/report/customer-installation/detail/${installationId}`);
+    
+    try {
+        // Navigate to the specific installation report detail page
+        navigateTo(`/dashboard/report/customer-installation/detail/${installationId}`)
+    } catch (error) {
+        console.error('❌ [ERROR] Navigation failed:', error);
+        notification.error('Navigation Error', 'Failed to navigate to installation report detail page.');
+    }
 }
 
 function formatDate(dateString: string | undefined) {
@@ -569,6 +635,39 @@ function formatDate(dateString: string | undefined) {
     })
 }
 
+function debugInstallationReports() {
+    console.log('🔍 [DEBUG] === INSTALLATION REPORTS DEBUG ===');
+    console.log('Total installation reports:', installationReports.value.length);
+    console.log('All installation reports:', installationReports.value);
+    
+    console.log('🔍 [DEBUG] === CUSTOMERS WITH REPORTS ===');
+    customer.value.forEach((customerItem: any) => {
+        if (customerItem.hasInstallationReport) {
+            const customerReports = installationReports.value.filter(
+                (report: any) => report.customer_id === customerItem.id
+            );
+            console.log(`Customer: ${customerItem.name} (${customerItem.id})`, {
+                reportCount: customerReports.length,
+                reports: customerReports.map(report => ({
+                    id: report.installation_id,
+                    status: report.installation_status,
+                    date: report.installation_completed_at || report.on_air_date,
+                    customer_id: report.customer_id
+                }))
+            });
+        }
+    });
+    
+    // Test navigation with first available report
+    const firstReport = installationReports.value[0];
+    if (firstReport) {
+        console.log('🔍 [DEBUG] Testing navigation with first report:', firstReport.installation_id);
+        viewInstallationReportDetail(firstReport.installation_id);
+    } else {
+        console.log('❌ [ERROR] No installation reports found to test with');
+    }
+}
+
 // Function to get count of customers by status
 function getStatusCount(status: string) {
     return customer.value.filter((customer: any) => {
@@ -576,32 +675,7 @@ function getStatusCount(status: string) {
     }).length
 }
 
-function debugModal() {
-    console.log('[CustomerIndex] Debug Modal State:');
-    console.log('- Modal isOpen:', modal.isOpen.value);
-    console.log('- Modal object:', modal);
-    
-    // Check for any modal elements in DOM
-    const allModals = document.querySelectorAll('[role="dialog"], [data-headlessui-state], .modal, [class*="modal"]');
-    console.log('- Modal elements in DOM:', allModals.length);
-    
-    allModals.forEach((modalEl, index) => {
-        console.log(`  Modal ${index}:`, {
-            tagName: modalEl.tagName,
-            className: modalEl.className,
-            id: modalEl.id,
-            display: getComputedStyle(modalEl).display,
-            visibility: getComputedStyle(modalEl).visibility,
-            opacity: getComputedStyle(modalEl).opacity,
-            zIndex: getComputedStyle(modalEl).zIndex,
-            position: getComputedStyle(modalEl).position
-        });
-    });
-    
-    // Check for FormCustomerInstallation content
-    const formElements = document.querySelectorAll('[class*="FormCustomerInstallation"], [class*="installation"]');
-    console.log('- Form elements in DOM:', formElements.length);
-}
+
 
 </script>
 
@@ -629,18 +703,19 @@ function debugModal() {
           color="green"
         />
         <UButton 
-          label="Debug Modal" 
-          icon="bug-ant"
-          @click="debugModal"
-          class="w-full sm:w-auto"
-          color="orange"
-        />
-        <UButton 
           label="Refresh Device Status" 
           icon="refresh-cw"
           @click="refreshDeviceStatuses"
           class="w-full sm:w-auto"
           color="blue"
+          variant="outline"
+        />
+        <UButton 
+          label="Debug Installation Reports" 
+          icon="bug"
+          @click="debugInstallationReports"
+          class="w-full sm:w-auto"
+          color="orange"
           variant="outline"
         />
         <UButton 
@@ -748,16 +823,16 @@ function debugModal() {
             >
               {{ customer.name }}
             </button>
-            <div class="flex items-center gap-2 mt-1">
+            <div class="flex items-center gap-3 mt-2 flex-wrap">
               <span v-if="customer.hasInstallationReport" 
-                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                <UIcon name="check-circle" class="w-3 h-3 mr-1" />
+                    class="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap">
+                <UIcon name="check-circle" class="w-3 h-3 mr-1.5" />
                 {{ customer.installationReportCount > 1 ? `${customer.installationReportCount} Reports` : 'Report' }}
               </span>
               <!-- Device Status Indicator -->
               <span v-if="customer.hasInstallationReport" 
                     :class="[
-                      'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
+                      'inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap',
                       getCustomerDeviceStatus(customer) === 'down' 
                         ? 'bg-red-100 text-red-800' 
                         : getCustomerDeviceStatus(customer) === 'mixed'
@@ -767,7 +842,7 @@ function debugModal() {
                         : 'bg-gray-100 text-gray-800'
                     ]"
                     :title="`Device Status: ${getCustomerDeviceStatus(customer).toUpperCase()}`">
-                <UIcon :name="getCustomerDeviceStatus(customer) === 'down' ? 'x-circle' : getCustomerDeviceStatus(customer) === 'mixed' ? 'alert-triangle' : getCustomerDeviceStatus(customer) === 'up' ? 'check-circle' : 'question-mark-circle'" class="w-3 h-3 mr-1" />
+                <UIcon :name="getCustomerDeviceStatus(customer) === 'down' ? 'x-circle' : getCustomerDeviceStatus(customer) === 'mixed' ? 'alert-triangle' : getCustomerDeviceStatus(customer) === 'up' ? 'check-circle' : 'question-mark-circle'" class="w-3 h-3 mr-1.5" />
                 {{ getCustomerDeviceStatus(customer).toUpperCase() }}
               </span>
             </div>
@@ -794,6 +869,28 @@ function debugModal() {
                   class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
               {{ customer.area.code_name }}
             </span>
+          </div>
+          
+          <!-- Customer Type Indicators -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <UIcon name="tag" class="w-4 h-4 text-gray-400" />
+            <div class="flex gap-1 flex-wrap">
+              <span v-if="customer.is_internet === 'yes'" 
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <UIcon name="wifi" class="w-3 h-3 mr-1" />
+                Internet
+              </span>
+              <span v-if="customer.is_collaborator === 'yes'" 
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                <UIcon name="handshake" class="w-3 h-3 mr-1" />
+                Collaborator
+              </span>
+              <span v-if="customer.is_internet !== 'yes' && customer.is_collaborator !== 'yes'" 
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                <UIcon name="user" class="w-3 h-3 mr-1" />
+                Regular
+              </span>
+            </div>
           </div>
           <!-- NEW: Packet Internet Information -->
           <div class="flex items-start gap-2">
@@ -828,7 +925,7 @@ function debugModal() {
       <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <UTable :rows="rows" :columns="columns" class="w-full">
           <template #name-data="{ row }">
-            <div class="flex items-center space-x-2">
+            <div class="flex items-center space-x-3 flex-wrap">
               <button 
                 @click="OpenCustomerDetailModal(row.id)"
                 :class="[
@@ -842,28 +939,30 @@ function debugModal() {
               >
                 {{ row.name }}
               </button>
-              <span v-if="row.hasInstallationReport" 
-                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
-                    :title="`Has ${row.installationReportCount} Installation Report(s)`">
-                <UIcon name="check-circle" class="w-3 h-3 mr-1" />
-                {{ row.installationReportCount > 1 ? `${row.installationReportCount} Reports` : 'Report' }}
-              </span>
-              <!-- Device Status Indicator -->
-              <span v-if="row.hasInstallationReport" 
-                    :class="[
-                      'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
-                      getCustomerDeviceStatus(row) === 'down' 
-                        ? 'bg-red-100 text-red-800' 
-                        : getCustomerDeviceStatus(row) === 'mixed'
-                        ? 'bg-orange-100 text-orange-800'
-                        : getCustomerDeviceStatus(row) === 'up'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
-                    ]"
-                    :title="`Device Status: ${getCustomerDeviceStatus(row).toUpperCase()}`">
-                <UIcon :name="getCustomerDeviceStatus(row) === 'down' ? 'x-circle' : getCustomerDeviceStatus(row) === 'mixed' ? 'alert-triangle' : getCustomerDeviceStatus(row) === 'up' ? 'check-circle' : 'question-mark-circle'" class="w-3 h-3 mr-1" />
-                {{ getCustomerDeviceStatus(row).toUpperCase() }}
-              </span>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span v-if="row.hasInstallationReport" 
+                      class="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap"
+                      :title="`Has ${row.installationReportCount} Installation Report(s)`">
+                  <UIcon name="check-circle" class="w-3 h-3 mr-1.5" />
+                  {{ row.installationReportCount > 1 ? `${row.installationReportCount} Reports` : 'Report' }}
+                </span>
+                <!-- Device Status Indicator -->
+                <span v-if="row.hasInstallationReport" 
+                      :class="[
+                        'inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap',
+                        getCustomerDeviceStatus(row) === 'down' 
+                          ? 'bg-red-100 text-red-800' 
+                          : getCustomerDeviceStatus(row) === 'mixed'
+                          ? 'bg-orange-100 text-orange-800'
+                          : getCustomerDeviceStatus(row) === 'up'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      ]"
+                      :title="`Device Status: ${getCustomerDeviceStatus(row).toUpperCase()}`">
+                  <UIcon :name="getCustomerDeviceStatus(row) === 'down' ? 'x-circle' : getCustomerDeviceStatus(row) === 'mixed' ? 'alert-triangle' : getCustomerDeviceStatus(row) === 'up' ? 'check-circle' : 'question-mark-circle'" class="w-3 h-3 mr-1.5" />
+                  {{ getCustomerDeviceStatus(row).toUpperCase() }}
+                </span>
+              </div>
             </div>
           </template>
 
@@ -896,6 +995,26 @@ function debugModal() {
             </div>
             <div v-else class="text-gray-500 italic">
               No package assigned
+            </div>
+          </template>
+
+          <template #customer_type-data="{ row }">
+            <div class="flex flex-col gap-1">
+              <span v-if="row.is_internet === 'yes'" 
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <UIcon name="wifi" class="w-3 h-3 mr-1" />
+                Internet
+              </span>
+              <span v-if="row.is_collaborator === 'yes'" 
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                <UIcon name="handshake" class="w-3 h-3 mr-1" />
+                Collaborator
+              </span>
+              <span v-if="row.is_internet !== 'yes' && row.is_collaborator !== 'yes'" 
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                <UIcon name="user" class="w-3 h-3 mr-1" />
+                Regular
+              </span>
             </div>
           </template>
 

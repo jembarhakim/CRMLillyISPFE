@@ -317,7 +317,7 @@ async function getDataOptions() {
   })
 
   // Get sales representatives (users with specific role)
-  userManagementAdminApi().getAllUsers({ query: { role: "ADMIN" } }).then((response) => {
+  userManagementAdminApi().getAllUsers({ query: { role: "SUPERADMIN" } }).then((response) => {
     salesRepresentatives.value = response.data.map((value: any, index: number) => ({
       label: value.name,
       value: value.id

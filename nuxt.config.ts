@@ -24,15 +24,21 @@ export default defineNuxtConfig({
   // SSR mode - no prerendering needed
   echarts: {
     charts: ["BarChart", "LineChart", "PieChart"],
-    components: ["DatasetComponent", "GridComponent", "TooltipComponent"],
+    components: [
+      "DatasetComponent", 
+      "GridComponent", 
+      "TooltipComponent",
+      "ToolboxComponent",
+      "DataZoomComponent",
+      "BrushComponent",
+      "LegendComponent",
+      "TitleComponent",
+      "AxisPointerComponent",
+      "MarkPointComponent",
+      "MarkLineComponent"
+    ],
     features: ["LabelLayout", "UniversalTransition"],
     renderer: ["svg", "canvas"],
-  },
-  runtimeConfig: {
-    public: {
-      API_HOST: process.env.NUXT_PUBLIC_API_HOST || 'http://rndpolije.lilly.net.id',
-      WA_HOST: process.env.NUXT_PUBLIC_WA_HOST || 'http://rndpolije.lilly.net.id',
-    },
   },
   // Remove automatic middleware assignment to prevent race conditions
   // Middleware will be applied manually in each page that needs it
@@ -54,11 +60,38 @@ export default defineNuxtConfig({
   },
   compatibilityDate: "2024-11-01",
   devtools: { enabled: true },
-  ssr: true, // Enable SSR for better production performance
+  ssr: false, // Temporarily disable SSR to fix hasOwnProperty error
+  experimental: {
+    payloadExtraction: false, // Disable payload extraction to prevent hydration issues
+    inlineSSRStyles: false, // Prevent inline styles that can cause serialization issues
+  },
+  // Add hydration configuration
+  vue: {
+    compilerOptions: {
+      isCustomElement: (tag) => false
+    }
+  },
   nitro: {
     // Configure Nitro for better production builds
     experimental: {
       wasm: true
+    },
+    // Fix serialization issues that cause hasOwnProperty errors
+    storage: {
+      redis: {
+        driver: 'redis',
+        // Redis configuration if needed
+      }
+    },
+    // Ensure proper serialization
+    serialization: {
+      // Use JSON serialization to avoid prototype chain issues
+      serializers: {
+        'application/json': {
+          serialize: (obj: any) => JSON.stringify(obj),
+          deserialize: (str: string) => JSON.parse(str)
+        }
+      }
     },
     // Ensure proper static asset handling
     publicAssets: [
@@ -107,6 +140,8 @@ export default defineNuxtConfig({
   // },
   pinia: {
     storesDirs: ["./stores/**"],
+    disableVuex: true,
+    autoImports: ['defineStore', 'storeToRefs'],
   },
   components: [
     {
@@ -129,6 +164,18 @@ export default defineNuxtConfig({
           ui: ['@nuxt/ui']
         }
       }
+    }
+  },
+  // Add runtime config to handle SSR serialization
+  runtimeConfig: {
+    public: {
+      API_HOST: process.env.NUXT_PUBLIC_API_HOST || 'http://rndpolije.lilly.net.id',
+      WA_HOST: process.env.NUXT_PUBLIC_WA_HOST || 'http://rndpolije.lilly.net.id',
+    },
+    // Add private runtime config for SSR
+    ssr: {
+      // Disable problematic SSR features that cause serialization issues
+      noExternal: ['pinia', '@pinia/nuxt']
     }
   },
   // Configure router for better SPA handling

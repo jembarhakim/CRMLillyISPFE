@@ -7,6 +7,7 @@ echo.
 echo Configuration:
 echo   - API Host: http://api.rndpolije.lilly.net.id
 echo   - WA Host: http://api.rndpolije.lilly.net.id
+echo   - SSR: ENABLED (for production performance)
 echo.
 echo Deploy to VPS using:
 echo   - Use deploy-to-vps.ps1 or deploy-to-vps.sh

@@ -225,23 +225,14 @@
             </div>
 
             <!-- Actions -->
-            <div class="flex gap-2 mt-4">
-              <UButton @click="viewReport(report.installation_id)" 
-                       size="sm" color="blue" variant="outline"
-                       class="flex-1">
-                <UIcon name="eye" class="w-3 h-3 mr-1" />
+            <div class="flex gap-2 mt-3">
+              <UButton @click="viewReport(report.installation_id)" size="sm" color="blue" variant="outline" class="flex-1">
                 View
               </UButton>
-              <UButton @click="editReport(report.installation_id)" 
-                       size="sm" color="green" variant="outline"
-                       class="flex-1">
-                <UIcon name="pencil" class="w-3 h-3 mr-1" />
+              <UButton @click="editReport(report.installation_id)" size="sm" color="green" variant="outline" class="flex-1">
                 Edit
               </UButton>
-              <UButton @click="deleteReport(report.installation_id)" 
-                       size="sm" color="red" variant="outline"
-                       class="flex-1">
-                <UIcon name="trash-2" class="w-3 h-3 mr-1" />
+              <UButton @click="deleteReport(report.installation_id)" size="sm" color="red" variant="outline" class="flex-1">
                 Delete
               </UButton>
             </div>
@@ -391,6 +382,178 @@
         </div>
       </div>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <UModal :model-value="showDeleteModal" @update:model-value="showDeleteModal = $event" :ui="{ width: 'w-full sm:max-w-lg' }">
+      <UCard class="bg-white dark:bg-gray-800">
+        <template #header>
+          <div class="flex items-center justify-between bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 p-4 -m-4 mb-4 rounded-t-lg">
+            <h3 class="text-xl font-bold text-red-700 dark:text-red-300 flex items-center">
+              <div class="bg-red-500 p-3 rounded-xl mr-4 shadow-lg">
+                <UIcon name="trash-2" class="w-6 h-6 text-white" />
+              </div>
+              Delete Installation Report
+            </h3>
+            <UButton
+              color="gray"
+              variant="ghost"
+              icon="x"
+              @click="closeDeleteModal"
+              :disabled="deleting"
+              class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            />
+          </div>
+        </template>
+
+        <div class="space-y-6">
+          <!-- Customer Information -->
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-5 border-2 border-blue-200 dark:border-blue-700">
+            <div class="flex items-center gap-4">
+              <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                <UIcon name="user" class="text-white text-2xl" />
+              </div>
+              <div>
+                <h4 class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ selectedReport?.customer_name || 'Unknown Customer' }}</h4>
+                <p class="text-sm text-gray-600 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded mt-1">
+                  ID: {{ selectedReport?.installation_id || 'N/A' }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Warning Message -->
+          <div class="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/30 dark:to-pink-900/30 border-2 border-red-300 dark:border-red-600 rounded-xl p-6 shadow-lg">
+            <div class="flex items-start">
+              <div class="bg-red-500 p-3 rounded-full mr-4 flex-shrink-0 shadow-lg">
+                <UIcon name="alert-triangle" class="text-white text-2xl" />
+              </div>
+              <div class="flex-1">
+                <h5 class="text-xl font-bold text-red-800 dark:text-red-200 mb-3">⚠️ CRITICAL WARNING</h5>
+                <p class="text-red-700 dark:text-red-300 text-base leading-relaxed mb-4 font-medium">
+                  You are about to <strong class="text-red-900 dark:text-red-100">PERMANENTLY DELETE</strong> this installation report and all associated data.
+                </p>
+                <div class="bg-white dark:bg-gray-800 border-2 border-red-400 dark:border-red-500 rounded-lg p-4 shadow-inner">
+                  <p class="text-red-800 dark:text-red-200 text-base font-bold mb-3 flex items-center">
+                    <UIcon name="list-bullet" class="w-5 h-5 mr-2" />
+                    This action will:
+                  </p>
+                  <ul class="text-red-700 dark:text-red-300 text-sm list-disc list-inside space-y-2 font-medium">
+                    <li class="flex items-start">
+                      <UIcon name="trash-2" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                      <strong>Delete the installation report and clean up all Mikrotik RouterOS configurations</strong>
+                    </li>
+                    <li class="flex items-start">
+                      <UIcon name="refresh-cw" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                      <strong>Update the MAC address status back to "in_stock"</strong>
+                    </li>
+                    <li class="flex items-start">
+                      <UIcon name="user-group" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                      <strong>Remove all related technician assignments and asset transactions</strong>
+                    </li>
+                    <li class="flex items-start">
+                      <UIcon name="cpu-chip" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                      <strong>Delete all associated network devices, cables, and images</strong>
+                    </li>
+                    <li class="flex items-start">
+                      <UIcon name="refresh-cw" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                      <strong>Delete all associated recurring invoices</strong>
+                    </li>
+                    <li class="flex items-start">
+                      <UIcon name="settings-6-tooth" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                      <strong>Remove Mikrotik configurations: queue rules, hotspot bindings, netwatch entries, schedulers, scripts, and DHCP leases</strong>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Impact Summary -->
+          <div class="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-700 dark:to-slate-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl p-5 shadow-lg">
+            <h6 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+              <div class="bg-gray-500 p-2 rounded-lg mr-3">
+                <UIcon name="info" class="w-5 h-5 text-white" />
+              </div>
+              Impact Summary
+            </h6>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Customer:</span>
+                <span class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ selectedReport?.customer_name || 'Unknown' }}</span>
+              </div>
+              <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Status:</span>
+                <span class="px-3 py-1 rounded-full text-sm font-bold" :class="getStatusColor(selectedReport?.installation_status)">
+                  {{ selectedReport?.installation_status || 'Unknown' }}
+                </span>
+              </div>
+              <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Report ID:</span>
+                <span class="font-mono text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-800 dark:text-gray-200">{{ selectedReport?.installation_id || 'N/A' }}</span>
+              </div>
+              <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 block">MAC Address:</span>
+                <span class="font-mono text-sm bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded text-blue-800 dark:text-blue-200">{{ selectedReport?.mac_address || 'Not available' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Confirmation Checkbox -->
+          <div class="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-2 border-yellow-300 dark:border-yellow-600 rounded-xl p-5 shadow-lg">
+            <label class="flex items-start cursor-pointer group">
+              <UCheckbox 
+                v-model="deleteConfirmationChecked" 
+                class="mt-1 scale-125"
+                :disabled="deleting"
+                color="red"
+              />
+              <div class="ml-4 flex-1">
+                <p class="text-base text-gray-800 dark:text-gray-200 leading-relaxed">
+                  I understand that this action will 
+                  <span class="inline-flex items-center px-2 py-1 rounded bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 font-bold mx-1">
+                    PERMANENTLY DELETE
+                  </span>
+                  the installation report for 
+                  <strong class="text-blue-600 dark:text-blue-400">"{{ selectedReport?.customer_name || 'Unknown Customer' }}"</strong> 
+                  and all associated data.
+                </p>
+                <p class="text-sm text-red-600 dark:text-red-400 font-semibold mt-2 flex items-center">
+                  <UIcon name="alert-triangle" class="w-4 h-4 mr-1" />
+                  This action CANNOT be undone!
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-col sm:flex-row justify-end gap-4 pt-4">
+            <UButton
+              @click="closeDeleteModal"
+              color="gray"
+              variant="outline"
+              size="xl"
+              :disabled="deleting"
+              class="w-full sm:w-auto border-2 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold"
+            >
+              <UIcon name="x" class="mr-2" />
+              Cancel
+            </UButton>
+            <UButton
+              @click="confirmDelete"
+              color="red"
+              variant="solid"
+              size="xl"
+              :loading="deleting"
+              :disabled="!deleteConfirmationChecked"
+              class="w-full sm:w-auto bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 border-2 border-red-500 shadow-lg font-bold"
+            >
+              <UIcon name="trash-2" class="mr-2" />
+              {{ deleting ? 'Deleting...' : 'Delete Installation Report' }}
+            </UButton>
+          </div>
+        </div>
+      </UCard>
+    </UModal>
   </div>
 </template>
 
@@ -407,6 +570,10 @@ definePageMeta({
 const loading = ref(false);
 const reports = ref<InstallationReportCompleteResponse[]>([]);
 const filteredReports = ref<InstallationReportCompleteResponse[]>([]);
+const showDeleteModal = ref(false);
+const deleteConfirmationChecked = ref(false);
+const deleting = ref(false);
+const selectedReport = ref<InstallationReportCompleteResponse | null>(null);
 
 // Pagination
 const currentPage = ref(1);
@@ -623,24 +790,28 @@ function editReport(installationId: string) {
   navigateTo(`/dashboard/report/customer-installation/edit/${installationId}`);
 }
 
-async function deleteReport(installationId: string) {
-  // Find the report to get customer name for confirmation
+function deleteReport(installationId: string) {
+  // Find the report to populate modal
   const report = filteredReports.value.find(r => r.installation_id === installationId);
-  const customerName = report?.customer_name || 'Unknown Customer';
-  
-  // Show confirmation dialog
-  const confirmed = confirm(
-    `Are you sure you want to delete the installation report for "${customerName}"?\n\n` +
-    `This action will:\n` +
-    `• Delete the installation report permanently\n` +
-    `• Update the MAC address status back to "in_stock"\n` +
-    `• Remove all related technician assignments and asset transactions\n\n` +
-    `This action cannot be undone.`
-  );
-  
-  if (!confirmed) {
-    return;
+  if (report) {
+    selectedReport.value = report;
+    showDeleteModal.value = true;
   }
+}
+
+function closeDeleteModal() {
+  showDeleteModal.value = false;
+  deleteConfirmationChecked.value = false;
+  selectedReport.value = null;
+}
+
+async function confirmDelete() {
+  if (!selectedReport.value || !deleteConfirmationChecked.value || deleting.value) return;
+  
+  const installationId = selectedReport.value.installation_id;
+  const customerName = selectedReport.value.customer_name || 'Unknown Customer';
+  
+  deleting.value = true;
   
   try {
     await customerAdminApi().deleteInstallationReport(installationId);
@@ -651,6 +822,8 @@ async function deleteReport(installationId: string) {
       description: `Installation report for "${customerName}" deleted successfully. MAC address status updated to "in_stock".`,
       color: "green",
     });
+    
+    closeDeleteModal();
     
     // Reload reports to reflect the changes
     await loadReports();
@@ -663,6 +836,8 @@ async function deleteReport(installationId: string) {
       description: error instanceof Error ? error.message : "Failed to delete installation report",
       color: "red",
     });
+  } finally {
+    deleting.value = false;
   }
 }
 

@@ -5,6 +5,7 @@ import { customerAdminApi } from "@/api/admin/customer";
 import { recurringInvoiceAdminApi } from "@/api/admin/recurring-invoice";
 import { networkDeviceAdminApi } from "@/api/admin/network-device";
 import type { RecurringInvoiceItem } from "@/api/admin/recurring-invoice";
+import { internetPackageAdminApi } from "@/api/admin/internet-package";
 
 const props = defineProps({
   isEdit: {
@@ -55,6 +56,8 @@ const customers = ref<any[]>([]);
 const loading = ref(false);
 const submitting = ref(false);
 const loadingNetworkDevices = ref(false);
+const productOptions = ref<any[]>([]);
+const loadingProducts = ref(false);
 
 // Fetch customers
 async function getCustomers() {
@@ -120,6 +123,25 @@ async function populateInvoiceItemsFromNetworkDevices(customerId: string) {
   }
 }
 
+// Fetch product options for dropdown
+async function getProducts() {
+  loadingProducts.value = true;
+  try {
+    const response = await internetPackageAdminApi().getAllInternetPacket();
+    const data = response.data || [];
+    productOptions.value = data.map((p: any) => ({
+      id: p.id,
+      label: p.name,
+      value: p.name,
+      price: p.price,
+    }));
+  } catch (e) {
+    console.error("Error fetching products:", e);
+  } finally {
+    loadingProducts.value = false;
+  }
+}
+
 // Invoice item functions
 function addItem() {
   state.invoice_items.push({
@@ -142,6 +164,18 @@ function updateItem(index: number, field: keyof RecurringInvoiceItem, value: str
   
   if (field === "qty" || field === "price") {
     const item = state.invoice_items[index];
+    item.total = item.qty * item.price;
+    calculateTotal();
+  }
+}
+
+// When selecting a product from dropdown, set name and price
+function setItemProduct(index: number, selectedLabel: string) {
+  const item = state.invoice_items[index];
+  item.name = selectedLabel || "";
+  const product = productOptions.value.find((o: any) => o.label === selectedLabel);
+  if (product) {
+    item.price = Number(product.price) || 0;
     item.total = item.qty * item.price;
     calculateTotal();
   }
@@ -284,11 +318,12 @@ watch(
 // Initialize
 onMounted(() => {
   getCustomers();
+  getProducts();
 });
 </script>
 
 <template>
-  <UModal>
+  <UModal class="recurring-invoice-modal" :ui="{ width: 'w-full' }">
     <div class="w-full max-w-4xl p-6 max-h-[90vh] overflow-y-auto">
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-center">
@@ -401,10 +436,14 @@ onMounted(() => {
             >
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
-                <UInput 
+                <USelectMenu 
                   :model-value="item.name"
-                  @update:model-value="updateItem(index, 'name', $event)"
-                  placeholder="Enter item name..."
+                  @update:model-value="(val) => setItemProduct(index, val)"
+                  :options="productOptions"
+                  option-attribute="label"
+                  value-attribute="label"
+                  placeholder="Select product..."
+                  :loading="loadingProducts"
                 />
               </div>
 
@@ -488,3 +527,18 @@ onMounted(() => {
     </div>
   </UModal>
 </template>
+
+<style scoped>
+/* Override HeadlessUI dialog panel width only for this recurring invoice modal */
+.recurring-invoice-modal :deep([id^="headlessui-dialog-panel"]) {
+  max-width: 65rem !important;
+  width: 100% !important;
+}
+
+@media (min-width: 640px) {
+  .recurring-invoice-modal :deep([id^="headlessui-dialog-panel"].sm\:max-w-lg),
+  .recurring-invoice-modal :deep([id^="headlessui-dialog-panel"][class*="max-w-lg"]) {
+    max-width: 65rem !important;
+  }
+}
+</style>

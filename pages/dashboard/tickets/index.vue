@@ -70,7 +70,8 @@ const activeTab = ref(0)
 const isLoading = ref(true)
 
 // New classification system state
-const selectedClassification = ref<string>('gangguan') // Default to gangguan
+// Empty string means "All" classifications
+const selectedClassification = ref<string>('') // Default to "All" classifications
 const dateFilter = ref<string>('1day') // '1day', '7days', '30days', 'all'
 const showHistory = ref(false)
 
@@ -430,8 +431,8 @@ const filteredRows = computed(() => {
 
   let filtered = safeRows
 
-  // Filter by classification
-  if (selectedClassification.value) {
+  // Filter by classification (empty string means "All")
+  if (selectedClassification.value && selectedClassification.value !== '') {
     filtered = filtered.filter(ticket => {
       if (!ticket) return false
       return ticket.classification_id === selectedClassification.value ||
@@ -984,15 +985,21 @@ async function sendToCSWithAutoAssign() {
 }
 
 // Classification management functions
+// Toggle behavior: clicking the same classification shows "All"
 function selectClassification(classification: string) {
-  selectedClassification.value = classification
+  // If clicking the same classification, toggle to "All" (empty string)
+  if (selectedClassification.value === classification) {
+    selectedClassification.value = ''
+  } else {
+    selectedClassification.value = classification
+  }
   showHistory.value = false
   // Don't reset dateFilter - keep the user's selected date filter
 }
 
 function resetFilters() {
-  selectedClassification.value = 'gangguan' // Always reset to gangguan
-  dateFilter.value = '1day'
+  selectedClassification.value = '' // Reset to "All" classifications
+  dateFilter.value = '1day' // Keep 1 day filter
   showHistory.value = false
   searchQuery.value = ''
 }
@@ -1008,6 +1015,9 @@ function toggleHistory() {
 
 // Get classification display name
 function getClassificationName(classificationId: string): string {
+  if (!classificationId || classificationId === '') {
+    return 'All'
+  }
   const names: Record<string, string> = {
     'gangguan': 'Gangguan',
     'psb': 'PSB',
@@ -1107,7 +1117,7 @@ const getTicketActions = (ticket: any) => {
   // Stage 1: CS creates ticket OR ticket is ongoing but no NOC action yet → Show NOC Action only
   // Enforce: NOC must act BEFORE assigning a technician
   const nocActionRecorded = !!(ticket.noc_note || ticket.img_noc)
-  const isCSLikeAssignee = (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN')
+  const isCSLikeAssignee = (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE')
   const classificationId = ticket.classification_id || ticket.classification || 'gangguan'
 
   if ((ticket.status === 'unfinished' || (ticket.status === 'ongoing' && isCSLikeAssignee && !nocActionRecorded)) &&
@@ -1222,7 +1232,7 @@ const getTicketActions = (ticket: any) => {
 
   // Stage 4: After technician completes work → Show Resolve for CS
   else if (ticket.status === 'ongoing' &&
-    (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE' || ticket.current_assignee_name === 'ADMIN') &&
+    (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE') &&
     ticket.technician_completed) {
 
     if (isAdmin.value || isCustomerService.value) {

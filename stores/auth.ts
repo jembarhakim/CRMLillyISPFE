@@ -1,16 +1,20 @@
 import { defineStore } from 'pinia'
 
 export const useAuthStore = defineStore('auth', {
-  state: () => ({
-    token: '',
-    user: { 
-      user_id: "", 
-      role: '',
-      name: '',
-      email: ''
-    },
-    isInitialized: false,
-  }),
+  state: () => {
+    // Create user object with proper prototype chain
+    const user = Object.create(Object.prototype)
+    user.user_id = ""
+    user.role = ""
+    user.name = ""
+    user.email = ""
+    
+    return {
+      token: '',
+      user,
+      isInitialized: false,
+    }
+  },
   getters: {
     isLoggedIn: (state) => {
       // Wait for initialization and then check token
@@ -39,11 +43,6 @@ export const useAuthStore = defineStore('auth', {
         const tokenCookie = useCookie('token', { default: () => '' })
         const cookieToken = tokenCookie.value
         console.log('Auth store getToken called - cookie token:', cookieToken, 'state token:', state.token)
-        
-        // If cookie has a valid token but state doesn't, update state
-        if (cookieToken && cookieToken !== '' && cookieToken !== 'null' && cookieToken !== state.token) {
-          state.token = cookieToken
-        }
         
         return cookieToken || state.token
       }
@@ -201,7 +200,13 @@ export const useAuthStore = defineStore('auth', {
       }
       
       this.token = ''
-      this.user = { user_id: "", role: "", name: "", email: "" }
+      // Create user object with proper prototype chain
+      const user = Object.create(Object.prototype)
+      user.user_id = ""
+      user.role = ""
+      user.name = ""
+      user.email = ""
+      this.user = user
       this.isInitialized = true // Keep initialized to prevent race conditions
       
       console.log('Auth store logged out')

@@ -223,24 +223,75 @@ const filteredUnpaidCustomersChart = computed(() => {
 });
 
 // Chart options computed properties
-const customerGrowthChartOption = computed(() => ({
+const customerGrowthChartOption = computed(() => {
+  if (!filteredCustomerGrowth.value || filteredCustomerGrowth.value.length === 0) {
+    return undefined;
+  }
+  
+  return {
+  animation: true,
+  animationDuration: 750,
+  animationEasing: 'cubicOut' as const,
   title: { 
     text: 'Customer Growth', 
     textStyle: { fontSize: 12 },
     left: 'center'
   },
-  axisPointer: { type: 'cross' },
+  axisPointer: { 
+    type: 'cross',
+    crossStyle: {
+      color: '#999',
+      width: 1,
+      type: 'dashed'
+    },
+    lineStyle: {
+      color: '#999',
+      width: 1,
+      type: 'dashed'
+    },
+    label: {
+      backgroundColor: '#777',
+      color: '#fff',
+      fontSize: 10
+    }
+  },
   tooltip: { 
     trigger: 'axis',
     formatter: '{b}: {c} new customers'
   },
   toolbox: {
+    show: true,
+    orient: 'vertical',
+    right: 10,
+    top: 10,
     feature: {
-      dataZoom: { yAxisIndex: 'none' },
-      restore: {},
-      saveAsImage: {}
-    },
-    right: 10
+      dataZoom: { 
+        yAxisIndex: 'none',
+        show: true,
+        title: {
+          zoom: 'Area Zoom',
+          back: 'Restore Zoom'
+        }
+      },
+      restore: {
+        show: true,
+        title: 'Reset Zoom'
+      },
+      saveAsImage: {
+        show: true,
+        title: 'Save as Image',
+        type: 'png',
+        pixelRatio: 2
+      },
+      brush: {
+        show: true,
+        type: ['lineX', 'clear'],
+        title: {
+          lineX: 'Brush Selection',
+          clear: 'Clear Selection'
+        }
+      }
+    }
   },
   xAxis: { 
     data: filteredCustomerGrowth.value.map((item: any) => item.date),
@@ -262,20 +313,65 @@ const customerGrowthChartOption = computed(() => ({
     smooth: true,
     sampling: 'lttb',
     itemStyle: { color: '#3B82F6' },
-    lineStyle: { color: '#3B82F6', width: 2 }
+    lineStyle: { color: '#3B82F6', width: 2 },
+    emphasis: {
+      focus: 'series',
+      blurScope: 'coordinateSystem'
+    }
   }],
   dataZoom: [
-    { type: 'inside', throttle: 30 },
-    { type: 'slider', height: 20, bottom: 0 }
+    { 
+      type: 'inside',
+      xAxisIndex: [0],
+      yAxisIndex: 'none',
+      throttle: 100,
+      zoomOnMouseWheel: true,
+      moveOnMouseMove: true,
+      moveOnMouseWheel: false,
+      preventDefaultMouseMove: false
+    },
+    { 
+      type: 'slider', 
+      xAxisIndex: [0],
+      height: 25, 
+      bottom: 10,
+      showDetail: true,
+      showDataShadow: true,
+      realtime: true,
+      filterMode: 'filter',
+      handleStyle: {
+        color: '#3B82F6'
+      },
+      dataBackground: {
+        lineStyle: {
+          color: '#3B82F6',
+          opacity: 0.3
+        },
+        areaStyle: {
+          color: '#3B82F6',
+          opacity: 0.1
+        }
+      },
+      selectedDataBackground: {
+        lineStyle: {
+          color: '#3B82F6',
+          opacity: 0.8
+        },
+        areaStyle: {
+          color: '#3B82F6',
+          opacity: 0.3
+        }
+      }
+    }
   ],
   grid: { 
     left: '15%', 
     right: '10%', 
-    bottom: '22%', 
+    bottom: '25%', 
     top: '20%',
     containLabel: true
   }
-}));
+}});
 
 const expensesChartOption = computed(() => ({
   title: { 
@@ -283,7 +379,24 @@ const expensesChartOption = computed(() => ({
     textStyle: { fontSize: 12 },
     left: 'center'
   },
-  axisPointer: { type: 'cross' },
+  axisPointer: { 
+    type: 'cross',
+    crossStyle: {
+      color: '#999',
+      width: 1,
+      type: 'dashed'
+    },
+    lineStyle: {
+      color: '#999',
+      width: 1,
+      type: 'dashed'
+    },
+    label: {
+      backgroundColor: '#777',
+      color: '#fff',
+      fontSize: 10
+    }
+  },
   tooltip: { 
     trigger: 'axis',
     formatter: (params: any) => {
@@ -292,12 +405,38 @@ const expensesChartOption = computed(() => ({
     }
   },
   toolbox: {
+    show: true,
+    orient: 'vertical',
+    right: 10,
+    top: 10,
     feature: {
-      dataZoom: { yAxisIndex: 'none' },
-      restore: {},
-      saveAsImage: {}
-    },
-    right: 10
+      dataZoom: { 
+        yAxisIndex: 'none',
+        show: true,
+        title: {
+          zoom: 'Area Zoom',
+          back: 'Restore Zoom'
+        }
+      },
+      restore: {
+        show: true,
+        title: 'Reset Zoom'
+      },
+      saveAsImage: {
+        show: true,
+        title: 'Save as Image',
+        type: 'png',
+        pixelRatio: 2
+      },
+      brush: {
+        show: true,
+        type: ['lineX', 'clear'],
+        title: {
+          lineX: 'Brush Selection',
+          clear: 'Clear Selection'
+        }
+      }
+    }
   },
   xAxis: { 
     data: filteredExpensesChart.value.map((item: any) => item.date),
@@ -322,16 +461,61 @@ const expensesChartOption = computed(() => ({
     smooth: true,
     sampling: 'lttb',
     itemStyle: { color: '#EF4444' },
-    lineStyle: { color: '#EF4444', width: 2 }
+    lineStyle: { color: '#EF4444', width: 2 },
+    emphasis: {
+      focus: 'series',
+      blurScope: 'coordinateSystem'
+    }
   }],
   dataZoom: [
-    { type: 'inside', throttle: 30 },
-    { type: 'slider', height: 20, bottom: 0 }
+    { 
+      type: 'inside',
+      xAxisIndex: [0],
+      yAxisIndex: 'none',
+      throttle: 100,
+      zoomOnMouseWheel: true,
+      moveOnMouseMove: true,
+      moveOnMouseWheel: false,
+      preventDefaultMouseMove: false
+    },
+    { 
+      type: 'slider', 
+      xAxisIndex: [0],
+      height: 25, 
+      bottom: 10,
+      showDetail: true,
+      showDataShadow: true,
+      realtime: true,
+      filterMode: 'filter',
+      handleStyle: {
+        color: '#3B82F6'
+      },
+      dataBackground: {
+        lineStyle: {
+          color: '#3B82F6',
+          opacity: 0.3
+        },
+        areaStyle: {
+          color: '#3B82F6',
+          opacity: 0.1
+        }
+      },
+      selectedDataBackground: {
+        lineStyle: {
+          color: '#3B82F6',
+          opacity: 0.8
+        },
+        areaStyle: {
+          color: '#3B82F6',
+          opacity: 0.3
+        }
+      }
+    }
   ],
   grid: { 
     left: '15%', 
     right: '10%', 
-    bottom: '22%', 
+    bottom: '25%', 
     top: '20%',
     containLabel: true
   }
@@ -343,7 +527,24 @@ const revenueChartOption = computed(() => ({
     textStyle: { fontSize: 12 },
     left: 'center'
   },
-  axisPointer: { type: 'cross' },
+  axisPointer: { 
+    type: 'cross',
+    crossStyle: {
+      color: '#999',
+      width: 1,
+      type: 'dashed'
+    },
+    lineStyle: {
+      color: '#999',
+      width: 1,
+      type: 'dashed'
+    },
+    label: {
+      backgroundColor: '#777',
+      color: '#fff',
+      fontSize: 10
+    }
+  },
   tooltip: { 
     trigger: 'axis',
     formatter: (params: any) => {
@@ -352,12 +553,38 @@ const revenueChartOption = computed(() => ({
     }
   },
   toolbox: {
+    show: true,
+    orient: 'vertical',
+    right: 10,
+    top: 10,
     feature: {
-      dataZoom: { yAxisIndex: 'none' },
-      restore: {},
-      saveAsImage: {}
-    },
-    right: 10
+      dataZoom: { 
+        yAxisIndex: 'none',
+        show: true,
+        title: {
+          zoom: 'Area Zoom',
+          back: 'Restore Zoom'
+        }
+      },
+      restore: {
+        show: true,
+        title: 'Reset Zoom'
+      },
+      saveAsImage: {
+        show: true,
+        title: 'Save as Image',
+        type: 'png',
+        pixelRatio: 2
+      },
+      brush: {
+        show: true,
+        type: ['lineX', 'clear'],
+        title: {
+          lineX: 'Brush Selection',
+          clear: 'Clear Selection'
+        }
+      }
+    }
   },
   xAxis: { 
     data: filteredRevenueChart.value.map((item: any) => item.date),
@@ -382,16 +609,61 @@ const revenueChartOption = computed(() => ({
     smooth: true,
     sampling: 'lttb',
     itemStyle: { color: '#10B981' },
-    lineStyle: { color: '#10B981', width: 2 }
+    lineStyle: { color: '#10B981', width: 2 },
+    emphasis: {
+      focus: 'series',
+      blurScope: 'coordinateSystem'
+    }
   }],
   dataZoom: [
-    { type: 'inside', throttle: 30 },
-    { type: 'slider', height: 20, bottom: 0 }
+    { 
+      type: 'inside',
+      xAxisIndex: [0],
+      yAxisIndex: 'none',
+      throttle: 100,
+      zoomOnMouseWheel: true,
+      moveOnMouseMove: true,
+      moveOnMouseWheel: false,
+      preventDefaultMouseMove: false
+    },
+    { 
+      type: 'slider', 
+      xAxisIndex: [0],
+      height: 25, 
+      bottom: 10,
+      showDetail: true,
+      showDataShadow: true,
+      realtime: true,
+      filterMode: 'filter',
+      handleStyle: {
+        color: '#3B82F6'
+      },
+      dataBackground: {
+        lineStyle: {
+          color: '#3B82F6',
+          opacity: 0.3
+        },
+        areaStyle: {
+          color: '#3B82F6',
+          opacity: 0.1
+        }
+      },
+      selectedDataBackground: {
+        lineStyle: {
+          color: '#3B82F6',
+          opacity: 0.8
+        },
+        areaStyle: {
+          color: '#3B82F6',
+          opacity: 0.3
+        }
+      }
+    }
   ],
   grid: { 
     left: '15%', 
     right: '10%', 
-    bottom: '22%', 
+    bottom: '25%', 
     top: '20%',
     containLabel: true
   }
@@ -409,20 +681,56 @@ const unpaidCustomersChartOption = computed(() => {
   const unpaidMap = new Map(unpaidData.map((item: any) => [item.date, item.count]));
   const pendingMap = new Map(pendingData.map((item: any) => [item.date, item.count]));
   
+  // Determine if we have sparse data (few data points)
+  const hasSparseData = sortedDates.length <= 3;
+  // Disable smooth and sampling for sparse data to avoid weird curves
+  const useSmooth = !hasSparseData && sortedDates.length > 5;
+  
   return {
     title: { 
-      text: 'Unpaid & Pending Customers', 
+      text: 'Unpaid & Pending Customers',
+      subtext: hasSparseData ? `Showing ${sortedDates.length} data point${sortedDates.length > 1 ? 's' : ''} in selected period` : undefined,
       textStyle: { fontSize: 12 },
+      subtextStyle: { fontSize: 10, color: '#666' },
       left: 'center'
     },
-    axisPointer: { type: 'cross' },
+    axisPointer: { 
+    type: 'cross',
+    crossStyle: {
+      color: '#999',
+      width: 1,
+      type: 'dashed'
+    },
+    lineStyle: {
+      color: '#999',
+      width: 1,
+      type: 'dashed'
+    },
+    label: {
+      backgroundColor: '#777',
+      color: '#fff',
+      fontSize: 10
+    }
+  },
     tooltip: { 
       trigger: 'axis',
       formatter: function(params: any) {
-        let result = params[0].name + '<br/>';
-        params.forEach((param: any) => {
-          result += param.seriesName + ': ' + param.value + ' customers<br/>';
+        const date = new Date(params[0].name);
+        const formattedDate = date.toLocaleDateString('en-US', { 
+          weekday: 'short',
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric' 
         });
+        let result = `<strong>${formattedDate}</strong><br/>`;
+        params.forEach((param: any) => {
+          const value = param.value;
+          const color = param.color;
+          result += `<span style="color: ${color};">●</span> ${param.seriesName}: <strong>${value}</strong> ${value === 1 ? 'customer' : 'customers'}<br/>`;
+        });
+        if (hasSparseData) {
+          result += '<br/><span style="font-size: 10px; color: #999;">Note: Limited data points in selected period</span>';
+        }
         return result;
       }
     },
@@ -432,11 +740,33 @@ const unpaidCustomersChartOption = computed(() => {
     },
     toolbox: {
       feature: {
-        dataZoom: { yAxisIndex: 'none' },
-        restore: {},
-        saveAsImage: {}
+        dataZoom: { 
+          yAxisIndex: 'none',
+          title: {
+            zoom: 'Area Zoom',
+            back: 'Restore Zoom'
+          }
+        },
+        restore: {
+          title: 'Reset Zoom'
+        },
+        saveAsImage: {
+          title: 'Save as Image'
+        },
+        brush: {
+          type: ['lineX', 'clear'],
+          title: {
+            lineX: 'Brush Selection',
+            clear: 'Clear Selection'
+          }
+        }
       },
-      right: 10
+      right: 10,
+      top: 10
+    },
+    brush: {
+      toolbox: ['lineX', 'clear'],
+      xAxisIndex: 0
     },
     xAxis: { 
       data: sortedDates,
@@ -444,36 +774,78 @@ const unpaidCustomersChartOption = computed(() => {
       axisLabel: { 
         rotate: 45, 
         fontSize: 8,
-        interval: 'auto'
-      }
+        interval: hasSparseData ? 0 : 'auto', // Show all labels if sparse data
+        formatter: (value: string) => {
+          // Format date better for readability
+          const date = new Date(value);
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+      },
+      boundaryGap: false // Better for line charts
     },
     yAxis: { 
       type: 'value',
-      axisLabel: { fontSize: 8 }
+      axisLabel: { 
+        fontSize: 8,
+        formatter: (value: number) => {
+          // Format numbers properly
+          if (value % 1 === 0) return value.toString();
+          return value.toFixed(1);
+        }
+      },
+      min: 0, // Always start from 0
+      scale: !hasSparseData // Don't scale when sparse to show actual values
     },
     series: [
       {
         name: 'Unpaid Customers',
         type: 'line',
         data: sortedDates.map(date => unpaidMap.get(date) || 0),
-        smooth: true,
-        sampling: 'lttb',
+        smooth: useSmooth,
+        sampling: useSmooth ? 'lttb' : false, // Only use sampling for large datasets
+        symbol: 'circle',
+        symbolSize: hasSparseData ? 8 : 4, // Larger markers for sparse data
         itemStyle: { color: '#EF4444' },
-        lineStyle: { color: '#EF4444', width: 2 }
+        lineStyle: { color: '#EF4444', width: 2 },
+        emphasis: {
+          focus: 'series',
+          blurScope: 'coordinateSystem'
+        }
       },
       {
         name: 'Pending Customers',
         type: 'line',
         data: sortedDates.map(date => pendingMap.get(date) || 0),
-        smooth: true,
-        sampling: 'lttb',
+        smooth: useSmooth,
+        sampling: useSmooth ? 'lttb' : false, // Only use sampling for large datasets
+        symbol: 'circle',
+        symbolSize: hasSparseData ? 8 : 4, // Larger markers for sparse data
         itemStyle: { color: '#F59E0B' },
-        lineStyle: { color: '#F59E0B', width: 2 }
+        lineStyle: { color: '#F59E0B', width: 2 },
+        emphasis: {
+          focus: 'series',
+          blurScope: 'coordinateSystem'
+        }
       }
     ],
     dataZoom: [
-      { type: 'inside', throttle: 30 },
-      { type: 'slider', height: 20, bottom: 0 }
+      { 
+        type: 'inside', 
+        throttle: 30,
+        zoomOnMouseWheel: true,
+        moveOnMouseMove: true,
+        moveOnMouseWheel: false,
+        preventDefaultMouseMove: true
+      },
+      { 
+        type: 'slider', 
+        height: 20, 
+        bottom: 0,
+        showDetail: true,
+        showDataShadow: true,
+        realtime: true,
+        filterMode: 'filter'
+      }
     ],
     grid: { 
       left: '15%', 
@@ -931,11 +1303,48 @@ function closeAccumulationModal() {
   newAccumulationValue.value = ''
 }
 
-// Handle escape key
+// Handle escape key and chart shortcuts
 function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && showAccumulationModal.value) {
     closeAccumulationModal()
   }
+  
+  // Chart zoom shortcuts (similar to TradingView)
+  if (event.ctrlKey || event.metaKey) {
+    switch (event.key) {
+      case '0':
+        // Reset all chart zooms
+        event.preventDefault()
+        resetAllChartZooms()
+        break
+      case '=':
+      case '+':
+        // Zoom in all charts
+        event.preventDefault()
+        zoomInAllCharts()
+        break
+      case '-':
+        // Zoom out all charts
+        event.preventDefault()
+        zoomOutAllCharts()
+        break
+    }
+  }
+}
+
+// Chart zoom control functions
+function resetAllChartZooms() {
+  // This would need chart instance references to work properly
+  // For now, we'll show a notification
+  notification.info('Chart Zoom', 'Use the toolbox buttons on each chart to reset zoom', 2000)
+}
+
+function zoomInAllCharts() {
+  notification.info('Chart Zoom', 'Use mouse wheel or toolbox buttons to zoom in', 2000)
+}
+
+function zoomOutAllCharts() {
+  notification.info('Chart Zoom', 'Use mouse wheel or toolbox buttons to zoom out', 2000)
 }
 
 // Removed beforeunload and popstate handlers to allow free navigation
@@ -1472,16 +1881,44 @@ watch([useYearRange, yearStart, yearEnd], async () => {
         Charts automatically update based on dashboard filters above
       </div>
     </div>
+    
+    <!-- Chart Zoom Instructions -->
+    <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+      <div class="flex items-start gap-3">
+        <div class="flex-shrink-0">
+          <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h3 class="text-sm font-medium text-blue-800 mb-2">Chart Zoom Features (TradingView-style)</h3>
+          <div class="text-sm text-blue-700 space-y-1">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div><strong>Mouse Wheel:</strong> Zoom in/out on hover</div>
+              <div><strong>Drag:</strong> Pan when zoomed in</div>
+              <div><strong>Toolbox:</strong> Area zoom, reset, save image</div>
+              <div><strong>Slider:</strong> Navigate time range at bottom</div>
+            </div>
+            <div class="mt-2 text-xs text-blue-600">
+              <strong>Keyboard Shortcuts:</strong> Ctrl+0 (reset), Ctrl+/- (zoom), Ctrl+Shift+Drag (brush selection)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="grid gap-6 grid-cols-1">
       <!-- Customer Growth Chart -->
-      <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+      <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm" style="overflow: visible;">
         <div class="mb-3">
           <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">
             Customer Growth
           </h2>
         </div>
-        <div v-if="filteredCustomerGrowth && filteredCustomerGrowth.length > 0" class="h-80 w-full overflow-hidden">
+        <div v-if="filteredCustomerGrowth && filteredCustomerGrowth.length > 0" class="h-80 w-full relative" style="overflow: visible; padding-right: 60px;">
           <VChart :option="customerGrowthChartOption" autoresize style="height: 100%; width: 100%;" />
+          <div class="absolute top-2 left-2 text-xs text-gray-500 bg-white bg-opacity-75 px-2 py-1 rounded z-10">
+            Hover to zoom • Drag to pan • Wheel to zoom
+          </div>
         </div>
         <div v-else class="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
           <p class="text-gray-500">No customer growth data available for selected period</p>
@@ -1489,14 +1926,17 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       </div>
 
       <!-- Revenue Chart -->
-      <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+      <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm" style="overflow: visible;">
         <div class="mb-3">
           <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">
             Revenue Chart
           </h2>
         </div>
-        <div v-if="filteredRevenueChart && filteredRevenueChart.length > 0" class="h-80 w-full overflow-hidden">
+        <div v-if="filteredRevenueChart && filteredRevenueChart.length > 0" class="h-80 w-full relative" style="overflow: visible; padding-right: 60px;">
           <VChart :option="revenueChartOption" autoresize style="height: 100%; width: 100%;" />
+          <div class="absolute top-2 left-2 text-xs text-gray-500 bg-white bg-opacity-75 px-2 py-1 rounded z-10">
+            Hover to zoom • Drag to pan • Wheel to zoom
+          </div>
         </div>
         <div v-else class="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
           <p class="text-gray-500">No revenue data available for selected period</p>
@@ -1504,14 +1944,17 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       </div>
 
       <!-- Expenses Chart -->
-      <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+      <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm" style="overflow: visible;">
         <div class="mb-3">
           <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">
             Expenses Chart
           </h2>
         </div>
-        <div v-if="filteredExpensesChart && filteredExpensesChart.length > 0" class="h-80 w-full overflow-hidden">
+        <div v-if="filteredExpensesChart && filteredExpensesChart.length > 0" class="h-80 w-full relative" style="overflow: visible; padding-right: 60px;">
           <VChart :option="expensesChartOption" autoresize style="height: 100%; width: 100%;" />
+          <div class="absolute top-2 left-2 text-xs text-gray-500 bg-white bg-opacity-75 px-2 py-1 rounded z-10">
+            Hover to zoom • Drag to pan • Wheel to zoom
+          </div>
         </div>
         <div v-else class="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
           <p class="text-gray-500">No expenses data available for selected period</p>
@@ -1519,14 +1962,17 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       </div>
 
       <!-- Unpaid Customers Chart -->
-      <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+      <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm" style="overflow: visible;">
         <div class="mb-3">
           <h2 class="text-sm sm:text-lg font-medium text-gray-700 text-center sm:text-left">
             Unpaid & Pending Customers
           </h2>
         </div>
-        <div v-if="(filteredUnpaidCustomersChart.unpaid?.length > 0) || (filteredUnpaidCustomersChart.pending?.length > 0)" class="h-80 w-full overflow-hidden">
+        <div v-if="(filteredUnpaidCustomersChart.unpaid?.length > 0) || (filteredUnpaidCustomersChart.pending?.length > 0)" class="h-80 w-full relative" style="overflow: visible; padding-right: 60px;">
           <VChart :option="unpaidCustomersChartOption" autoresize style="height: 100%; width: 100%;" />
+          <div class="absolute top-2 left-2 text-xs text-gray-500 bg-white bg-opacity-75 px-2 py-1 rounded z-10">
+            Hover to zoom • Drag to pan • Wheel to zoom
+          </div>
         </div>
         <div v-else class="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
           <p class="text-gray-500">No unpaid customers data available for selected period</p>

@@ -571,7 +571,6 @@ async function sendToCS(ticket: any) {
                   <th class="p-2">Accumulation</th>
                   <th class="p-2">Assignee</th>
                   <th class="p-2">Created</th>
-                  <th class="p-2">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -617,7 +616,7 @@ async function sendToCS(ticket: any) {
                   </td>
                   <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
                   <td class="p-2">{{ r.created_at?.slice?.(0,10) }}</td>
-                  <td class="p-2">
+                  <!-- <td class="p-2">
                     <button 
                       @click="sendToCS(r)"
                       class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs"
@@ -625,7 +624,7 @@ async function sendToCS(ticket: any) {
                     >
                       To CS
                     </button>
-                  </td>
+                  </td> -->
                 </tr>
               </tbody>
             </table>

@@ -916,10 +916,16 @@ function getFullImageUrl(imagePath: string): string {
     return imagePath;
   }
   
-  // If it's a relative path, prepend the base URL
-  const config = useRuntimeConfig();
-  const baseUrl = config.public.apiBase || 'http://localhost:8080';
-  return `${baseUrl}/${imagePath}`;
+  // Get the API host from environment
+  const apiHost = useApiHost();
+  
+  // If it's just a filename (document photo), construct the full path
+  if (!imagePath.includes('/')) {
+    return `${apiHost}/uploads/installations/documents/${imagePath}`;
+  }
+  
+  // If it's a relative path, prepend the API host
+  return `${apiHost}/${imagePath}`;
 }
 
 // Load initial data
@@ -1217,9 +1223,10 @@ async function handleDocumentPhotoUpload(event: Event) {
       
       console.log("Document photo upload response:", response);
       
-      if (response.data?.full_path) {
-        state.document_photo = response.data.full_path;
-        console.log("Document photo path set to:", state.document_photo);
+      if (response.data?.file) {
+        // Store only the filename, not the full path
+        state.document_photo = response.data.file;
+        console.log("Document photo filename set to:", state.document_photo);
         
         useToast().add({
           title: "Success",

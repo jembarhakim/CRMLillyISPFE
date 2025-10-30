@@ -16,11 +16,11 @@
                 <LucideIcon name="arrow-left" :size="16" class="mr-2" />
                 {{ backNavigationLabel }}
               </UButton>
-              <UButton @click="printReport" color="white" variant="solid" size="sm"
+              <!-- <UButton @click="printReport" color="white" variant="solid" size="sm"
                        class="bg-white/20 backdrop-blur-sm hover:bg-white/30 w-full sm:w-auto">
                 <LucideIcon name="printer" :size="16" class="mr-2" />
                 Print Report
-              </UButton>
+              </UButton> -->
               <UButton @click="deleteInstallationReport" color="white" variant="solid" size="sm"
                        class="bg-red-500/80 backdrop-blur-sm hover:bg-red-600/80 w-full sm:w-auto"
                        :loading="deleting">
@@ -321,24 +321,15 @@
                     {{ report.document_type || 'Not Specified' }}
                   </span>
                 </div>
-              </div>
-
-              <!-- Document Photo -->
-              <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
-                <div class="flex items-center mb-4">
-                  <div class="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="photo" class="text-white text-lg" />
-                  </div>
-                  <h4 class="text-lg font-semibold text-amber-800">Document Photo</h4>
-                </div>
                 <div v-if="report.document_photo" class="text-center">
                   <div class="relative inline-block">
                     <img
-                      :src="getDocumentPhotoUrl(report?.document_photo)"
+                      :src="getDocumentPhotoUrl(report.document_photo)"
                       alt="Document Photo"
                       class="w-64 h-40 object-cover rounded-xl border-2 border-amber-200 cursor-pointer hover:scale-105 transition-transform duration-200 shadow-lg"
                       @click="openDocumentPhotoModal"
-                      @error="handleImageError"
+                      @error="handleDocumentImageError"
+                      @load="handleDocumentImageLoad"
                     />
                     <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 rounded-xl transition-all duration-200 flex items-center justify-center pointer-events-none">
                       <UIcon name="search-plus" class="text-white text-2xl opacity-0 hover:opacity-100 transition-opacity" />
@@ -354,80 +345,60 @@
                   <p class="text-amber-500 text-sm mt-1">Document photo will appear here when uploaded</p>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
 
-        <!-- Technician Photo Documentation -->
-        <div v-if="technicianPhotos.length > 0 || report.technician_photos_notes" class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-4">
-            <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="camera" class="mr-3 text-xl" />
-              Technician Photo Documentation
-            </h3>
-          </div>
-          <div class="p-8">
-            <!-- Technician Photos Notes -->
-            <div v-if="report.technician_photos_notes" class="mb-6">
+              <!-- Technician Photos -->
               <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="file-text" class="text-white text-lg" />
+                    <UIcon name="photo" class="text-white text-lg" />
                   </div>
-                  <h4 class="text-lg font-semibold text-amber-800">Progress Notes</h4>
+                  <h4 class="text-lg font-semibold text-amber-800">Technician Photos</h4>
                 </div>
-                <p class="text-gray-700 leading-relaxed">{{ report.technician_photos_notes }}</p>
-              </div>
-            </div>
-
-            <!-- Technician Photos Grid -->
-            <div v-if="technicianPhotos.length > 0" class="mb-6">
-              <div class="flex items-center justify-between mb-4">
-                <h4 class="text-lg font-semibold text-gray-800 flex items-center">
-                  <UIcon name="photo" class="mr-2 text-amber-600" />
-                  Progress Photos ({{ technicianPhotos.length }})
-                </h4>
-                <div class="text-sm text-gray-500">
-                  Uploaded: {{ formatDate(technicianPhotos[0]?.created_at) }}
-                </div>
-              </div>
-              
-              <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <div
-                  v-for="(photo, index) in technicianPhotos"
-                  :key="index"
-                  class="relative group cursor-pointer bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
-                  @click="openTechnicianPhotoModal(photo.file || photo.full_path, index)"
-                >
-                  <img
-                    :src="getTechnicianPhotoUrl(photo.file || photo.full_path)"
-                    :alt="`Technician Photo ${index + 1}`"
-                    class="w-full h-32 object-cover"
-                    @error="handleTechnicianPhotoError"
-                  />
-                  <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
-                    <UIcon name="eye" class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xl" />
-                  </div>
-                  <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-2">
-                    <div class="flex justify-between items-center">
-                      <span>Photo {{ index + 1 }}</span>
-                      <UIcon name="arrow-top-right-on-square" class="w-3 h-3" />
+                <!-- Technician Photos Grid -->
+                <div v-if="technicianPhotos.length > 0" class="mt-4">
+                  <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div
+                      v-for="(photo, index) in technicianPhotos"
+                      :key="photo.id || index"
+                      class="relative group cursor-pointer bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
+                      @click="openTechnicianPhotoModal(photo.full_path , index)"
+                    >
+                      <img
+                        :src="getTechnicianPhotoUrl(photo.full_path )"
+                        :alt="`Technician Photo ${index + 1}`"
+                        class="w-full h-24 object-cover"
+                        @error="handleTechnicianPhotoError"
+                      />
+                      <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
+                        <UIcon name="eye" class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-lg" />
+                      </div>
+                      <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-1.5">
+                        <div class="flex justify-between items-center">
+                          <span>Photo {{ index + 1 }}</span>
+                          <UIcon name="arrow-top-right-on-square" class="w-3 h-3" />
+                        </div>
+                      </div>
                     </div>
                   </div>
+                  <p class="text-xs text-amber-600 mt-3 text-center">
+                    {{ technicianPhotos.length }} photo(s) from installation progress
+                  </p>
+                </div>
+                
+                <!-- No Photos State -->
+                <div v-else class="text-center py-6">
+                  <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <UIcon name="camera" class="text-amber-500 text-xl" />
+                  </div>
+                  <p class="text-amber-600 font-medium text-sm">No technician photos</p>
+                  <p class="text-amber-500 text-xs mt-1">Photos will appear here when uploaded</p>
                 </div>
               </div>
-            </div>
-
-            <!-- No Photos State -->
-            <div v-else class="text-center py-8">
-              <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <UIcon name="camera" class="text-amber-500 text-2xl" />
-              </div>
-              <p class="text-amber-600 font-medium">No technician photos uploaded</p>
-              <p class="text-amber-500 text-sm mt-1">Technician progress photos will appear here when uploaded</p>
             </div>
           </div>
         </div>
+
+        
 
         <!-- Product Information -->
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
@@ -1372,48 +1343,36 @@ function getDeviceStatusColor(status: string | undefined) {
 
 // Document photo functions
 function getDocumentPhotoUrl(documentPhoto: string | undefined) {
+  console.log('🔍 getDocumentPhotoUrl called with:', documentPhoto);
+  
   if (!documentPhoto) {
-    console.log('getDocumentPhotoUrl: No document photo provided');
+    console.log('❌ getDocumentPhotoUrl: No document photo provided');
     return '';
   }
 
-  console.log('getDocumentPhotoUrl: Processing path:', documentPhoto);
+  console.log('✅ getDocumentPhotoUrl: Processing filename:', documentPhoto);
 
   // If it's already a full URL, return as is
   if (documentPhoto.startsWith('http')) {
-    console.log('getDocumentPhotoUrl: Already a full URL:', documentPhoto);
+    console.log('✅ getDocumentPhotoUrl: Already a full URL:', documentPhoto);
     return documentPhoto;
   }
 
   // Get the API host from environment
   const apiHost = useApiHost();
+  console.log('🌐 API Host:', apiHost);
 
-  // Normalize the path by removing any duplicated upload directories
-  let normalizedPath = normalizeDocumentPhotoPath(documentPhoto);
-  console.log('getDocumentPhotoUrl: Normalized path:', documentPhoto, '->', normalizedPath);
-
-  // If it starts with uploads/, add the backend base URL
-  if (normalizedPath.startsWith('uploads/')) {
-    const url = `${apiHost}/${normalizedPath}`;
-    console.log('getDocumentPhotoUrl: Generated URL:', url);
-    return url;
-  }
-
-  // If it's just a filename, assume it's in uploads/installations/documents/
-  if (!normalizedPath.includes('/')) {
-    const url = `${apiHost}/uploads/installations/documents/${normalizedPath}`;
-    console.log('getDocumentPhotoUrl: Generated URL for filename:', url);
-    return url;
-  }
-
-  // Default: prepend backend URL
-  const url = `${apiHost}/${normalizedPath}`;
-  console.log('getDocumentPhotoUrl: Generated default URL:', url);
+  // Document photo now stores only the filename (e.g., "document_20251008_170943.jpg")
+  // We need to construct the full path to uploads/installations/documents/
+  const url = `${apiHost}/uploads/installations/documents/${documentPhoto}`;
+  console.log('✅ getDocumentPhotoUrl: Generated URL for filename:', url);
   return url;
 }
 
 // Normalize document photo path by removing duplicated upload directories
 function normalizeDocumentPhotoPath(path: string): string {
+  console.log('🔧 normalizeDocumentPhotoPath input:', path);
+  
   // Handle various path formats found in database:
   // 1. uploads\installations\documents\filename (Windows paths with backslashes)
   // 2. uploads/installations/documents/uploads/installations/documents/filename (duplicated)
@@ -1422,32 +1381,52 @@ function normalizeDocumentPhotoPath(path: string): string {
 
   // First, convert Windows backslashes to forward slashes for web URLs
   let normalized = path.replace(/\\/g, '/');
+  console.log('🔧 After backslash conversion:', normalized);
+
+  // Handle the specific case: uploads/installations/documents/uploads/installations/documents/filename
+  // This is a double duplication that needs to be cleaned up
+  if (normalized.includes('uploads/installations/documents/uploads/installations/documents/')) {
+    normalized = normalized.replace('uploads/installations/documents/uploads/installations/documents/', 'uploads/installations/documents/');
+    console.log('🔧 After handling double duplication:', normalized);
+  }
 
   // Handle triple duplication: uploads/installations/documents/uploads/installations/documents/
   while (normalized.includes('uploads/installations/documents/uploads/installations/documents/')) {
     normalized = normalized.replace('uploads/installations/documents/uploads/installations/documents/', 'uploads/installations/documents/');
+    console.log('🔧 After handling triple duplication:', normalized);
   }
 
   // Handle double duplication: uploads/installations/documents/uploads/installations/
   while (normalized.includes('uploads/installations/documents/uploads/installations/')) {
     normalized = normalized.replace('uploads/installations/documents/uploads/installations/', 'uploads/installations/documents/');
+    console.log('🔧 After handling double duplication (general):', normalized);
   }
 
   // Handle single duplication: uploads/installations/documents/uploads/
   while (normalized.includes('uploads/installations/documents/uploads/') && !normalized.includes('uploads/installations/documents/uploads/installations/')) {
     normalized = normalized.replace('uploads/installations/documents/uploads/', 'uploads/installations/documents/');
+    console.log('🔧 After handling single duplication:', normalized);
   }
 
   // Handle incorrect structure: uploads/documents/ -> uploads/installations/documents/
   if (normalized.startsWith('uploads/documents/')) {
     normalized = normalized.replace('uploads/documents/', 'uploads/installations/documents/');
+    console.log('🔧 After fixing incorrect structure:', normalized);
   }
 
   // Handle paths that are just filenames
-  if (!normalized.includes('/') && normalized.endsWith('.jpg')) {
+  if (!normalized.includes('/') && (normalized.endsWith('.jpg') || normalized.endsWith('.jpeg') || normalized.endsWith('.png'))) {
     normalized = 'uploads/installations/documents/' + normalized;
+    console.log('🔧 After adding path for filename:', normalized);
   }
 
+  // Final safety check: ensure we don't have double uploads/ at the start
+  if (normalized.startsWith('uploads/uploads/')) {
+    normalized = normalized.replace('uploads/uploads/', 'uploads/');
+    console.log('🔧 Final safety check: Fixed double uploads/ prefix:', normalized);
+  }
+
+  console.log('✅ Final normalized path:', normalized);
   return normalized;
 }
 
@@ -1521,6 +1500,181 @@ function handleImageLoad() {
   modalImageLoaded.value = true;
 }
 
+// Document image specific handlers
+function handleDocumentImageError(event: Event) {
+  const img = event.target as HTMLImageElement;
+  console.log('❌ Document image failed to load:', img.src);
+  console.log('📁 Document photo path:', report.value?.document_photo);
+  console.log('🔗 Generated URL:', getDocumentPhotoUrl(report.value?.document_photo));
+  
+  // Try fallback URLs before showing error
+  if (report.value?.document_photo && !img.dataset.fallbackAttempted) {
+    img.dataset.fallbackAttempted = 'true';
+    tryFallbackDocumentUrls(img);
+    return;
+  }
+  
+  // Hide the image and show error message
+  img.style.display = 'none';
+
+  const parentDiv = img.parentElement;
+  if (parentDiv && !parentDiv.querySelector('.document-image-error')) {
+    const errorMsg = document.createElement('div');
+    errorMsg.className = 'document-image-error text-center p-4 bg-red-100 rounded-lg border-2 border-dashed border-red-300';
+    errorMsg.innerHTML = `
+      <div class="text-red-500 mb-2">
+        <UIcon name="alert-triangle" class="w-12 h-12 mx-auto mb-2" />
+      </div>
+      <p class="text-sm text-red-600 font-medium">Document photo could not be loaded</p>
+      <p class="text-xs text-red-500 mt-1">All fallback URLs failed. Check the debug info below for details.</p>
+    `;
+    parentDiv.appendChild(errorMsg);
+  }
+}
+
+// Try fallback URLs for document image
+function tryFallbackDocumentUrls(img: HTMLImageElement) {
+  if (!report.value?.document_photo) return;
+  
+  const apiHost = useApiHost();
+  const originalPath = report.value.document_photo;
+  
+  // Generate fallback URLs based on the specific path structure
+  const fallbackUrls: string[] = [];
+  
+  // If the path contains duplicated directories, try the cleaned version first
+  if (originalPath.includes('uploads/installations/documents/uploads/installations/documents/')) {
+    const cleanedPath = originalPath.replace('uploads/installations/documents/uploads/installations/documents/', 'uploads/installations/documents/');
+    fallbackUrls.push(`${apiHost}/${cleanedPath}`);
+    console.log('🧹 Added cleaned path:', cleanedPath);
+  }
+  
+  // Add other common patterns
+  fallbackUrls.push(
+    `${apiHost}/${originalPath}`, // Direct path
+    `${apiHost}/uploads/${originalPath}`, // With uploads prefix
+    `${apiHost}/uploads/installations/documents/${originalPath}`, // Standard documents path
+    `${apiHost}/uploads/documents/${originalPath}`, // Alternative documents path
+  );
+  
+  // If the original path has duplicated directories, try extracting just the filename
+  if (originalPath.includes('uploads/installations/documents/uploads/installations/documents/')) {
+    const filename = originalPath.split('/').pop();
+    if (filename) {
+      fallbackUrls.push(`${apiHost}/uploads/installations/documents/${filename}`);
+      console.log('📁 Added filename-only path:', filename);
+    }
+  }
+  
+  let currentIndex = 0;
+  
+  function tryNextUrl() {
+    if (currentIndex >= fallbackUrls.length) {
+      console.log('❌ All fallback URLs exhausted');
+      return;
+    }
+    
+    const testUrl = fallbackUrls[currentIndex];
+    console.log(`🔄 Trying fallback URL ${currentIndex + 1}/${fallbackUrls.length}:`, testUrl);
+    
+    // Create a test image to check if URL works
+    const testImg = new Image();
+    testImg.onload = () => {
+      console.log(`✅ Fallback URL ${currentIndex + 1} works! Loading image...`);
+      img.src = testUrl;
+      img.style.display = 'block';
+    };
+    testImg.onerror = () => {
+      console.log(`❌ Fallback URL ${currentIndex + 1} failed`);
+      currentIndex++;
+      tryNextUrl();
+    };
+    testImg.src = testUrl;
+  }
+  
+  tryNextUrl();
+}
+
+function handleDocumentImageLoad(event: Event) {
+  console.log('Document image loaded successfully');
+  const img = event.target as HTMLImageElement;
+  console.log('Loaded image src:', img.src);
+}
+
+// Test different URL patterns
+function testDocumentUrl(pattern: number) {
+  if (!report.value?.document_photo) return;
+  
+  const apiHost = useApiHost();
+  const originalPath = report.value.document_photo;
+  let testUrl = '';
+  
+  switch (pattern) {
+    case 1:
+      // Direct path (this works according to user)
+      testUrl = `${apiHost}/${originalPath}`;
+      break;
+    case 2:
+      // Cleaned path (remove duplicated directories)
+      if (originalPath.includes('uploads/installations/documents/uploads/installations/documents/')) {
+        const cleanedPath = originalPath.replace('uploads/installations/documents/uploads/installations/documents/', 'uploads/installations/documents/');
+        testUrl = `${apiHost}/${cleanedPath}`;
+      } else {
+        testUrl = `${apiHost}/uploads/${originalPath}`;
+      }
+      break;
+    case 3:
+      // Just filename in documents folder
+      if (originalPath.includes('uploads/installations/documents/uploads/installations/documents/')) {
+        const filename = originalPath.split('/').pop();
+        testUrl = `${apiHost}/uploads/installations/documents/${filename}`;
+      } else {
+        testUrl = `${apiHost}/uploads/installations/documents/${originalPath}`;
+      }
+      break;
+  }
+  
+  console.log(`🧪 Testing URL pattern ${pattern}:`, testUrl);
+  console.log(`📁 Original path: ${originalPath}`);
+  
+  // Open the URL in a new tab for testing
+  window.open(testUrl, '_blank');
+  
+  // Also try to load it in the current image element
+  const img = document.querySelector('img[alt="Document Photo"]') as HTMLImageElement;
+  if (img) {
+    img.src = testUrl;
+    console.log('🖼️ Updated image src to:', testUrl);
+  }
+}
+
+// Test normalization function
+function testNormalization() {
+  if (!report.value?.document_photo) return;
+  
+  const originalPath = report.value.document_photo;
+  console.log('🧪 Testing normalization with path:', originalPath);
+  
+  const normalized = normalizeDocumentPhotoPath(originalPath);
+  console.log('🧪 Normalized result:', normalized);
+  
+  const apiHost = useApiHost();
+  const finalUrl = `${apiHost}/${normalized}`;
+  console.log('🧪 Final URL:', finalUrl);
+  
+  // Test the URL
+  const testImg = new Image();
+  testImg.onload = () => {
+    console.log('✅ Normalized URL works!');
+    alert(`✅ Normalized URL works!\n\nOriginal: ${originalPath}\nNormalized: ${normalized}\nFinal URL: ${finalUrl}`);
+  };
+  testImg.onerror = () => {
+    console.log('❌ Normalized URL failed');
+    alert(`❌ Normalized URL failed\n\nOriginal: ${originalPath}\nNormalized: ${normalized}\nFinal URL: ${finalUrl}`);
+  };
+  testImg.src = finalUrl;
+}
+
 function openDocumentPhotoModal() {
   console.log('🖱️ THUMBNAIL CLICKED!');
   console.log('Current showDocumentModal:', showDocumentModal.value);
@@ -1579,14 +1733,52 @@ const technicianPhotos = computed(() => {
 function getTechnicianPhotoUrl(photoPath: string) {
   if (!photoPath) return '';
   
+  console.log('🔍 getTechnicianPhotoUrl called with:', photoPath);
+  
   // If it's already a full URL, return as is
   if (photoPath.startsWith('http')) {
+    console.log('✅ getTechnicianPhotoUrl: Already a full URL:', photoPath);
     return photoPath;
   }
   
   // Get the API host from environment
   const apiHost = useApiHost();
-  return `${apiHost}/${photoPath}`;
+  console.log('🌐 API Host:', apiHost);
+  
+  // Normalize the path (database stores with backslashes, convert to forward slashes)
+  let normalizedPath = photoPath.replace(/\\/g, '/');
+  console.log('🔧 getTechnicianPhotoUrl: Normalized path:', photoPath, '->', normalizedPath);
+  
+  // Remove leading slash if present
+  if (normalizedPath.startsWith('/')) {
+    normalizedPath = normalizedPath.substring(1);
+    console.log('🔧 Removed leading slash:', normalizedPath);
+  }
+  
+  // Ensure no double uploads/ prefix
+  if (normalizedPath.startsWith('uploads/uploads/')) {
+    normalizedPath = normalizedPath.replace('uploads/uploads/', 'uploads/');
+    console.log('🔧 Fixed double uploads/ prefix:', normalizedPath);
+  }
+  
+  // If path already starts with uploads/, just prepend API host
+  if (normalizedPath.startsWith('uploads/')) {
+    const url = `${apiHost}/${normalizedPath}`;
+    console.log('✅ getTechnicianPhotoUrl: Generated URL:', url);
+    return url;
+  }
+  
+  // If it's just a filename, assume it's in uploads/installations/technician_photos/
+  if (!normalizedPath.includes('/')) {
+    const url = `${apiHost}/uploads/installations/technician_photos/${normalizedPath}`;
+    console.log('✅ getTechnicianPhotoUrl: Generated URL for filename:', url);
+    return url;
+  }
+  
+  // Default: prepend backend URL
+  const url = `${apiHost}/${normalizedPath}`;
+  console.log('✅ getTechnicianPhotoUrl: Generated default URL:', url);
+  return url;
 }
 
 function openTechnicianPhotoModal(photo: string, index: number) {

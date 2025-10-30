@@ -34,5 +34,33 @@ export const dashboardCustomerApi = () => {
       }
       return response.json();
     },
+    checkDeviceStatus: async () => {
+      const response = await fetch(`${api}/api/customer/dashboard/device-status`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to check device status');
+      }
+      return response.json();
+    },
+    getAvailableProducts: async () => {
+      const response = await fetch(`${api}/api/customer/dashboard/products`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get available products');
+      }
+      return response.json();
+    },
   };
 };

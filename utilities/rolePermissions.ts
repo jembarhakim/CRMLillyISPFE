@@ -16,22 +16,27 @@ export interface RoleConfig {
 }
 
 // Define all available roles
+// ADMIN role no longer exists - SUPERADMIN is the only admin role
 export const ROLES = {
-  ADMIN: 'ADMIN',
+  SUPERADMIN: 'SUPERADMIN',
   CUSTOMER_SERVICE: 'CUSTOMER_SERVICE', 
   NOC: 'NOC',
   TECHNICIAN: 'TECHNICIAN',
-  FINANCE: 'FINANCE'
+  FINANCE: 'FINANCE',
+  SIDEKEEPER: 'SIDEKEEPER'
 } as const
 
 // Role mapping to handle backend role names (with spaces) to frontend role names (with underscores)
+// ADMIN role no longer exists in the system
+// SUPERADMIN is the only admin role with full permissions
 export const ROLE_MAPPING: Record<string, string> = {
   'CUSTOMER SERVICE': 'CUSTOMER_SERVICE',
   'CUSTOMER_SERVICE': 'CUSTOMER_SERVICE',
-  'ADMIN': 'ADMIN',
+  'SUPERADMIN': 'SUPERADMIN', // SUPERADMIN is the only admin role
   'NOC': 'NOC',
   'TECHNICIAN': 'TECHNICIAN',
-  'FINANCE': 'FINANCE'
+  'FINANCE': 'FINANCE',
+  'SIDEKEEPER': 'SIDEKEEPER'
 }
 
 // Function to normalize role names
@@ -40,11 +45,12 @@ export function normalizeRole(role: string): string {
 }
 
 // Role configurations
+// ADMIN role no longer exists - SUPERADMIN is the only admin role
 export const ROLE_CONFIGS: Record<string, RoleConfig> = {
-  [ROLES.ADMIN]: {
-    name: ROLES.ADMIN,
-    displayName: 'Administrator',
-    description: 'Full system access',
+  [ROLES.SUPERADMIN]: {
+    name: ROLES.SUPERADMIN,
+    displayName: 'Super Administrator',
+    description: 'Full system access with elevated privileges',
     permissions: ['*'] // All permissions
   },
   [ROLES.CUSTOMER_SERVICE]: {
@@ -199,8 +205,12 @@ export const MAIN_MENU: MenuItem[] = [
 
 // Utility functions for role-based access control
 export function hasPermission(userRole: string, permission: string): boolean {
-  const normalizedRole = normalizeRole(userRole)
-  const roleConfig = ROLE_CONFIGS[normalizedRole]
+  // Check original role first (for SUPERADMIN), then normalized role
+  let roleConfig = ROLE_CONFIGS[userRole]
+  if (!roleConfig) {
+    const normalizedRole = normalizeRole(userRole)
+    roleConfig = ROLE_CONFIGS[normalizedRole]
+  }
   if (!roleConfig) return false
   
   // Admin has all permissions
@@ -238,11 +248,19 @@ export function getMenuForFeaturePermissions(featurePermissions: Record<string, 
 }
 
 export function getRoleDisplayName(role: string): string {
+  // Check original role first for SUPERADMIN, then fall back to normalized
+  if (ROLE_CONFIGS[role]) {
+    return ROLE_CONFIGS[role].displayName
+  }
   const normalizedRole = normalizeRole(role)
   return ROLE_CONFIGS[normalizedRole]?.displayName || role
 }
 
 export function getRoleDescription(role: string): string {
+  // Check original role first for SUPERADMIN, then fall back to normalized
+  if (ROLE_CONFIGS[role]) {
+    return ROLE_CONFIGS[role].description
+  }
   const normalizedRole = normalizeRole(role)
   return ROLE_CONFIGS[normalizedRole]?.description || ''
 }

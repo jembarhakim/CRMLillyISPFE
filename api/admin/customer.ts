@@ -33,6 +33,25 @@ export const customerAdminApi = () => {
       return response.json();
     },
 
+    getAllCustomersWithFilter: async (isInternet?: string, isCollaborator?: string) => {
+      const params = new URLSearchParams();
+      if (isInternet) params.append('is_internet', isInternet);
+      if (isCollaborator) params.append('is_collaborator', isCollaborator);
+      
+      const response = await fetch(`${api}/api/admin/customer/filter?${params.toString()}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useCookie("token").value}`,
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
+      }
+      return response.json();
+    },
+
     createCustomer: async (
       data: CreateCustomerRequest
     ) => {

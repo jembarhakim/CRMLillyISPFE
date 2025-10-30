@@ -135,12 +135,14 @@ function checkPermission(to: RouteLocationNormalized) {
     "/dashboard/area",
     "/dashboard/internet-package",
   ];
-  if (
-    user.value?.role === "ADMIN" &&
-    restrictedForAdmins.includes(to.path)
-  ) {
-    return "disallow";
-  }
+  // ADMIN role no longer exists - SUPERADMIN is the only admin role
+  // If restrictions are needed for SUPERADMIN, uncomment below:
+  // if (
+  //   user.value?.role === "SUPERADMIN" &&
+  //   restrictedForAdmins.includes(to.path)
+  // ) {
+  //   return "disallow";
+  // }
   if (
     user.value?.role === "TECHNICIAN" &&
     restrictedForTechnicians.includes(to.path)

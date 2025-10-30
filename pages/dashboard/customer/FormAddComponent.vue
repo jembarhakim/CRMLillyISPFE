@@ -95,6 +95,8 @@ const schema = object({
   service_request_date: string().required(),
   sales_representative_id: string().optional(),
   company_id: string().optional(),
+  is_internet: string().optional(),
+  is_collaborator: string().optional(),
 });
 
 type Schema = InferType<typeof schema>;
@@ -112,6 +114,8 @@ const state = reactive({
   service_request_date: "",
   sales_representative_id: "",
   company_id: "",
+  is_internet: "yes",
+  is_collaborator: "no",
 });
 
 // Network device state removed - will be handled during installation report creation
@@ -129,7 +133,9 @@ watch(
         state.longitude = props.data.longitude,
         state.service_request_date = props.data.service_request_date || "",
         state.sales_representative_id = props.data.sales_representative_id || "",
-        state.company_id = props.data.company_id || ""
+        state.company_id = props.data.company_id || "",
+        state.is_internet = props.data.is_internet || "yes",
+        state.is_collaborator = props.data.is_collaborator || "no"
       
       // Network device data will be handled during installation report creation
     }
@@ -240,8 +246,8 @@ async function getDataOptions() {
     }))
   })
 
-  // Get sales representatives (users with specific role)
-  userManagementAdminApi().getAllUsers({ query: { role: "ADMIN" } }).then((response) => {
+  // Get sales representatives (users with SUPERADMIN role - ADMIN role no longer exists)
+  userManagementAdminApi().getAllUsers({ query: { role: "SUPERADMIN" } }).then((response) => {
     salesRepresentatives.value = response.data.map((value: any, index: number) => ({
       label: value.name,
       value: value.id
@@ -258,18 +264,112 @@ async function getDataOptions() {
 }
 await getDataOptions()
 
+// Mark this modal's dialog panel with a unique identifier
+onMounted(() => {
+  nextTick(() => {
+    // Find the HeadlessUI dialog panel that contains our customer form content
+    const observer = new MutationObserver(() => {
+      const dialogPanels = document.querySelectorAll('[id^="headlessui-dialog-panel"]')
+      dialogPanels.forEach((panel) => {
+        // Check if this panel contains our customer form content
+        if (panel.querySelector('.customer-form-content')) {
+          // Add unique attribute to identify this modal
+          panel.setAttribute('data-customer-form-modal', 'true')
+        }
+      })
+    })
+    
+    // Start observing
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    })
+    
+    // Also check immediately
+    const dialogPanels = document.querySelectorAll('[id^="headlessui-dialog-panel"]')
+    dialogPanels.forEach((panel) => {
+      if (panel.querySelector('.customer-form-content')) {
+        panel.setAttribute('data-customer-form-modal', 'true')
+      }
+    })
+    
+    // Cleanup observer when component unmounts
+    onUnmounted(() => {
+      observer.disconnect()
+    })
+  })
+})
 
 </script>
 
 <style scoped>
-/* Responsive optimizations */
-@media (max-width: 640px) {
-  .max-w-7xl {
-    max-width: 100%;
-    margin: 0;
-    padding: 0.5rem;
+/* CRITICAL: Override HeadlessUI dialog panel max-width (32rem from sm:max-w-lg) */
+/* ONLY target HeadlessUI dialog panels that are ancestors of this customer form modal */
+.customer-form-modal :deep([id^="headlessui-dialog-panel"]),
+:deep(.customer-form-modal ~ [id^="headlessui-dialog-panel"]) {
+  max-width: none !important;
+  width: 95vw !important;
+}
+
+/* Specifically override the sm:max-w-lg Tailwind class that sets max-width: 32rem */
+/* Only for this modal's dialog panel */
+@media (min-width: 640px) {
+  .customer-form-modal :deep([id^="headlessui-dialog-panel"].sm\:max-w-lg),
+  .customer-form-modal :deep([id^="headlessui-dialog-panel"][class*="max-w-lg"]),
+  :deep(.customer-form-modal ~ [id^="headlessui-dialog-panel"].sm\:max-w-lg),
+  :deep(.customer-form-modal ~ [id^="headlessui-dialog-panel"][class*="max-w-lg"]) {
+    max-width: none !important;
+    width: 95vw !important;
   }
-  
+}
+
+/* Alternative: Target any dialog panel that contains our customer form content */
+:deep([id^="headlessui-dialog-panel"]:has(.customer-form-content)) {
+  max-width: none !important;
+  width: 95vw !important;
+}
+
+@media (min-width: 640px) {
+  :deep([id^="headlessui-dialog-panel"]:has(.customer-form-content).sm\:max-w-lg),
+  :deep([id^="headlessui-dialog-panel"]:has(.customer-form-content)[class*="max-w-lg"]) {
+    max-width: none !important;
+    width: 95vw !important;
+  }
+}
+
+/* Force modal to be wider - override UModal defaults */
+:deep(.ui-modal),
+:deep([class*="ui-modal"]) {
+  max-width: 95vw !important;
+  width: 95vw !important;
+}
+
+:deep(.ui-modal > div),
+:deep(.ui-modal > .ui-card) {
+  max-width: 95vw !important;
+  width: 100% !important;
+}
+
+/* Ensure modal content container is full width */
+:deep(.ui-modal .max-w-\[95vw\]) {
+  max-width: 95vw !important;
+  width: 95vw !important;
+}
+
+/* Customer Type Cards - ensure they don't shrink */
+:deep(.grid.grid-cols-1.lg\\:grid-cols-2) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 1024px) {
+  :deep(.grid.grid-cols-1.lg\\:grid-cols-2) {
+    grid-template-columns: repeat(2, minmax(250px, 1fr));
+  }
+}
+
+/* Responsive optimizations - modal uses max-w-[95vw] from template */
+
+@media (max-width: 640px) {
   /* Improve touch targets */
   .grid-cols-1 > * {
     min-height: 44px; /* iOS recommended touch target size */
@@ -311,7 +411,7 @@ await getDataOptions()
 @media (min-width: 1024px) {
   /* Larger map for desktop */
   .leaflet-container {
-    height: 300px !important;
+    height: 450px !important;
   }
   
   /* Better spacing for desktop */
@@ -324,6 +424,8 @@ await getDataOptions()
     gap: 1.5rem;
   }
 }
+
+/* Tablet and desktop - UModal handles width via template props */
 
 /* Performance optimizations */
 .leaflet-container {
@@ -414,9 +516,28 @@ select:focus {
 }
 </style>
 
+<style>
+/* Global styles for HeadlessUI dialog panel - ONLY affects customer form modal */
+/* Target dialog panel with data-customer-form-modal attribute (added via JavaScript) */
+[id^="headlessui-dialog-panel"][data-customer-form-modal="true"] {
+  max-width: none !important;
+  width: 95vw !important;
+}
+
+/* Override sm:max-w-lg class specifically (removes 32rem constraint) */
+/* ONLY for customer form modal */
+@media (min-width: 640px) {
+  [id^="headlessui-dialog-panel"][data-customer-form-modal="true"].sm\:max-w-lg,
+  [id^="headlessui-dialog-panel"][data-customer-form-modal="true"][class*="max-w-lg"] {
+    max-width: none !important;
+    width: 95vw !important;
+  }
+}
+</style>
+
 <template>
-  <UModal :ui="{ width: 'w-full max-w-6xl', height: 'h-auto max-h-[90vh] overflow-y-auto' }">
-    <div class="w-full max-w-6xl mx-auto p-4 lg:p-6 overflow-y-auto max-h-[90vh]">
+  <UModal :ui="{ width: 'w-[95vw]', height: 'h-auto max-h-[95vh] overflow-y-auto' }" class="customer-form-modal">
+    <div class="w-full max-w-none mx-auto p-4 lg:p-8 overflow-y-auto max-h-[95vh] customer-form-content">
       <!-- Modal Header -->
       <div class="flex items-center justify-between mb-4 p-2 sm:p-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg">
         <h1 class="text-lg sm:text-2xl font-bold text-white">
@@ -435,7 +556,7 @@ select:focus {
 
       <UForm :schema="schema" :state="state" class="space-y-6" @submit="onSubmit">
         <!-- Desktop: Two-column layout, Mobile: Single column -->
-        <div class="flex flex-col lg:flex-row gap-6">
+        <div class="flex flex-col md:flex-row gap-8">
           <!-- Left Column: Customer & Business Information -->
           <div class="flex-1 space-y-6">
             <!-- Customer Information Section -->
@@ -466,6 +587,104 @@ select:focus {
                      searchable
                    />
                  </UFormGroup>
+                 
+                 <!-- Customer Type Selection -->
+                 <div class="space-y-6">
+                   <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+                     <UIcon name="tag" class="w-5 h-5 text-purple-600" />
+                     Customer Type
+                   </h4>
+                   
+                   <!-- Customer Type Cards -->
+                   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                     <!-- Internet Customer Card -->
+                     <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-6 border border-blue-200 dark:border-blue-700">
+                       <div class="flex items-start gap-3 mb-4">
+                         <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                           <UIcon name="wifi" class="w-7 h-7 text-white" />
+                         </div>
+                         <div class="flex-1 overflow-hidden">
+                           <h5 class="text-lg font-semibold text-blue-900 dark:text-blue-100 leading-tight whitespace-nowrap">Internet Customer</h5>
+                           <p class="text-sm text-blue-600 dark:text-blue-300 mt-1 break-words">Regular internet service users</p>
+                         </div>
+                       </div>
+                       <UFormGroup label="Status" name="is_internet" class="mb-0">
+                         <USelectMenu 
+                           v-model="state.is_internet" 
+                           :options="[
+                             { label: 'Yes', value: 'yes' },
+                             { label: 'No', value: 'no' }
+                           ]" 
+                           value-attribute="value" 
+                           option-attribute="label" 
+                           placeholder="Select status"
+                           class="w-full"
+                         />
+                       </UFormGroup>
+                     </div>
+                     
+                     <!-- Collaborator Card -->
+                     <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-6 border border-purple-200 dark:border-purple-700">
+                       <div class="flex items-start gap-3 mb-4">
+                         <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                           <UIcon name="handshake" class="w-7 h-7 text-white" />
+                         </div>
+                         <div class="flex-1 overflow-hidden">
+                           <h5 class="text-lg font-semibold text-purple-900 dark:text-purple-100 leading-tight whitespace-nowrap">Collaborator</h5>
+                           <p class="text-sm text-purple-600 dark:text-purple-300 mt-1 break-words">Business partners & resellers</p>
+                         </div>
+                       </div>
+                       <UFormGroup label="Status" name="is_collaborator" class="mb-0">
+                         <USelectMenu 
+                           v-model="state.is_collaborator" 
+                           :options="[
+                             { label: 'Yes', value: 'yes' },
+                             { label: 'No', value: 'no' }
+                           ]" 
+                           value-attribute="value" 
+                           option-attribute="label" 
+                           placeholder="Select status"
+                           class="w-full"
+                         />
+                       </UFormGroup>
+                     </div>
+                   </div>
+                   
+                   <!-- Customer Type Info -->
+                   <div class="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-xl p-6 border border-indigo-200 dark:border-indigo-700">
+                     <div class="flex items-start gap-3">
+                       <UIcon name="info" class="w-6 h-6 text-indigo-600 dark:text-indigo-400 mt-1 flex-shrink-0" />
+                       <div class="text-sm text-indigo-800 dark:text-indigo-200">
+                         <p class="font-semibold mb-3 text-base">Customer Type Guidelines:</p>
+                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                           <div class="space-y-2">
+                             <div class="flex items-start gap-2">
+                               <UIcon name="wifi" class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                               <div>
+                                 <p class="font-medium text-blue-900 dark:text-blue-100">Internet Customer</p>
+                                 <p class="text-xs text-blue-700 dark:text-blue-300">Regular customers who use internet services</p>
+                               </div>
+                             </div>
+                           </div>
+                           <div class="space-y-2">
+                             <div class="flex items-start gap-2">
+                               <UIcon name="handshake" class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                               <div>
+                                 <p class="font-medium text-purple-900 dark:text-purple-100">Collaborator</p>
+                                 <p class="text-xs text-purple-700 dark:text-purple-300">Business partners, resellers, or service providers</p>
+                               </div>
+                             </div>
+                           </div>
+                         </div>
+                         <div class="mt-4 p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                           <p class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                             💡 <strong>Note:</strong> A customer can be both internet customer and collaborator
+                           </p>
+                         </div>
+                       </div>
+                     </div>
+                   </div>
+                 </div>
                  
                  <!-- Single column layout -->
                  <div class="space-y-4">
@@ -558,7 +777,7 @@ select:focus {
               <!-- Map Container -->
               <div class="mb-6">
                 <LMap 
-                  style="height: 300px; width: 100%;" 
+                  style="height: 450px; width: 100%;" 
                   :zoom="6" 
                   :center="[state.latitude, state.longitude]"
                   :use-global-leaflet="false"

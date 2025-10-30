@@ -7,19 +7,20 @@ export default defineNuxtRouteMiddleware((to) => {
   }
 
   // Define route permissions
+  // ADMIN role no longer exists - SUPERADMIN is the only admin role
   const routePermissions: Record<string, string[]> = {
-    '/dashboard': ['ADMIN', 'CUSTOMER_SERVICE', 'NOC', 'TECHNICIAN', 'FINANCE'],
-    '/dashboard/customer': ['ADMIN', 'CUSTOMER_SERVICE', 'NOC', 'TECHNICIAN'],
-    '/dashboard/area': ['ADMIN', 'CUSTOMER_SERVICE'],
-    '/dashboard/report': ['ADMIN', 'CUSTOMER_SERVICE', 'NOC', 'FINANCE'],
-    '/dashboard/internet-package': ['ADMIN', 'CUSTOMER_SERVICE'],
-    '/dashboard/asset': ['ADMIN', 'CUSTOMER_SERVICE'],
-    '/dashboard/companies': ['ADMIN', 'CUSTOMER_SERVICE'],
-    '/dashboard/invoice': ['ADMIN', 'CUSTOMER_SERVICE', 'FINANCE'],
-    '/dashboard/transaction': ['ADMIN', 'CUSTOMER_SERVICE', 'FINANCE'],
-    '/dashboard/tickets': ['ADMIN', 'CUSTOMER_SERVICE', 'NOC', 'TECHNICIAN'],
-    '/dashboard/tickets/reports': ['ADMIN', 'CUSTOMER_SERVICE', 'NOC', 'TECHNICIAN'],
-    '/dashboard/user-management': ['ADMIN'],
+    '/dashboard': ['SUPERADMIN', 'CUSTOMER_SERVICE', 'NOC', 'TECHNICIAN', 'FINANCE'],
+    '/dashboard/customer': ['SUPERADMIN', 'CUSTOMER_SERVICE', 'NOC', 'TECHNICIAN'],
+    '/dashboard/area': ['SUPERADMIN', 'CUSTOMER_SERVICE'],
+    '/dashboard/report': ['SUPERADMIN', 'CUSTOMER_SERVICE', 'NOC', 'FINANCE'],
+    '/dashboard/internet-package': ['SUPERADMIN', 'CUSTOMER_SERVICE'],
+    '/dashboard/asset': ['SUPERADMIN', 'CUSTOMER_SERVICE'],
+    '/dashboard/companies': ['SUPERADMIN', 'CUSTOMER_SERVICE'],
+    '/dashboard/invoice': ['SUPERADMIN', 'CUSTOMER_SERVICE', 'FINANCE'],
+    '/dashboard/transaction': ['SUPERADMIN', 'CUSTOMER_SERVICE', 'FINANCE'],
+    '/dashboard/tickets': ['SUPERADMIN', 'CUSTOMER_SERVICE', 'NOC', 'TECHNICIAN'],
+    '/dashboard/tickets/reports': ['SUPERADMIN', 'CUSTOMER_SERVICE', 'NOC', 'TECHNICIAN'],
+    '/dashboard/user-management': ['SUPERADMIN'],
   }
 
   const userRole = user.value?.role

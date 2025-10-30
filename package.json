@@ -6,6 +6,7 @@
     "build": "nuxt build",
     "build:local": "node switch-env.js local && nuxt build",
     "build:production": "node switch-env.js production && nuxt build",
+    "build:vps": "node switch-env.js production && nuxt build && node scripts/fix-hydration.js",
     "dev": "nuxt dev",
     "dev:local": "node switch-env.js local && nuxt dev",
     "dev:production": "node switch-env.js production && nuxt dev",

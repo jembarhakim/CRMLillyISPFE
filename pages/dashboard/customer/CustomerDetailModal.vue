@@ -1437,7 +1437,7 @@ const salesRepresentatives = ref<any[]>([])
 const loadSalesRepresentatives = async () => {
   try {
     const { userManagementAdminApi } = await import('@/api/admin/user-management')
-    const response = await userManagementAdminApi().getAllUsers({ query: { role: "ADMIN" } })
+    const response = await userManagementAdminApi().getAllUsers({ query: { role: "SUPERADMIN" } })
     if (response.success && response.data) {
       salesRepresentatives.value = response.data
     }

@@ -84,11 +84,18 @@ export function useRolePermissions() {
     return getRoleDescription(role || userRole.value)
   }
 
-  // Check if user is admin
-  const isAdmin = computed(() => userRole.value === ROLES.ADMIN)
+  // Check if user is admin (only SUPERADMIN has admin access, ADMIN role no longer exists)
+  const isAdmin = computed(() => {
+    const role = authStore.user?.role || ''
+    return role === 'SUPERADMIN' || role === ROLES.SUPERADMIN || normalizeRole(role) === ROLES.SUPERADMIN
+  })
 
   // Check if user is customer service
-  const isCustomerService = computed(() => userRole.value === ROLES.CUSTOMER_SERVICE)
+  const isCustomerService = computed(() => {
+    const role = authStore.user?.role || ''
+    const normalized = normalizeRole(role)
+    return normalized === ROLES.CUSTOMER_SERVICE || role === ROLES.CUSTOMER_SERVICE
+  })
 
   // Check if user is NOC
   const isNOC = computed(() => userRole.value === ROLES.NOC)
