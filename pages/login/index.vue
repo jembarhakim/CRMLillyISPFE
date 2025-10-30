@@ -43,7 +43,10 @@ async function onSubmitCustomer(event: FormSubmitEvent<any>) {
   try {
     const response = await authCustomerApi().loginAuth(state.phone, state.password)
     
-    authStore.login({ token: response.data.token })
+    authStore.login({ 
+      token: response.data.token,
+      userType: 'customer'
+    })
     navigateTo('/customer')
   } catch (error: any) {
     console.error('Login error:', error)

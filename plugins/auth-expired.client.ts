@@ -41,13 +41,18 @@ export default defineNuxtPlugin((nuxtApp) => {
         isHandling = true
         lastHandledAt = now
 
+        let userType = ''
+        
         try {
             const { useAuthStore } = await import('@/stores/auth')
             const auth = useAuthStore()
             
+            // Store user type before logout
+            userType = auth.userType || ''
+            
             // Only logout if user was actually logged in
             if (auth.isLoggedIn) {
-                console.log('Logging out user due to 401 error')
+                console.log('Logging out user due to 401 error, userType:', userType)
                 auth.logout()
             }
         } catch (error) {
@@ -62,6 +67,7 @@ export default defineNuxtPlugin((nuxtApp) => {
             // 4. Not during initial load period
             if (process.client && 
                 !location.pathname.startsWith('/login') && 
+                !location.pathname.startsWith('/employee') &&
                 !hasShownNotification && 
                 hasValidToken && 
                 !isInitialLoad) {
@@ -80,10 +86,14 @@ export default defineNuxtPlugin((nuxtApp) => {
             // Only redirect to login if user was actually logged in and not during initial load
             if (process.client && 
                 !location.pathname.startsWith('/login') && 
+                !location.pathname.startsWith('/employee') &&
                 hasValidToken && 
                 !isInitialLoad) {
-                console.log('Redirecting to login due to 401 error')
-                await navigateTo('/login')
+                
+                // Redirect based on user type
+                const redirectPath = userType === 'employee' ? '/employee' : '/login'
+                console.log('Redirecting to', redirectPath, 'due to 401 error')
+                await navigateTo(redirectPath)
             }
         } catch (error) {
             console.error('Error redirecting to login:', error)

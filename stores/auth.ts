@@ -13,6 +13,7 @@ export const useAuthStore = defineStore('auth', {
       token: '',
       user,
       isInitialized: false,
+      userType: '', // 'customer' or 'employee'
     }
   },
   getters: {
@@ -81,11 +82,19 @@ export const useAuthStore = defineStore('auth', {
           sameSite: 'lax',
           httpOnly: false
         })
+        const userTypeCookie = useCookie('user_type', { 
+          default: () => '',
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+          secure: false,
+          sameSite: 'lax',
+          httpOnly: false
+        })
         
         const tokenValue = tokenCookie.value || ''
         const roleValue = roleCookie.value || ''
         const nameValue = nameCookie.value || ''
         const emailValue = emailCookie.value || ''
+        const userTypeValue = userTypeCookie.value || ''
         
         // Only update if values are different to avoid unnecessary reactivity triggers
         if (this.token !== tokenValue) {
@@ -101,11 +110,14 @@ export const useAuthStore = defineStore('auth', {
         if (this.user.email !== emailValue) {
           this.user.email = emailValue
         }
+        if (this.userType !== userTypeValue) {
+          this.userType = userTypeValue
+        }
         
         // Mark as initialized
         this.isInitialized = true
         
-        console.log('Auth store initialized from cookies - token:', this.token ? 'exists' : 'missing', 'role:', this.user.role, 'name:', this.user.name, 'initialized:', this.isInitialized)
+        console.log('Auth store initialized from cookies - token:', this.token ? 'exists' : 'missing', 'role:', this.user.role, 'name:', this.user.name, 'userType:', this.userType, 'initialized:', this.isInitialized)
         
         // If no valid token found, ensure we don't trigger unnecessary API calls
         if (!this.token || this.token === '' || this.token === 'null' || this.token === 'undefined') {
@@ -113,8 +125,8 @@ export const useAuthStore = defineStore('auth', {
         }
       }
     },
-    login({token,role_id,name,email}:{token:string,role_id?:string,name?:string,email?:string}) {
-      console.log('Auth store login called with token:', token, 'role_id:', role_id, 'name:', name)
+    login({token,role_id,name,email,userType}:{token:string,role_id?:string,name?:string,email?:string,userType?:string}) {
+      console.log('Auth store login called with token:', token, 'role_id:', role_id, 'name:', name, 'userType:', userType)
       
       if (process.client) {
         const tokenCookie = useCookie('token', { 
@@ -145,12 +157,20 @@ export const useAuthStore = defineStore('auth', {
           sameSite: 'lax', // More permissive for development
           httpOnly: false // Allow client-side access
         })
+        const userTypeCookie = useCookie('user_type', { 
+          default: () => '',
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+          secure: false, // Set to true in production
+          sameSite: 'lax', // More permissive for development
+          httpOnly: false // Allow client-side access
+        })
         
         // Set cookies first
         tokenCookie.value = token
         roleCookie.value = role_id || ''
         nameCookie.value = name || ''
         emailCookie.value = email || ''
+        userTypeCookie.value = userType || ''
         
         // Also store in localStorage as backup
         try {
@@ -158,11 +178,12 @@ export const useAuthStore = defineStore('auth', {
           localStorage.setItem('role_id', role_id || '')
           localStorage.setItem('user_name', name || '')
           localStorage.setItem('user_email', email || '')
+          localStorage.setItem('user_type', userType || '')
         } catch (e) {
           // Ignore localStorage errors
         }
         
-        console.log('Cookies set - token:', tokenCookie.value ? 'exists' : 'missing')
+        console.log('Cookies set - token:', tokenCookie.value ? 'exists' : 'missing', 'userType:', userTypeCookie.value)
       }
       
       // Then update state
@@ -171,9 +192,10 @@ export const useAuthStore = defineStore('auth', {
       this.user.role = role_id || ''
       this.user.name = name || ''
       this.user.email = email || ''
+      this.userType = userType || ''
       this.isInitialized = true
       
-      console.log('Auth store after login - token:', this.token, 'role:', this.user.role, 'name:', this.user.name)
+      console.log('Auth store after login - token:', this.token, 'role:', this.user.role, 'name:', this.user.name, 'userType:', this.userType)
     },
     logout() {
       if (process.client) {
@@ -181,12 +203,14 @@ export const useAuthStore = defineStore('auth', {
         const roleCookie = useCookie('role_id')
         const nameCookie = useCookie('user_name')
         const emailCookie = useCookie('user_email')
+        const userTypeCookie = useCookie('user_type')
         
         // Clear cookies by setting them to empty and removing them
         tokenCookie.value = ''
         roleCookie.value = ''
         nameCookie.value = ''
         emailCookie.value = ''
+        userTypeCookie.value = ''
         
         // Also clear from localStorage as backup
         try {
@@ -194,6 +218,7 @@ export const useAuthStore = defineStore('auth', {
           localStorage.removeItem('role_id')
           localStorage.removeItem('user_name')
           localStorage.removeItem('user_email')
+          localStorage.removeItem('user_type')
         } catch (e) {
           // Ignore localStorage errors
         }
@@ -207,6 +232,7 @@ export const useAuthStore = defineStore('auth', {
       user.name = ""
       user.email = ""
       this.user = user
+      this.userType = ''
       this.isInitialized = true // Keep initialized to prevent race conditions
       
       console.log('Auth store logged out')
