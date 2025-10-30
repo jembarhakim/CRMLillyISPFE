@@ -16,6 +16,11 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     await new Promise(resolve => setTimeout(resolve, 50));
   }
 
+  // Allow access to landing page and root path without authentication
+  if (to.path === '/landing' || to.path === '/') {
+    return;
+  }
+
   // Handle login page - redirect to dashboard if already logged in
   if (to.path === '/login') {
     if (authStore.isLoggedIn) {

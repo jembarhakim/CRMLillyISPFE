@@ -16,10 +16,10 @@ const { isVisible, currentTitle, currentMessage, currentType, currentDuration, c
     <!-- <NuxtWelcome /> -->
     <!-- <NuxtUIProvider> -->
     <NuxtLayout>
-      <NuxtLayout name="navbar" v-if="route.path !== '/login' && route.path !== '/customer' && !route.path.startsWith('/invoice')">
+      <NuxtLayout name="navbar" v-if="route.path !== '/login' && route.path !== '/employee' && route.path !== '/customer' && route.path !== '/landing' && !route.path.startsWith('/invoice')">
         <NuxtPage />
       </NuxtLayout>
-      <NuxtPage v-if="route.path == '/login' || route.path == '/customer' || route.path.startsWith('/invoice')" />
+      <NuxtPage v-if="route.path == '/login' || route.path == '/employee' || route.path == '/customer' || route.path == '/landing' || route.path.startsWith('/invoice')" />
     </NuxtLayout>
     <!-- Wrap UI components in ClientOnly to prevent Icon SSR recursion -->
     <ClientOnly>

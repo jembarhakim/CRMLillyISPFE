@@ -9,7 +9,17 @@ export default defineNuxtConfig({
         autoInstall: true,
         compiler: 'vue3'
       })
-    ]
+    ],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['vue', 'vue-router'],
+            ui: ['@nuxt/ui']
+          }
+        }
+      }
+    }
   },
   css: [
     "~/assets/css/tailwind.css",
@@ -53,6 +63,12 @@ export default defineNuxtConfig({
         { name: "viewport", content: "width=device-width, initial-scale=1.0" },
         { name: "description", content: "Customer Relationship Management System" },
       ],
+      link: [
+        {
+          rel: "stylesheet",
+          href: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        }
+      ]
     },
   },
   typescript: {
@@ -124,10 +140,8 @@ export default defineNuxtConfig({
     "@i2d/nuxt-pdf-frame",
     "nuxt-echarts"
   ],
-  // Completely disable Nuxt UI icon system to prevent recursion
-  ui: {
-    icons: false
-  },
+  // Nuxt UI configuration
+  // Note: Icon configuration is handled via unplugin-icons in Vite plugins
   imports: {
     dirs: ["composables", "stores"],
   },

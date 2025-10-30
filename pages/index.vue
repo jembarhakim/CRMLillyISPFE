@@ -1,18 +1,11 @@
 <script setup>
-// Set page title
-useHead({
-  title: 'CRM System'
-})
-
-// Disable SSR to prevent Icon component infinite recursion
 definePageMeta({
-  ssr: false
+  middleware: 'redirect-to-landing'
 })
 
-// Always redirect to login page immediately
-onMounted(async () => {
-  console.log('Redirecting to login page')
-  await navigateTo('/login')
+// Set page title - though this will redirect immediately
+useHead({
+  title: 'Lilly ISP - Welcome'
 })
 </script>
 

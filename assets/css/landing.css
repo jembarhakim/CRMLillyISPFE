@@ -1,0 +1,572 @@
+/* Landing Page Custom Styles */
+
+/* Prevent horizontal overflow at root level without breaking sticky positioning */
+body,
+html {
+  overflow-x: clip; /* Modern alternative to overflow-x: hidden that doesn't break position: sticky */
+  max-width: 100vw;
+}
+
+/* Custom Font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+.my-font {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+}
+
+/* Subtitle Text Styling */
+.subtitle-text {
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+@media (min-width: 640px) {
+  .subtitle-text {
+    font-size: 18px;
+    line-height: 1.7;
+  }
+}
+
+@media (min-width: 768px) {
+  .subtitle-text {
+    font-size: 20px;
+    line-height: 1.7;
+  }
+}
+
+@media (min-width: 1024px) {
+  .subtitle-text {
+    font-size: 24px;
+    line-height: 1.75;
+  }
+}
+
+@media (min-width: 1280px) {
+  .subtitle-text {
+    font-size: 26px;
+    line-height: 1.8;
+  }
+}
+
+/* Custom Tab Styles */
+.custom_tab {
+  border-radius: 5px;
+  transition: all 0.3s ease;
+}
+
+.custom_tab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Hero Section */
+.custom-caption {
+  text-align: center;
+  padding: 16px;
+  color: white;
+}
+
+.main_line {
+  font-size: 35px;
+  letter-spacing: 1px;
+  line-height: 1.3;
+  font-weight: 600;
+  margin-bottom: 0;
+  word-wrap: break-word;
+  max-width: 100%;
+}
+
+@media (min-width: 640px) {
+  .main_line {
+    font-size: 45px;
+    letter-spacing: 2px;
+    line-height: 1.25;
+  }
+}
+
+@media (min-width: 768px) {
+  .main_line {
+    font-size: 52px;
+    letter-spacing: 3px;
+    line-height: 1.3;
+  }
+}
+
+@media (min-width: 1024px) {
+  .main_line {
+    font-size: 60px;
+    letter-spacing: 4px;
+    line-height: 1.2;
+  }
+}
+
+@media (min-width: 1280px) {
+  .main_line {
+    font-size: 70px;
+    letter-spacing: 4px;
+    line-height: 1.2;
+  }
+}
+
+/* Animations */
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes flipInX {
+  0% {
+    transform: perspective(400px) rotateX(90deg);
+    opacity: 0;
+  }
+  40% {
+    transform: perspective(400px) rotateX(-10deg);
+  }
+  70% {
+    transform: perspective(400px) rotateX(10deg);
+  }
+  100% {
+    transform: perspective(400px) rotateX(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  0% {
+    transform: translateY(-100px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-10px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(10px);
+  }
+}
+
+.animation_1 {
+  animation: bounceIn 1s ease-in 800ms both;
+}
+
+.animation_2 {
+  animation: flipInX 1s ease-in-out 800ms both;
+}
+
+.animation_3 {
+  animation: fadeIn 1s ease-in 800ms both;
+}
+
+/* Box Shadow on Hover */
+.box-shadow {
+  transition: box-shadow 0.3s ease;
+}
+
+.box-shadow:hover {
+  box-shadow: 0 10px 13px -6px rgba(0, 0, 0, 0.2), 
+              0 20px 31px 3px rgba(0, 0, 0, 0.14), 
+              0 8px 38px 7px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Parallax Backgrounds */
+.quote {
+  background: url(/statics/images/parallax.png);
+  background-size: cover;
+  background-position: center;
+  background-attachment: scroll;
+  background-repeat: no-repeat;
+  min-height: 300px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .quote {
+    background-attachment: fixed;
+    min-height: 400px;
+  }
+}
+
+.pricing {
+  background: url(/statics/images/pricing.png);
+  background-size: cover;
+  background-position: center;
+  background-attachment: scroll;
+  background-repeat: no-repeat;
+  padding: 40px 0;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .pricing {
+    background-attachment: fixed;
+    padding: 60px 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .pricing {
+    padding: 80px 0;
+  }
+}
+
+.contact_us {
+  background: url(/statics/images/contact_us.png);
+  background-size: cover;
+  background-position: center;
+  background-attachment: scroll;
+  background-repeat: no-repeat;
+  padding: 40px 0;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .contact_us {
+    background-attachment: fixed;
+    padding: 60px 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .contact_us {
+    padding: 80px 0;
+  }
+}
+
+/* Flashcard Effect */
+.flashcard-container {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  height: 263px;
+  display: inline-block;
+  margin: 10px auto;
+  perspective: 1000px;
+}
+
+@media (min-width: 640px) {
+  .flashcard-container {
+    width: 340px;
+    margin: 10px;
+  }
+}
+
+.flashcard {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.flashcard-container:hover .flashcard {
+  transform: rotateY(180deg);
+}
+
+.flashcard-front,
+.flashcard-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 768px) {
+  .flashcard-front,
+  .flashcard-back {
+    position: relative;
+  }
+  
+  /* Disable flip effect on mobile for better usability */
+  .flashcard-container:hover .flashcard {
+    transform: none;
+  }
+  
+  .flashcard-back {
+    display: none;
+  }
+}
+
+.flashcard-front {
+  background: #fff;
+}
+
+.flashcard-back {
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: white;
+}
+
+/* Team Flashcard */
+.team-flashcard-container {
+  position: relative;
+  width: 100%;
+  max-width: 260px;
+  height: 240px;
+  display: inline-block;
+  margin: 10px auto;
+  perspective: 1000px;
+}
+
+@media (min-width: 480px) {
+  .team-flashcard-container {
+    height: 263px;
+  }
+}
+
+@media (min-width: 640px) {
+  .team-flashcard-container {
+    width: 260px;
+    margin: 10px;
+  }
+}
+
+.team-flashcard {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.team-flashcard-container:hover .team-flashcard {
+  transform: rotateY(180deg);
+}
+
+/* Card Styles */
+.my-card {
+  transition: all 0.3s ease;
+}
+
+.my-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Smooth Scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main_line {
+    font-size: 35px !important;
+    line-height: 1.2;
+    letter-spacing: 2px;
+  }
+  
+  .custom-caption h4 {
+    font-size: 16px !important;
+  }
+  
+  .flashcard-container,
+  .team-flashcard-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 10px 0;
+  }
+  
+  /* Ensure cards don't overflow on mobile */
+  .flashcard-container {
+    height: auto;
+    min-height: 263px;
+  }
+  
+  .team-flashcard-container {
+    height: auto;
+    min-height: 240px;
+  }
+}
+
+@media (max-width: 480px) {
+  .main_line {
+    font-size: 28px !important;
+    line-height: 1.2;
+    letter-spacing: 1px;
+  }
+  
+  .custom-caption h4 {
+    font-size: 14px !important;
+  }
+}
+
+/* Color Picker */
+.color-picker-btn {
+  min-height: auto !important;
+  padding: 1px;
+}
+
+/* Navigation */
+.nav-header {
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  background-color: #1c1b21;
+  border-bottom: 2px solid;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.nav-header.scrolled {
+  background-color: rgba(28, 27, 33, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Ensure full width and prevent overflow */
+.landing-page {
+  width: 100%;
+  max-width: 100vw;
+  /* overflow-x: hidden; */ /* REMOVED: This breaks position: sticky on navbar */
+  position: relative; /* Create positioning context without breaking sticky */
+}
+
+/* Container adjustments for mobile */
+@media (max-width: 768px) {
+  .container {
+    max-width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Portfolio Grid */
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  line-height: 0;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .portfolio-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .portfolio-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Service Items */
+.service-item {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.service-item:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transform: translateY(-8px);
+}
+
+/* Add gradient background for service section */
+.bg-gradient-to-br {
+  background: linear-gradient(to bottom right, var(--tw-gradient-stops));
+}
+
+/* Service card animation on hover */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.group:hover .group-hover\:scale-110 {
+  transform: scale(1.1);
+}
+
+/* Pricing Card */
+.pricing-card {
+  transition: all 0.3s ease;
+}
+
+.pricing-card:hover {
+  transform: scale(1.05);
+}
+
+/* Input Focus */
+.contact-input:focus {
+  outline: none;
+  border-color: inherit;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2);
+}
+
+/* Ensure inputs are interactive */
+input, textarea {
+  pointer-events: auto;
+  z-index: 10;
+  position: relative;
+  color: #1f2937 !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Form container should be above background */
+.bg-white\/95 {
+  position: relative;
+  z-index: 20;
+  pointer-events: auto;
+}

@@ -67,8 +67,7 @@
             <LucideIcon 
               name="chevron-right"
               :size="24"
-              class="transition-colors duration-200" 
-              :class="{ 'rotate-180': !showSidebar }"
+              :class="`transition-colors duration-200 ${!showSidebar ? 'rotate-180' : ''}`"
               style="color: black !important; fill: black !important; stroke: black !important;" />
           </div>
           <div class="flex-1 p-2 overflow-auto no-scrollbar">
@@ -231,9 +230,21 @@ const navigateTo = (link: string) => {
 
 // Handle logout confirmation
 function handleLogoutConfirm() {
+  // Store the user role before logout to determine redirect
+  const userRole = authStore.user?.role
+  
+  // Logout user
   authStore.logout()
   showLogoutModal.value = false
-  router.push('/login')
+  
+  // Redirect based on previous role
+  // If role was CUSTOMER, redirect to customer login
+  // Otherwise (employee/admin roles), redirect to employee login
+  if (userRole === 'CUSTOMER') {
+    router.push('/login')
+  } else {
+    router.push('/employee')
+  }
 }
 
 // Handle logout cancel
