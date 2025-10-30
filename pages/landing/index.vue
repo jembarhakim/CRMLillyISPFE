@@ -8,7 +8,13 @@
     >
       <nav class="container mx-auto flex items-center justify-between max-w-full">
         <div class="flex items-center">
-          <img src="/statics/images/logolilly.png" alt="Lilly ISP Logo" class="h-10 sm:h-12 md:h-14 w-auto" />
+          <img 
+            src="/statics/images/logolilly.png" 
+            alt="Lilly ISP Logo" 
+            class="h-10 sm:h-12 md:h-14 w-auto" 
+            fetchpriority="high"
+            loading="eager"
+          />
         </div>
         
         <div class="hidden lg:flex items-center gap-2 flex-wrap">
@@ -762,7 +768,13 @@
           <!-- Company Info -->
           <div class="text-center sm:text-left">
             <div class="mb-3 sm:mb-4">
-              <img src="/statics/images/logolilly.png" alt="Lilly ISP Logo" class="h-10 sm:h-12 w-auto mx-auto sm:mx-0" />
+              <img 
+                src="/statics/images/logolilly.png" 
+                alt="Lilly ISP Logo" 
+                class="h-10 sm:h-12 w-auto mx-auto sm:mx-0" 
+                fetchpriority="high"
+                loading="eager"
+              />
             </div>
             <p class="text-gray-400 text-xs sm:text-sm">
               Your trusted internet service provider. Connecting Indonesia with fast, reliable, and affordable internet solutions.
@@ -854,13 +866,20 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import '~/assets/css/landing.css'
 
-// Set page title and meta
+// Set page title and meta with logo preload
 useHead({
   title: 'Lilly ISP - Fast, Reliable & Affordable Internet Service',
   meta: [
     { name: 'description', content: 'Your trusted internet service provider in Indonesia. Fast, reliable, and affordable connection for everyone.' },
     { property: 'og:title', content: 'Lilly ISP - Fast, Reliable & Affordable Internet Service' },
     { property: 'og:description', content: 'Your trusted internet service provider in Indonesia. Fast, reliable, and affordable connection for everyone.' }
+  ],
+  link: [
+    {
+      rel: 'preload',
+      as: 'image',
+      href: '/statics/images/logolilly.png'
+    }
   ]
 })
 

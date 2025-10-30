@@ -3,9 +3,16 @@ import type { FormError, FormErrorEvent, FormSubmitEvent } from '#ui/types'
 import { authCustomerApi } from '@/api/customer/auth'
 import LoginNotification from '@/components/LoginNotification.vue'
 
-// Set page title
+// Set page title and preload logo
 useHead({
-  title: 'Customer Login - CRM System'
+  title: 'Customer Login - CRM System',
+  link: [
+    {
+      rel: 'preload',
+      as: 'image',
+      href: '/statics/images/logolilly.png'
+    }
+  ]
 })
 
 // Apply guest middleware to prevent logged-in users from accessing login page
@@ -121,7 +128,13 @@ function closeError() {
       <div class="flex justify-center mb-6">
         <div class="relative">
           <div class="absolute inset-0 bg-red-500/20 blur-xl rounded-full"></div>
-          <img src="/statics/images/logolilly.png" alt="Lilly ISP Logo" class="relative h-16 sm:h-20 w-auto" />
+          <img 
+            src="/statics/images/logolilly.png" 
+            alt="Lilly ISP Logo" 
+            class="relative h-16 sm:h-20 w-auto" 
+            fetchpriority="high"
+            loading="eager"
+          />
         </div>
       </div>
 
