@@ -7,9 +7,9 @@
       :style="{ borderBottomColor: themeColor }"
     >
       <nav class="container mx-auto flex items-center justify-between max-w-full">
-        <span class="my-font text-2xl sm:text-3xl md:text-4xl">
-          Lilly <span :style="{ color: themeColor }">ISP</span>
-        </span>
+        <div class="flex items-center">
+          <img src="/statics/images/logolilly.png" alt="Lilly ISP Logo" class="h-10 sm:h-12 md:h-14 w-auto" />
+        </div>
         
         <div class="hidden lg:flex items-center gap-2 flex-wrap">
           <button
@@ -761,9 +761,9 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-4 sm:mb-6">
           <!-- Company Info -->
           <div class="text-center sm:text-left">
-            <h3 class="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
-              Lilly <span :style="{ color: themeColor }">ISP</span>
-            </h3>
+            <div class="mb-3 sm:mb-4">
+              <img src="/statics/images/logolilly.png" alt="Lilly ISP Logo" class="h-10 sm:h-12 w-auto mx-auto sm:mx-0" />
+            </div>
             <p class="text-gray-400 text-xs sm:text-sm">
               Your trusted internet service provider. Connecting Indonesia with fast, reliable, and affordable internet solutions.
             </p>
