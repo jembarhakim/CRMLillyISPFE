@@ -16,7 +16,7 @@ ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 // Set page title
 useHead({
-  title: 'Trouble Report - CRM System'
+  title: 'Laporan Gangguan - CRM System'
 })
 
 const rows = ref<any[]>([])
@@ -83,7 +83,7 @@ async function fetchSnapshot() {
   troubleTypes.value = Array.isArray(types?.data || types) ? (types?.data || types) as any[] : []
   const s = Array.isArray(byType?.data || byType) ? (byType?.data || byType) as any[] : []
   seriesData.value = s.map((r:any) => {
-    const typeName = typeNameMap.value[r.type] || r.type || 'Unknown'
+    const typeName = typeNameMap.value[r.type] || r.type || 'Tidak Dikenal'
     return {
       name: typeName,
       value: r.count,
@@ -165,7 +165,7 @@ const barOption = computed(() => ({
     axisLabel: { color: '#374151' }
   },
   series: [{
-    name: 'Customers Affected',
+      name: 'Pelanggan Terpengaruh',
     type: 'bar',
     data: Array.isArray(accumulationByType.value) ? accumulationByType.value.map(item => item.value) : [],
     itemStyle: {
@@ -192,7 +192,7 @@ const troubleFrequencyOption = computed(() => {
       axisPointer: { type: 'shadow' },
       formatter: function(params: any) {
         const data = params[0]
-        return `${data.name}<br/>Frequency: ${data.value} tickets<br/>Rank: #${data.dataIndex + 1}`
+        return `${data.name}<br/>Frekuensi: ${data.value} tiket<br/>Peringkat: #${data.dataIndex + 1}`
       }
     },
     grid: {
@@ -213,11 +213,11 @@ const troubleFrequencyOption = computed(() => {
     yAxis: {
       type: 'value',
       axisLabel: { color: '#374151' },
-      name: 'Ticket Count',
+      name: 'Jumlah Tiket',
       nameTextStyle: { color: '#374151' }
     },
     series: [{
-      name: 'Trouble Frequency',
+      name: 'Frekuensi Gangguan',
       type: 'bar',
       data: sortedData.map((item, index) => ({
         value: item.value,
@@ -241,13 +241,13 @@ const troubleFrequencyOption = computed(() => {
 const accumulationOption = computed(() => {
   // Group tickets by accumulation ranges - Enhanced for massive scale outages
   const ranges = [
-    { name: 'Single Customer', min: 1, max: 1, color: '#3B82F6' },
-    { name: '2-5 Customers', min: 2, max: 5, color: '#F59E0B' },
-    { name: '6-10 Customers', min: 6, max: 10, color: '#EF4444' },
-    { name: '11-50 Customers', min: 11, max: 50, color: '#DC2626' },
-    { name: '51-100 Customers', min: 51, max: 100, color: '#991B1B' },
-    { name: '101-500 Customers', min: 101, max: 500, color: '#7F1D1D' },
-    { name: '500+ Customers', min: 501, max: Infinity, color: '#450A0A' }
+    { name: 'Satu Pelanggan', min: 1, max: 1, color: '#3B82F6' },
+    { name: '2-5 Pelanggan', min: 2, max: 5, color: '#F59E0B' },
+    { name: '6-10 Pelanggan', min: 6, max: 10, color: '#EF4444' },
+    { name: '11-50 Pelanggan', min: 11, max: 50, color: '#DC2626' },
+    { name: '51-100 Pelanggan', min: 51, max: 100, color: '#991B1B' },
+    { name: '101-500 Pelanggan', min: 101, max: 500, color: '#7F1D1D' },
+    { name: '500+ Pelanggan', min: 501, max: Infinity, color: '#450A0A' }
   ]
   
   const data = ranges.map(range => {
@@ -275,7 +275,7 @@ const accumulationOption = computed(() => {
       data: data.map(item => item.name)
     },
     series: [{
-      name: 'Accumulation Distribution',
+      name: 'Distribusi Akumulasi',
       type: 'pie',
       radius: '50%',
       data: data,
@@ -357,13 +357,13 @@ onMounted(async () => {
 // Format accumulation numbers for display
 function formatAccumulation(accumulation: number): string {
   if (accumulation === 1) {
-    return '1 customer'
+    return '1 pelanggan'
   } else if (accumulation < 1000) {
-    return `${accumulation} customers`
+    return `${accumulation} pelanggan`
   } else if (accumulation < 1000000) {
-    return `${(accumulation / 1000).toFixed(1)}K customers`
+    return `${(accumulation / 1000).toFixed(1)}K pelanggan`
   } else {
-    return `${(accumulation / 1000000).toFixed(1)}M customers`
+    return `${(accumulation / 1000000).toFixed(1)}M pelanggan`
   }
 }
 
@@ -373,10 +373,10 @@ async function triggerAutoDetection() {
     await ticketsApi().autoDetectAndGroup()
     // Refresh data after auto-detection
     await fetchSnapshot()
-    alert('Auto-detection completed successfully!')
+    alert('Auto-deteksi berhasil diselesaikan!')
   } catch (error: any) {
     console.error('Auto-detection failed:', error)
-    alert('Auto-detection failed: ' + (error.message || 'Unknown error'))
+    alert('Auto-deteksi gagal: ' + (error.message || 'Error tidak diketahui'))
   } finally {
     loading.value = false
   }
@@ -399,7 +399,7 @@ function openAccumulationModal(ticket:any) {
 function confirmAccumulationEdit() {
   const val = parseInt(accumulationEditState.value.value)
   if (isNaN(val) || val < 1) {
-    accumulationEditState.value.error = 'Please enter a valid number greater than 0';
+    accumulationEditState.value.error = 'Masukkan angka yang valid lebih besar dari 0';
     return;
   }
   accumulationEditState.value.error = '';
@@ -412,7 +412,7 @@ async function doUpdateAccumulation(ticket:any, accumulation:number) {
     accumulationEditModal.value = false
     await fetchSnapshot()
   } catch (error:any) {
-    accumulationEditState.value.error = error?.message || 'Failed to update accumulation.'
+    accumulationEditState.value.error = error?.message || 'Gagal memperbarui akumulasi.'
   } finally {
     loading.value = false
   }
@@ -420,17 +420,17 @@ async function doUpdateAccumulation(ticket:any, accumulation:number) {
 
 // Send ticket to Customer Service
 async function sendToCS(ticket: any) {
-  const note = prompt(`Send ticket #${ticket.id} to Customer Service:\n"${ticket.title}"\n\nEnter note (optional):`)
+  const note = prompt(`Kirim tiket #${ticket.id} ke Customer Service:\n"${ticket.title}"\n\nMasukkan catatan (opsional):`)
   
   if (note !== null) {
     try {
       await ticketsApi().sendToCS(ticket.id, note || '')
-      alert('Ticket sent to Customer Service successfully!')
+      alert('Tiket berhasil dikirim ke Customer Service!')
       // Refresh data
       await fetchSnapshot()
     } catch (error: any) {
       console.error('Failed to send to CS:', error)
-      alert('Failed to send to CS: ' + (error.message || 'Unknown error'))
+      alert('Gagal mengirim ke CS: ' + (error.message || 'Error tidak diketahui'))
     }
   }
 }
@@ -438,7 +438,7 @@ async function sendToCS(ticket: any) {
 
 <template>
   <div class="space-y-6 text-gray-900 pt-4">
-    <h1 class="text-2xl font-semibold text-gray-900">Trouble Reports</h1>
+    <h1 class="text-2xl font-semibold text-gray-900">Laporan Gangguan</h1>
 
     <!-- Action Buttons -->
     <div class="flex justify-between items-center">
@@ -454,7 +454,7 @@ async function sendToCS(ticket: any) {
           @click="fetchSnapshot"
           class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
         >
-          Refresh Data
+          Segarkan Data
         </button>
       </div>
     </div>
@@ -462,27 +462,27 @@ async function sendToCS(ticket: any) {
     <!-- Summary Statistics -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
       <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <div class="text-blue-600 text-sm font-medium">Total Tickets</div>
+        <div class="text-blue-600 text-sm font-medium">Total Tiket</div>
         <div class="text-2xl font-bold text-blue-900">{{ summaryStats.total }}</div>
       </div>
       <div class="p-4 bg-green-50 rounded-lg border border-green-200">
-        <div class="text-green-600 text-sm font-medium">Types Covered</div>
+        <div class="text-green-600 text-sm font-medium">Jenis Tercakup</div>
         <div class="text-2xl font-bold text-green-900">{{ summaryStats.typesCount }}</div>
       </div>
       <div class="p-4 bg-purple-50 rounded-lg border border-purple-200">
-        <div class="text-purple-600 text-sm font-medium">Total by Type</div>
+        <div class="text-purple-600 text-sm font-medium">Total per Jenis</div>
         <div class="text-2xl font-bold text-purple-900">{{ summaryStats.byType }}</div>
       </div>
       <div class="p-4 bg-orange-50 rounded-lg border border-orange-200">
-        <div class="text-orange-600 text-sm font-medium">Avg per Type</div>
+        <div class="text-orange-600 text-sm font-medium">Rata-rata per Jenis</div>
         <div class="text-2xl font-bold text-orange-900">{{ summaryStats.avgPerType }}</div>
       </div>
       <div class="p-4 bg-red-50 rounded-lg border border-red-200">
-        <div class="text-red-600 text-sm font-medium">Customers Affected</div>
+        <div class="text-red-600 text-sm font-medium">Pelanggan Terpengaruh</div>
         <div class="text-2xl font-bold text-red-900">{{ summaryStats.totalCustomersAffected }}</div>
       </div>
       <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-        <div class="text-yellow-600 text-sm font-medium">High Accumulation</div>
+        <div class="text-yellow-600 text-sm font-medium">Akumulasi Tinggi</div>
         <div class="text-2xl font-bold text-yellow-900">{{ summaryStats.highAccumulationTickets }}</div>
         <div class="text-xs text-yellow-700">Max: {{ summaryStats.maxAccumulation }}</div>
       </div>
@@ -494,14 +494,14 @@ async function sendToCS(ticket: any) {
         <div class="flex items-center space-x-4">
           <div class="text-4xl">🚨</div>
           <div>
-            <h3 class="text-xl font-bold">CRITICAL OUTAGE DETECTED</h3>
-            <p class="text-red-100">Maximum accumulation: {{ formatAccumulation(summaryStats.maxAccumulation) }}</p>
-            <p class="text-sm text-red-200">This appears to be a datacenter or server-level issue affecting multiple customers.</p>
+            <h3 class="text-xl font-bold">GANGGUAN KRITIS TERDETEKSI</h3>
+            <p class="text-red-100">Akumulasi maksimum: {{ formatAccumulation(summaryStats.maxAccumulation) }}</p>
+            <p class="text-sm text-red-200">Ini tampaknya merupakan masalah tingkat datacenter atau server yang mempengaruhi banyak pelanggan.</p>
           </div>
         </div>
         <div class="text-right">
           <button class="bg-white text-red-600 px-4 py-2 rounded-lg font-bold hover:bg-red-50 transition-colors">
-            EMERGENCY RESPONSE
+            TANGGAP DARURAT
           </button>
         </div>
       </div>
@@ -512,7 +512,7 @@ async function sendToCS(ticket: any) {
              <!-- Bar Chart -->
        <div class="p-4 bg-white rounded-lg shadow border border-gray-100">
          <div class="flex items-center justify-between mb-3">
-           <h2 class="font-semibold text-gray-800">Tickets by Type (Bar Chart)</h2>
+           <h2 class="font-semibold text-gray-800">Tiket per Jenis (Grafik Batang)</h2>
            <!-- Time Filter Dropdown -->
            <div class="flex items-center gap-2">
              <label class="text-sm font-medium text-gray-700">Filter Waktu:</label>
@@ -536,7 +536,7 @@ async function sendToCS(ticket: any) {
       
       <!-- Hot Locations Map -->
       <div class="p-4 bg-white rounded-lg shadow border border-gray-100">
-        <h2 class="mb-3 font-semibold text-gray-800">Hot Locations</h2>
+        <h2 class="mb-3 font-semibold text-gray-800">Lokasi Rawan</h2>
         <div id="map" class="w-full h-80 rounded border"></div>
       </div>
     </div>
@@ -545,24 +545,24 @@ async function sendToCS(ticket: any) {
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div class="p-4 bg-white rounded-lg shadow border border-gray-100">
         <div class="flex items-center justify-between mb-3">
-          <h2 class="font-semibold text-gray-800">Trouble Frequency (Most to Least)</h2>
+          <h2 class="font-semibold text-gray-800">Frekuensi Gangguan (Terbanyak ke Terkecil)</h2>
         </div>
-        <p class="text-sm text-gray-600 mb-3">Realtime updates every 10s</p>
+        <p class="text-sm text-gray-600 mb-3">Pembaruan waktu nyata setiap 10 detik</p>
         <ECharts :option="troubleFrequencyOption" style="height:320px" />
       </div>
       
       <div class="p-4 bg-white rounded-lg shadow border border-gray-100">
         <div class="flex items-center justify-between mb-3">
-          <h2 class="font-semibold text-gray-800">Accumulation Analysis</h2>
+          <h2 class="font-semibold text-gray-800">Analisis Akumulasi</h2>
         </div>
-        <p class="text-sm text-gray-600 mb-3">Customers affected by similar problems</p>
+        <p class="text-sm text-gray-600 mb-3">Pelanggan yang terpengaruh oleh masalah serupa</p>
         <ECharts :option="accumulationOption" style="height:320px" />
       </div>
     </div>
 
     <!-- Responsive Trouble Tickets Display -->
     <div class="bg-white rounded-lg shadow border border-gray-100 p-4">
-      <h2 class="mb-4 font-semibold text-gray-800">All Trouble Tickets</h2>
+      <h2 class="mb-4 font-semibold text-gray-800">Semua Tiket Gangguan</h2>
       
       <!-- Desktop Table View -->
       <div class="hidden md:block">
@@ -572,12 +572,12 @@ async function sendToCS(ticket: any) {
               <thead class="bg-gray-100">
                 <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
                   <th class="p-2">ID</th>
-                  <th class="p-2">Title</th>
-                  <th class="p-2">Type</th>
+                  <th class="p-2">Judul</th>
+                  <th class="p-2">Jenis</th>
                   <th class="p-2">Status</th>
-                  <th class="p-2">Accumulation</th>
-                  <th class="p-2">Assignee</th>
-                  <th class="p-2">Created</th>
+                  <th class="p-2">Akumulasi</th>
+                  <th class="p-2">Ditugaskan Ke</th>
+                  <th class="p-2">Dibuat</th>
                 </tr>
               </thead>
               <tbody>
@@ -588,15 +588,15 @@ async function sendToCS(ticket: any) {
                   <td class="p-2">
                     <span v-if="r.status === 'finished'"
                       class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-green-600 text-white shadow-lg border-2 border-green-700">
-                      ✅ Finished
+                      ✅ Selesai
                     </span>
                     <span v-else-if="r.status === 'ongoing'"
                       class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-orange-600 text-white shadow-lg border-2 border-orange-700 animate-pulse">
-                      🔄 Ongoing
+                      🔄 Berlangsung
                     </span>
                     <span v-else
                       class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-red-600 text-white shadow-lg border-2 border-red-700 animate-pulse">
-                      ⚠️ Unfinished
+                      ⚠️ Belum Selesai
                     </span>
                   </td>
                   <td class="p-2">
@@ -615,7 +615,7 @@ async function sendToCS(ticket: any) {
                       <button 
                         @click="openAccumulationModal(r)"
                         class="text-blue-600 hover:text-blue-800 text-xs underline"
-                        title="Edit accumulation"
+                        title="Edit akumulasi"
                       >
                         Edit
                       </button>
@@ -637,7 +637,7 @@ async function sendToCS(ticket: any) {
             </table>
           </div>
           <div class="table-scroll-footer">
-            <span class="scroll-hint">↔ Scroll horizontally to see more columns | ↕ Scroll vertically for more rows</span>
+            <span class="scroll-hint">↔ Gulir horizontal untuk melihat lebih banyak kolom | ↕ Gulir vertikal untuk lebih banyak baris</span>
           </div>
         </div>
       </div>
@@ -653,15 +653,15 @@ async function sendToCS(ticket: any) {
                   <span class="text-lg font-bold text-gray-900">#{{ r.id }}</span>
                   <span v-if="r.status === 'finished'"
                     class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-green-600 text-white shadow-lg border-2 border-green-700">
-                    ✅ Finished
+                    ✅ Selesai
                   </span>
                   <span v-else-if="r.status === 'ongoing'"
                     class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-orange-600 text-white shadow-lg border-2 border-orange-700 animate-pulse">
-                    🔄 Ongoing
+                    🔄 Berlangsung
                   </span>
                   <span v-else
                     class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-red-600 text-white shadow-lg border-2 border-red-700 animate-pulse">
-                    ⚠️ Unfinished
+                    ⚠️ Belum Selesai
                   </span>
                 </div>
                 <h3 class="font-semibold text-gray-900 text-base leading-tight">{{ r.title }}</h3>
@@ -673,19 +673,19 @@ async function sendToCS(ticket: any) {
               <!-- Type and Assignee -->
               <div class="flex flex-wrap gap-2 text-xs">
                 <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                  Type: {{ typeNameMap[r.type] || r.type || 'Unknown' }}
+                  Jenis: {{ typeNameMap[r.type] || r.type || 'Tidak Dikenal' }}
                 </span>
                 <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                  Assignee: {{ r.current_assignee_name || r.current_assignee_role || 'Unassigned' }}
+                  Ditugaskan Ke: {{ r.current_assignee_name || r.current_assignee_role || 'Belum Ditugaskan' }}
                 </span>
                 <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                  Created: {{ r.created_at?.slice?.(0,10) }}
+                  Dibuat: {{ r.created_at?.slice?.(0,10) }}
                 </span>
               </div>
 
               <!-- Accumulation -->
               <div class="flex items-center justify-between">
-                <span class="text-sm font-medium text-gray-700">Accumulation:</span>
+                <span class="text-sm font-medium text-gray-700">Akumulasi:</span>
                 <div class="flex items-center space-x-2">
                   <span :class="{
                     'px-2 py-1 rounded-full text-xs font-medium': true,
@@ -701,7 +701,7 @@ async function sendToCS(ticket: any) {
                   <button 
                     @click="openAccumulationModal(r)"
                     class="text-blue-600 hover:text-blue-800 text-xs underline"
-                    title="Edit accumulation"
+                    title="Edit akumulasi"
                   >
                     Edit
                   </button>
@@ -713,12 +713,12 @@ async function sendToCS(ticket: any) {
                 <button 
                   @click="sendToCS(r)"
                   class="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                  title="Send to Customer Service"
+                  title="Kirim ke Customer Service"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                   </svg>
-                  Send to CS
+                  Kirim ke CS
                 </button>
               </div>
             </div>
@@ -732,8 +732,8 @@ async function sendToCS(ticket: any) {
               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
             </path>
           </svg>
-          <h3 class="mt-2 text-sm font-medium text-gray-900">No tickets found</h3>
-          <p class="mt-1 text-sm text-gray-500">No trouble tickets match the current filters.</p>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">Tidak ada tiket ditemukan</h3>
+          <p class="mt-1 text-sm text-gray-500">Tidak ada tiket gangguan yang sesuai dengan filter saat ini.</p>
         </div>
       </div>
     </div>
@@ -742,24 +742,24 @@ async function sendToCS(ticket: any) {
       <UCard>
         <template #header>
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-medium">Edit Accumulation</h3>
+            <h3 class="text-lg font-medium">Edit Akumulasi</h3>
             <UButton icon="x" size="sm" @click="accumulationEditModal = false" variant="ghost"/>
           </div>
         </template>
         <div>
-          <p>Edit accumulation for ticket #{{accumulationEditState.ticket?.id}}<br>
+          <p>Edit akumulasi untuk tiket #{{accumulationEditState.ticket?.id}}<br>
           <span class="text-sm text-gray-500 font-mono">"{{accumulationEditState.ticket?.title}}"</span></p>
-          <div class="mt-2 text-sm text-gray-700">Current: <b>{{accumulationEditState.ticket?.accumulation||1}}</b> customers</div>
+          <div class="mt-2 text-sm text-gray-700">Saat Ini: <b>{{accumulationEditState.ticket?.accumulation||1}}</b> pelanggan</div>
           <div class="mt-4">
-            <label class="text-sm">Enter new accumulation:</label>
+            <label class="text-sm">Masukkan akumulasi baru:</label>
             <UInput v-model="accumulationEditState.value" type="number" min="1" class="w-full mt-1" @keyup.enter="confirmAccumulationEdit" autofocus />
             <div v-if="accumulationEditState.error" class="mt-1 text-red-600 text-xs">{{accumulationEditState.error}}</div>
           </div>
         </div>
         <template #footer>
           <div class="flex justify-end gap-2 mt-4">
-            <UButton color="gray" @click="accumulationEditModal=false">Cancel</UButton>
-            <UButton color="blue" :loading="loading" @click="confirmAccumulationEdit">Save</UButton>
+            <UButton color="gray" @click="accumulationEditModal=false">Batal</UButton>
+            <UButton color="blue" :loading="loading" @click="confirmAccumulationEdit">Simpan</UButton>
           </div>
         </template>
       </UCard>
