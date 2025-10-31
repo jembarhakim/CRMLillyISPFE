@@ -20,7 +20,12 @@ export const ticketsApi = () => {
   return {
     // Lookup technicians by role
     listTechnicians: () => $fetch(`${base}/api/admin/user-management?role=TECHNICIAN`, { headers: authHeader() }),
-    list: () => $fetch(`${base}/api/tickets`, { headers: authHeader() }),
+    list: (history?: boolean) => {
+      const url = history 
+        ? `${base}/api/tickets?history=true`
+        : `${base}/api/tickets`
+      return $fetch(url, { headers: authHeader() })
+    },
     create: (p: any) => $fetch(`${base}/api/tickets`, { method: 'POST', body: p, headers: authHeader() }),
     sendToNOC: (id: number, note: string, imageFile?: File) => {
       const formData = new FormData()

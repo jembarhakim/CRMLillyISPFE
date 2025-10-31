@@ -382,32 +382,39 @@ async function triggerAutoDetection() {
   }
 }
 
-// Edit accumulation manually
-function editAccumulation(ticket: any) {
-  const newAccumulation = prompt(`Edit accumulation for ticket #${ticket.id}:\n"${ticket.title}"\n\nCurrent: ${ticket.accumulation || 1} customers\nEnter new accumulation:`, (ticket.accumulation || 1).toString())
-  
-  if (newAccumulation !== null) {
-    const accumulation = parseInt(newAccumulation)
-    if (isNaN(accumulation) || accumulation < 1) {
-      alert('Please enter a valid number greater than 0')
-      return
-    }
-    
-    // Update accumulation for this specific ticket
-    updateTicketAccumulation(ticket.id, accumulation)
+const accumulationEditModal = ref(false)
+const accumulationEditState = ref({
+  ticket: null as any,
+  value: '',
+  error: ''
+});
+function openAccumulationModal(ticket:any) {
+  accumulationEditState.value = {
+    ticket,
+    value: String(ticket.accumulation || 1),
+    error: ''
   }
+  accumulationEditModal.value = true;
 }
-
-// Update accumulation for a single ticket
-async function updateTicketAccumulation(ticketId: number, accumulation: number) {
+function confirmAccumulationEdit() {
+  const val = parseInt(accumulationEditState.value.value)
+  if (isNaN(val) || val < 1) {
+    accumulationEditState.value.error = 'Please enter a valid number greater than 0';
+    return;
+  }
+  accumulationEditState.value.error = '';
+  doUpdateAccumulation(accumulationEditState.value.ticket, val);
+}
+async function doUpdateAccumulation(ticket:any, accumulation:number) {
+  loading.value = true
   try {
-    await ticketsApi().updateAccumulation([ticketId], accumulation)
-    alert(`Accumulation updated to ${accumulation} customers`)
-    // Refresh data
+    await ticketsApi().updateAccumulation([ticket.id], accumulation)
+    accumulationEditModal.value = false
     await fetchSnapshot()
-  } catch (error: any) {
-    console.error('Failed to update accumulation:', error)
-    alert('Failed to update accumulation: ' + (error.message || 'Unknown error'))
+  } catch (error:any) {
+    accumulationEditState.value.error = error?.message || 'Failed to update accumulation.'
+  } finally {
+    loading.value = false
   }
 }
 
@@ -606,7 +613,7 @@ async function sendToCS(ticket: any) {
                         {{ formatAccumulation(r.accumulation || 1) }}
                       </span>
                       <button 
-                        @click="editAccumulation(r)"
+                        @click="openAccumulationModal(r)"
                         class="text-blue-600 hover:text-blue-800 text-xs underline"
                         title="Edit accumulation"
                       >
@@ -692,7 +699,7 @@ async function sendToCS(ticket: any) {
                     {{ formatAccumulation(r.accumulation || 1) }}
                   </span>
                   <button 
-                    @click="editAccumulation(r)"
+                    @click="openAccumulationModal(r)"
                     class="text-blue-600 hover:text-blue-800 text-xs underline"
                     title="Edit accumulation"
                   >
@@ -731,6 +738,32 @@ async function sendToCS(ticket: any) {
       </div>
     </div>
 
+    <UModal v-model="accumulationEditModal" :ui="{width:'sm:max-w-lg w-full'}">
+      <UCard>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium">Edit Accumulation</h3>
+            <UButton icon="x" size="sm" @click="accumulationEditModal = false" variant="ghost"/>
+          </div>
+        </template>
+        <div>
+          <p>Edit accumulation for ticket #{{accumulationEditState.ticket?.id}}<br>
+          <span class="text-sm text-gray-500 font-mono">"{{accumulationEditState.ticket?.title}}"</span></p>
+          <div class="mt-2 text-sm text-gray-700">Current: <b>{{accumulationEditState.ticket?.accumulation||1}}</b> customers</div>
+          <div class="mt-4">
+            <label class="text-sm">Enter new accumulation:</label>
+            <UInput v-model="accumulationEditState.value" type="number" min="1" class="w-full mt-1" @keyup.enter="confirmAccumulationEdit" autofocus />
+            <div v-if="accumulationEditState.error" class="mt-1 text-red-600 text-xs">{{accumulationEditState.error}}</div>
+          </div>
+        </div>
+        <template #footer>
+          <div class="flex justify-end gap-2 mt-4">
+            <UButton color="gray" @click="accumulationEditModal=false">Cancel</UButton>
+            <UButton color="blue" :loading="loading" @click="confirmAccumulationEdit">Save</UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
     
   </div>
 </template>

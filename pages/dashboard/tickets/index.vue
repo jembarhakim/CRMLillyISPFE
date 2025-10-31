@@ -343,7 +343,9 @@ async function saveNetworkArchitecture() {
 
 // Helper function to filter tickets by date
 const getDateFilteredTickets = (tickets: any[]) => {
-  if (dateFilter.value === 'all' || showHistory.value) {
+  // Only bypass date filtering when "All Time" is selected
+  // Even in history mode, 7 days and 30 days filters should still apply
+  if (dateFilter.value === 'all') {
     return tickets
   }
 
@@ -362,17 +364,24 @@ const getDateFilteredTickets = (tickets: any[]) => {
       break
   }
 
+  // Set time to start of day (00:00:00) to include all tickets from the filterDate day
+  filterDate.setHours(0, 0, 0, 0)
+
   return tickets.filter(ticket => {
     if (!ticket || !ticket.created_at) return false
     const ticketDate = new Date(ticket.created_at)
+    // Set ticket date to start of day for comparison
+    ticketDate.setHours(0, 0, 0, 0)
     return ticketDate >= filterDate
   })
 }
 
 // Get count of unfinished and ongoing tickets for each classification
+// IMPORTANT: Count from filteredRows to match what's actually shown in the table
 const getClassificationCounts = computed(() => {
-  const safeRows = Array.isArray(rows.value) ? rows.value : []
-  const dateFilteredTickets = getDateFilteredTickets(safeRows)
+  // Use filteredRows instead of rows.value - this ensures cards match table display
+  // filteredRows already includes: classification filter, date filter, status filter, and search filter
+  const ticketsToCount = filteredRows.value
   
   const counts: Record<string, { unfinished: number; ongoing: number }> = {
     gangguan: { unfinished: 0, ongoing: 0 },
@@ -381,43 +390,17 @@ const getClassificationCounts = computed(() => {
     lainnya: { unfinished: 0, ongoing: 0 }
   }
 
-  dateFilteredTickets.forEach(ticket => {
+  // Count tickets that are actually displayed in the table
+  ticketsToCount.forEach(ticket => {
     if (!ticket) return
     
     const classification = ticket.classification_id || ticket.classification || 'gangguan'
     
-    if (ticket.status === 'unfinished') {
-      // Apply role-based filtering for unfinished tickets
-      let shouldCount = false
-      
-      if (isTechnician.value) {
-        const currentUserId = authStore.user?.user_id
-        shouldCount = ticket.assigned_to === currentUserId
-      } else if (isAdmin.value || isCustomerService.value) {
-        shouldCount = true
-      } else {
-        shouldCount = false
-      }
-      
-      if (shouldCount && counts.hasOwnProperty(classification)) {
-        counts[classification].unfinished++
-      }
-    } else if (ticket.status === 'ongoing') {
-      // Apply role-based filtering for ongoing tickets
-      let shouldCount = false
-      
-      if (isTechnician.value) {
-        const currentUserId = authStore.user?.user_id
-        shouldCount = ticket.assigned_to === currentUserId
-      } else if (isAdmin.value || isCustomerService.value) {
-        shouldCount = true
-      } else {
-        shouldCount = false
-      }
-      
-      if (shouldCount && counts.hasOwnProperty(classification)) {
-        counts[classification].ongoing++
-      }
+    // Count based on status - no additional filtering needed since filteredRows already has all filters applied
+    if (ticket.status === 'unfinished' && counts.hasOwnProperty(classification)) {
+      counts[classification].unfinished++
+    } else if (ticket.status === 'ongoing' && counts.hasOwnProperty(classification)) {
+      counts[classification].ongoing++
     }
   })
 
@@ -443,58 +426,24 @@ const filteredRows = computed(() => {
   // Apply date filter
   filtered = getDateFilteredTickets(filtered)
 
-  // Filter by status: Only show unfinished tickets when not in history mode
+  // Filter by status: Only show unfinished/ongoing tickets when not in history mode
+  // Note: Backend already filters tickets for technicians (assigned_to IS NULL OR assigned_to = technician_id)
+  // Customer_service and admin need to see all tickets (including finished) to monitor technician progress
   if (!showHistory.value) {
     filtered = filtered.filter(ticket => {
       if (!ticket) return false
       
-      // If ticket is finished, don't show it in current view
-      if (ticket.status === 'finished') {
-        return false
+      // Customer_service and admin can see all tickets (including finished) to monitor progress
+      if (isAdmin.value || isCustomerService.value) {
+        return true // Show all tickets for admin and customer_service
       }
       
-      // Role-based filtering for both unfinished and ongoing tickets
-      if (ticket.status === 'unfinished') {
-        // For technicians: only show unfinished tickets assigned to them
-        if (isTechnician.value) {
-          const currentUserId = authStore.user?.user_id
-          const isAssignedToMe = ticket.assigned_to === currentUserId
-          console.log(`Technician filtering unfinished ticket ${ticket.id}: assigned_to=${ticket.assigned_to}, my_id=${currentUserId}, show=${isAssignedToMe}`)
-          return isAssignedToMe
-        }
-        // For admin and customer service: show all unfinished tickets
-        else if (isAdmin.value || isCustomerService.value) {
-          console.log(`Admin/CS can see unfinished ticket ${ticket.id}`)
-          return true
-        }
-        // For other roles: don't show unfinished tickets
-        else {
-          console.log(`Other role cannot see unfinished ticket ${ticket.id}`)
-          return false
-        }
-      } else if (ticket.status === 'ongoing') {
-        // For technicians: only show ongoing tickets assigned to them
-        if (isTechnician.value) {
-          const currentUserId = authStore.user?.user_id
-          const isAssignedToMe = ticket.assigned_to === currentUserId
-          console.log(`Technician filtering ongoing ticket ${ticket.id}: assigned_to=${ticket.assigned_to}, my_id=${currentUserId}, show=${isAssignedToMe}`)
-          return isAssignedToMe
-        }
-        // For admin and customer service: show all ongoing tickets for monitoring
-        else if (isAdmin.value || isCustomerService.value) {
-          console.log(`Admin/CS can see ongoing ticket ${ticket.id}`)
-          return true
-        }
-        // For other roles: don't show ongoing tickets
-        else {
-          console.log(`Other role cannot see ongoing ticket ${ticket.id}`)
-          return false
-        }
-      }
-      
-      return false
+      // For other roles, only show unfinished or ongoing tickets in current view
+      // Backend already handles technician filtering, so we just filter by status
+      return ticket.status === 'unfinished' || ticket.status === 'ongoing'
     })
   }
+  // When showHistory is true, show all tickets (no status filtering)
 
   // Filter by search query
   if (searchQuery.value.trim()) {
@@ -1005,12 +954,16 @@ function resetFilters() {
 }
 
 function toggleHistory() {
-  showHistory.value = !showHistory.value
+  // History button is a shortcut: toggle dateFilter between 'all' and '1day'
+  // The watcher will automatically sync showHistory based on dateFilter
   if (showHistory.value) {
-    dateFilter.value = 'all'
-  } else {
+    // Currently in history mode - switch to current mode (1 day)
     dateFilter.value = '1day'
+  } else {
+    // Currently in current mode - switch to history mode (all time)
+    dateFilter.value = 'all'
   }
+  // Refetch tickets when switching - will be triggered by dateFilter watcher
 }
 
 // Get classification display name
@@ -1025,6 +978,25 @@ function getClassificationName(classificationId: string): string {
     'dismantle': 'Dismantle'
   }
   return names[classificationId] || classificationId
+}
+
+// Format date for display
+function formatDate(dateString: string | null | undefined): string {
+  if (!dateString) return '-'
+  try {
+    const date = new Date(dateString)
+    // Check if date is valid
+    if (isNaN(date.getTime())) return '-'
+    // Format as: DD/MM/YYYY HH:mm
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${day}/${month}/${year} ${hours}:${minutes}`
+  } catch (e) {
+    return '-'
+  }
 }
 
 // Check if NOC action should be shown for classification
@@ -1629,7 +1601,7 @@ async function fetchAllTickets(params: any) {
   // params is kept for parity; current API does not filter server-side
   isLoading.value = true
   await ticketsApi()
-    .list()
+    .list(showHistory.value)
     .then((response: any) => {
       const data = response.data || response
 
@@ -1665,8 +1637,38 @@ async function fetchTrouble() { /* rendered component fetches itself */ }
 
 watch(activeTab, (idx) => { if (idx === 0) fetchTicket(); else fetchTrouble() }, { immediate: true })
 
+// Automatically sync showHistory with dateFilter: history mode is active for 'all', '7days', '30days'
+// Only '1day' turns off history mode (which is not available in history mode dropdown anyway)
+watch(dateFilter, (newValue) => {
+  // History mode stays active when selecting: all, 7days, or 30days
+  // History mode turns off only when selecting 1day
+  showHistory.value = newValue !== '1day'
+  // Refetch tickets when date filter changes
+  fetchAllTickets({})
+})
+
 // Use alias consistent with tsconfig paths
 const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/report/trouble/index.vue'))
+
+const visibleAndSortedTickets = computed(() => {
+  if (!isTechnician.value) {
+    return filteredRows.value
+  }
+  
+  // For technicians: backend already filters tickets (assigned_to IS NULL OR assigned_to = technician_id)
+  // So we just need to sort them here, no additional filtering needed
+  const currentUserId = authStore.user?.user_id
+  
+  return filteredRows.value
+    .sort((a, b) => {
+      // Sort: assigned to me first, then by creation date (newest first)
+      const aMine = a.assigned_to === currentUserId
+      const bMine = b.assigned_to === currentUserId
+      if (aMine && !bMine) return -1
+      if (!aMine && bMine) return 1
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+})
 </script>
 <template>
   <div class="space-y-4 text-gray-900">
@@ -1831,15 +1833,15 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
           </div>
         </div>
 
-        <!-- Responsive Date Filter -->
-        <div class="space-y-3">
+        <!-- Responsive Date Filter - Only show when history mode is active -->
+        <div v-if="showHistory" class="space-y-3">
           <!-- Desktop Date Filter -->
           <div class="hidden md:flex items-center gap-4">
             <div class="flex items-center gap-2">
               <label class="text-sm font-medium text-gray-700">Date Filter:</label>
-              <select v-model="dateFilter" :disabled="showHistory"
+              <select v-model="dateFilter"
                 class="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900">
-                <option value="1day">Last 1 Day</option>
+                <!-- Hide 1 day option in history mode - users should disable history to see 1 day filter -->
                 <option value="7days">Last 7 Days</option>
                 <option value="30days">Last 30 Days</option>
                 <option value="all">All Time</option>
@@ -1855,9 +1857,9 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
           <div class="md:hidden space-y-3">
             <div class="flex flex-col gap-2">
               <label class="text-sm font-medium text-gray-700">Date Filter:</label>
-              <select v-model="dateFilter" :disabled="showHistory"
+              <select v-model="dateFilter"
                 class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900">
-                <option value="1day">Last 1 Day</option>
+                <!-- Hide 1 day option in history mode - users should disable history to see 1 day filter -->
                 <option value="7days">Last 7 Days</option>
                 <option value="30days">Last 30 Days</option>
                 <option value="all">All Time</option>
@@ -1943,16 +1945,29 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
 
         <!-- Desktop Table View -->
         <div class="hidden md:block bg-white rounded-lg shadow border border-gray-100">
+          <!-- Current Filter Indicator -->
+          <div v-if="!showHistory" class="px-4 py-2 bg-blue-50 border-b border-blue-200">
+            <div class="flex items-center gap-2 text-sm text-blue-800">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span class="font-medium">Current View:</span>
+              <span>Showing {{ dateFilter === '1day' ? 'Last 1 Day' : dateFilter === '7days' ? 'Last 7 Days' : dateFilter === '30days' ? 'Last 30 Days' : 'All Time' }} - Unfinished & Ongoing Tickets</span>
+            </div>
+          </div>
           <div class="table-scroll-container">
             <div class="table-scroll-content">
               <table class="min-w-full text-sm text-gray-900">
                 <colgroup>
                   <col class="w-16">
                   <col class="w-32">
+                  <col class="w-40">
+                  <col class="w-64">
                   <col class="w-64">
                   <col class="w-24">
                   <col class="w-24">
                   <col class="w-24">
+                  <col class="w-32">
                   <col class="w-32">
                   <col class="w-64">
                   <col class="w-32">
@@ -1962,23 +1977,26 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                   <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
                     <th class="p-2 w-16">ID</th>
                     <th class="p-2 w-32">Customer</th>
+                    <th class="p-2 w-40">Date</th>
                     <th class="p-2 w-64">Title</th>
                     <th class="p-2 w-64">Description</th>
                     <th class="p-2 w-24">Type</th>
                     <th class="p-2 w-24">Classification</th>
                     <th class="p-2 w-24">Status</th>
-                    <th class="p-2 w-32">Assignee</th>
+                    <th class="p-2 w-32">Assignee Role</th>
+                    <th class="p-2 w-32">Assigned To</th>
                     <th class="p-2 w-32">Notes</th>
                     <th class="p-2 w-32">Network</th>
                     <th class="p-2 w-32">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <template v-for="(r, index) in filteredRows" :key="r?.id || index">
+                  <template v-for="(r, index) in (isTechnician ? visibleAndSortedTickets : filteredRows)" :key="r?.id || index">
                     <tr v-if="r"
                       class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70 transition-colors">
                       <td class="p-2">{{ r.id }}</td>
                       <td class="p-2 font-medium text-blue-600">{{ r.customer_name || 'Unknown Customer' }}</td>
+                      <td class="p-2 text-xs text-gray-600 whitespace-nowrap">{{ formatDate(r.created_at) }}</td>
                       <td class="p-2">{{ r.title }}</td>
                       <td class="p-2 text-gray-700 max-w-xs truncate" :title="r.description || ''">{{ r.description ||
                         '-'
@@ -2010,7 +2028,11 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                         ⚠️ Unfinished
                       </span>
                     </td>
-                      <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role }}</td>
+                      <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role || '-' }}</td>
+                      <td class="p-2 text-sm">
+                        <span v-if="r.assignee_name" class="text-blue-600 font-medium">{{ r.assignee_name }}</span>
+                        <span v-else class="text-gray-400 italic">Unassigned</span>
+                      </td>
                       <td class="p-2 max-w-xs">
                         <div class="flex flex-col gap-2 max-w-xs">
                           <!-- CS Note with Image -->
@@ -2100,7 +2122,19 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
 
         <!-- Mobile Card View -->
         <div class="md:hidden space-y-3">
-          <template v-for="(r, index) in filteredRows" :key="r?.id || index">
+          <!-- Current Filter Indicator - Mobile -->
+          <div v-if="!showHistory" class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div class="flex items-center gap-2 text-sm text-blue-800">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <div class="flex-1">
+                <span class="font-medium">Current View:</span>
+                <span class="ml-1">{{ dateFilter === '1day' ? 'Last 1 Day' : dateFilter === '7days' ? 'Last 7 Days' : dateFilter === '30days' ? 'Last 30 Days' : 'All Time' }} - Unfinished & Ongoing Tickets</span>
+              </div>
+            </div>
+          </div>
+          <template v-for="(r, index) in (isTechnician ? visibleAndSortedTickets : filteredRows)" :key="r?.id || index">
             <div v-if="r"
               class="bg-white rounded-lg shadow border border-gray-100 p-4 hover:shadow-md transition-shadow">
               <!-- Card Header -->
@@ -2108,6 +2142,7 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                 <div class="flex-1">
                   <div class="flex items-center gap-2 mb-1">
                     <span class="text-lg font-bold text-gray-900">#{{ r.id }}</span>
+                    <span class="text-xs text-gray-500">{{ formatDate(r.created_at) }}</span>
                     <span :class="[
                       'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
                       (r.classification_id === 'gangguan' || r.classification === 'gangguan') ? 'bg-red-100 text-red-800' :
@@ -2149,7 +2184,10 @@ const TroubleReport = defineAsyncComponent(() => import('@/pages/dashboard/repor
                     Type: {{ r.type_name || r.type || 'Unknown' }}
                   </span>
                   <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                    Assignee: {{ r.current_assignee_name || r.current_assignee_role || 'Unassigned' }}
+                    Role: {{ r.current_assignee_name || r.current_assignee_role || '-' }}
+                  </span>
+                  <span class="bg-blue-100 text-gray-700 px-2 py-1 rounded">
+                    Assigned To: {{ r.assignee_name || 'Unassigned' }}
                   </span>
                   <span v-if="r.network_architecture" class="bg-blue-100 text-blue-700 px-2 py-1 rounded">
                     Network: {{ r.network_architecture }}

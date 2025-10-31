@@ -709,15 +709,7 @@ function getStatusCount(status: string) {
           class="w-full sm:w-auto"
           color="blue"
           variant="outline"
-        />
-        <UButton 
-          label="Debug Installation Reports" 
-          icon="bug"
-          @click="debugInstallationReports"
-          class="w-full sm:w-auto"
-          color="orange"
-          variant="outline"
-        />
+        />        
         <UButton 
           label="Show Down Devices" 
           icon="x-circle"

@@ -6,6 +6,7 @@ import { recurringInvoiceAdminApi } from "@/api/admin/recurring-invoice";
 import { networkDeviceAdminApi } from "@/api/admin/network-device";
 import type { RecurringInvoiceItem } from "@/api/admin/recurring-invoice";
 import { internetPackageAdminApi } from "@/api/admin/internet-package";
+import { onMounted, onUnmounted, nextTick } from 'vue';
 
 const props = defineProps({
   isEdit: {
@@ -64,12 +65,15 @@ async function getCustomers() {
   loading.value = true;
   try {
     const response = await customerAdminApi().getAllCustomers();
-    customers.value = response.data.map((customer: any) => ({
-      label: customer.name,
-      value: customer.id,
-      email: customer.email,
-      phone: customer.phone,
-    }));
+    // Only include customers with is_internet=='yes'
+    customers.value = (response.data || [])
+      .filter((customer: any) => customer.is_internet === 'yes')
+      .map((customer: any) => ({
+        label: customer.name,
+        value: customer.id,
+        email: customer.email,
+        phone: customer.phone,
+      }));
   } catch (error) {
     console.error("Error fetching customers:", error);
   } finally {
@@ -317,14 +321,38 @@ watch(
 
 // Initialize
 onMounted(() => {
+  nextTick(() => {
+    // Observe DOM to tag the correct HeadlessUI panel even when portalled or re-rendered
+    const observer = new MutationObserver(() => {
+      const dialogPanels = document.querySelectorAll('[id^="headlessui-dialog-panel"]');
+      dialogPanels.forEach((panel) => {
+        if (panel.querySelector('.recurring-invoice-panel-content')) {
+          panel.setAttribute('data-recurring-invoice-modal', 'true');
+        }
+      });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Immediate pass
+    const dialogPanels = document.querySelectorAll('[id^="headlessui-dialog-panel"]');
+    dialogPanels.forEach((panel) => {
+      if (panel.querySelector('.recurring-invoice-panel-content')) {
+        panel.setAttribute('data-recurring-invoice-modal', 'true');
+      }
+    });
+
+    onUnmounted(() => {
+      observer.disconnect();
+    });
+  });
   getCustomers();
   getProducts();
 });
 </script>
 
 <template>
-  <UModal class="recurring-invoice-modal" :ui="{ width: 'w-full' }">
-    <div class="w-full max-w-4xl p-6 max-h-[90vh] overflow-y-auto">
+  <UModal :ui="{ width: 'w-full sm:max-w-max' }">
+    <div class="w-full max-w-full p-6 max-h-[90vh] overflow-y-auto recurring-invoice-panel-content">
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-center">
           {{ props.isEdit ? "Edit" : "Add New" }} Recurring Invoice
@@ -528,17 +556,20 @@ onMounted(() => {
   </UModal>
 </template>
 
-<style scoped>
-/* Override HeadlessUI dialog panel width only for this recurring invoice modal */
-.recurring-invoice-modal :deep([id^="headlessui-dialog-panel"]) {
-  max-width: 65rem !important;
+<style>
+/* CRITICAL: Override HeadlessUI dialog panel max-width (32rem from sm:max-w-lg) */
+/* Target the specific HeadlessUI dialog panel that contains this recurring invoice form */
+:deep([id^="headlessui-dialog-panel"][data-recurring-invoice-modal]),
+:deep([id*="headlessui-dialog-panel"][data-recurring-invoice-modal]) {
+  max-width: fit-content !important;
   width: 100% !important;
 }
 
 @media (min-width: 640px) {
-  .recurring-invoice-modal :deep([id^="headlessui-dialog-panel"].sm\:max-w-lg),
-  .recurring-invoice-modal :deep([id^="headlessui-dialog-panel"][class*="max-w-lg"]) {
-    max-width: 65rem !important;
+  :deep([id^="headlessui-dialog-panel"][data-recurring-invoice-modal].sm\:max-w-lg),
+  :deep([id^="headlessui-dialog-panel"][data-recurring-invoice-modal][class*="max-w-lg"]) {
+    max-width: fit-content !important;
+    width: 100% !important;
   }
 }
 </style>

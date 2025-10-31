@@ -73,7 +73,7 @@
             <!-- Optional reason -->
             <div class="mb-4">
               <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">
-                Reason (optional)
+                Reason <span class="text-red-500">*</span>
               </label>
               <textarea
                 id="reason"
@@ -81,8 +81,9 @@
                 rows="3"
                 class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
                 placeholder="Add a note or customer reason"
+                required
               />
-              <p class="mt-1 text-xs text-gray-500">This note will be sent with the payment.</p>
+              <p class="mt-1 text-xs text-gray-500 text-red-500">This note will be sent with the payment. <span v-if="!reason">(Required)</span></p>
             </div>
 
             <!-- Error Message -->
@@ -158,6 +159,11 @@ const submitPayment = async () => {
 
   if (paymentAmount.value > outstandingAmount.value) {
     errorMessage.value = 'Payment amount cannot exceed outstanding balance'
+    return
+  }
+
+  if (!reason.value || reason.value.trim() === '') {
+    errorMessage.value = 'Reason is required for partial payments'
     return
   }
 
