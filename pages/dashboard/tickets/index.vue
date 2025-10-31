@@ -17,7 +17,7 @@ return {
 labels: byTypeRows.value.map(r => r.name),
 datasets: [
 {
-label: 'Ticket Count',
+label: 'Jumlah Tiket',
 data: byTypeRows.value.map(r => r.count),
 backgroundColor: '#4F46E5', // biru indigo
 },
@@ -49,7 +49,7 @@ const notification = useNotification()
 
 // Set page title
 useHead({
-  title: 'Trouble Tickets - CRM System'
+  title: 'Tiket Gangguan - CRM System'
 })
 
 // Debug logging for role detection
@@ -228,10 +228,10 @@ async function acceptTicket() {
   try {
     await ticketsApi().accept(selectedId.value)
     showAcceptConfirm.value = false
-    useToast().add({ title: 'Accepted', description: 'Ticket accepted.', color: 'primary', timeout: 2500 })
+    useToast().add({ title: 'Diterima', description: 'Tiket diterima.', color: 'primary', timeout: 2500 })
     await refresh()
   } catch (e: any) {
-    useToast().add({ title: 'Failed', description: String(e?.data?.message || e?.message || 'Failed to accept'), color: 'red' })
+    useToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal menerima'), color: 'red' })
   }
 }
 
@@ -254,9 +254,9 @@ async function saveTeam() {
     teamSubmitting.value = true
     await ticketsApi().setTeam(selectedId.value, teamMembers.value)
     showTeamModal.value = false
-    useToast().add({ title: 'Team saved', description: 'Technician team updated.', color: 'primary', timeout: 2500 })
+    useToast().add({ title: 'Tim tersimpan', description: 'Tim teknisi diperbarui.', color: 'primary', timeout: 2500 })
   } catch (e: any) {
-    useToast().add({ title: 'Failed', description: String(e?.data?.message || e?.message || 'Failed to save team'), color: 'red' })
+    useToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal menyimpan tim'), color: 'red' })
   } finally { teamSubmitting.value = false }
 }
 
@@ -280,10 +280,10 @@ async function saveStep() {
     stepSubmitting.value = true
     await ticketsApi().addStep(selectedId.value, stepDescription.value, stepImages.value)
     showStepModal.value = false
-    useToast().add({ title: 'Step added', description: 'Troubleshooting step saved.', color: 'primary', timeout: 2500 })
+    useToast().add({ title: 'Langkah ditambahkan', description: 'Langkah troubleshooting disimpan.', color: 'primary', timeout: 2500 })
     await refresh()
   } catch (e: any) {
-    useToast().add({ title: 'Failed', description: String(e?.data?.message || e?.message || 'Failed to add step'), color: 'red' })
+    useToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal menambahkan langkah'), color: 'red' })
   } finally { stepSubmitting.value = false }
 }
 
@@ -292,10 +292,10 @@ async function verifyClose(id?: number) {
   if (!tid) return
   try {
     await ticketsApi().verifyClose(tid)
-    useToast().add({ title: 'Closed', description: 'Ticket verified & closed by CS.', color: 'primary', timeout: 2500 })
+    useToast().add({ title: 'Ditutup', description: 'Tiket diverifikasi & ditutup oleh CS.', color: 'primary', timeout: 2500 })
     await refresh()
   } catch (e: any) {
-    useToast().add({ title: 'Failed', description: String(e?.data?.message || e?.message || 'Failed to verify & close'), color: 'red' })
+    useToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal memverifikasi & menutup'), color: 'red' })
   }
 }
 
@@ -306,10 +306,10 @@ async function markTechnicianCompleted(id?: number) {
   try {
     // This will be implemented in the backend
     await ticketsApi().markTechnicianJobCompleted(tid)
-    useToast().add({ title: 'Work Completed', description: 'Technician work has been marked as completed.', color: 'green', timeout: 3000 })
+    useToast().add({ title: 'Pekerjaan Selesai', description: 'Pekerjaan teknisi telah ditandai sebagai selesai.', color: 'green', timeout: 3000 })
     await refresh()
   } catch (e: any) {
-    useToast().add({ title: 'Failed', description: String(e?.data?.message || e?.message || 'Failed to mark work as completed'), color: 'red' })
+    useToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal menandai pekerjaan sebagai selesai'), color: 'red' })
   }
 }
 
@@ -332,10 +332,10 @@ async function saveNetworkArchitecture() {
     networkArchSubmitting.value = true
     await ticketsApi().setNetworkArchitecture(selectedId.value, networkArchitecture.value)
     showNetworkArchModal.value = false
-    useToast().add({ title: 'Architecture Set', description: 'Network architecture selected successfully.', color: 'primary', timeout: 2500 })
+    useToast().add({ title: 'Arsitektur Diatur', description: 'Arsitektur jaringan berhasil dipilih.', color: 'primary', timeout: 2500 })
     await refresh()
   } catch (e: any) {
-    useToast().add({ title: 'Failed', description: String(e?.data?.message || e?.message || 'Failed to set architecture'), color: 'red' })
+    useToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal mengatur arsitektur'), color: 'red' })
   } finally {
     networkArchSubmitting.value = false
   }
@@ -578,13 +578,13 @@ function handleNOCImageUpload(event: Event) {
   if (file) {
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      alert('Pilih file gambar');
       return;
     }
 
     // Validate file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB');
+      alert('Ukuran file harus kurang dari 10MB');
       return;
     }
 
@@ -626,14 +626,14 @@ function validateFile(file: File): { isValid: boolean; message: string } {
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
 
   if (file.size > maxSize) {
-    return { isValid: false, message: 'File size exceeds 10MB limit' };
+    return { isValid: false, message: 'Ukuran file melebihi batas 10MB' };
   }
 
   if (!allowedTypes.includes(file.type)) {
-    return { isValid: false, message: 'File type not supported. Please use JPG, PNG, or GIF' };
+    return { isValid: false, message: 'Tipe file tidak didukung. Gunakan JPG, PNG, atau GIF' };
   }
 
-  return { isValid: true, message: 'File is valid' };
+  return { isValid: true, message: 'File valid' };
 }
 
 // File change handlers with validation
@@ -684,8 +684,8 @@ async function sendToNOC() {
     console.error('sendToNOC error:', e)
     try {
       const toast = useToast();
-      const msg = e?.data?.message || e?.message || 'Failed to send to NOC'
-      toast.add({ title: 'Action failed', description: String(msg), color: 'red', icon: 'alert-triangle', timeout: 5000 })
+      const msg = e?.data?.message || e?.message || 'Gagal mengirim ke NOC'
+      toast.add({ title: 'Aksi gagal', description: String(msg), color: 'red', icon: 'alert-triangle', timeout: 5000 })
     } catch { }
   } finally {
     actionLoading.value[actionKey] = false
@@ -699,12 +699,12 @@ async function sendToNOCFromModal() {
     nocActionSubmitting.value = true
     await ticketsApi().sendToNOC(selectedId.value, nocNote.value, nocImageFile.value || undefined)
     showNOCNoteModal.value = false
-    notification.success('Sent to NOC', 'Ticket sent to NOC.', 3000)
+    notification.success('Dikirim ke NOC', 'Tiket dikirim ke NOC.', 3000)
     await refresh()
   } catch (e: any) {
     console.error('sendToNOC error:', e)
-    const msg = e?.data?.message || e?.message || 'Failed to send to NOC'
-    notification.error('Action failed', String(msg), 5000)
+    const msg = e?.data?.message || e?.message || 'Gagal mengirim ke NOC'
+    notification.error('Aksi gagal', String(msg), 5000)
   } finally {
     nocActionSubmitting.value = false
   }
@@ -720,8 +720,8 @@ async function nocSolved() {
     await refresh()
   } catch (e: any) {
     console.error('nocSolved error:', e)
-    const msg = e?.data?.message || e?.message || 'Failed to mark as NOC solved'
-    notification.error('Action failed', String(msg), 5000)
+    const msg = e?.data?.message || e?.message || 'Gagal menandai sebagai diselesaikan NOC'
+    notification.error('Aksi gagal', String(msg), 5000)
   } finally {
     actionLoading.value[actionKey] = false
   }
@@ -737,8 +737,8 @@ async function nocPhysical() {
     await refresh()
   } catch (e: any) {
     console.error('nocPhysical error:', e)
-    const msg = e?.data?.message || e?.message || 'Failed to mark as physical'
-    notification.error('Action failed', String(msg), 5000)
+    const msg = e?.data?.message || e?.message || 'Gagal menandai sebagai fisik'
+    notification.error('Aksi gagal', String(msg), 5000)
   } finally {
     actionLoading.value[actionKey] = false
   }
@@ -751,12 +751,12 @@ async function assignTechnician() {
   try {
     actionLoading.value[actionKey] = true
     await ticketsApi().assignTechnician(selectedId.value);
-    notification.success('Assigned to Technician', 'Ticket assigned to technician role.', 3000)
+    notification.success('Ditugaskan ke Teknisi', 'Tiket ditugaskan ke peran teknisi.', 3000)
     await refresh()
   } catch (e: any) {
     console.error('assignTechnician error:', e)
-    const msg = e?.data?.message || e?.message || 'Failed to assign technician'
-    notification.error('Action failed', String(msg), 5000)
+    const msg = e?.data?.message || e?.message || 'Gagal menugaskan teknisi'
+    notification.error('Aksi gagal', String(msg), 5000)
   } finally {
     actionLoading.value[actionKey] = false
   }
@@ -773,8 +773,8 @@ async function nocSolvedFromModal() {
     await refresh()
   } catch (e: any) {
     console.error('nocSolvedFromModal error:', e)
-    const msg = e?.data?.message || e?.message || 'Failed to mark as NOC solved'
-    notification.error('Action failed', String(msg), 5000)
+    const msg = e?.data?.message || e?.message || 'Gagal menandai sebagai diselesaikan NOC'
+    notification.error('Aksi gagal', String(msg), 5000)
   } finally {
     nocActionSubmitting.value = false
   }
@@ -791,8 +791,8 @@ async function nocPhysicalFromModal() {
     await refresh()
   } catch (e: any) {
     console.error('nocPhysicalFromModal error:', e)
-    const msg = e?.data?.message || e?.message || 'Failed to mark as physical'
-    notification.error('Action failed', String(msg), 5000)
+    const msg = e?.data?.message || e?.message || 'Gagal menandai sebagai fisik'
+    notification.error('Aksi gagal', String(msg), 5000)
   } finally {
     nocActionSubmitting.value = false
   }
@@ -801,7 +801,7 @@ async function nocPhysicalFromModal() {
 // Update accumulation from NOC modal
 async function updateAccumulationFromModal() {
   if (!selectedTicket.value || nocAccumulation.value === null || nocAccumulation.value === undefined || nocAccumulation.value < 1) {
-    notification.error('Invalid Input', 'Please enter a valid accumulation number (1 or more)', 3000)
+    notification.error('Input Tidak Valid', 'Masukkan angka akumulasi yang valid (1 atau lebih)', 3000)
     return
   }
 
@@ -815,10 +815,10 @@ async function updateAccumulationFromModal() {
       rows.value[ticketIndex].accumulation = nocAccumulation.value
     }
 
-    notification.success('Success', `Accumulation updated to ${nocAccumulation.value} customers`, 3000)
+    notification.success('Berhasil', `Akumulasi diperbarui menjadi ${nocAccumulation.value} pelanggan`, 3000)
   } catch (error: any) {
     console.error('updateAccumulationFromModal error:', error)
-    notification.error('Update failed', `Failed to update accumulation: ${error?.data?.message || error?.message || 'Unknown error'}`, 3000)
+    notification.error('Pembaruan gagal', `Gagal memperbarui akumulasi: ${error?.data?.message || error?.message || 'Error tidak diketahui'}`, 3000)
   } finally {
     nocActionSubmitting.value = false
   }
@@ -874,12 +874,12 @@ async function sendTechnicianNoteFromModal() {
     await ticketsApi().addTechnicianNote(selectedId.value, technicianNote.value, bf, af)
     showTechnicianNoteModal.value = false
     // feedback
-    notification.success('Technician Note Added', 'Note has been added successfully.', 3000)
+    notification.success('Catatan Teknisi Ditambahkan', 'Catatan berhasil ditambahkan.', 3000)
     await refresh()
   } catch (e: any) {
     console.error('sendTechnicianNote error:', e)
-    const msg = e?.data?.message || e?.message || 'Failed to add technician note'
-    notification.error('Action failed', String(msg), 5000)
+    const msg = e?.data?.message || e?.message || 'Gagal menambahkan catatan teknisi'
+    notification.error('Aksi gagal', String(msg), 5000)
   } finally {
     technicianNoteSubmitting.value = false
   }
@@ -893,12 +893,12 @@ async function sendToCSFromModal() {
     await ticketsApi().sendToCS(selectedId.value, nocNote.value, nocSelectedType.value || undefined, nocImageFile.value || undefined)
     showNOCNoteModal.value = false
     // feedback
-    notification.success('Sent to CS', 'Ticket returned to Customer Service.', 3000)
+    notification.success('Dikirim ke CS', 'Tiket dikembalikan ke Customer Service.', 3000)
     await refresh()
   } catch (e: any) {
     console.error('sendToCS error:', e)
-    const msg = e?.data?.message || e?.message || 'Failed to send to CS'
-    notification.error('Action failed', String(msg), 5000)
+    const msg = e?.data?.message || e?.message || 'Gagal mengirim ke CS'
+    notification.error('Aksi gagal', String(msg), 5000)
   } finally {
     nocActionSubmitting.value = false
   }
@@ -916,18 +916,18 @@ async function sendToCSWithAutoAssign() {
     // Then automatically assign technician (since it's always a technician problem when pressing "To CS")
     try {
       await ticketsApi().assignTechnician(selectedId.value)
-      notification.success('Sent to CS & Assigned Technician', 'Ticket sent to CS and automatically assigned to technician.', 3000)
+      notification.success('Dikirim ke CS & Ditugaskan ke Teknisi', 'Tiket dikirim ke CS dan otomatis ditugaskan ke teknisi.', 3000)
     } catch (assignError: any) {
       console.warn('Auto-assign technician failed:', assignError)
-      notification.success('Sent to CS', 'Ticket sent to CS. Note: Auto-assign technician failed.', 3000)
+      notification.success('Dikirim ke CS', 'Tiket dikirim ke CS. Catatan: Penugasan otomatis teknisi gagal.', 3000)
     }
 
     showNOCNoteModal.value = false
     await refresh()
   } catch (e: any) {
     console.error('sendToCSWithAutoAssign error:', e)
-    const msg = e?.data?.message || e?.message || 'Failed to send to CS'
-    notification.error('Action failed', String(msg), 5000)
+    const msg = e?.data?.message || e?.message || 'Gagal mengirim ke CS'
+    notification.error('Aksi gagal', String(msg), 5000)
   } finally {
     nocActionSubmitting.value = false
   }
@@ -969,7 +969,7 @@ function toggleHistory() {
 // Get classification display name
 function getClassificationName(classificationId: string): string {
   if (!classificationId || classificationId === '') {
-    return 'All'
+    return 'Semua'
   }
   const names: Record<string, string> = {
     'gangguan': 'Gangguan',
@@ -1023,8 +1023,8 @@ async function resolve() {
     await refresh()
   } catch (e: any) {
     console.error('resolve error:', e)
-    const msg = e?.data?.message || e?.message || 'Failed to resolve ticket'
-    notification.error('Action failed', String(msg), 5000)
+    const msg = e?.data?.message || e?.message || 'Gagal menyelesaikan tiket'
+    notification.error('Aksi gagal', String(msg), 5000)
   } finally {
     actionLoading.value[actionKey] = false
   }
@@ -1036,12 +1036,12 @@ async function resolveFromModal() {
     resolveSubmitting.value = true
     await ticketsApi().resolve(selectedId.value, resolveNote.value)
     showResolveModal.value = false
-    notification.success('Ticket Resolved', 'Ticket has been marked as resolved.', 3000)
+    notification.success('Tiket Diselesaikan', 'Tiket telah ditandai sebagai selesai.', 3000)
     await refresh()
   } catch (e: any) {
     console.error('resolve error:', e)
-    const msg = e?.data?.message || e?.message || 'Failed to resolve ticket'
-    notification.error('Action failed', String(msg), 5000)
+    const msg = e?.data?.message || e?.message || 'Gagal menyelesaikan tiket'
+    notification.error('Aksi gagal', String(msg), 5000)
   } finally {
     resolveSubmitting.value = false
   }
@@ -1075,11 +1075,11 @@ const getTicketActions = (ticket: any) => {
     if (!isInformation) {
       if ((isAdmin.value || isCustomerService.value) && ticket.assigned_to) {
         actions.push({
-          label: 'View Progress (Finished)',
+          label: 'Lihat Progress (Selesai)',
           color: 'bg-emerald-700',
           action: () => openTechnicianChecklist(ticket.id, ticket.assigned_to, true),
           show: true,
-          tooltip: 'View technician progress (ticket finished)'
+          tooltip: 'Lihat progress teknisi (tiket selesai)'
         })
       }
     }
@@ -1099,11 +1099,11 @@ const getTicketActions = (ticket: any) => {
       // Only show NOC action if classification allows it
       if (shouldShowNOCAction(classificationId)) {
         actions.push({
-          label: 'Ticket Action',
+          label: 'Aksi Tiket',
           color: 'bg-blue-600',
           action: () => { actPrepareNOC(ticket.id) },
           show: true,
-          tooltip: 'Take action on ticket (To CS or NOC Solved)'
+          tooltip: 'Ambil tindakan pada tiket (Ke CS atau Diselesaikan NOC)'
         })
       }
     }
@@ -1114,11 +1114,11 @@ const getTicketActions = (ticket: any) => {
 
     if (isAdmin.value || isCustomerService.value) {
       actions.push({
-        label: 'Assign Technician',
+        label: 'Tugaskan Teknisi',
         color: 'bg-cyan-600',
         action: () => { actPrepare(ticket.id); assignTechnician() },
         show: true,
-        tooltip: 'Assign ticket to a technician'
+        tooltip: 'Tugaskan tiket ke teknisi'
       })
     }
   }
@@ -1129,11 +1129,11 @@ const getTicketActions = (ticket: any) => {
     // Technician can accept ticket (if not already assigned to someone)
     if (isTechnician.value && (!ticket.assigned_to || ticket.assigned_to === '' || ticket.assigned_to === null)) {
       actions.push({
-        label: 'Accept',
+        label: 'Terima',
         color: 'bg-blue-700',
         action: () => { openAccept(ticket.id) },
         show: true,
-        tooltip: 'Accept and lock this ticket to you'
+        tooltip: 'Terima dan kunci tiket ini untuk Anda'
       })
     }
 
@@ -1172,32 +1172,32 @@ const getTicketActions = (ticket: any) => {
       // For technicians who are assigned to the ticket
       if (ticket.assigned_to && (ticket.assigned_to === actualUserID)) {
         actions.push({
-          label: 'Technician Checklist',
+          label: 'Checklist Teknisi',
           color: 'bg-blue-600',
           action: () => openTechnicianChecklist(ticket.id, actualUserID || authStore.user?.user_id || ''),
           show: true,
-          tooltip: 'Open technician checklist'
+          tooltip: 'Buka checklist teknisi'
         })
       }
     }
     if ((isAdmin.value || isCustomerService.value) && ticket.assigned_to) {
       actions.push({
-        label: 'View Progress (Ongoing)',
+        label: 'Lihat Progress (Berlangsung)',
         color: 'bg-gray-700',
         action: () => openTechnicianChecklist(ticket.id, ticket.assigned_to, true),
         show: true,
-        tooltip: 'View technician progress (ticket ongoing)'
+        tooltip: 'Lihat progress teknisi (tiket berlangsung)'
       })
     }
 
     // Always show customer details for technicians
     if (isTechnician.value) {
       actions.push({
-        label: 'Customer Details',
+        label: 'Detail Pelanggan',
         color: 'bg-sky-600',
         action: () => { openLocationDetail(ticket) },
         show: true,
-        tooltip: 'View customer details and location coordinates'
+        tooltip: 'Lihat detail pelanggan dan koordinat lokasi'
       })
     }
   }
@@ -1209,11 +1209,11 @@ const getTicketActions = (ticket: any) => {
 
     if (isAdmin.value || isCustomerService.value) {
       actions.push({
-        label: 'Resolve Ticket',
+        label: 'Selesaikan Tiket',
         color: 'bg-emerald-600',
         action: () => { actPrepareResolve(ticket.id) },
         show: true,
-        tooltip: 'Resolve the ticket (final step)'
+        tooltip: 'Selesaikan tiket (langkah akhir)'
       })
     }
   }
@@ -1236,7 +1236,7 @@ const items = (row: any) => {
   // Add delete action (for admin and CS)
   if (isAdmin.value || isCustomerService.value) {
     actions.push([{
-      label: 'Delete',
+      label: 'Hapus',
       icon: 'trash-2-20-solid',
       click: () => showDeleteConfirmation(row)
     }])
@@ -1286,14 +1286,14 @@ async function deleteTicket(id: number) {
   try {
     deleteTicketSubmitting.value = true
     await ticketsApi().delete(id)
-    notification.success('Success!', 'Ticket deleted successfully', 3000)
+    notification.success('Berhasil!', 'Tiket berhasil dihapus', 3000)
     showDeleteModal.value = false
     ticketToDelete.value = null
     await refresh()
   } catch (error: any) {
     console.error('Error deleting ticket:', error)
-    const msg = error?.data?.message || error?.message || 'Failed to delete ticket'
-    notification.error('Delete failed', String(msg), 5000)
+    const msg = error?.data?.message || error?.message || 'Gagal menghapus tiket'
+    notification.error('Penghapusan gagal', String(msg), 5000)
   } finally {
     deleteTicketSubmitting.value = false
   }
@@ -1357,7 +1357,7 @@ const filteredCustomers = computed(() => {
 
 // Computed properties for select options
 const areaOptions = computed(() => [
-  { label: 'All Areas', value: '' },
+  { label: 'Semua Area', value: '' },
   ...areas.value.map(area => ({
     label: `${area.name_city} - ${area.name_subdistrict}`,
     value: area.id
@@ -1442,11 +1442,11 @@ const saveNewType = async () => {
     showNewType.value = false
 
     // Show success message
-    notification.success('Success!', 'New trouble type created successfully', 3000)
+    notification.success('Berhasil!', 'Jenis gangguan baru berhasil dibuat', 3000)
   } catch (error: any) {
     console.error('Error creating trouble type:', error)
-    const msg = error?.data?.message || error?.message || 'Failed to create trouble type'
-    notification.error('Create failed', String(msg), 5000)
+    const msg = error?.data?.message || error?.message || 'Gagal membuat jenis gangguan'
+    notification.error('Pembuatan gagal', String(msg), 5000)
   }
 }
 
@@ -1465,13 +1465,13 @@ async function handleImageUpload(event: Event) {
   if (file) {
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      notification.error('File too large', 'Image must be less than 10MB', 3000)
+      notification.error('File terlalu besar', 'Gambar harus kurang dari 10MB', 3000)
       return
     }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      notification.error('Invalid file type', 'Please select an image file', 3000)
+      notification.error('Tipe file tidak valid', 'Pilih file gambar', 3000)
       return
     }
 
@@ -1500,13 +1500,13 @@ async function handleImageUpload(event: Event) {
           throw new Error('Generated filename is too long')
         }
         form.value.img_cs = fileName
-        notification.success('Image uploaded', 'Image uploaded successfully', 2000)
+        notification.success('Gambar diunggah', 'Gambar berhasil diunggah', 2000)
       } else {
         throw new Error('Invalid response from upload API')
       }
     } catch (error: any) {
       console.error('Error uploading image:', error)
-      notification.error('Upload failed', `Failed to upload image: ${error?.message || 'Unknown error'}`, 5000)
+      notification.error('Unggah gagal', `Gagal mengunggah gambar: ${error?.message || 'Error tidak diketahui'}`, 5000)
 
       // Clear the form field and file input
       form.value.img_cs = ''
@@ -1584,12 +1584,12 @@ async function createTicket() {
     form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', img_cs: '', classification: 'gangguan' }
     selectedCSFile = undefined // Clear the selected file
     csImagePreview.value = '' // Clear the image preview
-    notification.success('Success!', 'Ticket created successfully', 3000)
+    notification.success('Berhasil!', 'Tiket berhasil dibuat', 3000)
     await refresh()
   } catch (error: any) {
     console.error('Error creating ticket:', error) // Debug log
-    const msg = error?.data?.message || error?.message || 'Failed to create ticket'
-    notification.error('Create failed', String(msg), 5000)
+    const msg = error?.data?.message || error?.message || 'Gagal membuat tiket'
+    notification.error('Pembuatan gagal', String(msg), 5000)
   } finally {
     createTicketSubmitting.value = false
   }
@@ -1628,8 +1628,8 @@ async function fetchAllTickets(params: any) {
 }
 
 const tab_items = [
-  { label: 'Tickets', value: 'tickets' },
-  { label: 'Trouble Reports', value: 'trouble' },
+  { label: 'Tiket', value: 'tickets' },
+  { label: 'Laporan Gangguan', value: 'trouble' },
 ]
 
 async function fetchTicket() { await fetchAllTickets({}) }
@@ -1675,7 +1675,7 @@ const visibleAndSortedTickets = computed(() => {
     <UTabs :items="tab_items" class="w-full" v-model="activeTab" />
 
     <div v-if="activeTab === 0" class="space-y-4">
-      <h1 class="text-2xl font-semibold text-gray-900">Trouble Tickets</h1>
+      <h1 class="text-2xl font-semibold text-gray-900">Tiket Gangguan</h1>
 
       <!-- New Classification System UI -->
       <div class="bg-white rounded-lg shadow border border-gray-100 p-4">
@@ -1715,7 +1715,7 @@ const visibleAndSortedTickets = computed(() => {
                       {{ getClassificationCounts[classification].unfinished }}
                     </div>
                     <div class="text-xs opacity-75">
-                      Unfinished
+                      Belum Selesai
                     </div>
                   </div>
                   
@@ -1725,7 +1725,7 @@ const visibleAndSortedTickets = computed(() => {
                       {{ getClassificationCounts[classification].ongoing }}
                     </div>
                     <div class="text-xs opacity-75">
-                      Ongoing
+                      Berlangsung
                     </div>
                   </div>
                 </div>
@@ -1740,7 +1740,7 @@ const visibleAndSortedTickets = computed(() => {
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
               </svg>
-              Reset
+              Atur Ulang
             </button>
             <button @click="toggleHistory" :class="[
               'px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2',
@@ -1751,7 +1751,7 @@ const visibleAndSortedTickets = computed(() => {
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
-              {{ showHistory ? 'Current' : 'Histori' }}
+              {{ showHistory ? 'Saat Ini' : 'Histori' }}
             </button>
           </div>
 
@@ -1816,7 +1816,7 @@ const visibleAndSortedTickets = computed(() => {
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                 </svg>
-                Reset
+                Atur Ulang
               </button>
               <button @click="toggleHistory" :class="[
                 'px-4 py-3 rounded-lg font-medium transition-colors text-center flex items-center justify-center gap-2',
@@ -1827,7 +1827,7 @@ const visibleAndSortedTickets = computed(() => {
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
-                {{ showHistory ? 'Current' : 'Histori' }}
+                {{ showHistory ? 'Saat Ini' : 'Histori' }}
               </button>
             </div>
           </div>
@@ -1838,17 +1838,17 @@ const visibleAndSortedTickets = computed(() => {
           <!-- Desktop Date Filter -->
           <div class="hidden md:flex items-center gap-4">
             <div class="flex items-center gap-2">
-              <label class="text-sm font-medium text-gray-700">Date Filter:</label>
+              <label class="text-sm font-medium text-gray-700">Filter Tanggal:</label>
               <select v-model="dateFilter"
                 class="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900">
                 <!-- Hide 1 day option in history mode - users should disable history to see 1 day filter -->
-                <option value="7days">Last 7 Days</option>
-                <option value="30days">Last 30 Days</option>
-                <option value="all">All Time</option>
+                <option value="7days">7 Hari Terakhir</option>
+                <option value="30days">30 Hari Terakhir</option>
+                <option value="all">Semua Waktu</option>
               </select>
             </div>
             <div class="text-sm text-gray-600">
-              Showing: {{ getClassificationName(selectedClassification) }}
+              Menampilkan: {{ getClassificationName(selectedClassification) }}
               {{ showHistory ? '(All Time)' : `(${dateFilter === '1day' ? 'Last 1 Day' : dateFilter === '7days' ? 'Last 7 Days' : dateFilter === '30days' ? 'Last 30 Days' : 'All Time'})` }}
             </div>
           </div>
@@ -1856,17 +1856,17 @@ const visibleAndSortedTickets = computed(() => {
           <!-- Mobile Date Filter -->
           <div class="md:hidden space-y-3">
             <div class="flex flex-col gap-2">
-              <label class="text-sm font-medium text-gray-700">Date Filter:</label>
+              <label class="text-sm font-medium text-gray-700">Filter Tanggal:</label>
               <select v-model="dateFilter"
                 class="w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900">
                 <!-- Hide 1 day option in history mode - users should disable history to see 1 day filter -->
-                <option value="7days">Last 7 Days</option>
-                <option value="30days">Last 30 Days</option>
-                <option value="all">All Time</option>
+                <option value="7days">7 Hari Terakhir</option>
+                <option value="30days">30 Hari Terakhir</option>
+                <option value="all">Semua Waktu</option>
               </select>
             </div>
             <div class="text-center text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-              <span class="font-medium">Showing:</span> {{ getClassificationName(selectedClassification) }}
+              <span class="font-medium">Menampilkan:</span> {{ getClassificationName(selectedClassification) }}
               {{ showHistory ? '(All Time)' : `(${dateFilter === '1day' ? 'Last 1 Day' : dateFilter === '7days' ? 'Last 7 Days' : dateFilter === '30days' ? 'Last 30 Days' : 'All Time'})` }}
             </div>
           </div>
@@ -1876,11 +1876,11 @@ const visibleAndSortedTickets = computed(() => {
       <div v-if="showUpdatesBanner"
         class="p-3 rounded bg-yellow-50 border border-yellow-200 text-yellow-800 flex items-center justify-between">
         <div>
-          New updates available ({{ newUpdates.length }}). Some tickets may have been assigned to your role.
+          Pembaruan baru tersedia ({{ newUpdates.length }}). Beberapa tiket mungkin telah ditugaskan ke peran Anda.
         </div>
         <div class="space-x-2">
-          <button class="px-2 py-1 rounded bg-yellow-600 text-white" @click="dismissUpdates">Dismiss</button>
-          <button class="px-2 py-1 rounded bg-yellow-700 text-white" @click="refreshUpdates">Refresh</button>
+          <button class="px-2 py-1 rounded bg-yellow-600 text-white" @click="dismissUpdates">Tutup</button>
+          <button class="px-2 py-1 rounded bg-yellow-700 text-white" @click="refreshUpdates">Muat Ulang</button>
         </div>
       </div>
 
@@ -1891,12 +1891,12 @@ const visibleAndSortedTickets = computed(() => {
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-4">
               <button v-if="isAdmin || isCustomerService"
-                class="px-3 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700" @click="openAddModal">Add
-                Ticket</button>
+                class="px-3 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700" @click="openAddModal">Tambah
+                Tiket</button>
             </div>
             <div class="flex items-center gap-2">
               <div class="relative">
-                <input v-model="searchQuery" type="text" placeholder="Search tickets..."
+                <input v-model="searchQuery" type="text" placeholder="Cari tiket..."
                   class="pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm w-64 text-gray-900 bg-white " />
                 <svg class="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor"
                   viewBox="0 0 24 24">
@@ -1921,13 +1921,13 @@ const visibleAndSortedTickets = computed(() => {
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
               </svg>
-              Add New Ticket
+              Tambah Tiket Baru
             </button>
 
             <!-- Search Bar - Full Width on Mobile -->
             <div class="relative">
               <input v-model="searchQuery" type="text"
-                placeholder="Search tickets by customer, title, or description..."
+                placeholder="Cari tiket berdasarkan pelanggan, judul, atau deskripsi..."
                 class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white" />
               <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
                 viewBox="0 0 24 24">
@@ -1938,7 +1938,7 @@ const visibleAndSortedTickets = computed(() => {
 
             <!-- Results Counter -->
             <div v-if="searchQuery" class="text-sm text-gray-600 text-center">
-              Showing {{ filteredRows.length }} of {{ rows.length }} tickets
+              Menampilkan {{ filteredRows.length }} dari {{ rows.length }} tiket
             </div>
           </div>
         </div>
@@ -1951,8 +1951,8 @@ const visibleAndSortedTickets = computed(() => {
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
-              <span class="font-medium">Current View:</span>
-              <span>Showing {{ dateFilter === '1day' ? 'Last 1 Day' : dateFilter === '7days' ? 'Last 7 Days' : dateFilter === '30days' ? 'Last 30 Days' : 'All Time' }} - Unfinished & Ongoing Tickets</span>
+              <span class="font-medium">Tampilan Saat Ini:</span>
+              <span>Menampilkan {{ dateFilter === '1day' ? '1 Hari Terakhir' : dateFilter === '7days' ? '7 Hari Terakhir' : dateFilter === '30days' ? '30 Hari Terakhir' : 'Semua Waktu' }} - Tiket Belum Selesai & Berlangsung</span>
             </div>
           </div>
           <div class="table-scroll-container">
@@ -1976,18 +1976,18 @@ const visibleAndSortedTickets = computed(() => {
                 <thead class="bg-gray-100">
                   <tr class="text-left border-b border-gray-200 uppercase text-xs tracking-wide text-gray-800">
                     <th class="p-2 w-16">ID</th>
-                    <th class="p-2 w-32">Customer</th>
-                    <th class="p-2 w-40">Date</th>
-                    <th class="p-2 w-64">Title</th>
-                    <th class="p-2 w-64">Description</th>
-                    <th class="p-2 w-24">Type</th>
-                    <th class="p-2 w-24">Classification</th>
+                    <th class="p-2 w-32">Pelanggan</th>
+                    <th class="p-2 w-40">Tanggal</th>
+                    <th class="p-2 w-64">Judul</th>
+                    <th class="p-2 w-64">Deskripsi</th>
+                    <th class="p-2 w-24">Tipe</th>
+                    <th class="p-2 w-24">Klasifikasi</th>
                     <th class="p-2 w-24">Status</th>
-                    <th class="p-2 w-32">Assignee Role</th>
-                    <th class="p-2 w-32">Assigned To</th>
-                    <th class="p-2 w-32">Notes</th>
-                    <th class="p-2 w-32">Network</th>
-                    <th class="p-2 w-32">Actions</th>
+                    <th class="p-2 w-32">Peran Penerima</th>
+                    <th class="p-2 w-32">Ditugaskan Ke</th>
+                    <th class="p-2 w-32">Catatan</th>
+                    <th class="p-2 w-32">Jaringan</th>
+                    <th class="p-2 w-32">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1995,7 +1995,7 @@ const visibleAndSortedTickets = computed(() => {
                     <tr v-if="r"
                       class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70 transition-colors">
                       <td class="p-2">{{ r.id }}</td>
-                      <td class="p-2 font-medium text-blue-600">{{ r.customer_name || 'Unknown Customer' }}</td>
+                      <td class="p-2 font-medium text-blue-600">{{ r.customer_name || 'Pelanggan Tidak Dikenal' }}</td>
                       <td class="p-2 text-xs text-gray-600 whitespace-nowrap">{{ formatDate(r.created_at) }}</td>
                       <td class="p-2">{{ r.title }}</td>
                       <td class="p-2 text-gray-700 max-w-xs truncate" :title="r.description || ''">{{ r.description ||
@@ -2017,21 +2017,21 @@ const visibleAndSortedTickets = computed(() => {
                     <td class="p-2">
                       <span v-if="r.status === 'finished'"
                         class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-green-600 text-white shadow-lg border-2 border-green-700">
-                        ✅ Finished
+                        ✅ Selesai
                       </span>
                       <span v-else-if="r.status === 'ongoing'"
                         class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-orange-600 text-white shadow-lg border-2 border-orange-700 animate-pulse">
-                        🔄 Ongoing
+                        🔄 Berlangsung
                       </span>
                       <span v-else
                         class="inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold bg-red-600 text-white shadow-lg border-2 border-red-700 animate-pulse">
-                        ⚠️ Unfinished
+                        ⚠️ Belum Selesai
                       </span>
                     </td>
                       <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role || '-' }}</td>
                       <td class="p-2 text-sm">
                         <span v-if="r.assignee_name" class="text-blue-600 font-medium">{{ r.assignee_name }}</span>
-                        <span v-else class="text-gray-400 italic">Unassigned</span>
+                        <span v-else class="text-gray-400 italic">Belum Ditugaskan</span>
                       </td>
                       <td class="p-2 max-w-xs">
                         <div class="flex flex-col gap-2 max-w-xs">
@@ -2074,7 +2074,7 @@ const visibleAndSortedTickets = computed(() => {
                           </div>
                           
                           <span v-if="!r.customer_note && !r.technician_note && !r.noc_note && !r.img_cs && !r.img_noc"
-                            class="text-gray-400 text-xs">No notes</span>
+                            class="text-gray-400 text-xs">Tidak ada catatan</span>
                         </div>
                       </td>
                       <td class="p-2">
@@ -2100,11 +2100,11 @@ const visibleAndSortedTickets = computed(() => {
                               </path>
                             </svg>
                             {{ actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] ||
-                              nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting ? 'Loading...' :
+                              nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting ? 'Memuat...' :
                               action.label }}
                           </button>
                           <span v-if="getTicketActions(r).length === 0" class="text-gray-400 text-xs text-center py-1">
-                            No actions available
+                            Tidak ada aksi tersedia
                           </span>
                         </div>
                       </td>
@@ -2114,8 +2114,8 @@ const visibleAndSortedTickets = computed(() => {
               </table>
             </div>
             <div class="table-scroll-footer">
-              <span class="scroll-hint">↔ Scroll horizontally to see more columns | ↕ Scroll vertically for more
-                rows</span>
+              <span class="scroll-hint">↔ Gulir horizontal untuk melihat lebih banyak kolom | ↕ Gulir vertikal untuk lebih banyak
+                baris</span>
             </div>
           </div>
         </div>
@@ -2129,8 +2129,8 @@ const visibleAndSortedTickets = computed(() => {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
               <div class="flex-1">
-                <span class="font-medium">Current View:</span>
-                <span class="ml-1">{{ dateFilter === '1day' ? 'Last 1 Day' : dateFilter === '7days' ? 'Last 7 Days' : dateFilter === '30days' ? 'Last 30 Days' : 'All Time' }} - Unfinished & Ongoing Tickets</span>
+                <span class="font-medium">Tampilan Saat Ini:</span>
+                <span class="ml-1">{{ dateFilter === '1day' ? '1 Hari Terakhir' : dateFilter === '7days' ? '7 Hari Terakhir' : dateFilter === '30days' ? '30 Hari Terakhir' : 'Semua Waktu' }} - Tiket Belum Selesai & Berlangsung</span>
               </div>
             </div>
           </div>
@@ -2181,16 +2181,16 @@ const visibleAndSortedTickets = computed(() => {
                 <!-- Type and Assignee -->
                 <div class="flex flex-wrap gap-2 text-xs">
                   <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                    Type: {{ r.type_name || r.type || 'Unknown' }}
+                    Tipe: {{ r.type_name || r.type || 'Tidak Dikenal' }}
                   </span>
                   <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                    Role: {{ r.current_assignee_name || r.current_assignee_role || '-' }}
+                    Peran: {{ r.current_assignee_name || r.current_assignee_role || '-' }}
                   </span>
                   <span class="bg-blue-100 text-gray-700 px-2 py-1 rounded">
-                    Assigned To: {{ r.assignee_name || 'Unassigned' }}
+                    Ditugaskan Ke: {{ r.assignee_name || 'Belum Ditugaskan' }}
                   </span>
                   <span v-if="r.network_architecture" class="bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                    Network: {{ r.network_architecture }}
+                    Jaringan: {{ r.network_architecture }}
                   </span>
                 </div>
 
@@ -2246,11 +2246,11 @@ const visibleAndSortedTickets = computed(() => {
                         </path>
                       </svg>
                       {{ actionLoading[`${action.label.toLowerCase().replace(/\s+/g, '')}_${r.id}`] ||
-                        nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting ? 'Loading...' : action.label
+                        nocActionSubmitting || technicianNoteSubmitting || resolveSubmitting ? 'Memuat...' : action.label
                       }}
                     </button>
                     <div v-if="getTicketActions(r).length === 0" class="text-center py-2 text-gray-500 text-sm">
-                      No actions available
+                      Tidak ada aksi tersedia
                     </div>
                   </div>
                 </div>
@@ -2282,16 +2282,16 @@ const visibleAndSortedTickets = computed(() => {
             <button class="text-gray-400 hover:text-gray-600" @click="showLocationModal = false">✕</button>
           </div>
           <div class="space-y-2 text-gray-900">
-            <div class="text-sm"><span class="font-medium">Customer:</span> {{ selectedLocation?.customer_name || '-' }}
+            <div class="text-sm"><span class="font-medium">Pelanggan:</span> {{ selectedLocation?.customer_name || '-' }}
             </div>
-            <div class="text-sm"><span class="font-medium">Customer ID:</span> {{ selectedLocation?.customer_id || '-'
+            <div class="text-sm"><span class="font-medium">ID Pelanggan:</span> {{ selectedLocation?.customer_id || '-'
               }}</div>
-            <div class="text-sm"><span class="font-medium">Address:</span> {{ selectedLocation?.customer_address || '-'
+            <div class="text-sm"><span class="font-medium">Alamat:</span> {{ selectedLocation?.customer_address || '-'
               }}</div>
-            <div class="text-sm"><span class="font-medium">Phone:</span> {{ selectedLocation?.customer_phone || '-' }}
+            <div class="text-sm"><span class="font-medium">Telepon:</span> {{ selectedLocation?.customer_phone || '-' }}
             </div>
-            <div class="text-sm"><span class="font-medium">Latitude:</span> {{ selectedLocation?.lat ?? '-' }}</div>
-            <div class="text-sm"><span class="font-medium">Longitude:</span> {{ selectedLocation?.lng ?? '-' }}</div>
+            <div class="text-sm"><span class="font-medium">Lintang:</span> {{ selectedLocation?.lat ?? '-' }}</div>
+            <div class="text-sm"><span class="font-medium">Bujur:</span> {{ selectedLocation?.lng ?? '-' }}</div>
           </div>
           <div class="mt-4 flex justify-end gap-2">
             <a v-if="googleMapsUrl" :href="googleMapsUrl" target="_blank" rel="noopener"
@@ -2307,7 +2307,7 @@ const visibleAndSortedTickets = computed(() => {
         <UCard class="max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-900 text-white">
           <template #header>
             <div class="flex justify-between items-center">
-              <h3 class="text-xl font-semibold">Add New Ticket</h3>
+              <h3 class="text-xl font-semibold">Tambah Tiket Baru</h3>
               <UButton @click="closeAddModal" variant="ghost" size="sm">
                 <UIcon name="x" />
               </UButton>
@@ -2316,64 +2316,64 @@ const visibleAndSortedTickets = computed(() => {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4" v-if="!loadingLookups">
             <div>
               <label class="block text-sm font-medium text-white mb-1">Area</label>
-              <USelect v-model="selectedAreaId" :options="areaOptions" placeholder="All Areas" />
+              <USelect v-model="selectedAreaId" :options="areaOptions" placeholder="Semua Area" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-white mb-1">Customer</label>
-              <USelect v-model="form.customer_id" :options="customerOptions" placeholder="Select customer" />
+              <label class="block text-sm font-medium text-white mb-1">Pelanggan</label>
+              <USelect v-model="form.customer_id" :options="customerOptions" placeholder="Pilih pelanggan" />
             </div>
             <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-white mb-1">Title</label>
-              <UInput v-model="form.title" placeholder="Enter trouble description..." />
+              <label class="block text-sm font-medium text-white mb-1">Judul</label>
+              <UInput v-model="form.title" placeholder="Masukkan deskripsi gangguan..." />
             </div>
             <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-white mb-1">Description</label>
-              <UTextarea v-model="form.description" placeholder="Enter detailed description..." />
+              <label class="block text-sm font-medium text-white mb-1">Deskripsi</label>
+              <UTextarea v-model="form.description" placeholder="Masukkan deskripsi detail..." />
             </div>
             <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-white mb-1">Classification</label>
+              <label class="block text-sm font-medium text-white mb-1">Klasifikasi</label>
               <USelect v-model="form.classification" :options="classificationOptions" />
             </div>
             <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-white mb-1">Upload Image (CS) - Optional</label>
+              <label class="block text-sm font-medium text-white mb-1">Unggah Gambar (CS) - Opsional</label>
               <input type="file" @change="handleImageUpload" accept="image/*" 
                 class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900" />
               <!-- Image Preview - Show when file is selected -->
               <div v-if="csImagePreview" class="mt-2">
                 <UAlert color="green" variant="soft" class="mb-2">
-                  <template #title>Image selected</template>
+                  <template #title>Gambar dipilih</template>
                   <template #actions>
                     <UButton @click="form.img_cs = ''; selectedCSFile = undefined; csImagePreview = ''" 
-                      variant="ghost" size="xs" color="red">Remove</UButton>
+                      variant="ghost" size="xs" color="red">Hapus</UButton>
                   </template>
                 </UAlert>
                 <!-- Image Preview -->
                 <div class="mt-3">
-                  <img :src="csImagePreview" alt="CS Image Preview" 
+                  <img :src="csImagePreview" alt="Pratinjau Gambar CS" 
                     class="w-32 h-32 object-cover rounded border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
                     @click="openImageModal(csImagePreview)" />
-                  <p class="text-xs text-gray-300 mt-1">Click to view full size</p>
+                  <p class="text-xs text-gray-300 mt-1">Klik untuk melihat ukuran penuh</p>
                 </div>
               </div>
               <div v-else-if="form.img_cs && form.img_cs.startsWith('data:')" class="mt-2">
                 <UAlert color="yellow" variant="soft" class="mb-2">
-                  <template #title>Image upload failed - using preview only</template>
+                  <template #title>Unggah gambar gagal - hanya menggunakan pratinjau</template>
                   <template #actions>
                     <UButton @click="form.img_cs = ''; selectedCSFile = undefined; csImagePreview = ''" 
-                      variant="ghost" size="xs" color="red">Remove</UButton>
+                      variant="ghost" size="xs" color="red">Hapus</UButton>
                   </template>
                 </UAlert>
               </div>
-              <p class="text-xs text-gray-300 mt-1">PNG, JPG, GIF up to 10MB</p>
+              <p class="text-xs text-gray-300 mt-1">PNG, JPG, GIF hingga 10MB</p>
             </div>
           </div>
-          <div v-else class="text-gray-300">Loading options...</div>
+          <div v-else class="text-gray-300">Memuat opsi...</div>
           
           <template #footer>
             <div class="flex justify-end gap-2">
-              <UButton @click="closeAddModal" :disabled="createTicketSubmitting">Cancel</UButton>
+              <UButton @click="closeAddModal" :disabled="createTicketSubmitting">Batal</UButton>
               <UButton @click="createTicket" color="green" :disabled="createTicketSubmitting" :loading="createTicketSubmitting">
-                {{ createTicketSubmitting ? 'Creating...' : 'Submit' }}
+                {{ createTicketSubmitting ? 'Membuat...' : 'Kirim' }}
               </UButton>
             </div>
           </template>
@@ -2389,58 +2389,58 @@ const visibleAndSortedTickets = computed(() => {
         <div class="absolute inset-0 bg-black/60" @click="showNOCNoteModal = false"></div>
         <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold text-gray-900">Ticket Action</h2>
+            <h2 class="text-xl font-semibold text-gray-900">Aksi Tiket</h2>
             <button class="text-gray-400 hover:text-gray-600" @click="showNOCNoteModal = false">✕</button>
           </div>
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
-              <textarea v-model="nocNote" placeholder="Enter any notes about this action..."
+              <label class="block text-sm font-medium text-gray-700 mb-1">Catatan (Opsional)</label>
+              <textarea v-model="nocNote" placeholder="Masukkan catatan tentang aksi ini..."
                 class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none text-gray-900 bg-white"></textarea>
             </div>
             <div v-if="isNOC || isAdmin">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Diagnosed Trouble Type</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Tipe Gangguan yang Didiagnosis</label>
               <div class="flex gap-2" v-if="!showNewType">
                 <select v-model="nocSelectedType"
                   class="w-full rounded px-3 py-2 border border-gray-300 focus:outline.none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900">
-                  <option value="" class="text-gray-500">-- Select trouble type (optional) --</option>
+                  <option value="" class="text-gray-500">-- Pilih tipe gangguan (opsional) --</option>
                   <option v-for="t in troubleTypes" :key="t.id" :value="t.id" class="text-gray-900 bg-white">{{ t.name
                     || t.id }}</option>
                 </select>
                 <button type="button" class="px-3 py-2 rounded bg-blue-600 text-white text-sm"
-                  @click="showNewType = true">Add
-                  New Type</button>
+                  @click="showNewType = true">Tambah
+                  Tipe Baru</button>
               </div>
               <div v-else class="space-y-2">
-                <input v-model="newTypeName" placeholder="Display Name (optional)"
+                <input v-model="newTypeName" placeholder="Nama Tampilan (opsional)"
                   class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900" />
                 <div class="flex gap-2">
                   <button type="button" class="px-3 py-2 bg-emerald-600 text-white rounded text-sm"
-                    @click="saveNewType">Save
-                    Type</button>
+                    @click="saveNewType">Simpan
+                    Tipe</button>
                   <button type="button" class="px-3 py-2 bg-gray-300 text-gray-700 rounded text-sm"
-                    @click="showNewType = false">Cancel</button>
+                    @click="showNewType = false">Batal</button>
                 </div>
               </div>
             </div>
             <div v-if="isAdmin || isCustomerService">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Accumulation (Customers Affected)</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Akumulasi (Pelanggan Terpengaruh)</label>
               <div class="flex items-center space-x-2">
                 <input v-model.number="nocAccumulation" type="number" min="1"
-                  placeholder="Enter number of customers affected"
+                  placeholder="Masukkan jumlah pelanggan yang terpengaruh"
                   class="flex-1 rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900" />
                 <button @click="updateAccumulationFromModal"
                   class="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
                   :disabled="nocAccumulation === null || nocAccumulation === undefined || nocAccumulation < 1">
-                  Update
+                  Perbarui
                 </button>
               </div>
               <p class="text-xs text-gray-500 mt-1">
-                Current: {{ selectedTicket?.accumulation || 1 }} customers affected
+                Saat Ini: {{ selectedTicket?.accumulation || 1 }} pelanggan terpengaruh
               </p>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Upload Image (Optional)</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Unggah Gambar (Opsional)</label>
               <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                 <div class="space-y-1 text-center">
                   <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
@@ -2451,21 +2451,21 @@ const visibleAndSortedTickets = computed(() => {
                   <div class="flex text-sm text-gray-600">
                     <label for="noc-image-upload"
                       class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline.none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
-                      <span>Upload a file</span>
+                      <span>Unggah file</span>
                       <input id="noc-image-upload" name="noc-image-upload" type="file" class="sr-only" accept="image/*"
                         @change="handleNOCImageUpload" />
                     </label>
-                    <p class="pl-1">or drag and drop</p>
+                    <p class="pl-1">atau seret dan lepas</p>
                   </div>
-                  <p class="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                  <p class="text-xs text-gray-500">PNG, JPG, GIF hingga 10MB</p>
                 </div>
               </div>
               <div v-if="nocImageFile" class="mt-2">
                 <div class="flex items-center space-x-2">
-                  <img :src="nocImagePreview" alt="Preview" class="h-16 w-16 object-cover rounded" />
+                  <img :src="nocImagePreview" alt="Pratinjau" class="h-16 w-16 object-cover rounded" />
                   <div>
                     <p class="text-sm text-gray-600">{{ nocImageFile.name }}</p>
-                    <button @click="removeNOCImage" class="text-sm text-red-600 hover:text-red-800">Remove</button>
+                    <button @click="removeNOCImage" class="text-sm text-red-600 hover:text-red-800">Hapus</button>
                   </div>
                 </div>
               </div>
@@ -2473,14 +2473,14 @@ const visibleAndSortedTickets = computed(() => {
           </div>
           <div class="mt-6 flex justify-end gap-2">
             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showNOCNoteModal = false"
-              :disabled="nocActionSubmitting">Cancel</button>
+              :disabled="nocActionSubmitting">Batal</button>
             <button class="px-4 py-2 rounded bg-purple-600 text-white disabled:opacity-50"
               @click="sendToCSWithAutoAssign" v-if="isAdmin || isCustomerService" :disabled="nocActionSubmitting">
-              {{ nocActionSubmitting ? 'Sending...' : 'To CS' }}
+              {{ nocActionSubmitting ? 'Mengirim...' : 'Ke CS' }}
             </button>
             <button class="px-4 py-2 rounded bg-green-600 text-white disabled:opacity-50" @click="nocSolvedFromModal"
               v-if="isAdmin || isCustomerService" :disabled="nocActionSubmitting">
-              {{ nocActionSubmitting ? 'Processing...' : 'NOC Solved' }}
+              {{ nocActionSubmitting ? 'Memproses...' : 'NOC Selesai' }}
             </button>
           </div>
         </div>
@@ -2491,12 +2491,12 @@ const visibleAndSortedTickets = computed(() => {
         <div class="absolute inset-0 bg-black/60" @click="showTechnicianNoteModal = false"></div>
         <div class="relative w-full max-w-lg mx-4 rounded-xl shadow-xl bg-white p-0 max-h-[90vh] overflow-hidden">
           <div class="flex items-center justify-between px-6 py-4 border-b">
-            <h2 class="text-xl font-semibold text-gray-900">Add Technician Note & Images</h2>
+            <h2 class="text-xl font-semibold text-gray-900">Tambah Catatan Teknisi & Gambar</h2>
             <button class="text-gray-400 hover:text-gray-600" @click="showTechnicianNoteModal = false">✕</button>
           </div>
           <div class="space-y-4 px-6 py-4 overflow-y-auto" style="max-height: calc(90vh - 120px)">
             <div class="p-3 rounded bg-gray-50 border">
-              <div class="text-sm text-gray-700"><span class="font-medium">Customer:</span> {{
+              <div class="text-sm text-gray-700"><span class="font-medium">Pelanggan:</span> {{
                 selectedTicket?.customer_name || '-' }}</div>
               <div class="text-xs text-gray-600 mt-1">
                 <span class="font-medium">GPS:</span>
@@ -2511,17 +2511,17 @@ const visibleAndSortedTickets = computed(() => {
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Technician Note <span
+              <label class="block text-sm font-medium text-gray-700 mb-1">Catatan Teknisi <span
                   class="text-red-500">*</span></label>
-              <textarea v-model="technicianNote" placeholder="Enter your technician note..."
+              <textarea v-model="technicianNote" placeholder="Masukkan catatan teknisi Anda..."
                 class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none text-gray-900 bg-white"></textarea>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Before Image (Optional)</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Gambar Sebelum (Opsional)</label>
               <input type="file" @change="handleBeforeImageChange" accept="image/*"
                 class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              <p class="text-xs text-gray-500 mt-1">Max size: 10MB. Supported: JPG, PNG, GIF</p>
+              <p class="text-xs text-gray-500 mt-1">Ukuran maks: 10MB. Didukung: JPG, PNG, GIF</p>
               <!-- Preview Before Image -->
               <div v-if="imgTechBfFile" class="mt-2 p-2 border border-gray-200 rounded bg-gray-50">
                 <div class="flex items-center justify-between">
@@ -2529,17 +2529,17 @@ const visibleAndSortedTickets = computed(() => {
                   <button @click="imgTechBfFile = null" class="text-red-500 hover:text-red-700 text-sm">✕</button>
                 </div>
                 <div class="mt-2">
-                  <img v-if="beforeImageUrl" :src="beforeImageUrl" alt="Before Preview"
+                  <img v-if="beforeImageUrl" :src="beforeImageUrl" alt="Pratinjau Sebelum"
                     class="w-20 h-20 object-cover rounded border" />
                 </div>
               </div>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">After Image (Optional)</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Gambar Sesudah (Opsional)</label>
               <input type="file" @change="handleAfterImageChange" accept="image/*"
                 class="w-full rounded px-3 py-2 border border-gray-300 focus:outline.none focus:ring-2 focus:ring-blue-500" />
-              <p class="text-xs text-gray-500 mt-1">Max size: 10MB. Supported: JPG, PNG, GIF</p>
+              <p class="text-xs text-gray-500 mt-1">Ukuran maks: 10MB. Didukung: JPG, PNG, GIF</p>
               <!-- Preview After Image -->
               <div v-if="imgTechAfFile" class="mt-2 p-2 border border-gray-200 rounded bg-gray-50">
                 <div class="flex items-center justify-between">
@@ -2547,7 +2547,7 @@ const visibleAndSortedTickets = computed(() => {
                   <button @click="imgTechAfFile = null" class="text-red-500 hover:text-red-700 text-sm">✕</button>
                 </div>
                 <div class="mt-2">
-                  <img v-if="afterImageUrl" :src="afterImageUrl" alt="After Preview"
+                  <img v-if="afterImageUrl" :src="afterImageUrl" alt="Pratinjau Sesudah"
                     class="w-20 h-20 object-cover rounded border" />
                 </div>
               </div>
@@ -2555,10 +2555,10 @@ const visibleAndSortedTickets = computed(() => {
           </div>
           <div class="px-6 py-4 border-t flex justify-end gap-2">
             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700"
-              @click="showTechnicianNoteModal = false">Cancel</button>
+              @click="showTechnicianNoteModal = false">Batal</button>
             <button class="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
               @click="sendTechnicianNoteFromModal" :disabled="technicianNoteSubmitting || !technicianNote.trim()">
-              {{ technicianNoteSubmitting ? 'Sending...' : 'Add Note & Images' }}
+              {{ technicianNoteSubmitting ? 'Mengirim...' : 'Tambah Catatan & Gambar' }}
             </button>
           </div>
         </div>
@@ -2570,7 +2570,7 @@ const visibleAndSortedTickets = computed(() => {
         <div class="absolute inset-0 bg-black/60" @click="showDeleteModal = false"></div>
         <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold text-red-600">Confirm Delete</h2>
+            <h2 class="text-xl font-semibold text-red-600">Konfirmasi Hapus</h2>
             <button class="text-gray-400 hover:text-gray-600" @click="showDeleteModal = false">✕</button>
           </div>
           <div class="space-y-4">
@@ -2581,15 +2581,15 @@ const visibleAndSortedTickets = computed(() => {
                 </div>
               </div>
               <div>
-                <h3 class="text-lg font-medium text-gray-900">Delete Ticket?</h3>
+                <h3 class="text-lg font-medium text-gray-900">Hapus Tiket?</h3>
                 <p class="text-sm text-gray-600">
-                  Are you sure you want to delete ticket <strong>#{{ ticketToDelete?.id }}</strong>?
+                  Apakah Anda yakin ingin menghapus tiket <strong>#{{ ticketToDelete?.id }}</strong>?
                 </p>
                 <p class="text-sm text-gray-500 mt-1">
-                  Title: "{{ ticketToDelete?.title }}"
+                  Judul: "{{ ticketToDelete?.title }}"
                 </p>
                 <p class="text-xs text-red-600 mt-2">
-                  This action cannot be undone.
+                  Tindakan ini tidak dapat dibatalkan.
                 </p>
               </div>
             </div>
@@ -2597,11 +2597,11 @@ const visibleAndSortedTickets = computed(() => {
           <div class="mt-6 flex justify-end gap-2">
             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700 hover:bg-gray-400"
               @click="showDeleteModal = false">
-              Cancel
+              Batal
             </button>
             <button class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
               @click="deleteTicket(ticketToDelete?.id)" :disabled="deleteTicketSubmitting">
-              {{ deleteTicketSubmitting ? 'Deleting...' : 'Delete Ticket' }}
+              {{ deleteTicketSubmitting ? 'Menghapus...' : 'Hapus Tiket' }}
             </button>
           </div>
         </div>
@@ -2612,26 +2612,26 @@ const visibleAndSortedTickets = computed(() => {
         <div class="absolute inset-0 bg-black/60" @click="showResolveModal = false"></div>
         <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold text-gray-900">Resolve Ticket</h2>
+            <h2 class="text-xl font-semibold text-gray-900">Selesaikan Tiket</h2>
             <button class="text-gray-400 hover:text-gray-600" @click="showResolveModal = false">✕</button>
           </div>
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Customer Note</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Catatan Pelanggan</label>
               <textarea v-model="resolveNote"
-                placeholder="Add a note about the resolution to communicate with the customer..."
+                placeholder="Tambahkan catatan tentang resolusi untuk berkomunikasi dengan pelanggan..."
                 class="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-gray-900 bg-white"
                 rows="4"></textarea>
-              <p class="text-xs text-gray-500 mt-1">This note will be saved as customer_note and the ticket status will
-                be set to finished.</p>
+              <p class="text-xs text-gray-500 mt-1">Catatan ini akan disimpan sebagai customer_note dan status tiket akan
+                diatur menjadi selesai.</p>
             </div>
           </div>
           <div class="mt-6 flex justify-end gap-2">
             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700 hover:bg-gray-400"
-              @click="showResolveModal = false">Cancel</button>
+              @click="showResolveModal = false">Batal</button>
             <button class="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
               @click="resolveFromModal" :disabled="resolveSubmitting">
-              {{ resolveSubmitting ? 'Resolving...' : 'Resolve Ticket' }}
+              {{ resolveSubmitting ? 'Menyelesaikan...' : 'Selesaikan Tiket' }}
             </button>
           </div>
         </div>
@@ -2642,14 +2642,14 @@ const visibleAndSortedTickets = computed(() => {
         <div class="absolute inset-0 bg-black/60" @click="showAcceptConfirm = false"></div>
         <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold text-gray-900">Accept Ticket</h2>
+            <h2 class="text-xl font-semibold text-gray-900">Terima Tiket</h2>
             <button class="text-gray-400 hover:text-gray-600" @click="showAcceptConfirm = false">✕</button>
           </div>
-          <p class="text-gray-700 mb-4">This will assign the ticket to you.</p>
+          <p class="text-gray-700 mb-4">Ini akan menugaskan tiket kepada Anda.</p>
           <div class="flex justify-end gap-2">
             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700"
-              @click="showAcceptConfirm = false">Cancel</button>
-            <button class="px-4 py-2 rounded bg-blue-700 text-white" @click="acceptTicket">Accept</button>
+              @click="showAcceptConfirm = false">Batal</button>
+            <button class="px-4 py-2 rounded bg-blue-700 text-white" @click="acceptTicket">Terima</button>
           </div>
         </div>
       </div>
@@ -2659,7 +2659,7 @@ const visibleAndSortedTickets = computed(() => {
         <div class="absolute inset-0 bg-black/60" @click="showTeamModal = false"></div>
         <div class="relative w-full max-w-lg mx-4 rounded-xl shadow-xl bg-white p-6">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold text-gray-900">Set Technician Team</h2>
+            <h2 class="text-xl font-semibold text-gray-900">Atur Tim Teknisi</h2>
             <button class="text-gray-400 hover:text-gray-600" @click="showTeamModal = false">✕</button>
           </div>
           <div class="space-y-3">
@@ -2669,17 +2669,17 @@ const visibleAndSortedTickets = computed(() => {
                 <option value="junior">Junior</option>
                 <option value="helper">Helper</option>
               </select>
-              <input v-model="m.user_id" placeholder="Technician user_id"
+              <input v-model="m.user_id" placeholder="ID pengguna teknisi"
                 class="flex-1 border rounded px-2 py-1 text-gray-900 bg-white" />
-              <button class="text-red-600 text-sm" @click="removeTeamMember(idx)">Remove</button>
+              <button class="text-red-600 text-sm" @click="removeTeamMember(idx)">Hapus</button>
             </div>
-            <button class="px-3 py-1.5 rounded bg-gray-200 text-gray-800 text-sm" @click="addTeamMember">Add
-              Member</button>
+            <button class="px-3 py-1.5 rounded bg-gray-200 text-gray-800 text-sm" @click="addTeamMember">Tambah
+              Anggota</button>
           </div>
           <div class="mt-4 flex justify-end gap-2">
-            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showTeamModal = false">Cancel</button>
+            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showTeamModal = false">Batal</button>
             <button class="px-4 py-2 rounded bg-indigo-600 text-white disabled:opacity-50" @click="saveTeam"
-              :disabled="teamSubmitting">{{ teamSubmitting ? 'Saving...' : 'Save Team' }}</button>
+              :disabled="teamSubmitting">{{ teamSubmitting ? 'Menyimpan...' : 'Simpan Tim' }}</button>
           </div>
         </div>
       </div>
@@ -2689,27 +2689,27 @@ const visibleAndSortedTickets = computed(() => {
         <div class="absolute inset-0 bg-black/60" @click="showStepModal = false"></div>
         <div class="relative w-full max-w-lg mx-4 rounded-xl shadow-xl bg-white p-6">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold text-gray-900">Add Troubleshooting Step</h2>
+            <h2 class="text-xl font-semibold text-gray-900">Tambah Langkah Troubleshooting</h2>
             <button class="text-gray-400 hover:text-gray-600" @click="showStepModal = false">✕</button>
           </div>
           <div class="space-y-3">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
               <textarea v-model="stepDescription" rows="3"
                 class="w-full border rounded px-3 py-2 text-gray-900 bg-white"></textarea>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Images (multiple)</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Gambar (multiple)</label>
               <input type="file" multiple accept="image/*" @change="onSelectStepImages"
                 class="w-full border rounded px-3 py-2 text-gray-900 bg-white" />
-              <div v-if="stepImages.length" class="mt-2 text-xs text-gray-600">{{ stepImages.length }} file(s) selected
+              <div v-if="stepImages.length" class="mt-2 text-xs text-gray-600">{{ stepImages.length }} file dipilih
               </div>
             </div>
           </div>
           <div class="mt-4 flex justify-end gap-2">
-            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showStepModal = false">Cancel</button>
+            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700" @click="showStepModal = false">Batal</button>
             <button class="px-4 py-2 rounded bg-amber-600 text-white disabled:opacity-50" @click="saveStep"
-              :disabled="stepSubmitting || !stepDescription.trim()">{{ stepSubmitting ? 'Saving...' : 'Save Step'
+              :disabled="stepSubmitting || !stepDescription.trim()">{{ stepSubmitting ? 'Menyimpan...' : 'Simpan Langkah'
               }}</button>
           </div>
         </div>
@@ -2720,11 +2720,11 @@ const visibleAndSortedTickets = computed(() => {
         <div class="absolute inset-0 bg-black/80" @click="showImageModal = false"></div>
         <div class="relative max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden">
           <div class="flex items-center justify-between p-4 border-b">
-            <h3 class="text-lg font-semibold">Image Preview</h3>
+            <h3 class="text-lg font-semibold">Pratinjau Gambar</h3>
             <button class="text-gray-400 hover.text-gray-600" @click="showImageModal = false">✕</button>
           </div>
           <div class="p-4">
-            <img :src="selectedImageUrl" alt="Preview" class="max-w-full max-h-[70vh] object-contain mx-auto" />
+            <img :src="selectedImageUrl" alt="Pratinjau" class="max-w-full max-h-[70vh] object-contain mx-auto" />
           </div>
         </div>
       </div>
@@ -2741,7 +2741,7 @@ const visibleAndSortedTickets = computed(() => {
       <div class="bg-white rounded-lg w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
         <div class="p-6">
           <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-semibold">Technician Checklist</h3>
+            <h3 class="text-xl font-semibold">Checklist Teknisi</h3>
             <button @click="showTechnicianChecklist = false" class="text-gray-500 hover:text-gray-700">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>

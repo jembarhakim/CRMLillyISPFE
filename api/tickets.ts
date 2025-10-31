@@ -81,10 +81,10 @@ export const ticketsApi = () => {
 
       // Check file sizes
       if (imgTechBf && imgTechBf.size > 10 * 1024 * 1024) {
-        throw new Error('Before image is too large (max 10MB)')
+        throw new Error('Gambar sebelum terlalu besar (maks 10MB)')
       }
       if (imgTechAf && imgTechAf.size > 10 * 1024 * 1024) {
-        throw new Error('After image is too large (max 10MB)')
+        throw new Error('Gambar sesudah terlalu besar (maks 10MB)')
       }
 
       try {

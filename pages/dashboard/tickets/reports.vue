@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Set page title
 useHead({
-  title: 'Ticket Reports - CRM System'
+  title: 'Laporan Tiket - CRM System'
 })
 
 // reuse the same component content as trouble report

@@ -6,7 +6,7 @@ import { areaAdminApi } from '@/api/admin/area'
 
 // Set page title
 useHead({
-  title: 'Add Trouble Ticket - CRM System'
+  title: 'Tambah Tiket Gangguan - CRM System'
 })
 
 const loading = ref(true)
@@ -138,22 +138,22 @@ const saveNewType = async () => {
 
 <template>
   <div class="max-w-2xl p-6 bg-white rounded-lg shadow border border-gray-100">
-    <h1 class="text-2xl font-semibold mb-4">Add Trouble Ticket</h1>
+    <h1 class="text-2xl font-semibold mb-4">Tambah Tiket Gangguan</h1>
 
-    <div v-if="loading">Loading...</div>
+    <div v-if="loading">Memuat...</div>
     <form v-else class="space-y-4" @submit.prevent="submit">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm text-gray-600 mb-1">Area</label>
           <select v-model="selectedAreaId" class="w-full border rounded px-3 py-2">
-            <option value="">All Areas</option>
+            <option value="">Semua Area</option>
             <option v-for="area in areas" :key="area.id" :value="area.id">
               {{ area.name_city }} - {{ area.name_subdistrict }}
             </option>
           </select>
         </div>
         <div>
-          <label class="block text-sm text-gray-600 mb-1">Customer</label>
+          <label class="block text-sm text-gray-600 mb-1">Pelanggan</label>
           <select v-model="form.customer_id" class="w-full border rounded px-3 py-2">
             <option v-for="c in filteredCustomers" :key="c.id" :value="c.id">
               {{ c.name }}
@@ -165,15 +165,15 @@ const saveNewType = async () => {
         </div>
       </div>
       <div>
-        <label class="block text-sm text-gray-600 mb-1">Title</label>
-        <input v-model="form.title" class="w-full border rounded px-3 py-2" placeholder="Enter trouble description..." />
+        <label class="block text-sm text-gray-600 mb-1">Judul</label>
+        <input v-model="form.title" class="w-full border rounded px-3 py-2" placeholder="Masukkan deskripsi gangguan..." />
       </div>
       <div>
-        <label class="block text-sm text-gray-600 mb-1">Description</label>
+        <label class="block text-sm text-gray-600 mb-1">Deskripsi</label>
         <textarea v-model="form.description as any" class="w-full border rounded px-3 py-2"></textarea>
       </div>
 
-      <button class="px-4 py-2 bg-emerald-600 text-white rounded">Create Ticket</button>
+      <button class="px-4 py-2 bg-emerald-600 text-white rounded">Buat Tiket</button>
     </form>
   </div>
 </template>
