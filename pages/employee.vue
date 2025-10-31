@@ -48,7 +48,8 @@ async function onSubmitEmployee(event: FormSubmitEvent<any>) {
       token: response.data.token, 
       role_id: response.data.user.role.name,
       name: response.data.user.name,
-      email: response.data.user.email
+      email: response.data.user.email,
+      userType: 'employee'
     })
     
     navigateTo('/dashboard')
