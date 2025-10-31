@@ -13,12 +13,23 @@ export default defineNuxtConfig({
     build: {
       rollupOptions: {
         output: {
-          manualChunks: {
-            vendor: ['vue', 'vue-router'],
-            ui: ['@nuxt/ui']
+          manualChunks: (id) => {
+            // Exclude @nuxt/kit from client bundle
+            if (id.includes('@nuxt/kit')) {
+              return null
+            }
+            if (id.includes('node_modules')) {
+              if (id.includes('vue') || id.includes('vue-router')) {
+                return 'vendor'
+              }
+              return 'vendor'
+            }
           }
         }
       }
+    },
+    ssr: {
+      noExternal: ['@nuxt/ui']
     }
   },
   css: [
@@ -170,15 +181,7 @@ export default defineNuxtConfig({
   },
   // Configure build for better production handling
   build: {
-    // Ensure proper chunking for dynamic imports
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['vue', 'vue-router'],
-          ui: ['@nuxt/ui']
-        }
-      }
-    }
+    transpile: ['@nuxt/ui']
   },
   // Add runtime config to handle SSR serialization
   runtimeConfig: {
