@@ -15,8 +15,9 @@ const props = defineProps<{
 }>();
 const state = reactive({
     type_cash: "",
-    type_in_out: "",
-    account_id: "",
+    type_in_out: "tranfer",
+    from_account_id: "",
+    to_account_id: "",
     date: "",
     description: "",
     file: "",
@@ -59,23 +60,18 @@ if (props.id) {
         });
 }
 const schema = object({
-    account_id: string()
+    from_account_id: string()
+        .min(3, "Must be at least 3 characters")
+        .required("Required"),
+    to_account_id: string()
         .min(3, "Must be at least 3 characters")
         .required("Required"),
     date: string().required("Date is required"),
     amount: string().required("Amount is required"),
 });
 
-state.type_in_out = props.type?.type ?? "";
 state.type_cash = props.type?.type_cash ?? "";
 const isAdvanced = ref(false);
-
-// await companyAdminApi().getAllCompanies().then((response) => {
-//   companies.value = response.data.map((value: any, index: number) => ({
-//     label: value.name,
-//     value: value.id
-//   }))
-// })
 
 type Schema = InferType<typeof schema>;
 async function onSubmit(event: FormSubmitEvent<Schema>) {
@@ -121,25 +117,6 @@ async function getAccountData() {
 }
 await getAccountData();
 
-const categoryOptions = [
-    {
-        label: "pengembalian kasbon pegawai",
-        value: "pengembalian kasbon pegawai",
-    },
-    {
-        label: "registration income",
-        value: "registration income",
-    },
-    {
-        label: "internet income",
-        value: "internet income",
-    },
-    {
-        label: "other",
-        value: "other",
-    },
-];
-
 const methodOptions = [
     {
         label: "transfer",
@@ -155,7 +132,7 @@ const methodOptions = [
 <template>
     <UModal>
         <div class="p-2 mb-4 text-2xl font-bold text-center">
-            <h1>Add Deposit</h1>
+            <h1>Add Tranfer</h1>
         </div>
         <div class="p-4">
             <UForm
@@ -166,9 +143,17 @@ const methodOptions = [
             >
                 <div class="flex gap-4 flex-row-2">
                     <div class="w-full">
-                        <UFormGroup label="Account" name="account">
+                        <UFormGroup label="From Account" name="from_account">
                             <USelectMenu
-                                v-model="state.account_id"
+                                v-model="state.from_account_id"
+                                :options="accounts"
+                                value-attribute="value"
+                                option-attribute="label"
+                            />
+                        </UFormGroup>
+                        <UFormGroup label="To Account" name="to_account">
+                            <USelectMenu
+                                v-model="state.to_account_id"
                                 :options="accounts"
                                 value-attribute="value"
                                 option-attribute="label"
@@ -198,21 +183,6 @@ const methodOptions = [
                                 Current value: {{ displayAmount }}
                             </div>
                         </UFormGroup>
-                        <UFormGroup label="Category" name="category">
-                            <USelectMenu
-                                v-model="state.category"
-                                :options="categoryOptions"
-                                value-attribute="value"
-                                option-attribute="label"
-                            />
-                        </UFormGroup>
-                        <UFormGroup
-                            v-if="state.category == 'other'"
-                            label="Category"
-                            name="category"
-                        >
-                            <UInput v-model="state.category_custom" />
-                        </UFormGroup>
                         <UFormGroup label="Method" name="method">
                             <USelectMenu
                                 v-model="state.method"
@@ -221,50 +191,6 @@ const methodOptions = [
                                 option-attribute="label"
                             />
                         </UFormGroup>
-                        <!-- <div class="flex justify-end">
-              <UButton
-                variant="link"
-                color="cyan"
-                @click="isAdvanced = !isAdvanced"
-              >
-                Advanced
-              </UButton>
-            </div> -->
-                    </div>
-                    <div class="w-full" v-if="isAdvanced">
-                        <UFormGroup label="Category" name="category">
-                            <USelectMenu
-                                v-model="state.category"
-                                :options="accounts"
-                                value-attribute="value"
-                                option-attribute="label"
-                            />
-                        </UFormGroup>
-                        <UFormGroup label="Tags" name="tags">
-                            <UInput v-model="state.tags" />
-                        </UFormGroup>
-                        <UFormGroup label="Payer" name="payer">
-                            <USelectMenu
-                                v-model="state.payer_id"
-                                :options="accounts"
-                                value-attribute="value"
-                                option-attribute="label"
-                            />
-                        </UFormGroup>
-                        <UFormGroup label="Method" name="method">
-                            <USelectMenu
-                                v-model="state.method"
-                                :options="accounts"
-                                value-attribute="value"
-                                option-attribute="label"
-                            />
-                        </UFormGroup>
-                        <UFormGroup label="Ref#" name="ref">
-                            <UInput v-model="state.ref" />
-                        </UFormGroup>
-                        <p class="text-xs text-gray-500">
-                            e.g. Transaction ID, Check No.
-                        </p>
                     </div>
                 </div>
 
