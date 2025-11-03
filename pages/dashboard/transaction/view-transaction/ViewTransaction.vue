@@ -100,7 +100,7 @@ const items = (row: User) => [
   <UTable :rows="dataTableList" :columns="columns">
     <template #actions-data="{ row }">
       <UDropdown :items="items(row)">
-        <UButton color="gray" variant="ghost" icon="ellipsis-horizontal-20-solid" />
+        <UButton color="gray" variant="ghost" icon="i-heroicons-ellipsis-horizontal-20-solid" />
       </UDropdown>
     </template>
     <template #date-data="{ row }">
@@ -118,6 +118,6 @@ const items = (row: User) => [
   </UTable>
 
   <div class="flex justify-end px-3 py-3.5 border-t border-gray-200 dark:border-gray-700">
-    <UPagination v-model="page" :page-count="pageCount" :total="dataTableList.length" />
+    <UPagination v-model="page" :page-count="pageCount" :total="dataTable.length" />
   </div>
 </template>
