@@ -20,7 +20,10 @@ import {
   ChevronDown,
   LogOut,
   Settings,
-  Bell
+  Bell,
+  Trash2,
+  Pencil,
+  Plus
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -56,7 +59,11 @@ const iconMap = {
   'chevron-down': ChevronDown,
   'log-out': LogOut,
   'settings': Settings,
-  'bell': Bell
+  'bell': Bell,
+  'trash': Trash2,
+  'trash-2': Trash2,
+  'pencil': Pencil,
+  'plus': Plus
 }
 
 const iconComponent = computed(() => {
