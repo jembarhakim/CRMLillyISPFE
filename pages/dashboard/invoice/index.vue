@@ -75,6 +75,100 @@ const activeRecurringCustomerIds = ref<Set<string>>(new Set())
 
 const printing = ref(false)
 
+// Column selection for print report
+const showColumnSelector = ref(false)
+const selectedColumns = ref<Set<string>>(new Set())
+
+// Define columns before using them in computed properties
+const columns = [
+
+  {
+
+    key: "number",
+
+    label: "Number",
+
+  },
+
+  {
+
+    key: "customer_display",
+
+    label: "Customer",
+
+  },
+
+  {
+
+    key: "amount",
+
+    label: "Amount",
+
+  },
+
+  {
+
+    key: "total_paid",
+
+    label: "Total Paid",
+
+  },
+
+  {
+
+    key: "amount_due",
+
+    label: "Amount Due",
+
+  },
+
+  {
+
+    key: "status",
+
+    label: "Status",
+
+  },
+
+  {
+
+    key: "invoice_date",
+
+    label: "Invoice Date",
+
+  },
+
+  {
+
+    key: "due_date",
+
+    label: "Due Date",
+
+  },
+
+  {
+
+    key: "actions",
+
+    label: "Actions",
+
+  },
+
+];
+
+// Initialize selected columns with all columns except 'actions'
+const availableColumns = computed(() => {
+  return columns.filter(col => col.key !== 'actions')
+})
+
+// Initialize with all columns selected
+selectedColumns.value = new Set(availableColumns.value.map(col => col.key))
+
+// Select All / Unselect All state
+const allColumnsSelected = computed(() => {
+  return availableColumns.value.every(col => selectedColumns.value.has(col.key))
+})
+
 
 
 const router = useRouter();
@@ -933,84 +1027,6 @@ await Promise.all([getData(), loadActiveRecurringCustomers()]);
 
 
 
-const columns = [
-
-  {
-
-    key: "number",
-
-    label: "Number",
-
-  },
-
-  {
-
-    key: "customer_display",
-
-    label: "Customer",
-
-  },
-
-  {
-
-    key: "amount",
-
-    label: "Amount",
-
-  },
-
-  {
-
-    key: "total_paid",
-
-    label: "Total Paid",
-
-  },
-
-  {
-
-    key: "amount_due",
-
-    label: "Amount Due",
-
-  },
-
-  {
-
-    key: "status",
-
-    label: "Status",
-
-  },
-
-  {
-
-    key: "invoice_date",
-
-    label: "Invoice Date",
-
-  },
-
-  {
-
-    key: "due_date",
-
-    label: "Due Date",
-
-  },
-
-  {
-
-    key: "actions",
-
-    label: "Actions",
-
-  },
-
-];
-
-
-
 const page = ref(1);
 
 const pageCount = 5;
@@ -1310,7 +1326,43 @@ function handlePaymentSuccess() {
 
 }
 
+// Toggle Select All / Unselect All
+function toggleSelectAllColumns() {
+  if (allColumnsSelected.value) {
+    // Unselect all
+    selectedColumns.value.clear()
+  } else {
+    // Select all
+    availableColumns.value.forEach(col => {
+      selectedColumns.value.add(col.key)
+    })
+  }
+}
 
+// Toggle individual column selection
+function toggleColumn(columnKey: string) {
+  if (selectedColumns.value.has(columnKey)) {
+    selectedColumns.value.delete(columnKey)
+  } else {
+    selectedColumns.value.add(columnKey)
+  }
+}
+
+// Open column selector modal
+function openColumnSelector() {
+  showColumnSelector.value = true
+}
+
+// Close column selector and proceed with print
+async function proceedWithPrint() {
+  if (selectedColumns.value.size === 0) {
+    notification.warning('No Columns Selected', 'Please select at least one column to print.')
+    return
+  }
+  
+  showColumnSelector.value = false
+  await printAllUnpaidInvoices()
+}
 
 // Generate thermal printer data for filtered invoices
 function generateThermalDataForInvoices(invoices: any[]): string {
@@ -1330,67 +1382,108 @@ function generateThermalDataForInvoices(invoices: any[]): string {
     output += centerText("LINK: www.menara.net.id", printerWidth) + "\n"
     output += "=".repeat(printerWidth) + "\n"
     output += centerText("----- DITERBITKAN UNTUK -----", printerWidth) + "\n"
-    output += centerText(invoice.customer?.name || 'Unknown Customer', printerWidth) + "\n"
+    
+    // Only include customer name if column is selected
+    if (selectedColumns.value.has('customer_display')) {
+      output += centerText(invoice.customer?.name || 'Unknown Customer', printerWidth) + "\n"
+    }
+    
     output += "-".repeat(printerWidth) + "\n"
     output += centerText("*** Tanda Terima ***", printerWidth) + "\n"
     output += '</div>\n'
     
     // Data section - clean format with proper spacing
     output += '<div class="data-section">\n'
-    // Receipt details - clean format with proper alignment
-    output += formatKV("Nomor Tanda", invoice.id, printerWidth) + "\n"
-    output += formatKV("Terima", invoice.id, printerWidth) + "\n"
-    output += formatKV("Tanggal penerimaan", invoice.invoice_date || invoice.created_at?.split('T')[0] || new Date().toISOString().split('T')[0], printerWidth) + "\n"
-    output += "-".repeat(printerWidthData) + "\n"
-
-    // Item details section - clean format
-    output += formatKV("Tertentu", "Jumlah", printerWidth) + "\n"
-    output += "-".repeat(22) + "          " + "-".repeat(22) + "\n"
     
-    // Item description with month countdown and price - formatted like the image
-    const currentMonth = new Date().getMonth() + 1 // JavaScript months are 0-based
-    if (invoice.invoice_items && invoice.invoice_items.length > 0) {
-      for (let j = 0; j < invoice.invoice_items.length; j++) {
-        const item = invoice.invoice_items[j]
-        // Calculate month countdown from current month
-        let monthCountdown = currentMonth - j
-        if (monthCountdown <= 0) {
-          monthCountdown = 12 + monthCountdown
-        }
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        const monthName = monthNames[monthCountdown - 1]
-        // Format with service name, month, and price: "Internet Service - Dec - Rp 150000"
-        // Extract service name without MAC address (remove anything after the first space that looks like MAC)
-        let serviceName = item.name || "Internet Service"
-        // Remove various MAC address patterns:
-        // 1. Standard format: XX:XX:XX:XX:XX:XX
-        // 2. Short format: XX:XX:XX:XX:XX:XX:XX:XX (like 00:00:00:94cb331d)
-        // 3. Any pattern with colons and hex characters
-        serviceName = serviceName.replace(/\s+[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}.*$/, '')
-        serviceName = serviceName.replace(/\s+[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}.*$/, '')
-        // Also remove any remaining MAC-like patterns
-        serviceName = serviceName.replace(/\s+[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}.*$/, '')
-        const itemPrice = item.price || item.total || 0
-        const formattedPrice = formatCurrency(itemPrice)
-        const fullText = `${serviceName} ${monthName} - Rp ${formattedPrice}`
-        output += fullText + "\n"
-      }
-    } else {
-      // Fallback for invoices without items
-      const fallbackPrice = formatCurrency(invoice.amount || 0)
-      output += `Internet Service - ${new Date().toLocaleDateString('en-US', { month: 'short' })} - Rp ${fallbackPrice}\n`
+    // Receipt details - clean format with proper alignment
+    if (selectedColumns.value.has('number')) {
+      output += formatKV("Nomor Tanda", invoice.number || invoice.id, printerWidth) + "\n"
+      output += formatKV("Terima", invoice.number || invoice.id, printerWidth) + "\n"
     }
     
-    // Period (using invoice date) - left aligned
-    const invoiceDate = new Date(invoice.invoice_date || invoice.created_at)
-    output += invoiceDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) + "\n"
+    if (selectedColumns.value.has('invoice_date')) {
+      output += formatKV("Tanggal penerimaan", invoice.invoice_date || invoice.created_at?.split('T')[0] || new Date().toISOString().split('T')[0], printerWidth) + "\n"
+    }
+    
+    if (selectedColumns.value.has('due_date')) {
+      output += formatKV("Tanggal jatuh tempo", invoice.due_date?.split('T')[0] || '-', printerWidth) + "\n"
+    }
+    
     output += "-".repeat(printerWidthData) + "\n"
 
+    // Item details section - clean format (always include if amount is selected)
+    if (selectedColumns.value.has('amount') || selectedColumns.value.has('amount_due') || selectedColumns.value.has('total_paid')) {
+      output += formatKV("Tertentu", "Jumlah", printerWidth) + "\n"
+      output += "-".repeat(22) + "          " + "-".repeat(22) + "\n"
+      
+      // Item description with month countdown and price - formatted like the image
+      const currentMonth = new Date().getMonth() + 1 // JavaScript months are 0-based
+      if (invoice.invoice_items && invoice.invoice_items.length > 0) {
+        for (let j = 0; j < invoice.invoice_items.length; j++) {
+          const item = invoice.invoice_items[j]
+          // Calculate month countdown from current month
+          let monthCountdown = currentMonth - j
+          if (monthCountdown <= 0) {
+            monthCountdown = 12 + monthCountdown
+          }
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+          const monthName = monthNames[monthCountdown - 1]
+          // Format with service name, month, and price: "Internet Service - Dec - Rp 150000"
+          // Extract service name without MAC address (remove anything after the first space that looks like MAC)
+          let serviceName = item.name || "Internet Service"
+          // Remove various MAC address patterns:
+          // 1. Standard format: XX:XX:XX:XX:XX:XX
+          // 2. Short format: XX:XX:XX:XX:XX:XX:XX:XX (like 00:00:00:94cb331d)
+          // 3. Any pattern with colons and hex characters
+          serviceName = serviceName.replace(/\s+[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}.*$/, '')
+          serviceName = serviceName.replace(/\s+[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}.*$/, '')
+          // Also remove any remaining MAC-like patterns
+          serviceName = serviceName.replace(/\s+[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}.*$/, '')
+          const itemPrice = item.price || item.total || 0
+          const formattedPrice = formatCurrency(itemPrice)
+          const fullText = `${serviceName} ${monthName} - Rp ${formattedPrice}`
+          output += fullText + "\n"
+        }
+      } else {
+        // Fallback for invoices without items
+        const fallbackPrice = formatCurrency(invoice.amount || 0)
+        output += `Internet Service - ${new Date().toLocaleDateString('en-US', { month: 'short' })} - Rp ${fallbackPrice}\n`
+      }
+      
+      // Period (using invoice date) - left aligned
+      if (selectedColumns.value.has('invoice_date')) {
+        const invoiceDate = new Date(invoice.invoice_date || invoice.created_at)
+        output += invoiceDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) + "\n"
+      }
+      output += "-".repeat(printerWidthData) + "\n"
+    }
+
     // Financial summary section - clean format with proper alignment
-    output += formatKV("Total keseluruhan", "Rp " + formatCurrency(invoice.amount), printerWidthData) + "\n"
-    output += formatKV("(-) Digaji", "0,00", printerWidthData) + "\n"
-    output += "-".repeat(printerWidthData) + "\n"
-    output += formatKV("Saldo", "Rp " + formatCurrency(invoice.amount), printerWidth) + "\n"
+    if (selectedColumns.value.has('amount')) {
+      output += formatKV("Total keseluruhan", "Rp " + formatCurrency(invoice.amount), printerWidthData) + "\n"
+    }
+    
+    if (selectedColumns.value.has('total_paid')) {
+      const totalPaid = getTotalPaid(invoice)
+      output += formatKV("Total dibayar", "Rp " + formatCurrency(totalPaid), printerWidthData) + "\n"
+    }
+    
+    if (selectedColumns.value.has('total_paid') || selectedColumns.value.has('amount')) {
+      output += formatKV("(-) Digaji", "0,00", printerWidthData) + "\n"
+      output += "-".repeat(printerWidthData) + "\n"
+    }
+    
+    if (selectedColumns.value.has('amount_due')) {
+      const amountDue = getAmountDue(invoice)
+      output += formatKV("Saldo", "Rp " + formatCurrency(amountDue), printerWidth) + "\n"
+    } else if (selectedColumns.value.has('amount')) {
+      output += formatKV("Saldo", "Rp " + formatCurrency(invoice.amount), printerWidth) + "\n"
+    }
+    
+    if (selectedColumns.value.has('status')) {
+      output += formatKV("Status", invoice.status?.toUpperCase() || '-', printerWidth) + "\n"
+    }
+    
     output += '</div>\n'
 
     // Add separator and gap between invoices for easier cutting
@@ -1564,7 +1657,7 @@ async function printAllUnpaidInvoices() {
 
       icon="printer"
 
-      @click="printAllUnpaidInvoices"
+      @click="openColumnSelector"
 
       :loading="printing"
 
@@ -2242,6 +2335,64 @@ async function printAllUnpaidInvoices() {
 
     </UCard>
 
+  </UModal>
+
+  <!-- Column Selector Modal for Print Report -->
+  <UModal v-model="showColumnSelector">
+    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold">Select Columns to Print</h3>
+          <UButton
+            :icon="allColumnsSelected ? 'i-heroicons-x-mark' : 'i-heroicons-check'"
+            color="gray"
+            variant="ghost"
+            size="sm"
+            @click="toggleSelectAllColumns"
+            :title="allColumnsSelected ? 'Unselect All' : 'Select All'"
+          >
+            {{ allColumnsSelected ? 'Unselect All' : 'Select All' }}
+          </UButton>
+        </div>
+      </template>
+
+      <div class="space-y-3 p-4">
+        <div 
+          v-for="column in availableColumns" 
+          :key="column.key"
+          class="flex items-center space-x-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
+          @click="toggleColumn(column.key)"
+        >
+          <UCheckbox
+            :model-value="selectedColumns.has(column.key)"
+            @update:model-value="toggleColumn(column.key)"
+            class="pointer-events-none"
+          />
+          <label class="flex-1 cursor-pointer text-sm font-medium">
+            {{ column.label }}
+          </label>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UButton
+            color="gray"
+            variant="ghost"
+            @click="showColumnSelector = false"
+          >
+            Cancel
+          </UButton>
+          <UButton
+            color="orange"
+            @click="proceedWithPrint"
+            :disabled="selectedColumns.size === 0"
+          >
+            Print Report
+          </UButton>
+        </div>
+      </template>
+    </UCard>
   </UModal>
 
 </template>

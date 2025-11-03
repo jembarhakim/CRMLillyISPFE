@@ -81,6 +81,31 @@ function validateMacAddress(mac: string) {
   return macRegex.test(mac);
 }
 
+// Auto-format MAC address as user types
+function formatMacAddress(value: string) {
+  // Remove all non-hex characters (keep only 0-9, A-F, a-f)
+  let cleaned = value.replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+  
+  // Limit to 12 characters (MAC address is 12 hex digits)
+  cleaned = cleaned.slice(0, 12);
+  
+  // Insert colon every 2 characters
+  let formatted = '';
+  for (let i = 0; i < cleaned.length; i += 2) {
+    if (i > 0) formatted += ':';
+    formatted += cleaned.slice(i, i + 2);
+  }
+  
+  return formatted;
+}
+
+// Handle MAC address input
+function onMacAddressInput(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const formatted = formatMacAddress(target.value);
+  state.mac_address = formatted;
+}
+
 async function onSubmit(event: FormSubmitEvent<AssetItemSchema>) {
   console.log(state)
   
@@ -135,8 +160,9 @@ async function onSubmit(event: FormSubmitEvent<AssetItemSchema>) {
         <UFormGroup label="MAC Address" name="mac_address">
           <UInput 
             v-model="state.mac_address" 
-            placeholder="00:11:22:33:44:55"
-            help="Format: 00:11:22:33:44:55 or 00-11-22-33-44-55"
+            @input="onMacAddressInput"
+            placeholder="40EE152CF2F8 or 40:EE:15:2C:F2:F8"
+            help="Enter MAC address (colons will be added automatically)"
           />
         </UFormGroup>
 
