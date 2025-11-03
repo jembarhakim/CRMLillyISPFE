@@ -246,20 +246,20 @@ async function getData() {
 
       }
 
-      
-      
+
+
       // Calculate total_paid from transaction data
 
       invoice.total_paid = invoice.transaction?.amount || 0;
 
-      
-      
+
+
       // Calculate amount_due
 
       invoice.amount_due = invoice.amount - invoice.total_paid;
 
-      
-      
+
+
       // Only auto-update status if it's not manually set to 'paid' or 'pending'
 
       // This prevents overriding manual status changes
@@ -334,8 +334,8 @@ async function updateStatus(id: string, status: string, currentStatus: string) {
 
     const invoiceData = customer.value.find(inv => inv.id === id);
 
-    
-    
+
+
     // Set confirmation modal data
 
     statusConfirmationData.value = {
@@ -350,8 +350,8 @@ async function updateStatus(id: string, status: string, currentStatus: string) {
 
     };
 
-    
-    
+
+
     // Show confirmation modal
 
     showStatusConfirmationModal.value = true;
@@ -376,16 +376,16 @@ async function proceedWithStatusUpdate(id: string, status: string, currentStatus
 
     const response = await invoiceAdminApi().updateStatusInvoice(id, { status });
 
-    
-    
+
+
     notification.success('Success', response.message);
 
     // After a status update, refresh router jobs for this invoice
 
-    try { await fetchRouterJobs(id) } catch (_) {}
+    try { await fetchRouterJobs(id) } catch (_) { }
 
-    
-    
+
+
     // Update the specific invoice in the local array instead of refreshing all data
 
     const invoiceIndex = customer.value.findIndex(inv => inv.id === id);
@@ -396,8 +396,8 @@ async function proceedWithStatusUpdate(id: string, status: string, currentStatus
 
     }
 
-    
-    
+
+
     return response;
 
   } catch (err: any) {
@@ -420,8 +420,8 @@ async function proceedWithStatusUpdate(id: string, status: string, currentStatus
 
     }
 
-    
-    
+
+
     // Revert the status back to original on error
 
     const invoiceIndex = customer.value.findIndex(inv => inv.id === id);
@@ -432,8 +432,8 @@ async function proceedWithStatusUpdate(id: string, status: string, currentStatus
 
     }
 
-    
-    
+
+
     throw err;
 
   }
@@ -454,8 +454,8 @@ async function confirmStatusChange() {
 
     const newStatus = statusConfirmationData.value.newStatus;
 
-    
-    
+
+
     try {
 
       await proceedWithStatusUpdate(
@@ -468,28 +468,28 @@ async function confirmStatusChange() {
 
       );
 
-      
-      
+
+
       // Close modal first
 
       closeStatusConfirmationModal();
 
-      
-      
+
+
       // If status was successfully changed to 'paid', automatically open PDF
 
       if (newStatus === 'paid') {
 
         console.log('Status changed to paid, opening PDF automatically for invoice:', invoiceId);
 
-        
-        
+
+
         // Use nextTick to ensure modal is closed and UI is updated
 
         await nextTick();
 
-        
-        
+
+
         // Small delay to ensure status update is reflected in UI
 
         setTimeout(async () => {
@@ -564,8 +564,8 @@ async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
 
   console.log('handlePdfView called with:', { invoiceId, isAutoOpen });
 
-  
-  
+
+
   try {
 
     // Check if PDF has already been viewed
@@ -574,8 +574,8 @@ async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
 
     console.log('Found invoice:', invoice);
 
-    
-    
+
+
     if (invoice?.pdf_viewed) {
 
       console.log('PDF already viewed, showing error message');
@@ -608,14 +608,14 @@ async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
 
     }
 
-    
-    
+
+
     // Add to tracking set
 
     pdfViewingInvoices.value.add(invoiceId);
 
-    
-    
+
+
     // Update local invoice data
 
     const invoiceIndex = customer.value.findIndex(inv => inv.id === invoiceId);
@@ -638,8 +638,8 @@ async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
 
       console.log('Attempting to navigate to PDF:', `/invoice/${invoiceId}`);
 
-      
-      
+
+
       // Always use navigateTo for consistent behavior
 
       console.log('Navigating to PDF with navigateTo');
@@ -662,8 +662,8 @@ async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
 
     }
 
-    
-    
+
+
     // Different messages for manual vs auto open
 
     if (isAutoOpen) {
@@ -675,15 +675,15 @@ async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
       notification.info('PDF Dibuka', 'PDF invoice telah dibuka. PDF ini tidak dapat dibuka lagi untuk mencegah duplikasi pembayaran.', 5000);
 
     }
-    
-    
+
+
 
   } catch (error: any) {
 
     console.error('Error handling PDF view:', error);
 
-    
-    
+
+
     // Check if it's a JSON parsing error
 
     if (error.message && error.message.includes('Unexpected token')) {
@@ -800,11 +800,11 @@ async function loadActiveRecurringCustomers() {
 
     const ids = new Set<string>()
 
-    ;(res.data || []).forEach((r: any) => {
+      ; (res.data || []).forEach((r: any) => {
 
-      if ((r.status || '').toLowerCase() === 'active') ids.add(r.customer_id)
+        if ((r.status || '').toLowerCase() === 'active') ids.add(r.customer_id)
 
-    })
+      })
 
     activeRecurringCustomerIds.value = ids
 
@@ -964,7 +964,7 @@ async function fetchRouterJobs(invoiceId: string) {
 
 
 
-function getRouterJobState(invoiceId: string): { state: 'none'|'pending'|'error'|'success', message?: string } {
+function getRouterJobState(invoiceId: string): { state: 'none' | 'pending' | 'error' | 'success', message?: string } {
 
   const jobs = routerJobsByInvoice.value[invoiceId]
 
@@ -996,7 +996,7 @@ async function ensureJobsLoaded(invoiceId: string) {
 
   if (!routerJobsByInvoice.value[invoiceId]) {
 
-    try { await fetchRouterJobs(invoiceId) } catch (_) {}
+    try { await fetchRouterJobs(invoiceId) } catch (_) { }
 
   }
 
@@ -1080,11 +1080,11 @@ const statusFilter = ref("");
 
 function clearFilters() {
 
-    q.value = "";
+  q.value = "";
 
-    dateFilter.value = "";
+  dateFilter.value = "";
 
-    statusFilter.value = "";
+  statusFilter.value = "";
 
 }
 
@@ -1092,70 +1092,70 @@ function clearFilters() {
 
 const filteredRows = computed(() => {
 
-    let filteredData = customer.value;
+  let filteredData = customer.value;
 
 
 
-    // Filter by search query (customer name only)
+  // Filter by search query (customer name only)
 
-    if (q.value) {
+  if (q.value) {
 
-        filteredData = filteredData.filter((invoice) => {
+    filteredData = filteredData.filter((invoice) => {
 
-            // Only search in the customer name field
+      // Only search in the customer name field
 
-            return invoice.customer?.name?.toLowerCase().includes(q.value.toLowerCase())
+      return invoice.customer?.name?.toLowerCase().includes(q.value.toLowerCase())
 
-        })
+    })
 
-    }
-
-
-
-    // Filter by date (match either invoice_date or due_date)
-
-    if (dateFilter.value) {
-
-        filteredData = filteredData.filter((invoice) => {
-
-            const invoiceDate = invoice.invoice_date ? new Date(invoice.invoice_date) : null;
-
-            const dueDate = invoice.due_date ? new Date(invoice.due_date) : null;
-
-            const filterDate = new Date(dateFilter.value);
-
-            return (
-
-              (invoiceDate && invoiceDate.toDateString() === filterDate.toDateString()) ||
-
-              (dueDate && dueDate.toDateString() === filterDate.toDateString())
-
-            );
-
-        })
-
-    }
+  }
 
 
 
-    // Filter by status
+  // Filter by date (match either invoice_date or due_date)
 
-    if (statusFilter.value) {
+  if (dateFilter.value) {
 
-        filteredData = filteredData.filter((invoice) => {
+    filteredData = filteredData.filter((invoice) => {
 
-            if (statusFilter.value === 'unpaid_pending') {
-                return invoice.status?.toLowerCase() === 'unpaid' || invoice.status?.toLowerCase() === 'pending';
-            }
-            return invoice.status?.toLowerCase() === statusFilter.value.toLowerCase();
+      const invoiceDate = invoice.invoice_date ? new Date(invoice.invoice_date) : null;
 
-        })
+      const dueDate = invoice.due_date ? new Date(invoice.due_date) : null;
 
-    }
+      const filterDate = new Date(dateFilter.value);
+
+      return (
+
+        (invoiceDate && invoiceDate.toDateString() === filterDate.toDateString()) ||
+
+        (dueDate && dueDate.toDateString() === filterDate.toDateString())
+
+      );
+
+    })
+
+  }
 
 
 
-    return filteredData.slice((page.value - 1) * pageCount, (page.value) * pageCount)
+  // Filter by status
+
+  if (statusFilter.value) {
+
+    filteredData = filteredData.filter((invoice) => {
+
+      if (statusFilter.value === 'unpaid_pending') {
+        return invoice.status?.toLowerCase() === 'unpaid' || invoice.status?.toLowerCase() === 'pending';
+      }
+      return invoice.status?.toLowerCase() === statusFilter.value.toLowerCase();
+
+    })
+
+  }
+
+
+
+  return filteredData.slice((page.value - 1) * pageCount, (page.value) * pageCount)
 
 })
 
@@ -1229,7 +1229,7 @@ const items = (row: any) => {
     ],
 
   ];
-  
+
   return menuItems;
 };
 
@@ -1354,7 +1354,7 @@ async function proceedWithPrint() {
     notification.warning('No Columns Selected', 'Please select at least one column to print.')
     return
   }
-  
+
   showColumnSelector.value = false
   await printAllUnpaidInvoices()
 }
@@ -1367,7 +1367,7 @@ function generateThermalDataForInvoices(invoices: any[]): string {
 
   for (let i = 0; i < invoices.length; i++) {
     const invoice = invoices[i]
-    
+
     // Each invoice gets its own complete header - centered format
     output += '<div class="header-section">\n'
     output += centerText("PT JR Nusa Menara Networks", printerWidth) + "\n"
@@ -1377,40 +1377,40 @@ function generateThermalDataForInvoices(invoices: any[]): string {
     output += centerText("LINK: www.menara.net.id", printerWidth) + "\n"
     output += "=".repeat(printerWidth) + "\n"
     output += centerText("----- DITERBITKAN UNTUK -----", printerWidth) + "\n"
-    
+
     // Only include customer name if column is selected
     if (selectedColumns.value.has('customer_display')) {
       output += centerText(invoice.customer?.name || 'Unknown Customer', printerWidth) + "\n"
     }
-    
+
     output += "-".repeat(printerWidth) + "\n"
     output += centerText("*** Tanda Terima ***", printerWidth) + "\n"
     output += '</div>\n'
-    
+
     // Data section - clean format with proper spacing
     output += '<div class="data-section">\n'
-    
+
     // Receipt details - clean format with proper alignment
     if (selectedColumns.value.has('number')) {
       output += formatKV("Nomor Tanda", invoice.number || invoice.id, printerWidth) + "\n"
       output += formatKV("Terima", invoice.number || invoice.id, printerWidth) + "\n"
     }
-    
+
     if (selectedColumns.value.has('invoice_date')) {
       output += formatKV("Tanggal penerimaan", invoice.invoice_date || invoice.created_at?.split('T')[0] || new Date().toISOString().split('T')[0], printerWidth) + "\n"
     }
-    
+
     if (selectedColumns.value.has('due_date')) {
       output += formatKV("Tanggal jatuh tempo", invoice.due_date?.split('T')[0] || '-', printerWidth) + "\n"
     }
-    
+
     output += "-".repeat(printerWidthData) + "\n"
 
     // Item details section - clean format (always include if amount is selected)
     if (selectedColumns.value.has('amount') || selectedColumns.value.has('amount_due') || selectedColumns.value.has('total_paid')) {
       output += formatKV("Tertentu", "Jumlah", printerWidth) + "\n"
       output += "-".repeat(22) + "          " + "-".repeat(22) + "\n"
-      
+
       // Item description with month countdown and price - formatted like the image
       const currentMonth = new Date().getMonth() + 1 // JavaScript months are 0-based
       if (invoice.invoice_items && invoice.invoice_items.length > 0) {
@@ -1444,7 +1444,7 @@ function generateThermalDataForInvoices(invoices: any[]): string {
         const fallbackPrice = formatCurrency(invoice.amount || 0)
         output += `Internet Service - ${new Date().toLocaleDateString('en-US', { month: 'short' })} - Rp ${fallbackPrice}\n`
       }
-      
+
       // Period (using invoice date) - left aligned
       if (selectedColumns.value.has('invoice_date')) {
         const invoiceDate = new Date(invoice.invoice_date || invoice.created_at)
@@ -1457,28 +1457,28 @@ function generateThermalDataForInvoices(invoices: any[]): string {
     if (selectedColumns.value.has('amount')) {
       output += formatKV("Total keseluruhan", "Rp " + formatCurrency(invoice.amount), printerWidthData) + "\n"
     }
-    
+
     if (selectedColumns.value.has('total_paid')) {
       const totalPaid = getTotalPaid(invoice)
       output += formatKV("Total dibayar", "Rp " + formatCurrency(totalPaid), printerWidthData) + "\n"
     }
-    
+
     if (selectedColumns.value.has('total_paid') || selectedColumns.value.has('amount')) {
       output += formatKV("(-) Digaji", "0,00", printerWidthData) + "\n"
       output += "-".repeat(printerWidthData) + "\n"
     }
-    
+
     if (selectedColumns.value.has('amount_due')) {
       const amountDue = getAmountDue(invoice)
       output += formatKV("Saldo", "Rp " + formatCurrency(amountDue), printerWidth) + "\n"
     } else if (selectedColumns.value.has('amount')) {
       output += formatKV("Saldo", "Rp " + formatCurrency(invoice.amount), printerWidth) + "\n"
     }
-    
+
     if (selectedColumns.value.has('status')) {
       output += formatKV("Status", invoice.status?.toUpperCase() || '-', printerWidth) + "\n"
     }
-    
+
     output += '</div>\n'
 
     // Add separator and gap between invoices for easier cutting
@@ -1536,32 +1536,32 @@ async function printAllUnpaidInvoices() {
 
   // Ensure this only runs on client side
   if (typeof window === 'undefined') return
-  
+
   try {
 
     printing.value = true
 
-    
+
     // Get the currently filtered data from the table
     const filteredInvoices = filteredRows.value
-    
+
     // Filter to only unpaid and pending invoices
-    const unpaidPendingInvoices = filteredInvoices.filter(invoice => 
+    const unpaidPendingInvoices = filteredInvoices.filter(invoice =>
       invoice.status?.toLowerCase() === 'unpaid' || invoice.status?.toLowerCase() === 'pending'
     )
-    
+
     if (unpaidPendingInvoices.length === 0) {
       notification.warning('No Invoices', 'No unpaid or pending invoices found in the current filter.')
       return
     }
-    
+
     // Generate thermal printer data for filtered invoices
     const thermalData = generateThermalDataForInvoices(unpaidPendingInvoices)
-    
+
     // Dynamic import for client-side only usage
     const { generatePrintReportHTML } = await import('@/utils/printReport')
-    
-    
+
+
     // Create a new window with the thermal printer data
 
     const printWindow = window.open('', '_blank')
@@ -1571,23 +1571,23 @@ async function printAllUnpaidInvoices() {
       const htmlContent = generatePrintReportHTML(thermalData)
       printWindow.document.write(htmlContent)
       printWindow.document.close()
-      
-      
+
+
 
       // Don't auto-print on mobile devices
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
       if (!isMobile) {
         // Auto print after a short delay for desktop
-      setTimeout(() => {
+        setTimeout(() => {
 
-        printWindow.print()
+          printWindow.print()
 
         }, 1000)
       }
     }
 
-    
-    
+
+
     // Show success notification
 
     const toast = useToast()
@@ -1599,8 +1599,8 @@ async function printAllUnpaidInvoices() {
       color: 'green'
 
     })
-    
-    
+
+
 
   } catch (error: any) {
 
@@ -1764,21 +1764,11 @@ async function printAllUnpaidInvoices() {
   <UTable :rows="filteredRows" :columns="columns" :loading="isLoading">
 
     <template #actions-data="{ row }">
-
       <UDropdown :items="items(row)">
-
-        <UButton
-
-          color="gray"
-
-          variant="ghost"
-
-          icon="ellipsis-horizontal-20-solid"
-
-        />
-
+        <UButton color="gray" variant="ghost">
+          <LucideIcon name="ellipsis-vertical" :size="20" />
+        </UButton>
       </UDropdown>
-
     </template>
 
     <template #amount-data="{ row }">

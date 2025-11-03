@@ -7,6 +7,7 @@ import { areaAdminApi } from "@/api/admin/area";
 import { userManagementAdminApi } from "@/api/admin/user-management";
 import { companyAdminApi } from "@/api/admin/company";
 import { useNotification } from '@/composables/useNotification';
+import LucideIcon from '@/components/LucideIcon.vue';
 
 const props = defineProps({
   isEdit: {
@@ -550,7 +551,7 @@ select:focus {
           size="sm"
           class="text-white hover:bg-white/20"
         >
-          <UIcon name="x" class="w-5 h-5" />
+          <LucideIcon name="x" :size="20" />
         </UButton>
       </div>
 
@@ -562,13 +563,19 @@ select:focus {
             <!-- Customer Information Section -->
             <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
-                <UIcon name="user" class="w-5 h-5 text-blue-600" />
+                <LucideIcon name="user" :size="20" class="text-blue-600" />
                 Customer Information
               </h3>
               
                <div class="space-y-4">
                  <!-- Full width fields -->
-                 <UFormGroup label="Nama Pelanggan" name="name">
+                 <UFormGroup name="name">
+                   <template #label>
+                     <div class="flex items-center gap-2">
+                       <LucideIcon name="user" :size="16" class="text-gray-600" />
+                       <span>Nama Pelanggan</span>
+                     </div>
+                   </template>
                    <UInput 
                      v-model="state.name" 
                      placeholder="Masukkan nama lengkap pelanggan"
@@ -576,7 +583,13 @@ select:focus {
                    />
                  </UFormGroup>
                  
-                 <UFormGroup label="Area Code" name="area_code">
+                 <UFormGroup name="area_code">
+                   <template #label>
+                     <div class="flex items-center gap-2">
+                       <LucideIcon name="map" :size="16" class="text-gray-600" />
+                       <span>Area Code</span>
+                     </div>
+                   </template>
                    <USelectMenu 
                      v-model="state.area_id" 
                      :options="areas" 
@@ -591,7 +604,7 @@ select:focus {
                  <!-- Customer Type Selection -->
                  <div class="space-y-6">
                    <h4 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-                     <UIcon name="tag" class="w-5 h-5 text-purple-600" />
+                     <LucideIcon name="tag" :size="20" class="text-purple-600" />
                      Customer Type
                    </h4>
                    
@@ -601,7 +614,7 @@ select:focus {
                      <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-6 border border-blue-200 dark:border-blue-700">
                        <div class="flex items-start gap-3 mb-4">
                          <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                           <UIcon name="wifi" class="w-7 h-7 text-white" />
+                           <LucideIcon name="wifi" :size="28" class="text-white" />
                          </div>
                          <div class="flex-1 overflow-hidden">
                            <h5 class="text-lg font-semibold text-blue-900 dark:text-blue-100 leading-tight whitespace-nowrap">Internet Customer</h5>
@@ -627,7 +640,7 @@ select:focus {
                      <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-6 border border-purple-200 dark:border-purple-700">
                        <div class="flex items-start gap-3 mb-4">
                          <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                           <UIcon name="handshake" class="w-7 h-7 text-white" />
+                           <LucideIcon name="handshake" :size="28" class="text-white" />
                          </div>
                          <div class="flex-1 overflow-hidden">
                            <h5 class="text-lg font-semibold text-purple-900 dark:text-purple-100 leading-tight whitespace-nowrap">Collaborator</h5>
@@ -653,13 +666,13 @@ select:focus {
                    <!-- Customer Type Info -->
                    <div class="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-xl p-6 border border-indigo-200 dark:border-indigo-700">
                      <div class="flex items-start gap-3">
-                       <UIcon name="info" class="w-6 h-6 text-indigo-600 dark:text-indigo-400 mt-1 flex-shrink-0" />
+                       <LucideIcon name="info" :size="24" class="text-indigo-600 dark:text-indigo-400 mt-1 flex-shrink-0" />
                        <div class="text-sm text-indigo-800 dark:text-indigo-200">
                          <p class="font-semibold mb-3 text-base">Customer Type Guidelines:</p>
                          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                            <div class="space-y-2">
                              <div class="flex items-start gap-2">
-                               <UIcon name="wifi" class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                               <LucideIcon name="wifi" :size="16" class="text-blue-600 mt-0.5 flex-shrink-0" />
                                <div>
                                  <p class="font-medium text-blue-900 dark:text-blue-100">Internet Customer</p>
                                  <p class="text-xs text-blue-700 dark:text-blue-300">Regular customers who use internet services</p>
@@ -668,7 +681,7 @@ select:focus {
                            </div>
                            <div class="space-y-2">
                              <div class="flex items-start gap-2">
-                               <UIcon name="handshake" class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                               <LucideIcon name="handshake" :size="16" class="text-purple-600 mt-0.5 flex-shrink-0" />
                                <div>
                                  <p class="font-medium text-purple-900 dark:text-purple-100">Collaborator</p>
                                  <p class="text-xs text-purple-700 dark:text-purple-300">Business partners, resellers, or service providers</p>
@@ -689,8 +702,9 @@ select:focus {
                  <!-- Single column layout -->
                  <div class="space-y-4">
                    <div class="space-y-1">
-                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                       Panggilan / Samaran
+                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                       <LucideIcon name="user-circle" :size="16" class="text-gray-600" />
+                       <span>Panggilan / Samaran</span>
                      </label>
                      <UInput 
                        v-model="state.alias" 
@@ -700,8 +714,9 @@ select:focus {
                    </div>
                    
                    <div class="space-y-1">
-                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                       No.HP Pelanggan
+                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                       <LucideIcon name="phone" :size="16" class="text-gray-600" />
+                       <span>No.HP Pelanggan</span>
                      </label>
                      <UInput 
                        v-model="state.phone" 
@@ -712,8 +727,9 @@ select:focus {
                    </div>
                    
                    <div class="space-y-1">
-                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                       Tgl. Permintaan PSB
+                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                       <LucideIcon name="calendar" :size="16" class="text-gray-600" />
+                       <span>Tgl. Permintaan PSB</span>
                      </label>
                      <UInput 
                        v-model="state.service_request_date" 
@@ -728,14 +744,15 @@ select:focus {
             <!-- Business Information Section -->
             <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
-                <UIcon name="building-2" class="w-5 h-5 text-green-600" />
+                <LucideIcon name="building-2" :size="20" class="text-green-600" />
                 Business Information
               </h3>
               
                <div class="space-y-4">
                  <div class="space-y-1">
-                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                     Sales Representative
+                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                     <LucideIcon name="users" :size="16" class="text-gray-600" />
+                     <span>Sales Representative</span>
                    </label>
                    <USelectMenu 
                      v-model="state.sales_representative_id" 
@@ -749,8 +766,9 @@ select:focus {
                  </div>
                  
                  <div class="space-y-1">
-                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                     Company
+                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                     <LucideIcon name="building-office" :size="16" class="text-gray-600" />
+                     <span>Company</span>
                    </label>
                    <USelectMenu 
                      v-model="state.company_id" 
@@ -770,7 +788,7 @@ select:focus {
           <div class="flex-1">
             <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700 h-fit">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
-                <UIcon name="map-pin" class="w-5 h-5 text-red-600" />
+                <LucideIcon name="map-pin" :size="20" class="text-red-600" />
                 Location & Address
               </h3>
               
@@ -797,7 +815,9 @@ select:focus {
                       color="blue"
                       class="mb-2"
                     >
-                      <UIcon name="map-pin" class="w-4 h-4 mr-1" />
+                      <template #leading>
+                        <LucideIcon name="navigation" :size="16" />
+                      </template>
                       My Position
                     </UButton>
                   </LControl>
@@ -805,7 +825,13 @@ select:focus {
               </div>
               
               <!-- Address Field -->
-              <UFormGroup label="Address" name="address" class="mb-6">
+              <UFormGroup name="address" class="mb-6">
+                <template #label>
+                  <div class="flex items-center gap-2">
+                    <LucideIcon name="map-pin" :size="16" class="text-gray-600" />
+                    <span>Address</span>
+                  </div>
+                </template>
                 <UInput 
                   v-model="state.address" 
                   placeholder="Address will be auto-filled from map"
@@ -815,10 +841,19 @@ select:focus {
               </UFormGroup>
               
               <!-- Coordinates -->
-              <UFormGroup label="Coordinates" name="coordinates">
+              <UFormGroup name="coordinates">
+                <template #label>
+                  <div class="flex items-center gap-2">
+                    <LucideIcon name="navigation" :size="16" class="text-gray-600" />
+                    <span>Coordinates</span>
+                  </div>
+                </template>
                 <div class="grid grid-cols-2 gap-4">
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Latitude</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                      <LucideIcon name="map-pin" :size="14" class="text-gray-500" />
+                      <span>Latitude</span>
+                    </label>
                     <UInput 
                       v-model="state.latitude" 
                       placeholder="Latitude" 
@@ -828,7 +863,10 @@ select:focus {
                     />
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Longitude</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-2">
+                      <LucideIcon name="map-pin" :size="14" class="text-gray-500" />
+                      <span>Longitude</span>
+                    </label>
                     <UInput 
                       v-model="state.longitude" 
                       placeholder="Longitude" 
@@ -845,9 +883,9 @@ select:focus {
         
         <!-- Submit Button -->
         <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <div class="text-sm text-gray-600 dark:text-gray-400">
-            <UIcon name="info" class="w-4 h-4 inline mr-1" />
-            All fields marked with * are required
+          <div class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+            <LucideIcon name="info" :size="16" />
+            <span>All fields marked with * are required</span>
           </div>
           <div class="flex gap-3 w-full sm:w-auto">
             <UButton 
@@ -858,7 +896,9 @@ select:focus {
               size="lg"
               class="flex-1 sm:flex-initial"
             >
-              <UIcon name="x" class="mr-2 w-4 h-4" />
+              <template #leading>
+                <LucideIcon name="x" :size="16" />
+              </template>
               Cancel
             </UButton>
             <UButton 
@@ -867,7 +907,9 @@ select:focus {
               size="lg"
               class="flex-1 sm:flex-initial bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
             >
-              <UIcon name="check" class="mr-2 w-4 h-4" />
+              <template #leading>
+                <LucideIcon name="check" :size="16" />
+              </template>
               Submit
             </UButton>
           </div>

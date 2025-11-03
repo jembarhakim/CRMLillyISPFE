@@ -692,42 +692,57 @@ function getStatusCount(status: string) {
       <div class="flex flex-col sm:flex-row gap-2">
         <UButton 
           label="Add Customer" 
-          icon="plus"
           @click="OpenModalAddCustomer(false, null)"
           class="w-full sm:w-auto"
-        />
+        >
+          <template #leading>
+            <LucideIcon name="plus" :size="16" />
+          </template>
+        </UButton>
         <UButton 
           label="Add Installation Report" 
-          icon="file-plus"
           @click="OpenModalReportInstallation(false, null)"
           class="w-full sm:w-auto"
           color="green"
-        />
+        >
+          <template #leading>
+            <LucideIcon name="plus" :size="16" />
+          </template>
+        </UButton>
         <UButton 
           label="Refresh Device Status" 
-          icon="refresh-cw"
           @click="refreshDeviceStatuses"
           class="w-full sm:w-auto"
           color="blue"
           variant="outline"
-        />        
+        >
+          <template #leading>
+            <LucideIcon name="rotate-cw" :size="16" />
+          </template>
+        </UButton>        
         <UButton 
           label="Show Down Devices" 
-          icon="x-circle"
           @click="statusFilter = 'down'"
           class="w-full sm:w-auto"
           color="red"
           variant="outline"
-        />
+        >
+          <template #leading>
+            <LucideIcon name="eye" :size="16" />
+          </template>
+        </UButton>
         <UButton 
           v-if="statusFilter !== 'all'"
           label="Clear Filter" 
-          icon="x"
           @click="statusFilter = 'all'"
-          class="w-full sm:w-auto"
+          class="w-full sm:w-auto hover:bg-gray-900 hover:text-white transition-colors"
           color="gray"
-          variant="ghost"
-        />
+          variant="outline"
+        >
+          <template #leading>
+            <LucideIcon name="x" :size="16" />
+          </template>
+        </UButton>
       </div>
     </div>
 
