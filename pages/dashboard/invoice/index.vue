@@ -1770,12 +1770,17 @@ async function printAllUnpaidInvoices() {
         <UButton
 
           color="gray"
-
           variant="ghost"
 
-          icon="ellipsis-horizontal-20-solid"
+        >
 
-        />
+          <template #leading>
+
+            <LucideIcon name="ellipsis-vertical" :size="16" />
+
+          </template>
+
+        </UButton>
 
       </UDropdown>
 
