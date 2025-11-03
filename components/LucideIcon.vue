@@ -23,7 +23,8 @@ import {
   Bell,
   Trash2,
   Pencil,
-  Plus
+  Plus,
+  EllipsisVertical
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -63,7 +64,8 @@ const iconMap = {
   'trash': Trash2,
   'trash-2': Trash2,
   'pencil': Pencil,
-  'plus': Plus
+  'plus': Plus,
+  'ellipsis-vertical': EllipsisVertical
 }
 
 const iconComponent = computed(() => {
