@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { userManagementAdminApi } from "@/api/admin/user-management";
 import AddRoleForm from "./AddRoleForm.vue";
+import LucideIcon from "@/components/LucideIcon.vue";
 // Set page title
 useHead({
-  title: 'Role Management - CRM System'
-})
+    title: "Role Management - CRM System",
+});
 
 let role: any[] = [];
 const page = ref(1);
@@ -13,55 +14,52 @@ const pageCount = 5;
 const q = ref("");
 
 async function fetchAllRole() {
-  await userManagementAdminApi()
-    .getAllRole()
-    .then((response) => {
-      response.data.forEach((user: any) => {
-        user.number = response.data.indexOf(user) + 1;
-      });
-      role = [...response.data];
-      q.value = "changed";
-      q.value = "";
-    })
-    .catch((error) => {
-      console.error("Error fetching user:", error);
-    });
+    await userManagementAdminApi()
+        .getAllRole()
+        .then((response) => {
+            response.data.forEach((user: any) => {
+                user.number = response.data.indexOf(user) + 1;
+            });
+            role = [...response.data];
+            q.value = "changed";
+            q.value = "";
+        })
+        .catch((error) => {
+            console.error("Error fetching user:", error);
+        });
 }
 await fetchAllRole();
 
 const columns = [
-  { key: "number", label: "Number" },
-  { key: "name", label: "Name" },
-  {
-    key: "actions",
-    label: "Actions",
-  },
+    { key: "number", label: "Number" },
+    { key: "name", label: "Name" },
+    {
+        key: "actions",
+        label: "Actions",
+    },
 ];
-
-
 
 type Role = {
-  id: number;
-  name: string;
-  manahe: string;
+    id: number;
+    name: string;
+    manahe: string;
 };
 const items = (row: Role) => [
-  [
-    {
-      label: "Edit",
-      icon: "pencil-square-20-solid",
-      click: () => openEditUserModal(row.id.toString()),
-    },
-  ],
-  [
-    {
-      label: "Delete",
-      icon: "trash-2-20-solid",
-      click: () => deleteRole(row.id.toString()),
-    },
-  ],
+    [
+        {
+            label: "Edit",
+            icon: "pencil-square-20-solid",
+            click: () => openEditUserModal(row.id.toString()),
+        },
+    ],
+    [
+        {
+            label: "Delete",
+            icon: "trash-2-20-solid",
+            click: () => deleteRole(row.id.toString()),
+        },
+    ],
 ];
-
 
 const toast = useToast();
 const modal = useModal();
@@ -70,76 +68,82 @@ const count = ref(0);
 const isOpen = ref(false);
 
 function openAddUserModal() {
-  modal.open(AddRoleForm, {
-    onSuccess: handleSubmitUser,
-  });
+    modal.open(AddRoleForm, {
+        onSuccess: handleSubmitUser,
+    });
 }
 
 function openEditUserModal(companyId: string) {
-  modal.open(AddRoleForm, {
-    isEdit: true,
-    id: companyId,
-    onSuccess: handleSubmitUser,
-  });
+    modal.open(AddRoleForm, {
+        isEdit: true,
+        id: companyId,
+        onSuccess: handleSubmitUser,
+    });
 }
 
 async function handleSubmitUser() {
-  toast.add({
-    title: "Success!",
-    id: "modal-success",
-  });
-
-  await fetchAllRole();
-  modal.close();
-  isOpen.value = false;
-}
-async function deleteRole(roleId: string) {
-  const confirmed = window.confirm(
-    "Are you sure you want to delete this company?"
-  );
-  if (!confirmed) return;
-
-  try {
-    await userManagementAdminApi().deleteRole(roleId);
     toast.add({
-      title: "Success!",
-      id: "modal-success",
+        title: "Success!",
+        id: "modal-success",
     });
 
     await fetchAllRole();
-  } catch (error) {
-    console.error("Error deleting company:", error);
-  }
+    modal.close();
+    isOpen.value = false;
+}
+async function deleteRole(roleId: string) {
+    const confirmed = window.confirm(
+        "Are you sure you want to delete this company?",
+    );
+    if (!confirmed) return;
+
+    try {
+        await userManagementAdminApi().deleteRole(roleId);
+        toast.add({
+            title: "Success!",
+            id: "modal-success",
+        });
+
+        await fetchAllRole();
+    } catch (error) {
+        console.error("Error deleting company:", error);
+    }
 }
 </script>
 
 <template>
-  <UButton label="Add Role" @click="openAddUserModal" />
-  <div class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700">
-    <UInput v-model="q" placeholder="Search" />
-  </div>
-  <!-- <div
+    <UButton label="Add Role" @click="openAddUserModal" />
+    <div class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700">
+        <UInput v-model="q" placeholder="Search" />
+    </div>
+    <!-- <div
     class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700"
   ></div> -->
-  <UTable :rows="role" :columns="columns">
-    <template #actions-data="{ row }">
-      <UDropdown :items="items(row)">
-        <UButton
-          color="gray"
-          variant="ghost"
-          icon="ellipsis-horizontal-20-solid"
-        />
-      </UDropdown>
-    </template>
-  </UTable>
+    <UTable :rows="role" :columns="columns">
+        <template #actions-data="{ row }">
+            <UDropdown :items="items(row)">
+                <button
+                    type="button"
+                    class="bg-gray-700 text-white px-2 py-1 text-sm hover:bg-gray-600 rounded inline-flex items-center justify-center shadow-sm transition-colors duration-200 group"
+                    aria-label="Actions"
+                >
+                    <LucideIcon
+                        name="ellipsis-vertical"
+                        class="text-white"
+                        :size="18"
+                    />
+                </button>
+            </UDropdown>
+        </template>
+    </UTable>
 
-  <div
-    class="flex justify-end px-3 py-3.5 border-t border-gray-200 dark:border-gray-700"
-  >
-    <UPagination
-      v-model="page"
-      :page-count="pageCount"
-      :total="role.length"
-    />
-  </div>
+    <div
+        class="flex justify-end px-3 py-3.5 border-t border-gray-200 dark:border-gray-700"
+    >
+        <UPagination
+            v-model="page"
+            :page-count="pageCount"
+            :total="role.length"
+        />
+    </div>
 </template>

@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import LucideIcon from "@/components/LucideIcon.vue";
 import { companyAdminApi } from "@/api/admin/company";
 import AddCompanyForm from "./AddCompanyForm.vue";
 // Set page title
 useHead({
-  title: 'Company Management - CRM System'
-})
+    title: "Company Management - CRM System",
+});
 
 let people: any[] = [];
 
@@ -60,10 +61,12 @@ const columns = [
     {
         key: "url",
         label: "Website",
-    }, {
+    },
+    {
         key: "npwp",
         label: "NPWP",
-    }, {
+    },
+    {
         key: "address",
         label: "Address",
     },
@@ -81,13 +84,15 @@ const columns = [
     },
 ];
 
-
 let peopleData = people;
 
 const filteredRows = computed(() => {
     if (!q.value) {
         peopleData = people;
-        return people.slice((page.value - 1) * pageCount, page.value * pageCount);
+        return people.slice(
+            (page.value - 1) * pageCount,
+            page.value * pageCount,
+        );
     }
 
     const newData = people.filter((person) => {
@@ -127,7 +132,9 @@ async function handleSubmitCompany() {
 }
 
 async function deleteCompany(companyId: string) {
-    const confirmed = window.confirm("Are you sure you want to delete this company?");
+    const confirmed = window.confirm(
+        "Are you sure you want to delete this company?",
+    );
     if (!confirmed) return;
 
     try {
@@ -172,24 +179,47 @@ const modal = useModal();
 
     <div class="table-scroll-container">
         <div class="table-scroll-content">
-            <UTable :rows="filteredRows" :columns="columns" class="dashboard-table">
+            <UTable
+                :rows="filteredRows"
+                :columns="columns"
+                class="dashboard-table"
+            >
                 <template #logo_url-data="{ row }">
                     <UAvatar :src="row.logo_url" size="xl" />
                 </template>
                 <template #actions-data="{ row }">
                     <UDropdown :items="items(row)">
-                        <UButton color="gray" variant="ghost" icon="ellipsis-horizontal-20-solid" />
+                        <button
+                            type="button"
+                            class="bg-gray-700 text-white px-2 py-1 text-sm hover:bg-gray-600 rounded inline-flex items-center justify-center shadow-sm transition-colors duration-200 group"
+                            aria-label="Actions"
+                        >
+                            <LucideIcon
+                                name="ellipsis-vertical"
+                                class="text-white"
+                                :size="18"
+                            />
+                        </button>
                     </UDropdown>
                 </template>
             </UTable>
         </div>
         <div class="table-scroll-footer">
-          <span class="scroll-hint">↔ Scroll horizontally to see more columns | ↕ Scroll vertically for more rows</span>
+            <span class="scroll-hint"
+                >↔ Scroll horizontally to see more columns | ↕ Scroll
+                vertically for more rows</span
+            >
         </div>
     </div>
 
-    <div class="flex justify-end px-3 py-3.5 border-t border-gray-200 dark:border-gray-700">
-        <UPagination v-model="page" :page-count="pageCount" :total="peopleData.length" />
+    <div
+        class="flex justify-end px-3 py-3.5 border-t border-gray-200 dark:border-gray-700"
+    >
+        <UPagination
+            v-model="page"
+            :page-count="pageCount"
+            :total="peopleData.length"
+        />
     </div>
 
     <div>
