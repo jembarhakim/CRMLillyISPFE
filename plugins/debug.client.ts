@@ -1,14 +1,18 @@
 export default defineNuxtPlugin(() => {
-  // Log API configuration
+  // Log API configuration - use composables to get the correct host
+  const apiHost = useApiHost()
+  const waHost = useWaHost()
   const config = useRuntimeConfig()
+  
   console.log('API Configuration:', {
-    API_HOST: config.public.API_HOST,
-    WA_HOST: config.public.WA_HOST,
+    API_HOST: apiHost, // Use the composable that handles localhost detection
+    WA_HOST: waHost, // Use the composable that handles localhost detection
+    RAW_CONFIG_API_HOST: config.public.API_HOST, // Show raw config for debugging
     NODE_ENV: process.env.NODE_ENV
   })
 
-  // Test API connection
-  $fetch(config.public.API_HOST + '/api/health', { 
+  // Test API connection using the composable
+  $fetch(apiHost + '/api/health', { 
     method: 'GET',
     timeout: 5000 
   }).then(response => {

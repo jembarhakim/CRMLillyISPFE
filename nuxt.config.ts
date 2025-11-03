@@ -87,7 +87,7 @@ export default defineNuxtConfig({
   },
   compatibilityDate: "2024-11-01",
   devtools: { enabled: true },
-  ssr: false, // Temporarily disable SSR to fix hasOwnProperty error
+  ssr: false, // Disabled for development to fix hasOwnProperty error
   experimental: {
     payloadExtraction: false, // Disable payload extraction to prevent hydration issues
     inlineSSRStyles: false, // Prevent inline styles that can cause serialization issues
