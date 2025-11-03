@@ -3,6 +3,7 @@ import { watch, onMounted } from 'vue'
 import FormCustomerInstallation from './FormCustomerInstallation.vue'
 import FormAddComponent from './FormAddComponent.vue'
 import CustomerDetailModal from './CustomerDetailModal.vue'
+import LucideIcon from '@/components/LucideIcon.vue'
 import { customerAdminApi } from '@/api/admin/customer'
 import { useNotification } from '@/composables/useNotification'
 import { useNavigationContext } from '@/composables/useNavigationContext'
@@ -1012,7 +1013,9 @@ function getStatusCount(status: string) {
 
           <template #actions-data="{ row }">
             <UDropdown :items="items(row)">
-              <UButton color="gray" variant="outline" icon="ellipsis-horizontal-20-solid" />
+              <UButton color="gray" variant="outline">
+                <LucideIcon name="ellipsis-vertical" :size="20" />
+              </UButton>
             </UDropdown>
           </template>
         </UTable>
