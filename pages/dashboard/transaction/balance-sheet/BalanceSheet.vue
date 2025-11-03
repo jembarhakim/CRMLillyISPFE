@@ -45,14 +45,14 @@ const items = (row: User) => [
   [
     {
       label: "Edit",
-      icon: "pencil-square-20-solid",
+      icon: "i-heroicons-pencil-square-20-solid",
       click: () => console.log("Edit", row.id),
     },
   ],
   [
     {
       label: "Delete",
-      icon: "trash-2-20-solid",
+      icon: "i-heroicons-trash-2-20-solid",
     },
   ],
 ];
@@ -70,7 +70,7 @@ const items = (row: User) => [
         <UButton
           color="gray"
           variant="ghost"
-          icon="ellipsis-horizontal-20-solid"
+          icon="i-heroicons-ellipsis-horizontal-20-solid"
         />
       </UDropdown>
     </template>
@@ -85,7 +85,7 @@ const items = (row: User) => [
     <UPagination
             v-model="page"
             :page-count="pageCount"
-            :total="dataTableList.length"
+            :total="dataTable.length"
           />
   </div>
 </template>
