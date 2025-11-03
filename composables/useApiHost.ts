@@ -2,6 +2,25 @@ export const useApiHost = () => {
   const config = useRuntimeConfig();
   let api = config.public.API_HOST;
 
+  // Check if we're on localhost and should use local API
+  if (process.client && typeof window !== 'undefined') {
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1' ||
+                        window.location.hostname.startsWith('192.168.') ||
+                        window.location.hostname.startsWith('10.') ||
+                        window.location.hostname.startsWith('172.');
+    
+    // If on localhost and API_HOST is not explicitly set for localhost, infer it
+    if (isLocalhost && (!api || api.includes('rndpolije.lilly.net.id'))) {
+      const proto = window.location.protocol === 'https:' ? 'https' : 'http';
+      const host = window.location.hostname;
+      const port = '3001';
+      api = `${proto}://${host}:${port}`;
+      console.log(`🔧 Detected localhost - using local API: ${api}`);
+    }
+  }
+
+  // Fallback if still not set
   if (!api || api.trim() === '') {
     if (process.client && typeof window !== 'undefined') {
       const proto = window.location.protocol === 'https:' ? 'https' : 'http';
@@ -30,6 +49,25 @@ export const useWaHost = () => {
   const config = useRuntimeConfig();
   let wa = config.public.WA_HOST;
 
+  // Check if we're on localhost and should use local API
+  if (process.client && typeof window !== 'undefined') {
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1' ||
+                        window.location.hostname.startsWith('192.168.') ||
+                        window.location.hostname.startsWith('10.') ||
+                        window.location.hostname.startsWith('172.');
+    
+    // If on localhost and WA_HOST is not explicitly set for localhost, infer it
+    if (isLocalhost && (!wa || wa.includes('rndpolije.lilly.net.id'))) {
+      const proto = window.location.protocol === 'https:' ? 'https' : 'http';
+      const host = window.location.hostname;
+      const port = '3001';
+      wa = `${proto}://${host}:${port}`;
+      console.log(`🔧 Detected localhost - using local WA Host: ${wa}`);
+    }
+  }
+
+  // Fallback if still not set
   if (!wa || wa.trim() === '') { 
     if (process.client && typeof window !== 'undefined') {
       const proto = window.location.protocol === 'https:' ? 'https' : 'http';
