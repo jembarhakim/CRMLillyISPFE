@@ -23,7 +23,14 @@ import {
   Bell,
   Trash2,
   Pencil,
-  Plus
+  Plus,
+  MessageCircle,
+  Download,
+  EyeOff,
+  Eye,
+  RefreshCw,
+  Edit,
+  Printer
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -63,7 +70,14 @@ const iconMap = {
   'trash': Trash2,
   'trash-2': Trash2,
   'pencil': Pencil,
-  'plus': Plus
+  'plus': Plus,
+  'message-circle': MessageCircle,
+  'download': Download,
+  'eye-off': EyeOff,
+  'eye': Eye,
+  'refresh-cw': RefreshCw,
+  'edit': Edit,
+  'printer': Printer
 }
 
 const iconComponent = computed(() => {

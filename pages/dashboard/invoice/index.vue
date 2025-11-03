@@ -15,6 +15,7 @@ import type { UpdateStatusInvoiceRequest } from "@/types/requests/invoice";
 import { WhatsappApi } from "@/api/admin/wa";
 
 import { useNotification } from '@/composables/useNotification';
+import LucideIcon from '@/components/LucideIcon.vue';
 
 // Dynamic import for client-side only usage
 // Set page title
@@ -1160,83 +1161,77 @@ const filteredRows = computed(() => {
 
 
 
-const items = (row: any) => [
+const items = (row: any) => {
+  const menuItems = [
 
-  [
+    [
 
-    {
+      {
 
-      label: "Send Whatsapp",
+        label: "Send Whatsapp",
 
-      icon: "chat-bubble-left-ellipsis-20-solid",
+        click: () => sendWhatsapp(row.customer.phone, row.id),
 
-      click: () => sendWhatsapp(row.customer.phone, row.id),
+      },
 
-    },
+      {
 
-    {
+        label: isPdfViewed(row.id) ? "PDF Sudah Dilihat" : "Download PDF",
 
-      label: isPdfViewed(row.id) ? "PDF Sudah Dilihat" : "Download PDF",
+        disabled: isPdfViewed(row.id),
 
-      icon: isPdfViewed(row.id) ? "eye-slash-20-solid" : "arrow-down-on-square-20-solid",
+        click: () => handlePdfView(row.id),
 
-      disabled: isPdfViewed(row.id),
+      },
 
-      click: () => handlePdfView(row.id),
+      (() => {
 
-    },
+        const cid = row.customer_id || row.customer?.id
 
-    (() => {
+        // Allow starting recurring when customer id is missing (new/partial rows)
 
-      const cid = row.customer_id || row.customer?.id
+        // and only block when there is a known active recurring for this customer
 
-      // Allow starting recurring when customer id is missing (new/partial rows)
+        const available = (!cid) || !activeRecurringCustomerIds.value.has(cid)
 
-      // and only block when there is a known active recurring for this customer
+        return {
 
-      const available = (!cid) || !activeRecurringCustomerIds.value.has(cid)
+          label: available ? "Start Recurring" : "Already Recurring",
 
-      return {
+          disabled: !available,
 
-        label: available ? "Start Recurring" : "Already Recurring",
+          click: () => available && openStartRecurringModal(row),
 
-        icon: "refresh-cw-20-solid",
+        }
 
-        disabled: !available,
+      })(),
 
-        click: () => available && openStartRecurringModal(row),
+      {
 
-      }
+        label: "Edit",
 
-    })(),
+        click: () => OpenModalAddCustomer(true, row),
 
-    {
+      },
 
-      label: "Edit",
+    ],
 
-      icon: "pencil-20-solid",
+    [
 
-      click: () => OpenModalAddCustomer(true, row),
+      {
 
-    },
+        label: "Delete",
 
-  ],
+        click: () => deleteData(row.id),
 
-  [
+      },
 
-    {
+    ],
 
-      label: "Delete",
-
-      icon: "trash-2-20-solid",
-
-      click: () => deleteData(row.id),
-
-    },
-
-  ],
-
-];
+  ];
+  
+  return menuItems;
+};
 
 
 
@@ -1655,13 +1650,20 @@ async function printAllUnpaidInvoices() {
       label="Print Filtered Report" 
       color="orange" 
 
-      icon="printer"
 
       @click="openColumnSelector"
 
       :loading="printing"
 
-    />
+    >
+
+      <template #leading>
+
+        <LucideIcon name="printer" :size="16" />
+
+      </template>
+
+    </UButton>
 
   </div>
 
