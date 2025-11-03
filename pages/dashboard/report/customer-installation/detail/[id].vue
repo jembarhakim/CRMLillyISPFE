@@ -133,7 +133,7 @@
               <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl border border-orange-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="flag" class="text-white text-lg" />
+                    <LucideIcon name="flag" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-orange-800">PSB Status</h4>
                 </div>
@@ -155,7 +155,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="info" class="mr-3 text-xl" />
+              <LucideIcon name="info" :size="20" class="mr-3" />
               Basic Installation Information
             </h3>
           </div>
@@ -165,7 +165,7 @@
               <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl border border-blue-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="user" class="text-white text-lg" />
+                    <LucideIcon name="user" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-blue-800">Customer Information</h4>
                 </div>
@@ -189,7 +189,7 @@
               <div class="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl border border-amber-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="user-group" class="text-white text-lg" />
+                    <LucideIcon name="user-group" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-amber-800">Installation Team</h4>
                 </div>
@@ -207,7 +207,7 @@
                           <h5 class="font-semibold text-gray-800 text-sm">{{ technician.technician_name }}</h5>
                           <span v-if="technician.is_primary" 
                                 class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <UIcon name="star" class="w-2 h-2 mr-0.5" />
+                            <LucideIcon name="star" :size="12" class="mr-0.5" />
                             Primary
                           </span>
                         </div>
@@ -219,11 +219,11 @@
                         </div>
                         <div class="text-xs text-gray-600 space-y-1">
                           <div class="flex items-center">
-                            <UIcon name="phone" class="w-3 h-3 mr-1" />
+                            <LucideIcon name="phone" :size="12" class="mr-1" />
                             {{ technician.technician_phone || '-' }}
                           </div>
                           <div class="flex items-center">
-                            <UIcon name="mail" class="w-3 h-3 mr-1" />
+                            <LucideIcon name="mail" :size="12" class="mr-1" />
                             {{ technician.technician_email || '-' }}
                           </div>
                         </div>
@@ -249,7 +249,7 @@
                 
                 <!-- No technicians found -->
                 <div v-else class="text-center py-4">
-                  <UIcon name="user-group" class="w-12 h-12 text-amber-300 mx-auto mb-2" />
+                  <LucideIcon name="user-group" :size="48" class="text-amber-300 mx-auto mb-2" />
                   <p class="text-gray-600 text-sm">No technician information available</p>
                 </div>
               </div>
@@ -258,7 +258,7 @@
               <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl border border-green-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="settings-6-tooth" class="text-white text-lg" />
+                    <LucideIcon name="settings-6-tooth" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-green-800">Installation Details</h4>
                 </div>
@@ -290,7 +290,7 @@
             <!-- Installation Notes -->
             <div v-if="report.installation_notes" class="mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200">
               <div class="flex items-center mb-3">
-                <UIcon name="file-text" class="text-gray-600 mr-2" />
+                <LucideIcon name="file-text" :size="16" class="text-gray-600 mr-2" />
                 <label class="text-sm font-medium text-gray-600">Installation Notes</label>
               </div>
               <p class="text-gray-700 leading-relaxed">{{ report.installation_notes }}</p>
@@ -302,7 +302,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-emerald-500 to-teal-500 px-8 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="file-text" class="mr-3 text-xl" />
+              <LucideIcon name="file-text" :size="20" class="mr-3" />
               Document Information
             </h3>
           </div>
@@ -312,7 +312,7 @@
               <div class="bg-gradient-to-br from-emerald-50 to-teal-50 p-6 rounded-xl border border-emerald-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="file" class="text-white text-lg" />
+                    <LucideIcon name="file" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-emerald-800">Document Type</h4>
                 </div>
@@ -332,14 +332,14 @@
                       @load="handleDocumentImageLoad"
                     />
                     <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 rounded-xl transition-all duration-200 flex items-center justify-center pointer-events-none">
-                      <UIcon name="search-plus" class="text-white text-2xl opacity-0 hover:opacity-100 transition-opacity" />
+                      <LucideIcon name="search-plus" :size="24" class="text-white opacity-0 hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
                   <p class="text-sm text-amber-600 mt-3 font-medium">Click to view full size</p>
                 </div>
                 <div v-else class="text-center py-8">
                   <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <UIcon name="photo" class="text-amber-500 text-2xl" />
+                    <LucideIcon name="photo" :size="32" class="text-amber-500" />
                   </div>
                   <p class="text-amber-600 font-medium">No document photo uploaded</p>
                   <p class="text-amber-500 text-sm mt-1">Document photo will appear here when uploaded</p>
@@ -350,7 +350,7 @@
               <div class="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="photo" class="text-white text-lg" />
+                    <LucideIcon name="photo" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-amber-800">Technician Photos</h4>
                 </div>
@@ -370,12 +370,12 @@
                         @error="handleTechnicianPhotoError"
                       />
                       <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
-                        <UIcon name="eye" class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-lg" />
+                        <LucideIcon name="eye" :size="18" class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
                       </div>
                       <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-1.5">
                         <div class="flex justify-between items-center">
                           <span>Photo {{ index + 1 }}</span>
-                          <UIcon name="arrow-top-right-on-square" class="w-3 h-3" />
+                          <LucideIcon name="arrow-top-right-on-square" :size="12" />
                         </div>
                       </div>
                     </div>
@@ -388,7 +388,7 @@
                 <!-- No Photos State -->
                 <div v-else class="text-center py-6">
                   <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <UIcon name="camera" class="text-amber-500 text-xl" />
+                    <LucideIcon name="camera" :size="20" class="text-amber-500" />
                   </div>
                   <p class="text-amber-600 font-medium text-sm">No technician photos</p>
                   <p class="text-amber-500 text-xs mt-1">Photos will appear here when uploaded</p>
@@ -404,7 +404,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-emerald-500 to-teal-500 px-8 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="shopping-bag" class="mr-3 text-xl" />
+              <LucideIcon name="shopping-bag" :size="20" class="mr-3" />
               Product Package Information
             </h3>
           </div>
@@ -415,7 +415,7 @@
               <div class="bg-gradient-to-br from-emerald-50 to-teal-50 p-6 rounded-xl border border-emerald-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="shopping-bag" class="text-white text-lg" />
+                    <LucideIcon name="shopping-bag" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-emerald-800">Package Details</h4>
                 </div>
@@ -441,7 +441,7 @@
               <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="bolt" class="text-white text-lg" />
+                    <LucideIcon name="bolt" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-blue-800">Speed Configuration</h4>
                 </div>
@@ -472,7 +472,7 @@
               <div class="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="file-text" class="text-white text-lg" />
+                    <LucideIcon name="file-text" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-purple-800">Package Summary</h4>
                 </div>
@@ -504,7 +504,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-purple-500 to-indigo-500 px-8 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="cpu-chip" class="mr-3 text-xl" />
+              <LucideIcon name="cpu-chip" :size="20" class="mr-3" />
               Network Device Information
             </h3>
           </div>
@@ -514,7 +514,7 @@
               <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="cpu-chip" class="text-white text-lg" />
+                    <LucideIcon name="cpu-chip" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-purple-800">Router Information</h4>
                 </div>
@@ -542,7 +542,7 @@
               <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-xl border border-indigo-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="wifi" class="text-white text-lg" />
+                    <LucideIcon name="wifi" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-indigo-800">Network Configuration</h4>
                 </div>
@@ -570,7 +570,7 @@
               <div class="bg-gradient-to-br from-cyan-50 to-cyan-100 p-6 rounded-xl border border-cyan-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="globe-alt" class="text-white text-lg" />
+                    <LucideIcon name="globe-alt" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-cyan-800">Network Addresses</h4>
                 </div>
@@ -590,7 +590,7 @@
               <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl border border-orange-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="signal" class="text-white text-lg" />
+                    <LucideIcon name="signal" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-orange-800">Device Status</h4>
                 </div>
@@ -622,7 +622,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-orange-500 to-red-500 px-8 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="wrench" class="mr-3 text-xl" />
+              <LucideIcon name="wrench" :size="20" class="mr-3" />
               Customer Service Information
             </h3>
           </div>
@@ -632,7 +632,7 @@
               <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl border border-orange-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="user-circle" class="text-white text-lg" />
+                    <LucideIcon name="user-circle" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-orange-800">User Account</h4>
                 </div>
@@ -662,7 +662,9 @@
                       class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-lg"
                       :disabled="!report.ip_static"
                     >
-                      <UIcon name="computer-desktop" class="mr-2" />
+                      <template #leading>
+                        <LucideIcon name="computer-desktop" :size="16" />
+                      </template>
                       Remote Router Access
                     </UButton>
                     <p class="text-xs text-orange-600 mt-1 text-center">
@@ -676,7 +678,7 @@
               <div class="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-xl border border-red-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="cable" class="text-white text-lg" />
+                    <LucideIcon name="cable" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-red-800">Cable Information</h4>
                 </div>
@@ -706,7 +708,7 @@
               <div v-if="report.service_notes" class="bg-gradient-to-br from-pink-50 to-pink-100 p-6 rounded-xl border border-pink-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="file-text" class="text-white text-lg" />
+                    <LucideIcon name="file-text" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-pink-800">Service Notes</h4>
                 </div>
@@ -720,7 +722,7 @@
         <div v-if="report.installation_team_name || report.installation_team_phone" class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-indigo-500 to-purple-500 px-8 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="users" class="mr-3 text-xl" />
+              <LucideIcon name="users" :size="20" class="mr-3" />
               Installation Team Information
             </h3>
           </div>
@@ -729,7 +731,7 @@
               <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-xl border border-indigo-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="user-group" class="text-white text-lg" />
+                    <LucideIcon name="user-group" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-indigo-800">Team Name</h4>
                 </div>
@@ -738,7 +740,7 @@
               <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl border border-purple-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="phone" class="text-white text-lg" />
+                    <LucideIcon name="phone" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-purple-800">Team Phone</h4>
                 </div>
@@ -752,7 +754,7 @@
         <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-gray-600 to-gray-700 px-8 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
-              <UIcon name="clock" class="mr-3 text-xl" />
+              <LucideIcon name="clock" :size="20" class="mr-3" />
               Timestamps
             </h3>
           </div>
@@ -761,7 +763,7 @@
               <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="calendar-days" class="text-white text-lg" />
+                    <LucideIcon name="calendar-days" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-gray-800">Created At</h4>
                 </div>
@@ -770,7 +772,7 @@
               <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
                 <div class="flex items-center mb-4">
                   <div class="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center mr-3">
-                    <UIcon name="pencil-square" class="text-white text-lg" />
+                    <LucideIcon name="pencil-square" :size="18" class="text-white" />
                   </div>
                   <h4 class="text-lg font-semibold text-gray-800">Last Updated</h4>
                 </div>
@@ -789,7 +791,7 @@
           <div class="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-4 -m-6 mb-6">
             <div class="flex items-center justify-between">
               <h3 class="text-xl font-bold text-white flex items-center">
-                <UIcon name="photo" class="mr-3 text-xl" />
+                <LucideIcon name="photo" :size="20" class="mr-3" />
                 Document Photo - {{ report?.document_type || 'Document' }}
               </h3>
               <UButton
@@ -850,7 +852,7 @@
               @click="showDocumentModal = false"
               size="lg"
             >
-              <UIcon name="x" class="mr-2" />
+              <LucideIcon name="x" :size="16" class="mr-2" />
               Close
             </UButton>
             <UButton
@@ -858,7 +860,7 @@
               @click="downloadDocumentPhoto"
               size="lg"
             >
-              <UIcon name="download" class="mr-2" />
+              <LucideIcon name="download" :size="16" class="mr-2" />
               Download
             </UButton>
           </div>
@@ -873,7 +875,7 @@
           <div class="flex justify-between items-center">
             <h3 class="text-lg font-semibold">Technician Photo {{ selectedTechnicianPhotoIndex + 1 }}</h3>
             <UButton @click="showTechnicianPhotoModal = false" variant="ghost" size="sm">
-              <UIcon name="x" />
+              <LucideIcon name="x" :size="16" />
             </UButton>
           </div>
         </template>
@@ -890,13 +892,13 @@
           
           <!-- Loading state -->
           <div v-if="!technicianPhotoModalLoaded && selectedTechnicianPhoto" class="text-center p-8">
-            <UIcon name="refresh-cw" class="animate-spin text-2xl text-amber-600 mx-auto mb-4" />
+            <LucideIcon name="refresh-cw" :size="20" class="animate-spin text-2xl text-amber-600 mx-auto mb-4" />
             <p class="text-gray-600">Loading photo...</p>
           </div>
           
           <!-- Error state -->
           <div v-if="technicianPhotoModalError" class="text-center p-8 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300">
-            <UIcon name="alert-triangle" class="text-2xl text-red-500 mx-auto mb-4" />
+            <LucideIcon name="alert-triangle" :size="20" class="text-2xl text-red-500 mx-auto mb-4" />
             <p class="text-lg text-gray-600 mb-2">Photo could not be loaded</p>
             <p class="text-sm text-gray-500">The image may be corrupted or the path may be incorrect.</p>
           </div>
@@ -910,7 +912,7 @@
               @click="showTechnicianPhotoModal = false"
               size="lg"
             >
-              <UIcon name="x" class="mr-2" />
+              <LucideIcon name="x" :size="16" class="mr-2" />
               Close
             </UButton>
             <UButton
@@ -919,7 +921,7 @@
               size="lg"
               :disabled="!selectedTechnicianPhoto"
             >
-              <UIcon name="download" class="mr-2" />
+              <LucideIcon name="download" :size="16" class="mr-2" />
               Download
             </UButton>
           </div>
@@ -934,7 +936,7 @@
            <div class="flex items-center justify-between bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 p-4 -m-4 mb-4 rounded-t-lg">
              <h3 class="text-xl font-bold text-red-700 dark:text-red-300 flex items-center">
                <div class="bg-red-500 p-3 rounded-xl mr-4 shadow-lg">
-                 <UIcon name="trash-2" class="w-6 h-6 text-white" />
+                 <LucideIcon name="trash-2" :size="20" class="w-6 h-6 text-white" />
                </div>
                Delete Installation Report
              </h3>
@@ -969,7 +971,7 @@
            <div class="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/30 dark:to-pink-900/30 border-2 border-red-300 dark:border-red-600 rounded-xl p-6 shadow-lg">
              <div class="flex items-start">
                <div class="bg-red-500 p-3 rounded-full mr-4 flex-shrink-0 shadow-lg">
-                 <UIcon name="alert-triangle" class="text-white text-2xl" />
+                 <LucideIcon name="alert-triangle" :size="20" class="text-white text-2xl" />
                </div>
                <div class="flex-1">
                  <h5 class="text-xl font-bold text-red-800 dark:text-red-200 mb-3">⚠️ CRITICAL WARNING</h5>
@@ -978,16 +980,16 @@
                  </p>
                  <div class="bg-white dark:bg-gray-800 border-2 border-red-400 dark:border-red-500 rounded-lg p-4 shadow-inner">
                    <p class="text-red-800 dark:text-red-200 text-base font-bold mb-3 flex items-center">
-                     <UIcon name="list-bullet" class="w-5 h-5 mr-2" />
+                     <LucideIcon name="list-bullet" :size="20" class="w-5 h-5 mr-2" />
                      This action will:
                    </p>
                    <ul class="text-red-700 dark:text-red-300 text-sm list-disc list-inside space-y-2 font-medium">
                      <li class="flex items-start">
-                       <UIcon name="trash-2" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                       <LucideIcon name="trash-2" :size="20" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
                        <strong>Delete the installation report and clean up all Mikrotik RouterOS configurations</strong>
                      </li>
                      <li class="flex items-start">
-                       <UIcon name="refresh-cw" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                       <LucideIcon name="refresh-cw" :size="20" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
                        <strong>Update the MAC address status back to "in_stock"</strong>
                      </li>
                      <li class="flex items-start">
@@ -999,7 +1001,7 @@
                        <strong>Delete all associated network devices, cables, and images</strong>
                      </li>
                      <li class="flex items-start">
-                       <UIcon name="refresh-cw" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                       <LucideIcon name="refresh-cw" :size="20" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
                        <strong>Delete all associated recurring invoices</strong>
                      </li>
                      <li class="flex items-start">
@@ -1016,7 +1018,7 @@
            <div class="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-700 dark:to-slate-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl p-5 shadow-lg">
              <h6 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
                <div class="bg-gray-500 p-2 rounded-lg mr-3">
-                 <UIcon name="info" class="w-5 h-5 text-white" />
+                 <LucideIcon name="info" :size="20" class="w-5 h-5 text-white" />
                </div>
                Impact Summary
              </h6>
@@ -1062,7 +1064,7 @@
                    and all associated data.
                  </p>
                  <p class="text-sm text-red-600 dark:text-red-400 font-semibold mt-2 flex items-center">
-                   <UIcon name="alert-triangle" class="w-4 h-4 mr-1" />
+                   <LucideIcon name="alert-triangle" :size="20" class="w-4 h-4 mr-1" />
                    This action CANNOT be undone!
                  </p>
                </div>
@@ -1079,7 +1081,7 @@
                :disabled="deleting"
                class="w-full sm:w-auto border-2 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold"
              >
-               <UIcon name="x" class="mr-2" />
+               <LucideIcon name="x" :size="16" class="mr-2" />
                Cancel
              </UButton>
              <UButton
@@ -1091,7 +1093,7 @@
                :disabled="!deleteConfirmationChecked"
                class="w-full sm:w-auto bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 border-2 border-red-500 shadow-lg font-bold"
              >
-               <UIcon name="trash-2" class="mr-2" />
+               <LucideIcon name="trash-2" :size="20" class="mr-2" />
                {{ deleting ? 'Deleting...' : 'Delete Installation Report' }}
              </UButton>
            </div>
@@ -1523,7 +1525,7 @@ function handleDocumentImageError(event: Event) {
     errorMsg.className = 'document-image-error text-center p-4 bg-red-100 rounded-lg border-2 border-dashed border-red-300';
     errorMsg.innerHTML = `
       <div class="text-red-500 mb-2">
-        <UIcon name="alert-triangle" class="w-12 h-12 mx-auto mb-2" />
+        <LucideIcon name="alert-triangle" :size="20" class="w-12 h-12 mx-auto mb-2" />
       </div>
       <p class="text-sm text-red-600 font-medium">Document photo could not be loaded</p>
       <p class="text-xs text-red-500 mt-1">All fallback URLs failed. Check the debug info below for details.</p>
@@ -1800,7 +1802,7 @@ function handleTechnicianPhotoError(event: Event) {
     errorMsg.className = 'technician-photo-error text-center p-4 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300';
     errorMsg.innerHTML = `
       <div class="text-gray-500 mb-2">
-        <UIcon name="alert-triangle" class="w-8 h-8 mx-auto mb-2" />
+        <LucideIcon name="alert-triangle" :size="20" class="w-8 h-8 mx-auto mb-2" />
       </div>
       <p class="text-sm text-gray-600">Photo could not be loaded</p>
     `;

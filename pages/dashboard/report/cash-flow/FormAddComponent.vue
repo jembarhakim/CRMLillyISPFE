@@ -2,6 +2,7 @@
 import { boolean, object, string, type InferType } from 'yup'
 import type { FormSubmitEvent } from '#ui/types'
 import { formatIDR } from '@/helper/currency'
+import LucideIcon from '@/components/LucideIcon.vue'
 
 const schema = object({
     // email: string().email('Invalid email').required('Required'),
@@ -103,23 +104,48 @@ function clearState() {
         <div class="p-4">
 
 
-            <div class="p-2 mb-4 text-2xl font-bold text-center">
+            <div class="p-2 mb-4 text-2xl font-bold text-center flex items-center justify-center gap-2">
+                <LucideIcon name="dollar-sign" :size="24" class="text-blue-600" />
                 <h1>Add New Report Cash Flow</h1>
             </div>
             <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
-                <UFormGroup label="Type Cash" name="type_cash">
+                <UFormGroup name="type_cash">
+                    <template #label>
+                        <div class="flex items-center gap-2">
+                            <LucideIcon name="wallet" :size="16" class="text-gray-600" />
+                            <span>Type Cash</span>
+                        </div>
+                    </template>
                     <USelectMenu v-model="state.type_cash" :options="type_cash" value-attribute="value"
                         option-attribute="label" />
                 </UFormGroup>
-                <UFormGroup label="Type Transaction" name="type_transaction">
+                <UFormGroup name="type_transaction">
+                    <template #label>
+                        <div class="flex items-center gap-2">
+                            <LucideIcon name="trending-up" :size="16" class="text-gray-600" />
+                            <span>Type Transaction</span>
+                        </div>
+                    </template>
                     <USelectMenu v-model="state.type_transaction" :options="type_transaction" value-attribute="value"
                         option-attribute="label" />
                 </UFormGroup>
-                <UFormGroup label="Type Used Of Money" name="type_use_of_money">
+                <UFormGroup name="type_use_of_money">
+                    <template #label>
+                        <div class="flex items-center gap-2">
+                            <LucideIcon name="briefcase" :size="16" class="text-gray-600" />
+                            <span>Type Used Of Money</span>
+                        </div>
+                    </template>
                     <USelectMenu v-model="state.type_use_of_money" :options="type_use_of_money" value-attribute="value"
                         option-attribute="label" />
                 </UFormGroup>
-                <UFormGroup label="Nominal" name="nominal">
+                <UFormGroup name="nominal">
+                    <template #label>
+                        <div class="flex items-center gap-2">
+                            <LucideIcon name="currency-dollar" :size="16" class="text-gray-600" />
+                            <span>Nominal</span>
+                        </div>
+                    </template>
                     <div class="relative">
                         <UInput 
                             type="text" 
@@ -135,11 +161,20 @@ function clearState() {
                         Current value: {{ displayNominal }}
                     </div>
                 </UFormGroup>
-                <UFormGroup label="Description" name="description">
+                <UFormGroup name="description">
+                    <template #label>
+                        <div class="flex items-center gap-2">
+                            <LucideIcon name="document-text" :size="16" class="text-gray-600" />
+                            <span>Description</span>
+                        </div>
+                    </template>
                     <UTextarea v-model="state.description" />
                 </UFormGroup>
 
                 <UButton type="submit">
+                    <template #leading>
+                        <LucideIcon name="check" :size="16" />
+                    </template>
                     Submit
                 </UButton>
             </UForm>
