@@ -828,6 +828,7 @@ function clearFilters() {
   q.value = "";
 
   dateFilter.value = "";
+  dateFilter.value = "";
 
   statusFilter.value = "";
 }
@@ -835,6 +836,7 @@ function clearFilters() {
 const filteredRows = computed(() => {
   let filteredData = customer.value;
 
+  // Filter by search query (customer name only)
   // Filter by search query (customer name only)
 
   if (q.value) {
@@ -848,6 +850,7 @@ const filteredRows = computed(() => {
   }
 
   // Filter by date (match either invoice_date or due_date)
+  // Filter by date (match either invoice_date or due_date)
 
   if (dateFilter.value) {
     filteredData = filteredData.filter((invoice) => {
@@ -856,7 +859,9 @@ const filteredRows = computed(() => {
         : null;
 
       const dueDate = invoice.due_date ? new Date(invoice.due_date) : null;
+      const dueDate = invoice.due_date ? new Date(invoice.due_date) : null;
 
+      const filterDate = new Date(dateFilter.value);
       const filterDate = new Date(dateFilter.value);
 
       return (
@@ -867,6 +872,7 @@ const filteredRows = computed(() => {
     });
   }
 
+  // Filter by status
   // Filter by status
 
   if (statusFilter.value) {
@@ -937,6 +943,7 @@ const items = (row: any) => {
       },
     ],
   ];
+
 
   return menuItems;
 };
@@ -1173,6 +1180,7 @@ function generateThermalDataForInvoices(invoices: any[]): string {
         })} - Rp ${fallbackPrice}\n`;
       }
 
+
       // Period (using invoice date) - left aligned
       if (selectedColumns.value.has("invoice_date")) {
         const invoiceDate = new Date(
@@ -1315,6 +1323,7 @@ async function printAllUnpaidInvoices() {
       );
       return;
     }
+
 
     // Generate thermal printer data for filtered invoices
     const thermalData = generateThermalDataForInvoices(unpaidPendingInvoices);

@@ -14,7 +14,7 @@
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
           <div class="bg-blue-50 p-3 sm:p-4 rounded-lg">
             <div class="flex items-center">
-              <UIcon name="building" class="text-blue-600 text-xl sm:text-2xl mr-2 sm:mr-3" />
+              <LucideIcon name="building" :size="24" class="text-blue-600 mr-2 sm:mr-3" />
               <div>
                 <p class="text-xs sm:text-sm text-blue-600">Total Installations</p>
                 <p class="text-lg sm:text-2xl font-bold text-blue-800">{{ stats.totalInstallations }}</p>
@@ -24,7 +24,7 @@
           
           <div class="bg-green-50 p-3 sm:p-4 rounded-lg">
             <div class="flex items-center">
-              <UIcon name="check-circle" class="text-green-600 text-xl sm:text-2xl mr-2 sm:mr-3" />
+              <LucideIcon name="check-circle" :size="24" class="text-green-600 mr-2 sm:mr-3" />
               <div>
                 <p class="text-xs sm:text-sm text-green-600">Completed</p>
                 <p class="text-lg sm:text-2xl font-bold text-green-800">{{ stats.completed }}</p>
@@ -34,7 +34,7 @@
           
           <div class="bg-yellow-50 p-3 sm:p-4 rounded-lg">
             <div class="flex items-center">
-              <UIcon name="clock" class="text-yellow-600 text-xl sm:text-2xl mr-2 sm:mr-3" />
+              <LucideIcon name="clock" :size="24" class="text-yellow-600 mr-2 sm:mr-3" />
               <div>
                 <p class="text-xs sm:text-sm text-yellow-600">Pending</p>
                 <p class="text-lg sm:text-2xl font-bold text-yellow-800">{{ stats.pending }}</p>
@@ -44,7 +44,7 @@
           
           <div class="bg-purple-50 p-3 sm:p-4 rounded-lg">
             <div class="flex items-center">
-              <UIcon name="wrench-screwdriver" class="text-purple-600 text-xl sm:text-2xl mr-2 sm:mr-3" />
+              <LucideIcon name="wrench-screwdriver" :size="24" class="text-purple-600 mr-2 sm:mr-3" />
               <div>
                 <p class="text-xs sm:text-sm text-purple-600">In Progress</p>
                 <p class="text-lg sm:text-2xl font-bold text-purple-800">{{ stats.inProgress }}</p>
@@ -58,7 +58,7 @@
           <!-- Add Report Installation -->
           <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-4 sm:p-6 rounded-lg text-white">
             <div class="flex items-center mb-3 sm:mb-4">
-              <UIcon name="file-plus" class="text-2xl sm:text-3xl mr-2 sm:mr-3" />
+              <LucideIcon name="file-plus" :size="32" class="mr-2 sm:mr-3" />
               <h3 class="text-lg sm:text-xl font-semibold">Add Report Installation</h3>
             </div>
             <p class="text-blue-100 mb-3 sm:mb-4 text-sm sm:text-base">
@@ -67,6 +67,9 @@
             <UButton @click="navigateTo('/dashboard/customer')" 
                      color="white" variant="solid"
                      class="w-full sm:w-auto">
+              <template #leading>
+                <LucideIcon name="plus" :size="16" />
+              </template>
               Create Report
             </UButton>
           </div>
@@ -74,7 +77,7 @@
           <!-- View Reports -->
           <div class="bg-gradient-to-br from-green-500 to-green-600 p-4 sm:p-6 rounded-lg text-white">
             <div class="flex items-center mb-3 sm:mb-4">
-              <UIcon name="bar-chart" class="text-2xl sm:text-3xl mr-2 sm:mr-3" />
+              <LucideIcon name="bar-chart" :size="32" class="mr-2 sm:mr-3" />
               <h3 class="text-lg sm:text-xl font-semibold">View Reports</h3>
             </div>
             <p class="text-green-100 mb-3 sm:mb-4 text-sm sm:text-base">
@@ -83,6 +86,9 @@
             <UButton @click="navigateTo('/dashboard/report/customer-installation/reports')" 
                      color="white" variant="solid"
                      class="w-full sm:w-auto">
+              <template #leading>
+                <LucideIcon name="eye" :size="16" />
+              </template>
               View Reports
             </UButton>
           </div>
@@ -91,7 +97,7 @@
           <!-- Asset Tracking -->
           <div class="bg-gradient-to-br from-orange-500 to-orange-600 p-4 sm:p-6 rounded-lg text-white">
             <div class="flex items-center mb-3 sm:mb-4">
-              <UIcon name="cube" class="text-2xl sm:text-3xl mr-2 sm:mr-3" />
+              <LucideIcon name="cube" :size="32" class="mr-2 sm:mr-3" />
               <h3 class="text-lg sm:text-xl font-semibold">Asset Tracking</h3>
             </div>
             <p class="text-orange-100 mb-3 sm:mb-4 text-sm sm:text-base">
@@ -100,6 +106,9 @@
             <UButton @click="navigateTo('/dashboard/asset')" 
                      color="white" variant="solid"
                      class="w-full sm:w-auto">
+              <template #leading>
+                <LucideIcon name="package" :size="16" />
+              </template>
               Track Assets
             </UButton>
           </div>
@@ -107,7 +116,7 @@
           <!-- Customer Management -->
           <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 sm:p-6 rounded-lg text-white">
             <div class="flex items-center mb-3 sm:mb-4">
-              <UIcon name="users" class="text-2xl sm:text-3xl mr-2 sm:mr-3" />
+              <LucideIcon name="users" :size="32" class="mr-2 sm:mr-3" />
               <h3 class="text-lg sm:text-xl font-semibold">Customer Management</h3>
             </div>
             <p class="text-indigo-100 mb-3 sm:mb-4 text-sm sm:text-base">
@@ -116,6 +125,9 @@
             <UButton @click="navigateTo('/dashboard/customer')" 
                      color="white" variant="solid"
                      class="w-full sm:w-auto">
+              <template #leading>
+                <LucideIcon name="user-circle" :size="16" />
+              </template>
               Manage Customers
             </UButton>
           </div>
@@ -123,7 +135,7 @@
           <!-- Technician Management -->
           <div class="bg-gradient-to-br from-teal-500 to-teal-600 p-4 sm:p-6 rounded-lg text-white">
             <div class="flex items-center mb-3 sm:mb-4">
-              <UIcon name="wrench-screwdriver" class="text-2xl sm:text-3xl mr-2 sm:mr-3" />
+              <LucideIcon name="wrench-screwdriver" :size="32" class="mr-2 sm:mr-3" />
               <h3 class="text-lg sm:text-xl font-semibold">Technician Management</h3>
             </div>
             <p class="text-teal-100 mb-3 sm:mb-4 text-sm sm:text-base">
@@ -132,6 +144,9 @@
             <UButton @click="navigateTo('/dashboard/user-management')" 
                      color="white" variant="solid"
                      class="w-full sm:w-auto">
+              <template #leading>
+                <LucideIcon name="user-group" :size="16" />
+              </template>
               Manage Technicians
             </UButton>
           </div>
@@ -142,7 +157,7 @@
           <h2 class="text-lg sm:text-xl font-semibold text-gray-800 mb-4">Recent Installations</h2>
           <div class="bg-gray-50 rounded-lg p-3 sm:p-4">
             <div v-if="recentInstallations.length === 0" class="text-center py-6 sm:py-8 text-gray-500">
-              <UIcon name="file-text" class="text-3xl sm:text-4xl mb-2" />
+              <LucideIcon name="file-text" :size="48" class="mb-2 mx-auto" />
               <p class="text-sm sm:text-base">No recent installations found</p>
             </div>
             <div v-else class="space-y-3">
@@ -168,6 +183,9 @@
                     <UButton @click="viewInstallation(installation.id)" 
                              size="sm" color="blue" variant="outline"
                              class="w-full sm:w-auto">
+                      <template #leading>
+                        <LucideIcon name="eye" :size="16" />
+                      </template>
                       View
                     </UButton>
                   </div>
@@ -186,6 +204,7 @@ import { customerAdminApi } from "@/api/admin/customer";
 import { archiveInstallationAdminApi } from "@/api/admin/archive-installation";
 import type { InstallationAssetReportResponse, CompleteInstallationReportWithTechnicianPhotosResponse } from "@/types/requests/installation-report";
 import { useNavigationContext } from "@/composables/useNavigationContext";
+import LucideIcon from '@/components/LucideIcon.vue';
 
 // Apply auth middleware
 definePageMeta({

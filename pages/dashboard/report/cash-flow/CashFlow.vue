@@ -4,6 +4,7 @@ import FormAddComponent from "./FormAddComponent.vue";
 import { transactionAdminApi } from "@/api/admin/transaction";
 import { formatIDR } from "@/helper/currency";
 import { formatDateToYMD } from "@/helper/date";
+import LucideIcon from '@/components/LucideIcon.vue';
 
 const transaction = ref<any[]>([]);
 const isLoading = ref(false);
@@ -164,25 +165,34 @@ const deleteTransaction = async (row: any) => {
       <UInput v-model="q" placeholder="Search transactions..." class="w-64" />
       <UButton
         label="Add Transaction"
-        icon="plus"
         color="green"
         @click="openModal"
-      />
+      >
+        <template #leading>
+          <LucideIcon name="plus" :size="16" />
+        </template>
+      </UButton>
       <UButton
-        icon="refresh-cw"
         color="gray"
         variant="soft"
         :loading="isLoading"
         @click="fetchAllAccount"
         title="Refresh"
-      />
+      >
+        <template #leading>
+          <LucideIcon name="refresh-cw" :size="16" />
+        </template>
+      </UButton>
     </div>
     <UButton
       label="Generate PDF"
-      icon="file-arrow-down"
       color="blue"
       @click="navigateTo('/dashboard/psf')"
-    />
+    >
+      <template #leading>
+        <LucideIcon name="download" :size="16" />
+      </template>
+    </UButton>
   </div>
   <UTable :rows="rows" :columns="columns" :loading="isLoading">
     <template #amount-data="{ row }">
@@ -200,18 +210,20 @@ const deleteTransaction = async (row: any) => {
           size="xs" 
           color="green" 
           variant="soft"
-          icon="pencil"
           @click="editTransaction(row)"
           title="Edit"
-        />
+        >
+          <LucideIcon name="pencil" :size="14" />
+        </UButton>
         <UButton 
           size="xs" 
           color="red" 
           variant="soft"
-          icon="trash-2"
           @click="deleteTransaction(row)"
           title="Delete"
-        />
+        >
+          <LucideIcon name="trash-2" :size="14" />
+        </UButton>
       </div>
     </template>
   </UTable>
