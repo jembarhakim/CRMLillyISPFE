@@ -641,31 +641,20 @@
 
     <section id="id_monitoring" class="py-10 sm:py-16 md:py-20 px-4 sm:px-6 md:px-8 w-full max-w-full" style="background-color: #121212;">
       <div class="max-w-6xl mx-auto">
-        <!-- Tab Navigation -->
+        <!-- Tab Navigation - Dynamically generated from monitoringEndpoints -->
         <div class="mb-6 flex gap-1 bg-white/5 rounded-lg p-1 backdrop-blur-sm border border-white/10 shadow-lg">
           <button
-            @click="switchMonitoringTab('layanan')"
+            v-for="endpoint in monitoringEndpoints"
+            :key="endpoint.id"
+            @click="switchMonitoringTab(endpoint.id)"
             class="flex-1 px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-300 relative overflow-hidden group"
-            :class="monitoringTab === 'layanan' 
+            :class="monitoringTab === endpoint.id 
               ? 'bg-white text-gray-900 shadow-lg transform scale-[1.02]' 
               : 'text-gray-300 hover:text-white hover:bg-white/10'"
           >
-            <span class="relative z-10">Website</span>
+            <span class="relative z-10">{{ endpoint.label }}</span>
             <span 
-              v-if="monitoringTab === 'layanan'"
-              class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-green-600 rounded-t-lg"
-            ></span>
-          </button>
-          <button
-            @click="switchMonitoringTab('menara')"
-            class="flex-1 px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-300 relative overflow-hidden group"
-            :class="monitoringTab === 'menara' 
-              ? 'bg-white text-gray-900 shadow-lg transform scale-[1.02]' 
-              : 'text-gray-300 hover:text-white hover:bg-white/10'"
-          >
-            <span class="relative z-10">Menara</span>
-            <span 
-              v-if="monitoringTab === 'menara'"
+              v-if="monitoringTab === endpoint.id"
               class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-green-600 rounded-t-lg"
             ></span>
           </button>
@@ -1293,6 +1282,20 @@ const contactForm = ref({
   message: ''
 })
 
+// Monitoring endpoints configuration
+// Add new endpoints here as you add them to Kuma monitoring
+const monitoringEndpoints = [
+  { id: 'layanan', label: 'Website' },
+  { id: 'menara', label: 'Menara' },
+  { id: 'lilly', label: 'Lilly' },
+  { id: 'bedjo', label: 'Bedjo' }
+  // Add more endpoints here when you create new status pages in Kuma
+  // Example: { id: 'new-endpoint', label: 'New Endpoint Name' },
+]
+
+// Get default endpoint (first one in the array)
+const defaultEndpoint = monitoringEndpoints[0]?.id || 'layanan'
+
 // Kuma Monitoring - Using WebSocket composable for real-time updates
 const {
   data: monitoringData,
@@ -1305,15 +1308,15 @@ const {
   disconnect: disconnectMonitoring,
   fetchData: fetchMonitoringData,
   switchEndpoint: switchMonitoringEndpoint
-} = useKumaMonitoring('layanan')
+} = useKumaMonitoring(defaultEndpoint)
 
-// Tab management
-const monitoringTab = ref('layanan')
+// Tab management - dynamically uses endpoint from configuration
+const monitoringTab = ref(defaultEndpoint)
 
-const switchMonitoringTab = (tab) => {
-  if (monitoringTab.value === tab) return
-  monitoringTab.value = tab
-  switchMonitoringEndpoint(tab === 'layanan' ? 'layanan' : 'menara')
+const switchMonitoringTab = (endpointId) => {
+  if (monitoringTab.value === endpointId) return
+  monitoringTab.value = endpointId
+  switchMonitoringEndpoint(endpointId)
 }
 
 // Computed property for sorted monitoring groups

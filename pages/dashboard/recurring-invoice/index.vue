@@ -3,6 +3,7 @@ import { recurringInvoiceAdminApi } from "@/api/admin/recurring-invoice";
 import FormAddRecurringInvoice from "./FormAddRecurringInvoice.vue";
 import * as currency from "@/helper/currency";
 import type { RecurringInvoice, UpdateRecurringInvoiceStatusRequest } from "@/api/admin/recurring-invoice";
+import LucideIcon from "@/components/LucideIcon.vue";
 
 // Set page title
 useHead({
@@ -457,11 +458,11 @@ onMounted(() => {
 
         <template #actions-data="{ row }">
           <UDropdown :items="items(row)">
-            <UButton 
-              color="gray" 
-              variant="ghost" 
-              icon="ellipsis-horizontal"
-            />
+            <UButton color="gray">
+              <template #leading>
+                <LucideIcon name="ellipsis-vertical" :size="16" />
+              </template>
+            </UButton>
           </UDropdown>
         </template>
       </UTable>

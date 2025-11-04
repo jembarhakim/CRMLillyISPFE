@@ -1013,7 +1013,7 @@ function getStatusCount(status: string) {
 
           <template #actions-data="{ row }">
             <UDropdown :items="items(row)">
-              <UButton color="gray" variant="outline">
+              <UButton color="gray" >
                 <LucideIcon name="ellipsis-vertical" :size="20" />
               </UButton>
             </UDropdown>
