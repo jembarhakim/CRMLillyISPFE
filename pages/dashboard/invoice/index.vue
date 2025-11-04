@@ -850,7 +850,6 @@ const filteredRows = computed(() => {
   }
 
   // Filter by date (match either invoice_date or due_date)
-  // Filter by date (match either invoice_date or due_date)
 
   if (dateFilter.value) {
     filteredData = filteredData.filter((invoice) => {
@@ -859,9 +858,7 @@ const filteredRows = computed(() => {
         : null;
 
       const dueDate = invoice.due_date ? new Date(invoice.due_date) : null;
-      const dueDate = invoice.due_date ? new Date(invoice.due_date) : null;
 
-      const filterDate = new Date(dateFilter.value);
       const filterDate = new Date(dateFilter.value);
 
       return (
@@ -872,7 +869,6 @@ const filteredRows = computed(() => {
     });
   }
 
-  // Filter by status
   // Filter by status
 
   if (statusFilter.value) {

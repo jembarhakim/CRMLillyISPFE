@@ -1061,13 +1061,35 @@ function getStatusCount(status: string) {
     />
     
     <!-- Installation Report Modal -->
-    <UModal v-model="showInstallationModal" :prevent-close="false">
-      <UCard class="max-w-7xl max-h-[95vh] overflow-hidden">
+    <UModal 
+      v-model="showInstallationModal" 
+      :prevent-close="false" 
+      :ui="{ 
+        width: 'w-[95vw]', 
+        height: 'h-auto max-h-[95vh]',
+        background: 'bg-white'
+      }"
+      class="installation-report-modal"
+    >
+      <UCard 
+        class="max-w-7xl max-h-[95vh] flex flex-col bg-white installation-card overflow-hidden" 
+        :ui="{ 
+          background: 'bg-white', 
+          body: { padding: 'p-0', background: 'bg-white', base: 'flex-1 flex flex-col min-h-0 overflow-hidden' }, 
+          header: { background: 'bg-white', padding: 'p-6', base: 'bg-white flex-shrink-0' },
+          base: 'bg-white flex flex-col overflow-hidden'
+        }"
+      >
         <template #header>
-          <div class="flex justify-between items-center">
-            <h3 class="text-lg font-semibold">Installation Report</h3>
-            <UButton @click="closeInstallationModal" variant="ghost" size="sm">
-              <UIcon name="x" />
+          <div class="flex justify-between items-center bg-white rounded-xl border-b border-gray-200 pb-4">
+            <h3 class="text-xl font-bold text-black">Installation Report</h3>
+            <UButton 
+              @click="closeInstallationModal" 
+              variant="outline" 
+              size="md"
+              class="close-button-installation"
+            >
+              <LucideIcon name="x" :size="20" />
             </UButton>
           </div>
         </template>
@@ -1082,3 +1104,158 @@ function getStatusCount(status: string) {
     </UModal>
   </div>
 </template>
+
+<style scoped>
+/* Installation Report Modal - White background */
+.installation-report-modal :deep([class*="UModal"]),
+.installation-report-modal :deep([id^="headlessui-dialog-panel"]) {
+  background-color: #FFFFFF !important;
+}
+
+:deep(.installation-report-modal [class*="UModal"]),
+:deep(.installation-report-modal [id^="headlessui-dialog-panel"]) {
+  background-color: #FFFFFF !important;
+}
+
+/* Modal overlay - ensure it doesn't interfere */
+:deep([id^="headlessui-dialog-overlay"]) {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Card container */
+.installation-card,
+:deep(.installation-card),
+:deep(.installation-report-modal [class*="UCard"]),
+:deep(.installation-report-modal [class*="ui-card"]) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+}
+
+/* Card header - white background */
+:deep(.installation-card [class*="header"]),
+:deep(.installation-report-modal [class*="UCard"] [class*="header"]),
+:deep(.installation-report-modal [class*="ui-card"] [class*="header"]),
+:deep(.installation-card > div:first-child),
+:deep(.installation-report-modal [class*="UCard"] > div:first-child),
+:deep(.installation-report-modal [class*="ui-card"] > div:first-child) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+/* Card body */
+:deep(.installation-card [class*="body"]),
+:deep(.installation-report-modal [class*="UCard"] [class*="body"]),
+:deep(.installation-report-modal [class*="ui-card"] [class*="body"]) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  flex: 1 !important;
+  overflow: hidden !important;
+}
+
+/* Ensure modal panel allows scrolling and doesn't overflow */
+:deep([id^="headlessui-dialog-panel"]) {
+  max-height: 95vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+:deep([id^="headlessui-dialog-panel"] .installation-card) {
+  max-height: 95vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  height: 100% !important;
+}
+
+/* Ensure card body contains all content */
+:deep(.installation-card [class*="body"]) {
+  overflow: hidden !important;
+  max-height: 100% !important;
+}
+
+/* All text in modal header */
+:deep(.installation-card [class*="header"] *),
+:deep(.installation-report-modal [class*="UCard"] [class*="header"] *),
+:deep(.installation-report-modal [class*="ui-card"] [class*="header"] *) {
+  color: #000000 !important;
+}
+
+/* Override any dark mode styles in modal */
+:deep(.installation-card [class*="dark:bg-gray-800"]),
+:deep(.installation-card [class*="dark:text-gray-200"]),
+:deep(.installation-report-modal [class*="UCard"] [class*="dark:bg-gray-800"]),
+:deep(.installation-report-modal [class*="UCard"] [class*="dark:text-gray-200"]),
+:deep(.installation-report-modal [class*="ui-card"] [class*="dark:bg-gray-800"]),
+:deep(.installation-report-modal [class*="ui-card"] [class*="dark:text-gray-200"]) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+/* Force remove any dark backgrounds from header */
+:deep(.installation-card [class*="header"]),
+:deep(.installation-report-modal [class*="UCard"] [class*="header"]) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  background-image: none !important;
+}
+
+/* Override any gradient or dark backgrounds in header */
+:deep(.installation-card [class*="header"][style*="background"]),
+:deep(.installation-report-modal [class*="UCard"] [class*="header"][style*="background"]) {
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  background-image: none !important;
+}
+
+/* Ensure modal panel has white background */
+:deep([id^="headlessui-dialog-panel"] [class*="UCard"]),
+:deep([id^="headlessui-dialog-panel"] [class*="ui-card"]) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+}
+
+/* Override any gradient backgrounds */
+:deep([class*="UCard"] [class*="bg-gradient"]),
+:deep([class*="ui-card"] [class*="bg-gradient"]) {
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+}
+
+/* Close button styling for Installation Report modal */
+.close-button-installation {
+  border: 2px solid #D1D5DB !important;
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.close-button-installation:hover {
+  background-color: #FEF2F2 !important;
+  border-color: #F87171 !important;
+  color: #DC2626 !important;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1) !important;
+  transform: scale(1.05) !important;
+}
+
+.close-button-installation:active {
+  transform: scale(0.95) !important;
+}
+
+.close-button-installation:focus {
+  outline: 2px solid #2563EB !important;
+  outline-offset: 2px !important;
+}
+</style>
