@@ -239,6 +239,35 @@ const areas = ref<{label: string, value: string}[]>([]);
 const salesRepresentatives = ref<{label: string, value: string}[]>([]);
 const companies = ref<{label: string, value: string}[]>([]);
 
+// Ref for date input
+const dateInputRef = ref<any>(null);
+
+// Function to open date picker when input is clicked
+function openDatePicker(event?: Event) {
+  nextTick(() => {
+    // Try to get the actual input element from UInput component
+    const inputElement = dateInputRef.value?.$el?.querySelector('input[type="date"]') || 
+                         dateInputRef.value?.$el ||
+                         (event?.target as HTMLElement)?.querySelector('input[type="date"]') ||
+                         event?.target as HTMLInputElement;
+    
+    if (inputElement && inputElement.type === 'date') {
+      // Use showPicker() if available (modern browsers)
+      if (inputElement.showPicker) {
+        inputElement.showPicker().catch((err: any) => {
+          // If showPicker fails, just focus the input (fallback)
+          inputElement.focus();
+          inputElement.click();
+        });
+      } else {
+        // Fallback for older browsers
+        inputElement.focus();
+        inputElement.click();
+      }
+    }
+  });
+}
+
 async function getDataOptions() {
   areaAdminApi().getAllAreas().then((response) => {
     areas.value = response.data.map((value: any, index: number) => ({
@@ -268,6 +297,99 @@ await getDataOptions()
 // Mark this modal's dialog panel with a unique identifier
 onMounted(() => {
   nextTick(() => {
+    // Setup date input click handler to open calendar picker
+    const setupDateInput = () => {
+      const dateInputs = document.querySelectorAll('.date-input-clickable input[type="date"]');
+      dateInputs.forEach((dateInput) => {
+        const input = dateInput as HTMLInputElement;
+        // Check if listener already added
+        if (!(input as any).__datePickerSetup) {
+          (input as any).__datePickerSetup = true;
+          
+          // Add click handler to open date picker
+          input.addEventListener('click', function(e) {
+            // Use showPicker() if available (modern browsers)
+            if (this.showPicker) {
+              this.showPicker().catch(() => {
+                // Fallback: just focus
+                this.focus();
+              });
+            }
+          });
+          
+          // Also handle focus event
+          input.addEventListener('focus', function() {
+            // Small delay to ensure input is fully focused
+            setTimeout(() => {
+              if (this.showPicker) {
+                this.showPicker().catch(() => {});
+              }
+            }, 100);
+          });
+        }
+      });
+    };
+    
+    // Setup immediately
+    setupDateInput();
+    
+    // Also setup when DOM changes (for dynamic content)
+    const dateInputObserver = new MutationObserver(() => {
+      setupDateInput();
+    });
+    
+    dateInputObserver.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    
+    // Add class to body when modal is open
+    document.body.classList.add('customer-form-modal-open')
+    
+    // Function to style dropdown popovers
+    const styleDropdownPopovers = () => {
+      // Find all popover/menu elements that might be dropdowns
+      const popovers = document.querySelectorAll('[id^="headlessui-popover"], [id^="headlessui-menu"]')
+      popovers.forEach((popover: any) => {
+        // Check if this popover is related to our customer form
+        const hasCustomerForm = document.querySelector('.customer-form-content')
+        if (hasCustomerForm) {
+          // Add data attribute to identify customer form dropdowns
+          popover.setAttribute('data-customer-form-dropdown', 'true')
+          
+          // Force white background on the popover itself
+          if (popover.style) {
+            popover.style.backgroundColor = '#FFFFFF'
+            popover.style.color = '#000000'
+          }
+          
+          // Force white background on all nested elements
+          const allElements = popover.querySelectorAll('*')
+          allElements.forEach((el: any) => {
+            if (el.style) {
+              const bgColor = window.getComputedStyle(el).backgroundColor
+              // Override dark backgrounds (black, dark gray, etc.)
+              if (bgColor && (
+                bgColor.includes('rgb(17, 24, 39)') || 
+                bgColor.includes('rgb(0, 0, 0)') || 
+                bgColor.includes('rgb(31, 41, 55)') ||
+                bgColor.includes('rgb(3, 7, 18)') ||
+                bgColor.includes('rgb(15, 23, 42)')
+              )) {
+                el.style.backgroundColor = '#FFFFFF'
+                el.style.color = '#000000'
+              }
+              // Also check for dark theme classes and remove them
+              if (el.classList) {
+                el.classList.remove('dark', 'bg-gray-900', 'bg-black', 'bg-gray-800', 'bg-gray-950')
+                el.classList.add('bg-white')
+              }
+            }
+          })
+        }
+      })
+    }
+    
     // Find the HeadlessUI dialog panel that contains our customer form content
     const observer = new MutationObserver(() => {
       const dialogPanels = document.querySelectorAll('[id^="headlessui-dialog-panel"]')
@@ -278,6 +400,9 @@ onMounted(() => {
           panel.setAttribute('data-customer-form-modal', 'true')
         }
       })
+      
+      // Style any new dropdown popovers that appear
+      styleDropdownPopovers()
     })
     
     // Start observing
@@ -294,9 +419,25 @@ onMounted(() => {
       }
     })
     
-    // Cleanup observer when component unmounts
+    // Style dropdowns immediately
+    styleDropdownPopovers()
+    
+    // Also observe for popover changes specifically
+    const popoverObserver = new MutationObserver(() => {
+      styleDropdownPopovers()
+    })
+    
+    popoverObserver.observe(document.body, {
+      childList: true,
+      subtree: false
+    })
+    
+    // Cleanup observers when component unmounts
     onUnmounted(() => {
       observer.disconnect()
+      popoverObserver.disconnect()
+      dateInputObserver.disconnect()
+      document.body.classList.remove('customer-form-modal-open')
     })
   })
 })
@@ -542,6 +683,55 @@ select:focus {
   color: #6B7280 !important;
 }
 
+/* Date input calendar icon styling - make it black and visible */
+/* For Chrome, Safari, Edge (WebKit browsers) */
+:deep(.customer-input input[type="date"]::-webkit-calendar-picker-indicator) {
+  filter: brightness(0) !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+  background-color: transparent !important;
+  width: 20px !important;
+  height: 20px !important;
+  padding: 2px !important;
+  margin-right: 5px !important;
+}
+
+:deep(.customer-input input[type="date"]::-webkit-calendar-picker-indicator:hover) {
+  opacity: 0.8 !important;
+  filter: brightness(0) opacity(0.8) !important;
+}
+
+/* For Firefox */
+:deep(.customer-input input[type="date"]) {
+  color-scheme: light !important;
+}
+
+:deep(.customer-input input[type="date"]::-moz-calendar-picker-indicator) {
+  filter: brightness(0) saturate(100%) !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+}
+
+/* Ensure date input text is black */
+:deep(.customer-input input[type="date"]) {
+  color: #000000 !important;
+}
+
+/* Make date input clickable and ensure calendar opens */
+:deep(.date-input-clickable input[type="date"]) {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+:deep(.date-input-clickable) {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+:deep(.date-input-clickable input[type="date"]:focus) {
+  cursor: pointer !important;
+}
+
 /* Custom select menu styling - clean white background */
 :deep(.customer-select button),
 :deep(.customer-select [role="combobox"]) {
@@ -558,13 +748,48 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
 }
 
-/* Select menu dropdown items */
-:deep(.customer-select [role="option"]) {
+/* Select menu dropdown container/popover - white background */
+:deep(.customer-select [role="listbox"]),
+:deep(.customer-select [role="menu"]),
+:deep(.customer-select [data-headlessui-state]),
+:deep(.customer-select [class*="ui-menu"]),
+:deep(.customer-select [class*="ui-popover"]),
+:deep(.customer-select [class*="popover"]),
+:deep(.customer-select [class*="menu"]),
+:deep(.customer-select > div > div),
+:deep(.customer-select ul),
+:deep(.customer-select [id*="headlessui-popover"]),
+:deep(.customer-select [id*="headlessui-menu"]) {
+  background-color: #FFFFFF !important;
+  border-color: #D1D5DB !important;
   color: #000000 !important;
 }
 
-:deep(.customer-select [role="option"]:hover) {
+/* Select menu dropdown items */
+:deep(.customer-select [role="option"]) {
+  color: #000000 !important;
+  background-color: #FFFFFF !important;
+}
+
+:deep(.customer-select [role="option"]:hover),
+:deep(.customer-select [role="option"][data-headlessui-state="active"]) {
   background-color: #F9FAFB !important;
+  color: #000000 !important;
+}
+
+/* Ensure all nested elements in dropdown are white */
+:deep(.customer-select [role="listbox"] *),
+:deep(.customer-select [role="menu"] *),
+:deep(.customer-select [class*="ui-menu"] *),
+:deep(.customer-select [class*="ui-popover"] *) {
+  background-color: transparent !important;
+}
+
+/* Override any dark theme classes that might be applied */
+:deep(.customer-select [class*="dark"]),
+:deep(.customer-select [class*="bg-gray-900"]),
+:deep(.customer-select [class*="bg-black"]) {
+  background-color: #FFFFFF !important;
 }
 
 /* Form labels - ensure high contrast */
@@ -633,6 +858,88 @@ label {
     max-width: none !important;
     width: 95vw !important;
   }
+}
+
+/* Global styles for USelectMenu dropdowns in customer form - target portalled elements */
+/* These styles target dropdown menus that are portalled to body */
+[id^="headlessui-dialog-panel"][data-customer-form-modal="true"] ~ [id^="headlessui-popover"],
+[id^="headlessui-dialog-panel"][data-customer-form-modal="true"] ~ [id^="headlessui-menu"],
+body > [id^="headlessui-popover"]:has([role="option"]),
+body > [id^="headlessui-menu"]:has([role="option"]),
+body.customer-form-modal-open [id^="headlessui-popover"],
+body.customer-form-modal-open [id^="headlessui-menu"],
+[id^="headlessui-popover"][data-customer-form-dropdown="true"],
+[id^="headlessui-menu"][data-customer-form-dropdown="true"] {
+  background-color: #FFFFFF !important;
+  border-color: #D1D5DB !important;
+  color: #000000 !important;
+}
+
+/* Target all popover/menu containers that might contain customer form dropdowns */
+body.customer-form-modal-open [id^="headlessui-popover"] [role="listbox"],
+body.customer-form-modal-open [id^="headlessui-popover"] [role="menu"],
+body.customer-form-modal-open [id^="headlessui-menu"] [role="listbox"],
+body.customer-form-modal-open [id^="headlessui-menu"] [role="menu"],
+[id^="headlessui-popover"][data-customer-form-dropdown="true"] [role="listbox"],
+[id^="headlessui-popover"][data-customer-form-dropdown="true"] [role="menu"],
+[id^="headlessui-menu"][data-customer-form-dropdown="true"] [role="listbox"],
+[id^="headlessui-menu"][data-customer-form-dropdown="true"] [role="menu"],
+body.customer-form-modal-open [id^="headlessui-popover"] ul,
+body.customer-form-modal-open [id^="headlessui-menu"] ul,
+[id^="headlessui-popover"][data-customer-form-dropdown="true"] ul,
+[id^="headlessui-menu"][data-customer-form-dropdown="true"] ul,
+body.customer-form-modal-open [id^="headlessui-popover"] [class*="ui-menu"],
+body.customer-form-modal-open [id^="headlessui-menu"] [class*="ui-menu"],
+[id^="headlessui-popover"][data-customer-form-dropdown="true"] [class*="ui-menu"],
+[id^="headlessui-menu"][data-customer-form-dropdown="true"] [class*="ui-menu"] {
+  background-color: #FFFFFF !important;
+  border-color: #D1D5DB !important;
+  color: #000000 !important;
+}
+
+/* Target dropdown options */
+body.customer-form-modal-open [id^="headlessui-popover"] [role="option"],
+body.customer-form-modal-open [id^="headlessui-menu"] [role="option"],
+[id^="headlessui-popover"][data-customer-form-dropdown="true"] [role="option"],
+[id^="headlessui-menu"][data-customer-form-dropdown="true"] [role="option"],
+body.customer-form-modal-open [id^="headlessui-popover"] li,
+body.customer-form-modal-open [id^="headlessui-menu"] li,
+[id^="headlessui-popover"][data-customer-form-dropdown="true"] li,
+[id^="headlessui-menu"][data-customer-form-dropdown="true"] li {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+body.customer-form-modal-open [id^="headlessui-popover"] [role="option"]:hover,
+body.customer-form-modal-open [id^="headlessui-menu"] [role="option"]:hover,
+[id^="headlessui-popover"][data-customer-form-dropdown="true"] [role="option"]:hover,
+[id^="headlessui-menu"][data-customer-form-dropdown="true"] [role="option"]:hover,
+body.customer-form-modal-open [id^="headlessui-popover"] [role="option"][data-headlessui-state="active"],
+body.customer-form-modal-open [id^="headlessui-menu"] [role="option"][data-headlessui-state="active"],
+[id^="headlessui-popover"][data-customer-form-dropdown="true"] [role="option"][data-headlessui-state="active"],
+[id^="headlessui-menu"][data-customer-form-dropdown="true"] [role="option"][data-headlessui-state="active"],
+body.customer-form-modal-open [id^="headlessui-popover"] li:hover,
+body.customer-form-modal-open [id^="headlessui-menu"] li:hover,
+[id^="headlessui-popover"][data-customer-form-dropdown="true"] li:hover,
+[id^="headlessui-menu"][data-customer-form-dropdown="true"] li:hover {
+  background-color: #F9FAFB !important;
+  color: #000000 !important;
+}
+
+/* Override any dark theme classes in dropdowns */
+body.customer-form-modal-open [id^="headlessui-popover"] [class*="dark"],
+body.customer-form-modal-open [id^="headlessui-popover"] [class*="bg-gray-900"],
+body.customer-form-modal-open [id^="headlessui-popover"] [class*="bg-black"],
+body.customer-form-modal-open [id^="headlessui-menu"] [class*="dark"],
+body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-gray-900"],
+body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
+[id^="headlessui-popover"][data-customer-form-dropdown="true"] [class*="dark"],
+[id^="headlessui-popover"][data-customer-form-dropdown="true"] [class*="bg-gray-900"],
+[id^="headlessui-popover"][data-customer-form-dropdown="true"] [class*="bg-black"],
+[id^="headlessui-menu"][data-customer-form-dropdown="true"] [class*="dark"],
+[id^="headlessui-menu"][data-customer-form-dropdown="true"] [class*="bg-gray-900"],
+[id^="headlessui-menu"][data-customer-form-dropdown="true"] [class*="bg-black"] {
+  background-color: #FFFFFF !important;
 }
 </style>
 
@@ -834,13 +1141,14 @@ label {
                    
                    <div class="space-y-1">
                      <label class="block text-sm font-medium text-black mb-1 flex items-center gap-2">
-                       <LucideIcon name="calendar" :size="16" class="text-gray-600" />
+                       <LucideIcon name="calendar" :size="16" class="text-black" />
                        <span>Tgl. Permintaan PSB</span>
                      </label>
                      <UInput 
+                       ref="dateInputRef"
                        v-model="state.service_request_date" 
                        type="date"
-                       class="w-full customer-input"
+                       class="w-full customer-input date-input-clickable"
                      />
                    </div>
                  </div>

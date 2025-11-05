@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watch, onMounted } from 'vue'
 import FormCustomerInstallation from './FormCustomerInstallation.vue'
-import FormAddComponent from './FormAddComponent.vue'
+import FormAddCustomer from './FormAddCustomer.vue'
 import CustomerDetailModal from './CustomerDetailModal.vue'
 import LucideIcon from '@/components/LucideIcon.vue'
 import { customerAdminApi } from '@/api/admin/customer'
@@ -543,7 +543,7 @@ const notification = useNotification()
 const modal = useModal()
 
 function OpenModalAddCustomer(isEdit: boolean, data: any) {
-    modal.open(FormAddComponent, {
+    modal.open(FormAddCustomer, {
         isEdit,
         data,
         async onSuccess() {

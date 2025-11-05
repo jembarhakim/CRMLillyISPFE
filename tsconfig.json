@@ -3,10 +3,17 @@
   "extends": "./.nuxt/tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "skipLibCheck": true,
     "paths": {
-      "@/*": ["./*"], // Pastikan ini ada
+      "@/*": ["./*"],
       "#ui/*": ["./node_modules/@nuxt/ui/dist/runtime/*"],
       "#imports": [".nuxt/imports.d.ts"]
     }
-  }
+  },
+  "exclude": [
+    "node_modules",
+    ".nuxt",
+    ".output",
+    "dist"
+  ]
 }
