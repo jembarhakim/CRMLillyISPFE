@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { object, string, type InferType } from "yup";
 import type { FormSubmitEvent } from "#ui/types";
+import { reactive, watch, ref, onMounted, onUnmounted, nextTick } from "vue";
 import { customerAdminApi } from "@/api/admin/customer";
 import { areaAdminApi } from "@/api/admin/area";
 // Removed internet package and network device imports - handled during installation
@@ -189,13 +190,15 @@ function onMarkerDrag(e: any) {
 async function reverseGeocode(lat: number, lng: number) {
   try {
     const api = useApiHost();
+    // @ts-expect-error - Nuxt auto-imports
+    const token = useCookie("token").value;
     const response = await fetch(
       `${api}/api/admin/geocoding/reverse-geocode?lat=${lat}&lng=${lng}`,
       {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${useCookie("token").value}`,
+          Authorization: `Bearer ${token}`,
         },
       }
     );
@@ -309,11 +312,17 @@ onMounted(() => {
           // Add click handler to open date picker
           input.addEventListener('click', function(e) {
             // Use showPicker() if available (modern browsers)
-            if (this.showPicker) {
-              this.showPicker().catch(() => {
-                // Fallback: just focus
+            if (this.showPicker && typeof this.showPicker === 'function') {
+              try {
+                const pickerResult = (this.showPicker as () => Promise<void>)();
+                pickerResult?.catch(() => {
+                  // Fallback: just focus
+                  this.focus();
+                });
+              } catch (error) {
+                // Fallback: just focus if showPicker fails
                 this.focus();
-              });
+              }
             }
           });
           
@@ -321,8 +330,15 @@ onMounted(() => {
           input.addEventListener('focus', function() {
             // Small delay to ensure input is fully focused
             setTimeout(() => {
-              if (this.showPicker) {
-                this.showPicker().catch(() => {});
+              if (this.showPicker && typeof this.showPicker === 'function') {
+                try {
+                  const pickerResult = (this.showPicker as () => Promise<void>)();
+                  pickerResult?.catch(() => {
+                    // Silently fail if showPicker is not available
+                  });
+                } catch (error) {
+                  // Silently fail if showPicker fails
+                }
               }
             }, 100);
           });

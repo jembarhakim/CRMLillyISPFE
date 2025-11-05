@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, onMounted } from 'vue'
+import { watch, onMounted, ref, computed, nextTick } from 'vue'
 import FormCustomerInstallation from './FormCustomerInstallation.vue'
 import FormAddCustomer from './FormAddCustomer.vue'
 import CustomerDetailModal from './CustomerDetailModal.vue'
@@ -8,11 +8,13 @@ import { customerAdminApi } from '@/api/admin/customer'
 import { useNotification } from '@/composables/useNotification'
 import { useNavigationContext } from '@/composables/useNavigationContext'
 // Set page title
+// @ts-expect-error - Nuxt auto-imports
 useHead({
   title: 'Customer Management - CRM System'
 })
 
 // Watch for route changes to reset modal state
+// @ts-expect-error - Nuxt auto-imports
 const route = useRoute()
 watch(() => route.path, (newPath, oldPath) => {
   // Reset modal state when navigating away from customer index page
@@ -27,6 +29,57 @@ onMounted(() => {
   window.addEventListener('clear-all-modals', () => {
     showInstallationModal.value = false
     modalData.value = { isEdit: false, data: null }
+  })
+  
+  // Setup installation report modal dialog panel sizing
+  const setupInstallationModal = () => {
+    const dialogPanels = document.querySelectorAll('[id^="headlessui-dialog-panel"]')
+    dialogPanels.forEach((panel) => {
+      // Check if this panel contains our installation report modal content
+      if (panel.querySelector('.installation-card')) {
+        // Add unique attribute to identify this modal
+        panel.setAttribute('data-installation-report-modal', 'true')
+      }
+    })
+  }
+  
+  // Watch for modal opening to setup dialog panel
+  watch(showInstallationModal, (isOpen) => {
+    if (isOpen) {
+      nextTick(() => {
+        setupInstallationModal()
+        
+        // Use MutationObserver to catch dynamically added dialog panels
+        const observer = new MutationObserver(() => {
+          setupInstallationModal()
+        })
+        
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true
+        })
+        
+        // Cleanup observer after a delay
+        setTimeout(() => {
+          observer.disconnect()
+        }, 1000)
+      })
+    }
+  })
+  
+  // Also check immediately
+  nextTick(() => {
+    setupInstallationModal()
+    
+    // Use MutationObserver for dynamic content
+    const observer = new MutationObserver(() => {
+      setupInstallationModal()
+    })
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    })
   })
 })
 
@@ -595,6 +648,7 @@ function closeDetailModal() {
 
 function navigateToInstallationReports(customerId: string) {
     // Navigate to installation reports page with customer filter
+    // @ts-expect-error - Nuxt auto-imports
     navigateTo(`/dashboard/report/customer-installation/reports?customer_id=${customerId}`)
 }
 
@@ -620,6 +674,7 @@ function viewInstallationReportDetail(installationId: string) {
     
     try {
         // Navigate to the specific installation report detail page
+        // @ts-expect-error - Nuxt auto-imports
         navigateTo(`/dashboard/report/customer-installation/detail/${installationId}`)
     } catch (error) {
         console.error('❌ [ERROR] Navigation failed:', error);
@@ -1072,7 +1127,7 @@ function getStatusCount(status: string) {
       class="installation-report-modal"
     >
       <UCard 
-        class="max-w-7xl max-h-[95vh] flex flex-col bg-white installation-card overflow-hidden" 
+        class="w-full max-w-none md:max-w-none lg:max-w-none max-h-[95vh] flex flex-col bg-white installation-card overflow-hidden" 
         :ui="{ 
           background: 'bg-white', 
           body: { padding: 'p-0', background: 'bg-white', base: 'flex-1 flex flex-col min-h-0 overflow-hidden' }, 
@@ -1106,6 +1161,47 @@ function getStatusCount(status: string) {
 </template>
 
 <style scoped>
+/* CRITICAL: Override HeadlessUI dialog panel max-width for Installation Report Modal */
+/* ONLY target HeadlessUI dialog panels that are ancestors of installation report modal */
+/* Mobile: Keep default size */
+@media (max-width: 639px) {
+  .installation-report-modal :deep([id^="headlessui-dialog-panel"]),
+  :deep(.installation-report-modal ~ [id^="headlessui-dialog-panel"]) {
+    max-width: 95vw !important;
+    width: 95vw !important;
+  }
+}
+
+/* Desktop: Make it larger like FormAddCustomer */
+@media (min-width: 640px) {
+  .installation-report-modal :deep([id^="headlessui-dialog-panel"]),
+  :deep(.installation-report-modal ~ [id^="headlessui-dialog-panel"]) {
+    max-width: none !important;
+    width: 95vw !important;
+  }
+  
+  /* Specifically override the sm:max-w-lg Tailwind class that sets max-width: 32rem */
+  .installation-report-modal :deep([id^="headlessui-dialog-panel"].sm\:max-w-lg),
+  .installation-report-modal :deep([id^="headlessui-dialog-panel"][class*="max-w-lg"]),
+  :deep(.installation-report-modal ~ [id^="headlessui-dialog-panel"].sm\:max-w-lg),
+  :deep(.installation-report-modal ~ [id^="headlessui-dialog-panel"][class*="max-w-lg"]) {
+    max-width: none !important;
+    width: 95vw !important;
+  }
+  
+  /* Alternative: Target any dialog panel that contains our installation report modal content */
+  :deep([id^="headlessui-dialog-panel"]:has(.installation-card)) {
+    max-width: none !important;
+    width: 95vw !important;
+  }
+  
+  :deep([id^="headlessui-dialog-panel"]:has(.installation-card).sm\:max-w-lg),
+  :deep([id^="headlessui-dialog-panel"]:has(.installation-card)[class*="max-w-lg"]) {
+    max-width: none !important;
+    width: 95vw !important;
+  }
+}
+
 /* Installation Report Modal - White background */
 .installation-report-modal :deep([class*="UModal"]),
 .installation-report-modal :deep([id^="headlessui-dialog-panel"]) {
@@ -1129,6 +1225,17 @@ function getStatusCount(status: string) {
 :deep(.installation-report-modal [class*="ui-card"]) {
   background-color: #FFFFFF !important;
   background: #FFFFFF !important;
+}
+
+/* Desktop: Make card full width */
+@media (min-width: 640px) {
+  .installation-card,
+  :deep(.installation-card),
+  :deep(.installation-report-modal [class*="UCard"]),
+  :deep(.installation-report-modal [class*="ui-card"]) {
+    width: 100% !important;
+    max-width: none !important;
+  }
 }
 
 /* Card header - white background */
@@ -1257,5 +1364,38 @@ function getStatusCount(status: string) {
 .close-button-installation:focus {
   outline: 2px solid #2563EB !important;
   outline-offset: 2px !important;
+}
+</style>
+
+<style>
+/* Global styles for HeadlessUI dialog panel - ONLY affects installation report modal */
+/* Target dialog panel with data-installation-report-modal attribute (added via JavaScript) */
+/* Desktop: Make it larger like FormAddCustomer */
+@media (min-width: 640px) {
+  [id^="headlessui-dialog-panel"][data-installation-report-modal="true"] {
+    max-width: none !important;
+    width: 95vw !important;
+  }
+  
+  /* Override sm:max-w-lg class specifically (removes 32rem constraint) */
+  [id^="headlessui-dialog-panel"][data-installation-report-modal="true"].sm\:max-w-lg,
+  [id^="headlessui-dialog-panel"][data-installation-report-modal="true"][class*="max-w-lg"] {
+    max-width: none !important;
+    width: 95vw !important;
+  }
+}
+
+/* Alternative: Target dialog panel by containing installation-card class */
+@media (min-width: 640px) {
+  [id^="headlessui-dialog-panel"]:has(.installation-card) {
+    max-width: none !important;
+    width: 95vw !important;
+  }
+  
+  [id^="headlessui-dialog-panel"]:has(.installation-card).sm\:max-w-lg,
+  [id^="headlessui-dialog-panel"]:has(.installation-card)[class*="max-w-lg"] {
+    max-width: none !important;
+    width: 95vw !important;
+  }
 }
 </style>

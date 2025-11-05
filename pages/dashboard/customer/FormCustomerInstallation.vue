@@ -8,7 +8,7 @@ import { assetItemAdminApi } from "@/api/admin/asset-item";
 import { mikrotikAdminApi } from "@/api/admin/mikrotik";
 import { uploadFileAdminApi } from "@/api/admin/file-upload";
 import { useNotificationStore } from "@/stores/notification";
-import { computed, nextTick } from "vue";
+import { computed, nextTick, watch, reactive, ref, onMounted, onUnmounted } from "vue";
 import LucideIcon from '@/components/LucideIcon.vue';
 
 const notification = useNotificationStore();
@@ -57,7 +57,7 @@ watch(() => props.isEdit, (newValue, oldValue) => {
   console.log('[FormCustomerInstallation] isEdit prop changed:', { oldValue, newValue });
 }, { immediate: true });
 
-watch(() => props.data, (newValue, oldValue) => {
+watch(() => props.data, (newValue: any, oldValue: any) => {
   console.log('[FormCustomerInstallation] data prop changed:', { oldValue, newValue });
 }, { immediate: true });
 
@@ -152,7 +152,7 @@ const isCompressing = ref(false);
 const availableAssetItems = ref<{[assetId: string]: any[]}>({});
 
 // Watch for asset changes to clear MAC address selection
-watch(() => state.assets_id, (newAssetId, oldAssetId) => {
+watch(() => state.assets_id, (newAssetId: string, oldAssetId: string) => {
   if (newAssetId !== oldAssetId) {
     // Clear MAC address selection when asset changes (affects both Network Device and MikroTik sections)
     state.mac_address = "";
@@ -304,7 +304,7 @@ state.installation_completed_at = today.toISOString().slice(0, 16);
 
 watch(
   () => props.isEdit,
-  (newValue) => {
+  (newValue: boolean) => {
     if (newValue) {
       state.customer_id = props.data.id;
     }
@@ -331,7 +331,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     }
 
     // Validate at least one senior technician
-    const hasSenior = state.technicians.some(t => t.role === 'senior');
+    const hasSenior = state.technicians.some((t: any) => t.role === 'senior');
     if (!hasSenior) {
       notification.error('Validation Error', 'At least one senior technician is required');
       return;
@@ -339,8 +339,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
     // Check for duplicate technician assignments
     const technicianIds = state.technicians
-      .map(tech => tech.technician_id)
-      .filter(id => id && id.trim() !== '');
+      .map((tech: any) => tech.technician_id)
+      .filter((id: string) => id && id.trim() !== '');
     
     const uniqueTechnicianIds = [...new Set(technicianIds)];
     
@@ -887,7 +887,7 @@ function removeTechnicianPhoto(index: number) {
 
 // Computed property for total size
 const totalTechnicianPhotoSize = computed(() => {
-  return technicianPhotoSizes.value.reduce((total, size) => total + size, 0);
+  return technicianPhotoSizes.value.reduce((total: number, size: number) => total + size, 0);
 });
 
 // File size formatting utility
@@ -1089,10 +1089,10 @@ function addTechnician() {
 // Get available technicians (excluding already assigned ones)
 function getAvailableTechniciansForIndex(currentIndex: number) {
   const assignedTechnicianIds = state.technicians
-    .map((tech, index) => index !== currentIndex ? tech.technician_id : null)
-    .filter(id => id && id.trim() !== '');
+    .map((tech: any, index: number) => index !== currentIndex ? tech.technician_id : null)
+    .filter((id: string | null) => id && id.trim() !== '');
   
-  return state.availableTechnicians.filter(tech => 
+  return state.availableTechnicians.filter((tech: any) => 
     !assignedTechnicianIds.includes(tech.id)
   );
 }
@@ -1103,7 +1103,7 @@ function removeTechnician(index: number) {
   
   // If we removed the primary, make the first senior primary
   if (removedTech.is_primary && state.technicians.length > 0) {
-    const firstSenior = state.technicians.find(t => t.role === 'senior');
+    const firstSenior = state.technicians.find((t: any) => t.role === 'senior');
     if (firstSenior) {
       firstSenior.is_primary = true;
     } else if (state.technicians.length > 0) {
@@ -1113,7 +1113,7 @@ function removeTechnician(index: number) {
 }
 
 function setPrimaryTechnician(index: number) {
-  state.technicians.forEach((tech, i) => {
+  state.technicians.forEach((tech: any, i: number) => {
     tech.is_primary = i === index;
   });
 }
@@ -1181,6 +1181,72 @@ async function fetchDHCPLease() {
 onMounted(async () => {
   console.log('[FormCustomerInstallation] Component mounted, loading data...');
   console.log('[FormCustomerInstallation] Component should now be rendered inside modal');
+  
+  // Setup date input click handler to open calendar picker
+  nextTick(() => {
+    const setupDateInput = () => {
+      const dateInputs = document.querySelectorAll('.date-input-clickable input[type="date"], .date-input-clickable input[type="datetime-local"]');
+      dateInputs.forEach((dateInput) => {
+        const input = dateInput as HTMLInputElement;
+        // Check if listener already added
+        if (!(input as any).__datePickerSetup) {
+          (input as any).__datePickerSetup = true;
+          
+          // Add click handler to open date picker
+          input.addEventListener('click', function(e) {
+            // Use showPicker() if available (modern browsers)
+            if (this.showPicker && typeof this.showPicker === 'function') {
+              try {
+                const pickerResult = (this.showPicker as () => Promise<void>)();
+                pickerResult?.catch(() => {
+                  // Fallback: just focus
+                  this.focus();
+                });
+              } catch (error) {
+                // Fallback: just focus if showPicker fails
+                this.focus();
+              }
+            }
+          });
+          
+          // Also handle focus event
+          input.addEventListener('focus', function() {
+            // Small delay to ensure input is fully focused
+            setTimeout(() => {
+              if (this.showPicker && typeof this.showPicker === 'function') {
+                try {
+                  const pickerResult = (this.showPicker as () => Promise<void>)();
+                  pickerResult?.catch(() => {
+                    // Silently fail if showPicker is not available
+                  });
+                } catch (error) {
+                  // Silently fail if showPicker fails
+                }
+              }
+            }, 100);
+          });
+        }
+      });
+    };
+    
+    // Setup immediately
+    setupDateInput();
+    
+    // Also setup when DOM changes (for dynamic content)
+    const dateInputObserver = new MutationObserver(() => {
+      setupDateInput();
+    });
+    
+    dateInputObserver.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    
+    // Cleanup observer when component unmounts
+    onUnmounted(() => {
+      dateInputObserver.disconnect();
+    });
+  });
   
   // Debug: Check if component is visible
   setTimeout(() => {
@@ -1590,6 +1656,62 @@ onMounted(async () => {
 
 :deep(.customer-input input::placeholder) {
   color: #6B7280 !important;
+}
+
+/* Date input calendar icon styling - make it black and visible */
+/* For Chrome, Safari, Edge (WebKit browsers) */
+:deep(.customer-input input[type="date"]::-webkit-calendar-picker-indicator),
+:deep(.customer-input input[type="datetime-local"]::-webkit-calendar-picker-indicator) {
+  filter: brightness(0) !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+  background-color: transparent !important;
+  width: 20px !important;
+  height: 20px !important;
+  padding: 2px !important;
+  margin-right: 5px !important;
+}
+
+:deep(.customer-input input[type="date"]::-webkit-calendar-picker-indicator:hover),
+:deep(.customer-input input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover) {
+  opacity: 0.8 !important;
+  filter: brightness(0) opacity(0.8) !important;
+}
+
+/* For Firefox */
+:deep(.customer-input input[type="date"]),
+:deep(.customer-input input[type="datetime-local"]) {
+  color-scheme: light !important;
+}
+
+:deep(.customer-input input[type="date"]::-moz-calendar-picker-indicator),
+:deep(.customer-input input[type="datetime-local"]::-moz-calendar-picker-indicator) {
+  filter: brightness(0) saturate(100%) !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+}
+
+/* Ensure date input text is black */
+:deep(.customer-input input[type="date"]),
+:deep(.customer-input input[type="datetime-local"]) {
+  color: #000000 !important;
+}
+
+/* Make date input clickable and ensure calendar opens */
+:deep(.date-input-clickable input[type="date"]),
+:deep(.date-input-clickable input[type="datetime-local"]) {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+:deep(.date-input-clickable) {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+:deep(.date-input-clickable input[type="date"]:focus),
+:deep(.date-input-clickable input[type="datetime-local"]:focus) {
+  cursor: pointer !important;
 }
 
 /* Custom select menu styling - clean white background - same as Add Customer form */
@@ -2139,7 +2261,7 @@ onMounted(async () => {
                   <span>On Air Date</span>
                 </div>
               </template>
-              <UInput v-model="state.on_air_date" type="date" class="w-full customer-input" />
+              <UInput v-model="state.on_air_date" type="date" class="w-full customer-input date-input-clickable" />
             </UFormGroup>
             
             <UFormGroup name="trial_end_date">
@@ -2149,7 +2271,7 @@ onMounted(async () => {
                   <span>Trial End Date</span>
                 </div>
               </template>
-              <UInput v-model="state.trial_end_date" type="date" class="w-full customer-input" />
+              <UInput v-model="state.trial_end_date" type="date" class="w-full customer-input date-input-clickable" />
             </UFormGroup>
             
             <UFormGroup name="service_ready_date">
@@ -2159,7 +2281,7 @@ onMounted(async () => {
                   <span>Service Ready Date</span>
                 </div>
               </template>
-              <UInput v-model="state.service_ready_date" type="date" class="w-full customer-input" />
+              <UInput v-model="state.service_ready_date" type="date" class="w-full customer-input date-input-clickable" />
             </UFormGroup>
             
             <UFormGroup name="installation_completed_at">
@@ -2169,7 +2291,7 @@ onMounted(async () => {
                   <span>Installation Completed At</span>
                 </div>
               </template>
-              <UInput v-model="state.installation_completed_at" type="datetime-local" class="w-full customer-input" />
+              <UInput v-model="state.installation_completed_at" type="datetime-local" class="w-full customer-input date-input-clickable" />
             </UFormGroup>
           </div>
           
@@ -2340,6 +2462,226 @@ onMounted(async () => {
                 </ul>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Network Device Information -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <h3 class="text-lg font-semibold text-black mb-3 flex items-center gap-2">
+            <LucideIcon name="cpu-chip" :size="20" class="text-blue-600" />
+            Network Device Information
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <UFormGroup name="assets_id">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="package" :size="16" class="text-gray-600" />
+                  <span>Asset <span class="text-red-500">*</span></span>
+                </div>
+              </template>
+              <USelectMenu
+                v-model="state.assets_id"
+                :options="state.assets"
+                placeholder="Select asset"
+                searchable
+                searchable-placeholder="Search by brand/model"
+                option-attribute="display"
+                value-attribute="id"
+                :search-attributes="['brand', 'type', 'model']"
+                @change="onAssetChange(state.assets_id)"
+                class="w-full customer-select"
+              />
+            </UFormGroup>
+
+            <UFormGroup name="product_id">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="wifi" :size="16" class="text-gray-600" />
+                  <span>Package/Product <span class="text-red-500">*</span></span>
+                </div>
+              </template>
+              <USelectMenu
+                v-model="state.product_id"
+                :options="state.products"
+                placeholder="Select internet package"
+                searchable
+                searchable-placeholder="Search by package name or speed"
+                option-attribute="display"
+                value-attribute="id"
+                :search-attributes="['name', 'description']"
+                class="w-full customer-select"
+              />
+              <p class="text-xs text-gray-600 mt-1">
+                <LucideIcon name="info" :size="14" class="inline mr-1" />
+                Package selection will automatically set the bandwidth limit for MikroTik provisioning
+              </p>
+            </UFormGroup>
+            
+            <UFormGroup name="switch_id">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="network" :size="16" class="text-gray-600" />
+                  <span>Switch ID</span>
+                </div>
+              </template>
+              <UInput v-model="state.switch_id" placeholder="Enter switch ID" class="w-full customer-input" />
+            </UFormGroup>
+            
+            <UFormGroup name="port_number">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="activity" :size="16" class="text-gray-600" />
+                  <span>Port Number</span>
+                </div>
+              </template>
+              <UInput v-model="state.port_number" placeholder="Enter port number" class="w-full customer-input" />
+            </UFormGroup>
+            
+            <UFormGroup name="remote_port">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="activity" :size="16" class="text-gray-600" />
+                  <span>Remote Port</span>
+                </div>
+              </template>
+              <UInput v-model="state.remote_port" placeholder="Enter remote port" class="w-full customer-input" />
+            </UFormGroup>
+            
+            <UFormGroup name="eth_port">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="cable" :size="16" class="text-gray-600" />
+                  <span>ETH Port</span>
+                </div>
+              </template>
+              <UInput v-model="state.eth_port" placeholder="Enter ETH port" class="w-full customer-input" />
+            </UFormGroup>
+            
+            <UFormGroup name="mac_address">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="network" :size="16" class="text-gray-600" />
+                  <span>MAC Address</span>
+                </div>
+              </template>
+              <div>
+                <USelectMenu
+                  v-model="state.asset_item_id"
+                  :options="availableAssetItems[state.assets_id] || []"
+                  :placeholder="!state.assets_id ? 'Select an asset first' : 'Select MAC Address'"
+                  :disabled="!state.assets_id || (availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length === 0)"
+                  class="w-full customer-select"
+                />
+                <div v-if="state.assets_id && availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length === 0" class="text-xs text-red-500 mt-1 flex items-center">
+                  <LucideIcon name="alert-triangle" :size="12" class="mr-1" />
+                  No available devices for this asset
+                </div>
+                <div v-else-if="state.assets_id && availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length > 0" class="text-xs text-green-600 mt-1">
+                  {{ availableAssetItems[state.assets_id].length }} device(s) available
+                </div>
+              </div>
+            </UFormGroup>
+            
+            <UFormGroup name="ip_static">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="map-pin" :size="16" class="text-gray-600" />
+                  <span>IP Static</span>
+                </div>
+              </template>
+              <div class="flex gap-2">
+                <UInput 
+                  v-model="state.ip_static" 
+                  placeholder="192.168.1.100" 
+                  class="flex-1 customer-input"
+                />
+                <UButton 
+                  @click="fetchDHCPLease"
+                  color="blue"
+                  variant="outline"
+                  size="sm"
+                  :loading="state.fetchingDHCP"
+                  :disabled="!state.mac_address"
+                  title="Fetch actual IP address from MikroTik DHCP lease"
+                >
+                  <template #leading>
+                    <LucideIcon name="refresh-cw" :size="16" />
+                  </template>
+                  Fetch DHCP
+                </UButton>
+              </div>
+              <p v-if="state.dhcpStatus" class="text-xs mt-1" :class="state.dhcpStatus.success ? 'text-green-600' : 'text-red-600'">
+                {{ state.dhcpStatus.message }}
+              </p>
+              <p v-else class="text-xs text-gray-500 mt-1">
+                <LucideIcon name="info" :size="14" class="inline mr-1" />
+                This button will fetch the actual IP address assigned by your MikroTik router's DHCP server
+              </p>
+            </UFormGroup>
+            
+            <UFormGroup name="kepemilikan_perangkat">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="key" :size="16" class="text-gray-600" />
+                  <span>Device Ownership</span>
+                </div>
+              </template>
+              <USelectMenu
+                v-model="state.kepemilikan_perangkat"
+                :options="[
+                  { value: 'owned', label: 'Owned' },
+                  { value: 'leased', label: 'Leased' },
+                  { value: 'customer', label: 'Customer' }
+                ]"
+                value-attribute="value"
+                option-attribute="label"
+                placeholder="Select ownership"
+                class="w-full customer-select"
+              />
+            </UFormGroup>
+            
+            <UFormGroup name="status_perangkat">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="activity" :size="16" class="text-gray-600" />
+                  <span>Device Status</span>
+                </div>
+              </template>
+              <USelectMenu
+                v-model="state.status_perangkat"
+                :options="[
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                  { value: 'maintenance', label: 'Maintenance' },
+                  { value: 'faulty', label: 'Faulty' }
+                ]"
+                value-attribute="value"
+                option-attribute="label"
+                placeholder="Select device status"
+                class="w-full customer-select"
+              />
+            </UFormGroup>
+            
+            <UFormGroup name="last_ping_status">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="signal" :size="16" class="text-gray-600" />
+                  <span>Last Ping Status</span>
+                </div>
+              </template>
+              <USelectMenu
+                v-model="state.last_ping_status"
+                :options="[
+                  { value: 'up', label: 'Up' },
+                  { value: 'down', label: 'Down' },
+                  { value: 'unknown', label: 'Unknown' }
+                ]"
+                value-attribute="value"
+                option-attribute="label"
+                placeholder="Select ping status"
+                class="w-full customer-select"
+              />
+            </UFormGroup>
           </div>
         </div>
 
@@ -2635,226 +2977,6 @@ onMounted(async () => {
               </div>
             </div>
           </UFormGroup>
-        </div>
-
-        <!-- Network Device Information -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h3 class="text-lg font-semibold text-black mb-3 flex items-center gap-2">
-            <LucideIcon name="cpu-chip" :size="20" class="text-blue-600" />
-            Network Device Information
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <UFormGroup name="assets_id">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="package" :size="16" class="text-gray-600" />
-                  <span>Asset <span class="text-red-500">*</span></span>
-                </div>
-              </template>
-              <USelectMenu
-                v-model="state.assets_id"
-                :options="state.assets"
-                placeholder="Select asset"
-                searchable
-                searchable-placeholder="Search by brand/model"
-                option-attribute="display"
-                value-attribute="id"
-                :search-attributes="['brand', 'type', 'model']"
-                @change="onAssetChange(state.assets_id)"
-                class="w-full customer-select"
-              />
-            </UFormGroup>
-
-            <UFormGroup name="product_id">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="wifi" :size="16" class="text-gray-600" />
-                  <span>Package/Product <span class="text-red-500">*</span></span>
-                </div>
-              </template>
-              <USelectMenu
-                v-model="state.product_id"
-                :options="state.products"
-                placeholder="Select internet package"
-                searchable
-                searchable-placeholder="Search by package name or speed"
-                option-attribute="display"
-                value-attribute="id"
-                :search-attributes="['name', 'description']"
-                class="w-full customer-select"
-              />
-              <p class="text-xs text-gray-600 mt-1">
-                <LucideIcon name="info" :size="14" class="inline mr-1" />
-                Package selection will automatically set the bandwidth limit for MikroTik provisioning
-              </p>
-            </UFormGroup>
-            
-            <UFormGroup name="switch_id">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="network" :size="16" class="text-gray-600" />
-                  <span>Switch ID</span>
-                </div>
-              </template>
-              <UInput v-model="state.switch_id" placeholder="Enter switch ID" class="w-full customer-input" />
-            </UFormGroup>
-            
-            <UFormGroup name="port_number">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="activity" :size="16" class="text-gray-600" />
-                  <span>Port Number</span>
-                </div>
-              </template>
-              <UInput v-model="state.port_number" placeholder="Enter port number" class="w-full customer-input" />
-            </UFormGroup>
-            
-            <UFormGroup name="remote_port">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="activity" :size="16" class="text-gray-600" />
-                  <span>Remote Port</span>
-                </div>
-              </template>
-              <UInput v-model="state.remote_port" placeholder="Enter remote port" class="w-full customer-input" />
-            </UFormGroup>
-            
-            <UFormGroup name="eth_port">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="cable" :size="16" class="text-gray-600" />
-                  <span>ETH Port</span>
-                </div>
-              </template>
-              <UInput v-model="state.eth_port" placeholder="Enter ETH port" class="w-full customer-input" />
-            </UFormGroup>
-            
-            <UFormGroup name="mac_address">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="network" :size="16" class="text-gray-600" />
-                  <span>MAC Address</span>
-                </div>
-              </template>
-              <div>
-                <USelectMenu
-                  v-model="state.asset_item_id"
-                  :options="availableAssetItems[state.assets_id] || []"
-                  :placeholder="!state.assets_id ? 'Select an asset first' : 'Select MAC Address'"
-                  :disabled="!state.assets_id || (availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length === 0)"
-                  class="w-full customer-select"
-                />
-                <div v-if="state.assets_id && availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length === 0" class="text-xs text-red-500 mt-1 flex items-center">
-                  <LucideIcon name="alert-triangle" :size="12" class="mr-1" />
-                  No available devices for this asset
-                </div>
-                <div v-else-if="state.assets_id && availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length > 0" class="text-xs text-green-600 mt-1">
-                  {{ availableAssetItems[state.assets_id].length }} device(s) available
-                </div>
-              </div>
-            </UFormGroup>
-            
-            <UFormGroup name="ip_static">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="map-pin" :size="16" class="text-gray-600" />
-                  <span>IP Static</span>
-                </div>
-              </template>
-              <div class="flex gap-2">
-                <UInput 
-                  v-model="state.ip_static" 
-                  placeholder="192.168.1.100" 
-                  class="flex-1 customer-input"
-                />
-                <UButton 
-                  @click="fetchDHCPLease"
-                  color="blue"
-                  variant="outline"
-                  size="sm"
-                  :loading="state.fetchingDHCP"
-                  :disabled="!state.mac_address"
-                  title="Fetch actual IP address from MikroTik DHCP lease"
-                >
-                  <template #leading>
-                    <LucideIcon name="refresh-cw" :size="16" />
-                  </template>
-                  Fetch DHCP
-                </UButton>
-              </div>
-              <p v-if="state.dhcpStatus" class="text-xs mt-1" :class="state.dhcpStatus.success ? 'text-green-600' : 'text-red-600'">
-                {{ state.dhcpStatus.message }}
-              </p>
-              <p v-else class="text-xs text-gray-500 mt-1">
-                <LucideIcon name="info" :size="14" class="inline mr-1" />
-                This button will fetch the actual IP address assigned by your MikroTik router's DHCP server
-              </p>
-            </UFormGroup>
-            
-            <UFormGroup name="kepemilikan_perangkat">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="key" :size="16" class="text-gray-600" />
-                  <span>Device Ownership</span>
-                </div>
-              </template>
-              <USelectMenu
-                v-model="state.kepemilikan_perangkat"
-                :options="[
-                  { value: 'owned', label: 'Owned' },
-                  { value: 'leased', label: 'Leased' },
-                  { value: 'customer', label: 'Customer' }
-                ]"
-                value-attribute="value"
-                option-attribute="label"
-                placeholder="Select ownership"
-                class="w-full customer-select"
-              />
-            </UFormGroup>
-            
-            <UFormGroup name="status_perangkat">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="activity" :size="16" class="text-gray-600" />
-                  <span>Device Status</span>
-                </div>
-              </template>
-              <USelectMenu
-                v-model="state.status_perangkat"
-                :options="[
-                  { value: 'active', label: 'Active' },
-                  { value: 'inactive', label: 'Inactive' },
-                  { value: 'maintenance', label: 'Maintenance' },
-                  { value: 'faulty', label: 'Faulty' }
-                ]"
-                value-attribute="value"
-                option-attribute="label"
-                placeholder="Select device status"
-                class="w-full customer-select"
-              />
-            </UFormGroup>
-            
-            <UFormGroup name="last_ping_status">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="signal" :size="16" class="text-gray-600" />
-                  <span>Last Ping Status</span>
-                </div>
-              </template>
-              <USelectMenu
-                v-model="state.last_ping_status"
-                :options="[
-                  { value: 'up', label: 'Up' },
-                  { value: 'down', label: 'Down' },
-                  { value: 'unknown', label: 'Unknown' }
-                ]"
-                value-attribute="value"
-                option-attribute="label"
-                placeholder="Select ping status"
-                class="w-full customer-select"
-              />
-            </UFormGroup>
-          </div>
         </div>
 
         <!-- Customer Service Information -->
