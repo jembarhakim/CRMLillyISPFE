@@ -921,7 +921,13 @@ function getStatusCount(status: string) {
             </div>
           </div>
           <UDropdown :items="items(customer)">
-            <UButton color="gray" variant="ghost" icon="ellipsis-horizontal-20-solid" />
+            <UButton 
+              color="gray" 
+              variant="ghost" 
+              class="mobile-actions-btn flex-shrink-0 min-w-[44px] h-11 px-2 border border-gray-300 rounded-lg hover:bg-gray-100 shadow-sm"
+            >
+              <LucideIcon name="ellipsis-vertical" :size="20" class="text-gray-700" />
+            </UButton>
           </UDropdown>
         </div>
 
@@ -1594,6 +1600,43 @@ function getStatusCount(status: string) {
 /* Ensure badges are properly aligned */
 .customer-table :deep(.inline-flex) {
   vertical-align: middle;
+}
+
+/* Mobile Actions Button - Ensure visibility */
+@media (max-width: 640px) {
+  /* Make Actions button more visible on mobile */
+  :deep(.mobile-actions-btn),
+  :deep(.mobile-actions-btn button),
+  :deep(.mobile-actions-btn [class*="UButton"]) {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    border: 1px solid #d1d5db !important;
+    background-color: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    padding: 0 !important;
+  }
+  
+  :deep(.mobile-actions-btn:hover),
+  :deep(.mobile-actions-btn button:hover),
+  :deep(.mobile-actions-btn [class*="UButton"]:hover) {
+    background-color: #f3f4f6 !important;
+    border-color: #9ca3af !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  /* Ensure icon is visible inside Actions button */
+  :deep(.mobile-actions-btn svg),
+  :deep(.mobile-actions-btn [class*="LucideIcon"]) {
+    color: #374151 !important;
+    opacity: 1 !important;
+    display: block !important;
+  }
 }
 </style>
 
