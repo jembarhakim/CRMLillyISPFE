@@ -558,6 +558,8 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, reactive, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import { customerAdminApi } from "@/api/admin/customer";
 import type { InstallationReportCompleteResponse } from "@/types/requests/installation-report";
 import { useNavigationContext } from "@/composables/useNavigationContext";
@@ -793,7 +795,7 @@ function editReport(installationId: string) {
 
 function deleteReport(installationId: string) {
   // Find the report to populate modal
-  const report = filteredReports.value.find(r => r.installation_id === installationId);
+  const report = filteredReports.value.find((r: InstallationReportCompleteResponse) => r.installation_id === installationId);
   if (report) {
     selectedReport.value = report;
     showDeleteModal.value = true;
@@ -848,7 +850,7 @@ function exportReports() {
     const headers = ['Customer Name', 'Customer Phone', 'Technician Name', 'Technician Phone', 'Installation Type', 'Status', 'On Air Date', 'Router Brand', 'Router Model', 'MAC Address'];
     const csvContent = [
       headers.join(','),
-      ...filteredReports.value.map(report => [
+      ...filteredReports.value.map((report: InstallationReportCompleteResponse) => [
         `"${report.customer_name || ''}"`,
         `"${report.customer_phone || ''}"`,
         `"${report.technician_name || ''}"`,
