@@ -12,13 +12,13 @@
             <UButton @click="navigateTo('/dashboard/report/customer-installation')" 
                      color="gray" variant="outline"
                      class="w-full sm:w-auto">
-              <UIcon name="arrow-left" class="mr-2" />
+              <LucideIcon name="arrow-left" :size="16" class="mr-2" />
               Back to Dashboard
             </UButton>
             <UButton @click="exportReports" 
                      color="green" variant="outline"
                      class="w-full sm:w-auto">
-              <UIcon name="file-arrow-down" class="mr-2" />
+              <LucideIcon name="download" :size="16" class="mr-2" />
               Export Reports
             </UButton>
           </div>
@@ -35,13 +35,13 @@
               <UButton @click="clearFilters" 
                        color="gray" variant="outline" size="sm"
                        class="w-full sm:w-auto">
-                <UIcon name="x" class="mr-1" />
+                <LucideIcon name="x" :size="16" class="mr-1" />
                 Clear All
               </UButton>
               <UButton @click="applyFilters" 
                        color="blue" size="sm"
                        class="w-full sm:w-auto">
-                <UIcon name="search" class="mr-1" />
+                <LucideIcon name="search" :size="16" class="mr-1" />
                 Apply Filters
               </UButton>
             </div>
@@ -56,10 +56,10 @@
                 v-model="filters.search"
                 placeholder="Search customer, technician..."
                 @input="onFilterChange"
-                class="w-full"
+                class="w-full search-input-dark"
               >
                 <template #leading>
-                  <UIcon name="search" />
+                  <LucideIcon name="search" :size="16" class="search-icon-white" />
                 </template>
               </UInput>
             </UFormGroup>
@@ -561,6 +561,7 @@
 import { customerAdminApi } from "@/api/admin/customer";
 import type { InstallationReportCompleteResponse } from "@/types/requests/installation-report";
 import { useNavigationContext } from "@/composables/useNavigationContext";
+import LucideIcon from "@/components/LucideIcon.vue";
 
 // Apply auth middleware
 definePageMeta({
@@ -941,5 +942,46 @@ function formatDate(dateString: string | undefined) {
   color: #000000 !important;
   font-weight: 700 !important;
   font-size: 14px !important;
+}
+
+/* Search input dark background styling */
+.search-input-dark :deep(input),
+.search-input-dark :deep([class*="input"]),
+.search-input-dark :deep([role="textbox"]) {
+  background-color: #1e293b !important;
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: white !important;
+}
+
+.search-input-dark :deep(input:focus),
+.search-input-dark :deep([class*="input"]:focus),
+.search-input-dark :deep([role="textbox"]:focus) {
+  background-color: #1e293b !important;
+  background: #1e293b !important;
+  border-color: #475569 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+.search-input-dark :deep(input::placeholder) {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Search icon color - ensure white icon */
+.search-icon-white,
+.search-input-dark :deep([class*="leading"] svg),
+.search-input-dark :deep([class*="leading"] path),
+.search-input-dark :deep(svg) {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+  fill: none !important;
+}
+
+/* Ensure the input wrapper itself has dark background */
+.search-input-dark :deep([class*="ui-input"]),
+.search-input-dark :deep([class*="UInput"]) {
+  background-color: #1e293b !important;
+  background: #1e293b !important;
 }
 </style>

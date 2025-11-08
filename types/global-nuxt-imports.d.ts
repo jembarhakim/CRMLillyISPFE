@@ -8,6 +8,7 @@ declare global {
 
   // Nuxt helpers
   const definePageMeta: typeof import('#imports')['definePageMeta']
+  const navigateTo: typeof import('#imports')['navigateTo']
 
   // Our composables
   const useApiHost: typeof import('@/composables/useApiHost')['useApiHost']
@@ -18,6 +19,13 @@ declare global {
 
   // Custom auth composable
   const useAuth: typeof import('@/composables/useAuth')['useAuth']
+}
+
+// Vue component type augmentation for template type checking
+declare module '@vue/runtime-core' {
+  interface ComponentCustomProperties {
+    navigateTo: typeof import('#imports')['navigateTo']
+  }
 }
 
 export {}
