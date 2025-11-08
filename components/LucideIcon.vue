@@ -78,6 +78,9 @@ import {
     ExternalLink,
     ChartBar,
     Box,
+    Send,
+    SendHorizontal,
+    Loader2,
 } from "lucide-vue-next";
 
 const props = defineProps({
@@ -186,6 +189,11 @@ const iconMap = {
     "bar-chart": ChartBar,
     cube: Box,
     "wrench-screwdriver": Wrench,
+    send: Send,
+    "send-horizontal": SendHorizontal,
+    "paper-plane": Send,
+    "loader-2": Loader2,
+    loader: Loader2,
 };
 
 const iconComponent = computed(() => {

@@ -7,8 +7,25 @@ import {
   type AssetItemSchema,
 } from "./asset-item.model";
 import { assetItemAdminApi } from "@/api/admin/asset-item";
+import { companyAdminApi } from "@/api/admin/company";
 
 const state = reactive(assetItem);
+const companies = ref<Array<{label: string, value: string}>>([]);
+
+// Fetch companies for dropdown
+onMounted(async () => {
+  try {
+    const response = await companyAdminApi().getAllCompanies();
+    if (response.success) {
+      companies.value = response.data.map((company: any) => ({
+        label: company.name,
+        value: company.id
+      }));
+    }
+  } catch (error) {
+    console.error('Failed to fetch companies:', error);
+  }
+});
 
 const props = defineProps({
   isEdit: {
@@ -38,6 +55,14 @@ const props = defineProps({
         type: String,
         default: "in_stock"
       },
+      company_id: {
+        type: String,
+        default: undefined
+      },
+      site: {
+        type: String,
+        default: ""
+      },
     })
   },
   assets: {
@@ -53,8 +78,10 @@ watch(
     if (newValue) {
       state.asset_id = props.data.asset_id
       state.mac_address = props.data.mac_address
-      state.serial_number = props.data.serial_number
+      state.serial_number = props.data.serial_number || ""
       state.status = props.data.status
+      state.company_id = props.data.company_id || undefined
+      state.site = props.data.site || ""
     } else {
       clearState()
     }
@@ -73,6 +100,8 @@ function clearState() {
   state.mac_address = ""
   state.serial_number = ""
   state.status = "in_stock"
+  state.company_id = undefined
+  state.site = ""
 }
 
 // MAC address validation
@@ -118,8 +147,15 @@ async function onSubmit(event: FormSubmitEvent<AssetItemSchema>) {
     return
   }
 
+  // Prepare submission data - convert empty strings to undefined for optional fields
+  const submitData = {
+    ...state,
+    company_id: state.company_id && state.company_id.trim() !== '' ? state.company_id : undefined,
+    site: state.site && state.site.trim() !== '' ? state.site : undefined,
+  }
+
   if (props.isEdit) {
-    await assetItemAdminApi().editAssetItem(props.data.id, state).then((response: any) => {
+    await assetItemAdminApi().editAssetItem(props.data.id, submitData).then((response: any) => {
       useToast().add({ title: response.message })
       onSuccess()
     }
@@ -129,7 +165,7 @@ async function onSubmit(event: FormSubmitEvent<AssetItemSchema>) {
     }
     )
   } else {
-    await assetItemAdminApi().createAssetItem(state).then((response: any) => {
+    await assetItemAdminApi().createAssetItem(submitData).then((response: any) => {
       useToast().add({ title: response.message })
       onSuccess()
     }
@@ -172,6 +208,30 @@ async function onSubmit(event: FormSubmitEvent<AssetItemSchema>) {
 
         <UFormGroup label="Status" name="status">
           <USelect v-model="state.status" :options="assetItemStatus"></USelect>
+        </UFormGroup>
+
+        <UFormGroup label="Company" name="company_id">
+          <USelect 
+            v-model="state.company_id" 
+            :options="companies"
+            placeholder="Select a company (optional)"
+            option-attribute="label"
+            value-attribute="value"
+            :clearable="true"
+          />
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Select the company this asset item belongs to. You can clear the selection to remove company assignment.
+          </p>
+        </UFormGroup>
+
+        <UFormGroup label="Site" name="site">
+          <UInput 
+            v-model="state.site" 
+            placeholder="Enter site location (optional)"
+          />
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Enter the site/location where this asset item is located.
+          </p>
         </UFormGroup>
 
         <UButton type="submit"> Submit </UButton>

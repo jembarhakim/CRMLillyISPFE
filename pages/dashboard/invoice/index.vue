@@ -859,9 +859,7 @@ const filteredRows = computed(() => {
         : null;
 
       const dueDate = invoice.due_date ? new Date(invoice.due_date) : null;
-      const dueDate = invoice.due_date ? new Date(invoice.due_date) : null;
 
-      const filterDate = new Date(dateFilter.value);
       const filterDate = new Date(dateFilter.value);
 
       return (

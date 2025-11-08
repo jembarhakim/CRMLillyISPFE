@@ -3,6 +3,8 @@ export type CreateAssetItemRequest = {
   mac_address: string;
   serial_number?: string;
   status: 'in_stock' | 'in_use' | 'maintenance' | 'damaged' | 'retired';
+  company_id?: string;
+  site?: string;
 }
 
 export type AssetItem = {
@@ -11,6 +13,8 @@ export type AssetItem = {
   mac_address: string;
   serial_number?: string;
   status: 'in_stock' | 'in_use' | 'maintenance' | 'damaged' | 'retired';
+  company_id?: string;
+  site?: string;
   created_at: string;
   updated_at: string;
   asset?: {
@@ -19,6 +23,10 @@ export type AssetItem = {
     brand: string;
     model: string;
     serial_number: string;
+  };
+  company?: {
+    id: string;
+    name: string;
   };
 }
 

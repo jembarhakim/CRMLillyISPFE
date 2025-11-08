@@ -10,25 +10,8 @@ import 'v-calendar/dist/style.css'
 import { format } from 'date-fns'
 import AddAreaForm from "../area/AddAreaForm.vue";
 import { assetAdminApi } from "@/api/admin/asset";
-import { companyAdminApi } from "@/api/admin/company";
 
 const state = reactive(asset);
-const companies = ref<Array<{label: string, value: string}>>([]);
-
-// Fetch companies for dropdown
-onMounted(async () => {
-  try {
-    const response = await companyAdminApi().getAllCompanies();
-    if (response.success) {
-      companies.value = response.data.map((company) => ({
-        label: company.name,
-        value: company.id
-      }));
-    }
-  } catch (error) {
-    console.error('Failed to fetch companies:', error);
-  }
-});
 
 const props = defineProps({
   isEdit: {
@@ -44,10 +27,8 @@ const props = defineProps({
       model: "",
       serial_number: "",
       date: new Date(),
-      company_id: "",
       price: 0,
       description: "",
-      site: "",
     })
   }
 })
@@ -62,10 +43,8 @@ watch(
       state.model = props.data.model
       state.serial_number = props.data.serial_number
       state.date = props.data.date
-      state.company_id = props.data.company_id
       state.price = props.data.price
       state.description = props.data.description
-      state.site = props.data.site
     }else{
       // clearState()
     }
@@ -86,10 +65,8 @@ function clearState() {
   state.model = ""
   state.serial_number = ""
   state.date = new Date()
-  state.company_id = undefined
   state.price = 0
   state.description = ""
-  state.site = ""
 }
 
 async function onSubmit(event: FormSubmitEvent<AssetSchema>) {
@@ -154,18 +131,6 @@ async function onSubmit(event: FormSubmitEvent<AssetSchema>) {
               <DatePickerComponent v-model="state.date" @close="close" />
             </template>
           </UPopover>
-        </UFormGroup>
-
-        <UFormGroup label="Company" name="company_id">
-          <USelect 
-            v-model="state.company_id" 
-            :options="companies"
-            placeholder="Select a company"
-          />
-        </UFormGroup>
-
-        <UFormGroup label="Site" name="site">
-          <UInput v-model="state.site" placeholder="Enter site location" />
         </UFormGroup>
 
         <UFormGroup label="Price" name="price">

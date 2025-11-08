@@ -95,10 +95,6 @@ onMounted(() => {
           <p class="text-lg">{{ asset.serial_number }}</p>
         </div>
         <div>
-          <label class="text-sm font-medium text-gray-500">Site</label>
-          <p class="text-lg">{{ asset.site || 'Not specified' }}</p>
-        </div>
-        <div>
           <label class="text-sm font-medium text-gray-500">Total Items</label>
           <p class="text-lg">{{ assetItems.length }}</p>
         </div>
