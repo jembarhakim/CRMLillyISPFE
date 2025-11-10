@@ -21,7 +21,7 @@
               </div>
             </div>
           </div>
-          
+
           <div class="bg-green-50 p-3 sm:p-4 rounded-lg">
             <div class="flex items-center">
               <LucideIcon name="check-circle" :size="24" class="text-green-600 mr-2 sm:mr-3" />
@@ -31,7 +31,7 @@
               </div>
             </div>
           </div>
-          
+
           <div class="bg-yellow-50 p-3 sm:p-4 rounded-lg">
             <div class="flex items-center">
               <LucideIcon name="clock" :size="24" class="text-yellow-600 mr-2 sm:mr-3" />
@@ -41,7 +41,7 @@
               </div>
             </div>
           </div>
-          
+
           <div class="bg-purple-50 p-3 sm:p-4 rounded-lg">
             <div class="flex items-center">
               <LucideIcon name="wrench-screwdriver" :size="24" class="text-purple-600 mr-2 sm:mr-3" />
@@ -62,11 +62,10 @@
               <h3 class="text-lg sm:text-xl font-semibold">Add Report Installation</h3>
             </div>
             <p class="text-blue-100 mb-3 sm:mb-4 text-sm sm:text-base">
-              Create comprehensive installation reports with asset tracking, network devices, customer services, and cables.
+              Create comprehensive installation reports with asset tracking, network devices, customer services, and
+              cables.
             </p>
-            <UButton @click="navigateTo('/dashboard/customer')" 
-                     color="white" variant="solid"
-                     class="w-full sm:w-auto">
+            <UButton @click="navigateTo('/dashboard/customer')" color="white" variant="solid" class="w-full sm:w-auto">
               <template #leading>
                 <LucideIcon name="plus" :size="16" />
               </template>
@@ -83,9 +82,8 @@
             <p class="text-green-100 mb-3 sm:mb-4 text-sm sm:text-base">
               Access comprehensive reports including customer summaries, technician performance, and asset tracking.
             </p>
-            <UButton @click="navigateTo('/dashboard/report/customer-installation/reports')" 
-                     color="white" variant="solid"
-                     class="w-full sm:w-auto">
+            <UButton @click="navigateTo('/dashboard/report/customer-installation/reports')" color="white"
+              variant="solid" class="w-full sm:w-auto">
               <template #leading>
                 <LucideIcon name="eye" :size="16" />
               </template>
@@ -103,9 +101,7 @@
             <p class="text-orange-100 mb-3 sm:mb-4 text-sm sm:text-base">
               Track asset movements, monitor inventory, and generate asset reports for installations.
             </p>
-            <UButton @click="navigateTo('/dashboard/asset')" 
-                     color="white" variant="solid"
-                     class="w-full sm:w-auto">
+            <UButton @click="navigateTo('/dashboard/asset')" color="white" variant="solid" class="w-full sm:w-auto">
               <template #leading>
                 <LucideIcon name="package" :size="16" />
               </template>
@@ -122,9 +118,7 @@
             <p class="text-indigo-100 mb-3 sm:mb-4 text-sm sm:text-base">
               Manage customer information, view installation history, and track customer service records.
             </p>
-            <UButton @click="navigateTo('/dashboard/customer')" 
-                     color="white" variant="solid"
-                     class="w-full sm:w-auto">
+            <UButton @click="navigateTo('/dashboard/customer')" color="white" variant="solid" class="w-full sm:w-auto">
               <template #leading>
                 <LucideIcon name="user-circle" :size="16" />
               </template>
@@ -141,9 +135,8 @@
             <p class="text-teal-100 mb-3 sm:mb-4 text-sm sm:text-base">
               Manage technician assignments, track performance, and monitor installation completion rates.
             </p>
-            <UButton @click="navigateTo('/dashboard/user-management')" 
-                     color="white" variant="solid"
-                     class="w-full sm:w-auto">
+            <UButton @click="navigateTo('/dashboard/user-management')" color="white" variant="solid"
+              class="w-full sm:w-auto">
               <template #leading>
                 <LucideIcon name="user-group" :size="16" />
               </template>
@@ -161,8 +154,8 @@
               <p class="text-sm sm:text-base">No recent installations found</p>
             </div>
             <div v-else class="space-y-3">
-              <div v-for="installation in recentInstallations" :key="installation.id" 
-                   class="bg-white p-3 sm:p-4 rounded-lg border">
+              <div v-for="installation in recentInstallations" :key="installation.id"
+                class="bg-white p-3 sm:p-4 rounded-lg border">
                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                   <div class="flex-1">
                     <h3 class="font-medium text-gray-800 text-sm sm:text-base">
@@ -176,13 +169,12 @@
                     </p>
                   </div>
                   <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                    <span :class="getStatusColor(installation.status || installation.installation_status)" 
-                          class="px-2 py-1 rounded-full text-xs font-medium self-start sm:self-auto">
+                    <span :class="getStatusColor(installation.status || installation.installation_status)"
+                      class="px-2 py-1 rounded-full text-xs font-medium self-start sm:self-auto">
                       {{ installation.status || installation.installation_status || 'Unknown' }}
                     </span>
-                    <UButton @click="viewInstallation(installation.id)" 
-                             size="sm" color="blue" variant="outline"
-                             class="w-full sm:w-auto">
+                    <UButton @click="viewInstallation(installation.id)" size="sm" color="blue" variant="outline"
+                      class="w-full sm:w-auto">
                       <template #leading>
                         <LucideIcon name="eye" :size="16" />
                       </template>
@@ -229,7 +221,7 @@ async function loadStats() {
   try {
     const response = await customerAdminApi().getInstallationSummaryPerCustomer();
     const summaries = response.data || [];
-    
+
     stats.value = {
       totalInstallations: summaries.reduce((sum: number, item: any) => sum + (item.total_installations || 0), 0),
       completed: summaries.reduce((sum: number, item: any) => sum + (item.completed_installations || 0), 0),
@@ -252,12 +244,12 @@ async function loadRecentInstallations() {
   try {
     const response = await archiveInstallationAdminApi().getAllArchiveInstallation();
     const installations = response.data || [];
-    
+
     // Sort by created_at date (most recent first) and take only the first 5
     const sortedInstallations = installations
       .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5);
-    
+
     recentInstallations.value = sortedInstallations;
   } catch (error) {
     console.error("Failed to load recent installations:", error);
@@ -268,7 +260,7 @@ async function loadRecentInstallations() {
 
 function viewInstallation(installationId: string | undefined) {
   if (!installationId) return;
-  
+
   // Set navigation context to indicate we came from reports page
   const { setNavigationContext } = useNavigationContext();
   setNavigationContext({
@@ -276,13 +268,13 @@ function viewInstallation(installationId: string | undefined) {
     returnUrl: '/dashboard/report/customer-installation',
     returnLabel: 'Back to Dashboard'
   });
-  
+
   navigateTo(`/dashboard/report/customer-installation/detail/${installationId}`);
 }
 
 function getStatusColor(status: string | undefined) {
   if (!status) return 'bg-gray-100 text-gray-800';
-  
+
   const statusLower = status.toLowerCase();
   switch (statusLower) {
     case 'completed':
