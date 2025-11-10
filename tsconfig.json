@@ -4,12 +4,20 @@
   "compilerOptions": {
     "baseUrl": ".",
     "skipLibCheck": true,
+    "module": "ESNext",
     "paths": {
       "@/*": ["./*"],
       "#ui/*": ["./node_modules/@nuxt/ui/dist/runtime/*"],
       "#imports": [".nuxt/imports.d.ts"]
     }
   },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.vue",
+    ".nuxt/**/*.ts",
+    "types/**/*.d.ts"
+  ],
   "exclude": [
     "node_modules",
     ".nuxt",

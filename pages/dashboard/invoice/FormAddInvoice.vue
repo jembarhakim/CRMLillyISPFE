@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, reactive, watch } from 'vue';
 import { object, string, type InferType } from "yup";
 import type { FormSubmitEvent } from "#ui/types";
 import { customerAdminApi } from "@/api/admin/customer";
@@ -48,6 +49,13 @@ const state = reactive({
   ],
 });
 
+type InvoiceItem = {
+  name: string;
+  qty: number;
+  price: number;
+  total: number;
+};
+
 function addItem() {
   state.invoice_items.push({
     name: "",
@@ -56,12 +64,12 @@ function addItem() {
     total: 0,
   });
   // Recalculate total amount when adding new item
-  state.amount = state.invoice_items.reduce((acc, item) => acc + item.total, 0);
+  state.amount = state.invoice_items.reduce((acc: number, item: InvoiceItem) => acc + item.total, 0);
 }
 function removeItem(index: number) {
   state.invoice_items.splice(index, 1);
   // Recalculate total amount when removing item
-  state.amount = state.invoice_items.reduce((acc, item) => acc + item.total, 0);
+  state.amount = state.invoice_items.reduce((acc: number, item: InvoiceItem) => acc + item.total, 0);
 }
 function updateTotal(index: number) {
   const item = state.invoice_items[index];
@@ -71,28 +79,17 @@ function updateTotal(index: number) {
   };
 
   // Always recalculate the total amount from all items
-  state.amount = state.invoice_items.reduce((acc, item) => acc + item.total, 0);
+  state.amount = state.invoice_items.reduce((acc: number, item: InvoiceItem) => acc + item.total, 0);
   console.log(`Item ${index + 1} total:`, state.invoice_items[index].total);
   console.log('Total amount:', state.amount);
 }
 
 watch(
   () => props.isEdit,
-  (newValue) => {
+  (newValue: boolean) => {
     if (newValue) {
-      (state.customer_id = props.data.customer_id),
-        (state.amount = props.data.amount);
-    }
-  },
-  { immediate: true }
-);
-
-watch(
-  () => props.isEdit,
-  (newValue) => {
-    if (newValue) {
-      (state.customer_id = props.data.customer_id),
-        (state.amount = props.data.amount);
+      state.customer_id = props.data.customer_id || "";
+      state.amount = props.data.amount || 0;
     }
   },
   { immediate: true }
@@ -152,7 +149,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     const submitData = {
       customer_id: state.customer_id,
       amount: state.amount,
-      invoice_items: state.invoice_items.map(item => ({
+      invoice_items: state.invoice_items.map((item: InvoiceItem) => ({
         name: item.name,
         price: item.price,
         qty: item.qty,
@@ -195,12 +192,18 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   }
 }
 
-const customer = ref([]);
-const searchOptions = ref();
-const productOptions = ref<any[]>([])
-const productOptionsD = ref<any[]>([])
-const selectedCustomerDetail = ref<any>(null)
-const customerFilter = ref<'all' | 'internet' | 'collaborator'>('collaborator')
+type CustomerOption = {
+  label: string;
+  value: string;
+  customerData: any;
+};
+
+const customer = ref<CustomerOption[]>([]);
+const searchOptions = ref<string[]>([]);
+const productOptions = ref<string[]>([]);
+const productOptionsD = ref<Array<{ id: string; label: string; value: string; price: number }>>([]);
+const selectedCustomerDetail = ref<any>(null);
+const customerFilter = ref<'all' | 'internet' | 'collaborator'>('collaborator');
 
 async function getDataOptions() {
   try {
@@ -231,15 +234,15 @@ async function getDataOptions() {
   }
 }
 
-function search(q: any) {
-  const data = productOptions.value.filter((option: any) =>
+function search(q: string): string[] {
+  const data = productOptions.value.filter((option: string) =>
     option.toLowerCase().includes(q.toLowerCase())
   );
   if (data.length > 0) {
-    return data
+    return data;
   }
 
-  return [q]
+  return [q];
 }
 
 internetPackageAdminApi()
@@ -258,8 +261,8 @@ internetPackageAdminApi()
   });
 getDataOptions();
 
-function checkProductIsExist(name: string, index: number) {
-  const product = productOptionsD.value.find((option: any) => option.label === name);
+function checkProductIsExist(name: string, index: number): void {
+  const product = productOptionsD.value.find((option: { id: string; label: string; value: string; price: number }) => option.label === name);
   if (product) {
     const item = state.invoice_items[index];
     state.invoice_items[index] = {
@@ -306,7 +309,7 @@ function handleFilterChange(filter: 'all' | 'internet' | 'collaborator') {
 // Watch for customer selection changes
 watch(
   () => state.customer_id,
-  async (newCustomerId) => {
+  async (newCustomerId: string) => {
     if (newCustomerId) {
       try {
         // Get customer detail with product information
@@ -339,7 +342,7 @@ watch(
             }];
             
             // Update total amount
-            state.amount = state.invoice_items.reduce((acc, item) => acc + item.total, 0);
+            state.amount = state.invoice_items.reduce((acc: number, item: InvoiceItem) => acc + item.total, 0);
             
             // Show success message
             notification.success('Success', `Product "${product.name}" auto-filled from customer's package`);
@@ -502,7 +505,7 @@ watch(
                 :loading="loadingProduct" 
                 by="id" 
                 :options="productOptions"
-                @change="(name) => checkProductIsExist(name, index)" 
+                @change="(name: string) => checkProductIsExist(name, index)" 
                 :search="search" 
               />
               <div v-if="customerFilter === 'collaborator'" class="mt-1">
