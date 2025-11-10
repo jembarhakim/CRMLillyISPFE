@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onUnmounted } from 'vue';
+import { onUnmounted, ref, watch, onMounted, computed } from 'vue';
 import { dashboardAdminApi } from "@/api/admin/dashboard";
 import { invoiceAdminApi } from "@/api/admin/invoice";
 import { ticketsApi } from "@/api/tickets";
@@ -17,6 +17,7 @@ definePageMeta({
 })
 
 // Set page title
+// @ts-expect-error - Nuxt auto-imports
 useHead({
   title: 'Dashboard - CRM System'
 })

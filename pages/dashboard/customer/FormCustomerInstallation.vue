@@ -8,7 +8,7 @@ import { assetItemAdminApi } from "@/api/admin/asset-item";
 import { mikrotikAdminApi } from "@/api/admin/mikrotik";
 import { uploadFileAdminApi } from "@/api/admin/file-upload";
 import { useNotificationStore } from "@/stores/notification";
-import { computed } from "vue";
+import { computed, nextTick, watch, reactive, ref, onMounted, onUnmounted } from "vue";
 import LucideIcon from '@/components/LucideIcon.vue';
 
 const notification = useNotificationStore();
@@ -57,7 +57,7 @@ watch(() => props.isEdit, (newValue, oldValue) => {
   console.log('[FormCustomerInstallation] isEdit prop changed:', { oldValue, newValue });
 }, { immediate: true });
 
-watch(() => props.data, (newValue, oldValue) => {
+watch(() => props.data, (newValue: any, oldValue: any) => {
   console.log('[FormCustomerInstallation] data prop changed:', { oldValue, newValue });
 }, { immediate: true });
 
@@ -145,6 +145,7 @@ const state = reactive({
 // Create a ref for the file input
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const technicianPhotoInput = ref<HTMLInputElement | null>(null);
+const formRef = ref<HTMLFormElement | null>(null);
 
 // Technician photo tracking
 const technicianPhotoSizes = ref<number[]>([]);
@@ -154,7 +155,7 @@ const isCompressing = ref(false);
 const availableAssetItems = ref<{[assetId: string]: any[]}>({});
 
 // Watch for asset changes to clear MAC address selection
-watch(() => state.assets_id, (newAssetId, oldAssetId) => {
+watch(() => state.assets_id, (newAssetId: string, oldAssetId: string) => {
   if (newAssetId !== oldAssetId) {
     // Clear MAC address selection when asset changes (affects both Network Device and MikroTik sections)
     state.mac_address = "";
@@ -314,7 +315,7 @@ state.installation_completed_at = today.toISOString().slice(0, 16);
 
 watch(
   () => props.isEdit,
-  (newValue) => {
+  (newValue: boolean) => {
     if (newValue) {
       state.customer_id = props.data.id;
     }
@@ -341,7 +342,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     }
 
     // Validate at least one senior technician
-    const hasSenior = state.technicians.some(t => t.role === 'senior');
+    const hasSenior = state.technicians.some((t: any) => t.role === 'senior');
     if (!hasSenior) {
       notification.error('Validation Error', 'At least one senior technician is required');
       return;
@@ -353,8 +354,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
     // Check for duplicate technician assignments
     const technicianIds = state.technicians
-      .map(tech => tech.technician_id)
-      .filter(id => id && id.trim() !== '');
+      .map((tech: any) => tech.technician_id)
+      .filter((id: string) => id && id.trim() !== '');
     
     const uniqueTechnicianIds = [...new Set(technicianIds)];
     
@@ -580,6 +581,14 @@ function onSuccess() {
   window.dispatchEvent(new CustomEvent('installation-created'));
 }
 
+// Helper function to submit form from outside
+function submitForm() {
+  const form = document.querySelector('.form-container')?.closest('form') as HTMLFormElement;
+  if (form) {
+    form.requestSubmit();
+  }
+}
+
 // Load test data for debugging
 const loadTestData = () => {
   // Get current date/time
@@ -741,6 +750,60 @@ function triggerTechnicianPhotoUpload() {
   technicianPhotoInput.value?.click();
 }
 
+// Helper function to add click outside handler for toast
+function addToastClickOutsideHandler(toastId: string, toast: ReturnType<typeof useToast>) {
+  // Use multiple ticks to ensure DOM is ready
+  nextTick(() => {
+    nextTick(() => {
+      // Try multiple selectors to find the toast element
+      let toastElement: HTMLElement | null = null;
+      
+      // Try finding by data attribute first
+      toastElement = document.querySelector(`[data-toast-id="${toastId}"]`) as HTMLElement;
+      
+      // If not found, try finding by ID
+      if (!toastElement) {
+        toastElement = document.querySelector(`#${toastId}`) as HTMLElement;
+      }
+      
+      // If still not found, try finding the last toast notification
+      if (!toastElement) {
+        const allToasts = document.querySelectorAll('[role="alert"], .ui-notification, [class*="notification"]');
+        if (allToasts.length > 0) {
+          toastElement = allToasts[allToasts.length - 1] as HTMLElement;
+        }
+      }
+      
+      if (toastElement) {
+        // Set data attribute for easier selection
+        toastElement.setAttribute('data-toast-id', toastId);
+        
+        // Add click outside handler
+        const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+          const target = event.target as HTMLElement;
+          
+          // Check if click is outside the toast element
+          if (toastElement && !toastElement.contains(target)) {
+            // Don't close if clicking on another toast
+            const clickedToast = target.closest('[role="alert"], .ui-notification, [class*="notification"]');
+            if (!clickedToast || clickedToast === toastElement) {
+              toast.remove(toastId);
+              document.removeEventListener('click', handleClickOutside);
+              document.removeEventListener('touchstart', handleClickOutside);
+            }
+          }
+        };
+        
+        // Add event listeners after a short delay to avoid immediate trigger
+        setTimeout(() => {
+          document.addEventListener('click', handleClickOutside as EventListener, true);
+          document.addEventListener('touchstart', handleClickOutside as EventListener, true);
+        }, 150);
+      }
+    });
+  });
+}
+
 async function handleTechnicianPhotoUpload(event: Event) {
   const input = event.target as HTMLInputElement;
   const files = input.files;
@@ -751,11 +814,22 @@ async function handleTechnicianPhotoUpload(event: Event) {
   const newFilesCount = files.length;
   
   if (currentCount + newFilesCount > 10) {
-    useToast().add({
+    const toast = useToast();
+    const toastId = `error-max-photos-${Date.now()}`;
+    toast.add({
+      id: toastId,
       title: "Error",
       description: `Maximum 10 photos allowed. You currently have ${currentCount} photos and are trying to add ${newFilesCount} more.`,
       color: "red",
+      actions: [{
+        label: '✕',
+        click: () => {
+          toast.remove(toastId);
+        },
+        variant: 'ghost'
+      }]
     });
+    addToastClickOutsideHandler(toastId, toast);
     return;
   }
   
@@ -765,11 +839,22 @@ async function handleTechnicianPhotoUpload(event: Event) {
     // Validate file
     const validation = validateFile(file);
     if (!validation.isValid) {
-      useToast().add({
+      const toast = useToast();
+      const toastId = `error-validation-${Date.now()}-${i}`;
+      toast.add({
+        id: toastId,
         title: "Error",
         description: validation.message,
         color: "red",
+        actions: [{
+          label: '✕',
+          click: () => {
+            toast.remove(toastId);
+          },
+          variant: 'ghost'
+        }]
       });
+      addToastClickOutsideHandler(toastId, toast);
       continue;
     }
     
@@ -792,11 +877,22 @@ async function handleTechnicianPhotoUpload(event: Event) {
     
     technicianPhotoSizes.value.push(compressedSize);
     
-    useToast().add({
+    const toast = useToast();
+    const toastId = `success-photo-${Date.now()}-${i}`;
+    toast.add({
+      id: toastId,
       title: "Success",
       description: `Photo added successfully. Compressed from ${formatFileSize(originalSize)} to ${formatFileSize(compressedSize)} (${compressionRatio.toFixed(1)}% reduction). Will be uploaded when form is submitted.`,
       color: "green",
+      actions: [{
+        label: '✕',
+        click: () => {
+          toast.remove(toastId);
+        },
+        variant: 'ghost'
+      }]
     });
+    addToastClickOutsideHandler(toastId, toast);
   }
   
   input.value = ''; // Clear input
@@ -811,7 +907,7 @@ function removeTechnicianPhoto(index: number) {
 
 // Computed property for total size
 const totalTechnicianPhotoSize = computed(() => {
-  return technicianPhotoSizes.value.reduce((total, size) => total + size, 0);
+  return technicianPhotoSizes.value.reduce((total: number, size: number) => total + size, 0);
 });
 
 // File size formatting utility
@@ -1102,10 +1198,10 @@ function addTechnician() {
 // Get available technicians (excluding already assigned ones)
 function getAvailableTechniciansForIndex(currentIndex: number) {
   const assignedTechnicianIds = state.technicians
-    .map((tech, index) => index !== currentIndex ? tech.technician_id : null)
-    .filter(id => id && id.trim() !== '');
+    .map((tech: any, index: number) => index !== currentIndex ? tech.technician_id : null)
+    .filter((id: string | null) => id && id.trim() !== '');
   
-  return state.availableTechnicians.filter(tech => 
+  return state.availableTechnicians.filter((tech: any) => 
     !assignedTechnicianIds.includes(tech.id)
   );
 }
@@ -1116,7 +1212,7 @@ function removeTechnician(index: number) {
   
   // If we removed the primary, make the first senior primary
   if (removedTech.is_primary && state.technicians.length > 0) {
-    const firstSenior = state.technicians.find(t => t.role === 'senior');
+    const firstSenior = state.technicians.find((t: any) => t.role === 'senior');
     if (firstSenior) {
       firstSenior.is_primary = true;
     } else if (state.technicians.length > 0) {
@@ -1126,7 +1222,7 @@ function removeTechnician(index: number) {
 }
 
 function setPrimaryTechnician(index: number) {
-  state.technicians.forEach((tech, i) => {
+  state.technicians.forEach((tech: any, i: number) => {
     tech.is_primary = i === index;
   });
 }
@@ -1194,6 +1290,72 @@ async function fetchDHCPLease() {
 onMounted(async () => {
   console.log('[FormCustomerInstallation] Component mounted, loading data...');
   console.log('[FormCustomerInstallation] Component should now be rendered inside modal');
+  
+  // Setup date input click handler to open calendar picker
+  nextTick(() => {
+    const setupDateInput = () => {
+      const dateInputs = document.querySelectorAll('.date-input-clickable input[type="date"], .date-input-clickable input[type="datetime-local"]');
+      dateInputs.forEach((dateInput) => {
+        const input = dateInput as HTMLInputElement;
+        // Check if listener already added
+        if (!(input as any).__datePickerSetup) {
+          (input as any).__datePickerSetup = true;
+          
+          // Add click handler to open date picker
+          input.addEventListener('click', function(e) {
+            // Use showPicker() if available (modern browsers)
+            if (this.showPicker && typeof this.showPicker === 'function') {
+              try {
+                const pickerResult = (this.showPicker as () => Promise<void>)();
+                pickerResult?.catch(() => {
+                  // Fallback: just focus
+                  this.focus();
+                });
+              } catch (error) {
+                // Fallback: just focus if showPicker fails
+                this.focus();
+              }
+            }
+          });
+          
+          // Also handle focus event
+          input.addEventListener('focus', function() {
+            // Small delay to ensure input is fully focused
+            setTimeout(() => {
+              if (this.showPicker && typeof this.showPicker === 'function') {
+                try {
+                  const pickerResult = (this.showPicker as () => Promise<void>)();
+                  pickerResult?.catch(() => {
+                    // Silently fail if showPicker is not available
+                  });
+                } catch (error) {
+                  // Silently fail if showPicker fails
+                }
+              }
+            }, 100);
+          });
+        }
+      });
+    };
+    
+    // Setup immediately
+    setupDateInput();
+    
+    // Also setup when DOM changes (for dynamic content)
+    const dateInputObserver = new MutationObserver(() => {
+      setupDateInput();
+    });
+    
+    dateInputObserver.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    
+    // Cleanup observer when component unmounts
+    onUnmounted(() => {
+      dateInputObserver.disconnect();
+    });
+  });
   
   // Debug: Check if component is visible
   setTimeout(() => {
@@ -1402,24 +1564,726 @@ onMounted(async () => {
   z-index: 10;
 }
 
-/* Ensure no gap at bottom of modal */
+/* Ensure proper spacing for scrollable content */
 .overflow-y-auto {
-  padding-bottom: 0 !important;
+  padding-bottom: 2rem !important; /* Extra space for footer visibility */
+}
+
+/* Ensure footer is always visible */
+.flex-shrink-0 {
+  flex-shrink: 0 !important;
+}
+
+/* Ensure form container takes full height and allows scrolling */
+.form-container {
+  min-height: 0 !important;
+}
+
+/* Ensure the main container structure is correct */
+.installation-card {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+:deep(.installation-card [class*="body"]) {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+}
+
+/* Ensure form wrapper doesn't clip footer */
+:deep(.installation-card [class*="body"] > div) {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  flex: 1 !important;
+  height: 100% !important;
+}
+
+/* Ensure main form container uses full height */
+.flex.flex-col.h-full {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+/* Ensure footer doesn't overflow */
+.overflow-hidden.max-w-full {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure footer content doesn't overflow */
+.overflow-hidden.max-w-full > div {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure text wrapping works properly */
+.break-words {
+  word-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+/* Ensure footer text doesn't overflow on mobile */
+@media (max-width: 640px) {
+  .break-words {
+    max-width: 100% !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+  }
+}
+
+/* Add Technician Button - Enhanced styling with hover */
+:deep(.add-technician-button),
+.add-technician-button {
+  font-weight: 600 !important;
+  border: 2px solid #6366F1 !important;
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+:deep(.add-technician-button:hover:not(:disabled)),
+.add-technician-button:hover:not(:disabled) {
+  background-color: #4F46E5 !important;
+  border-color: #4F46E5 !important;
+  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+:deep(.add-technician-button:active:not(:disabled)),
+.add-technician-button:active:not(:disabled) {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2) !important;
+}
+
+/* Primary Button - Enhanced styling with hover */
+:deep(.primary-button),
+.primary-button {
+  font-weight: 600 !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+:deep(.primary-button:not(:disabled):hover),
+.primary-button:not(:disabled):hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+:deep(.primary-button:not(:disabled):active),
+.primary-button:not(:disabled):active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Primary button when not primary (gray outline) - hover effect */
+:deep(.primary-button[class*="bg-gray"]:not(:disabled):hover),
+:deep(.primary-button[class*="border-gray"]:not(:disabled):hover) {
+  background-color: #F3F4F6 !important;
+  border-color: #9CA3AF !important;
+  color: #1F2937 !important;
+}
+
+/* Primary button when is primary (green solid) */
+:deep(.primary-button[class*="bg-green"]),
+:deep(.primary-button.bg-green) {
+  background-color: #10B981 !important;
+  border-color: #10B981 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2) !important;
+}
+
+:deep(.primary-button[class*="bg-green"]:hover),
+:deep(.primary-button.bg-green:hover) {
+  background-color: #059669 !important;
+  border-color: #059669 !important;
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3) !important;
+}
+
+/* Primary button disabled state */
+:deep(.primary-button:disabled),
+.primary-button:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+/* Toast notification close button styling */
+:deep([role="alert"] [role="button"]),
+:deep([role="alert"] button),
+:deep(.ui-notification button),
+:deep([class*="ui-notification"] button),
+:deep([role="alert"] [class*="actions"] button) {
+  min-width: 32px !important;
+  min-height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 6px !important;
+  font-weight: 700 !important;
+  font-size: 16px !important;
+  color: #374151 !important;
+  background-color: transparent !important;
+  border: 1px solid transparent !important;
+  transition: all 0.2s ease-in-out !important;
+  cursor: pointer !important;
+  padding: 0.5rem !important;
+}
+
+:deep([role="alert"] [role="button"]:hover),
+:deep([role="alert"] button:hover),
+:deep(.ui-notification button:hover),
+:deep([class*="ui-notification"] button:hover),
+:deep([role="alert"] [class*="actions"] button:hover) {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  border-color: rgba(0, 0, 0, 0.2) !important;
+  color: #111827 !important;
+  transform: scale(1.1) !important;
+}
+
+:deep([role="alert"] [role="button"]:active),
+:deep([role="alert"] button:active),
+:deep(.ui-notification button:active),
+:deep([class*="ui-notification"] button:active),
+:deep([role="alert"] [class*="actions"] button:active) {
+  transform: scale(0.95) !important;
+}
+
+/* Ensure toast notification actions are visible */
+:deep([role="alert"] [class*="actions"]),
+:deep(.ui-notification [class*="actions"]) {
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Custom input styling - white background, clean borders - same as Add Customer form */
+:deep(.customer-input input),
+:deep(.customer-input) {
+  background-color: #F9FAFB !important;
+  border-color: #D1D5DB !important;
+  color: #000000 !important;
+}
+
+:deep(.customer-input input:focus),
+:deep(.customer-input:focus-within) {
+  border-color: #2563EB !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+:deep(.customer-input input::placeholder) {
+  color: #6B7280 !important;
+}
+
+/* Date input calendar icon styling - make it black and visible */
+/* For Chrome, Safari, Edge (WebKit browsers) */
+:deep(.customer-input input[type="date"]::-webkit-calendar-picker-indicator),
+:deep(.customer-input input[type="datetime-local"]::-webkit-calendar-picker-indicator) {
+  filter: brightness(0) !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+  background-color: transparent !important;
+  width: 20px !important;
+  height: 20px !important;
+  padding: 2px !important;
+  margin-right: 5px !important;
+}
+
+:deep(.customer-input input[type="date"]::-webkit-calendar-picker-indicator:hover),
+:deep(.customer-input input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover) {
+  opacity: 0.8 !important;
+  filter: brightness(0) opacity(0.8) !important;
+}
+
+/* For Firefox */
+:deep(.customer-input input[type="date"]),
+:deep(.customer-input input[type="datetime-local"]) {
+  color-scheme: light !important;
+}
+
+:deep(.customer-input input[type="date"]::-moz-calendar-picker-indicator),
+:deep(.customer-input input[type="datetime-local"]::-moz-calendar-picker-indicator) {
+  filter: brightness(0) saturate(100%) !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+}
+
+/* Ensure date input text is black */
+:deep(.customer-input input[type="date"]),
+:deep(.customer-input input[type="datetime-local"]) {
+  color: #000000 !important;
+}
+
+/* Make date input clickable and ensure calendar opens */
+:deep(.date-input-clickable input[type="date"]),
+:deep(.date-input-clickable input[type="datetime-local"]) {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+:deep(.date-input-clickable) {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+:deep(.date-input-clickable input[type="date"]:focus),
+:deep(.date-input-clickable input[type="datetime-local"]:focus) {
+  cursor: pointer !important;
+}
+
+/* Custom select menu styling - clean white background - same as Add Customer form */
+:deep(.customer-select button),
+:deep(.customer-select [role="combobox"]),
+:deep(.customer-select button[type="button"]),
+:deep(.customer-select [type="button"]) {
+  background-color: #FFFFFF !important;
+  border-color: #D1D5DB !important;
+  color: #000000 !important;
+}
+
+:deep(.customer-select button:focus),
+:deep(.customer-select [role="combobox"]:focus),
+:deep(.customer-select:focus-within button),
+:deep(.customer-select button:not(:disabled):hover) {
+  border-color: #2563EB !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+/* Select menu text color */
+:deep(.customer-select button span),
+:deep(.customer-select [role="combobox"] span),
+:deep(.customer-select button div),
+:deep(.customer-select [role="combobox"] div) {
+  color: #000000 !important;
+}
+
+/* Select menu dropdown items */
+:deep(.customer-select [role="option"]),
+:deep(.customer-select [role="listbox"] [role="option"]) {
+  color: #000000 !important;
+  background-color: #FFFFFF !important;
+}
+
+:deep(.customer-select [role="option"]:hover),
+:deep(.customer-select [role="listbox"] [role="option"]:hover) {
+  background-color: #F9FAFB !important;
+  color: #000000 !important;
+}
+
+/* Force all USelectMenu components to have white background - override Nuxt UI defaults */
+:deep(.form-container [class*="USelectMenu"] button),
+:deep(.form-container [class*="USelectMenu"] [role="combobox"]),
+:deep(.form-container button[role="combobox"]),
+:deep(.form-container [class*="ui-select-menu"] button),
+:deep(.form-container [class*="ui-select-menu"] [role="combobox"]),
+:deep(.form-container [class*="SelectMenu"] button),
+:deep(.form-container [class*="SelectMenu"] [role="combobox"]) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  border-color: #D1D5DB !important;
+  color: #000000 !important;
+}
+
+:deep(.form-container [class*="USelectMenu"] button span),
+:deep(.form-container [class*="USelectMenu"] button div),
+:deep(.form-container button[role="combobox"] span),
+:deep(.form-container button[role="combobox"] div),
+:deep(.form-container [class*="USelectMenu"] button *),
+:deep(.form-container button[role="combobox"] *) {
+  color: #000000 !important;
+}
+
+/* Override dark mode styles for select menus */
+:deep(.form-container [class*="USelectMenu"] button.dark\:bg-gray-800),
+:deep(.form-container button[role="combobox"].dark\:bg-gray-800),
+:deep(.form-container [class*="USelectMenu"] button.dark\:text-gray-200),
+:deep(.form-container button[role="combobox"].dark\:text-gray-200) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+/* Dropdown menu container */
+:deep(.form-container [role="listbox"]),
+:deep(.form-container [class*="ui-select-menu"] [role="listbox"]),
+:deep(.form-container [class*="USelectMenu"] [role="listbox"]) {
+  background-color: #FFFFFF !important;
+  border-color: #D1D5DB !important;
+}
+
+/* Dropdown menu items */
+:deep(.form-container [role="listbox"] [role="option"]),
+:deep(.form-container [class*="ui-select-menu"] [role="listbox"] [role="option"]),
+:deep(.form-container [class*="USelectMenu"] [role="listbox"] [role="option"]) {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+:deep(.form-container [role="listbox"] [role="option"]:hover),
+:deep(.form-container [class*="ui-select-menu"] [role="listbox"] [role="option"]:hover),
+:deep(.form-container [class*="USelectMenu"] [role="listbox"] [role="option"]:hover) {
+  background-color: #F9FAFB !important;
+  color: #000000 !important;
+}
+
+/* Fallback for form-container if classes not added */
+:deep(.form-container input[type="text"]),
+:deep(.form-container input[type="number"]),
+:deep(.form-container input[type="date"]),
+:deep(.form-container input[type="datetime-local"]),
+:deep(.form-container input[type="password"]),
+:deep(.form-container input[type="tel"]),
+:deep(.form-container textarea) {
+  background-color: #F9FAFB !important;
+  border-color: #D1D5DB !important;
+  color: #000000 !important;
+}
+
+:deep(.form-container input:focus),
+:deep(.form-container textarea:focus),
+:deep(.form-container input:focus-within),
+:deep(.form-container textarea:focus-within) {
+  border-color: #2563EB !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+:deep(.form-container input::placeholder),
+:deep(.form-container textarea::placeholder) {
+  color: #6B7280 !important;
+}
+
+:deep(.form-container button[role="combobox"]),
+:deep(.form-container [role="combobox"]),
+:deep(.form-container select) {
+  background-color: #FFFFFF !important;
+  border-color: #D1D5DB !important;
+  color: #000000 !important;
+}
+
+:deep(.form-container button[role="combobox"]:focus),
+:deep(.form-container [role="combobox"]:focus),
+:deep(.form-container select:focus),
+:deep(.form-container:focus-within button[role="combobox"]) {
+  border-color: #2563EB !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+/* Form labels - ensure high contrast - same as Add Customer form */
+.form-container label {
+  color: #000000 !important;
+  font-weight: 500 !important;
+}
+
+/* UFormGroup label styling - same as Add Customer form */
+:deep(.form-container [class*="UFormGroup"] label),
+:deep(.form-container [class*="form-group"] label),
+:deep(.form-container [class*="UFormGroup"] span),
+:deep(.form-container [class*="form-group"] span) {
+  color: #000000 !important;
+  font-weight: 500 !important;
+}
+
+/* Ensure all span labels in form groups are black */
+:deep(.form-container .flex.items-center span:not(.text-red-500):not(.text-gray-500):not(.text-green-600):not(.text-orange-600)) {
+  color: #000000 !important;
+}
+
+/* Upload area styling */
+:deep(.form-container input[type="file"]) {
+  border: 2px dashed #D1D5DB !important;
+  border-radius: 0.5rem !important;
+  padding: 1rem !important;
+  background-color: #F9FAFB !important;
+}
+
+:deep(.form-container input[type="file"]:hover) {
+  border-color: #2563EB !important;
+  background-color: #F0F4FF !important;
+}
+
+/* Checkbox styling - white background and black text */
+:deep(.form-container input[type="checkbox"]),
+:deep(input[type="checkbox"]) {
+  border-color: #D1D5DB !important;
+  background-color: #FFFFFF !important;
+  accent-color: #2563EB !important;
+}
+
+:deep(.form-container input[type="checkbox"]:checked),
+:deep(input[type="checkbox"]:checked) {
+  background-color: #2563EB !important;
+  border-color: #2563EB !important;
+  accent-color: #2563EB !important;
+}
+
+:deep(.form-container input[type="checkbox"]:focus),
+:deep(input[type="checkbox"]:focus) {
+  ring: 2px !important;
+  ring-color: #2563EB !important;
+  outline: none !important;
+  border-color: #2563EB !important;
+}
+
+/* Checkbox container styling */
+:deep(.form-container .toggle-switch),
+:deep(.toggle-switch) {
+  background-color: #FFFFFF !important;
+}
+
+:deep(.form-container .toggle-switch label),
+:deep(.toggle-switch label) {
+  color: #000000 !important;
+}
+
+:deep(.form-container .toggle-switch p),
+:deep(.toggle-switch p) {
+  color: #374151 !important;
+}
+
+/* Ensure all text is readable on white background */
+.form-container {
+  color: #000000 !important;
+}
+
+/* MAC Address display field */
+:deep(.form-container .bg-gray-50),
+:deep(.form-container .p-3.bg-gray-50) {
+  background-color: #F9FAFB !important;
+  border-color: #D1D5DB !important;
+}
+
+:deep(.form-container .bg-gray-50 span),
+:deep(.form-container .p-3.bg-gray-50 span) {
+  color: #000000 !important;
+}
+
+/* Ensure all div containers with bg-gray-50 have light background */
+:deep(.form-container div.bg-gray-50) {
+  background-color: #F9FAFB !important;
+}
+
+/* Override any remaining dark backgrounds */
+:deep(.form-container *[class*="dark:bg"]),
+:deep(.form-container *[class*="dark:text"]) {
+  background-color: transparent !important;
+  color: inherit !important;
+}
+
+/* Additional aggressive overrides for Nuxt UI components */
+:deep(.form-container button[aria-expanded]),
+:deep(.form-container button[aria-haspopup="listbox"]),
+:deep(.form-container [data-headlessui-state]) {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+/* Ensure all select menu buttons have white background regardless of state */
+:deep(.form-container button[role="combobox"][aria-expanded="true"]),
+:deep(.form-container button[role="combobox"][aria-expanded="false"]) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+/* Override Nuxt UI select menu default styles */
+:deep(.form-container .ui-select-menu),
+:deep(.form-container [class*="ui-select-menu"]) {
+  background-color: #FFFFFF !important;
+}
+
+:deep(.form-container .ui-select-menu button),
+:deep(.form-container [class*="ui-select-menu"] button) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+/* Ensure placeholder text is visible */
+:deep(.form-container button[role="combobox"]:empty::before),
+:deep(.form-container button[role="combobox"]::placeholder) {
+  color: #6B7280 !important;
+}
+
+/* Global override for all select menus and dropdowns in form */
+:deep(.form-container button[type="button"]),
+:deep(.form-container [role="combobox"]) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+:deep(.form-container button[type="button"]:hover),
+:deep(.form-container [role="combobox"]:hover) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+/* Checkbox specific overrides - ensure they're visible */
+:deep(.form-container input[type="checkbox"]),
+:deep(input[type="checkbox"]) {
+  -webkit-appearance: checkbox !important;
+  -moz-appearance: checkbox !important;
+  appearance: checkbox !important;
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  border: 2px solid #D1D5DB !important;
+  background-color: #FFFFFF !important;
+  border-radius: 0.25rem !important;
+}
+
+:deep(.form-container input[type="checkbox"]:checked),
+:deep(input[type="checkbox"]:checked) {
+  background-color: #2563EB !important;
+  border-color: #2563EB !important;
+  background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-3.5-3.5a1 1 0 011.414-1.414L4.5 11.086l6.293-6.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Force all buttons in form to have proper styling */
+:deep(.form-container button:not(.close-button):not([type="submit"])) {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  border-color: #D1D5DB !important;
+}
+
+/* Ensure all disabled/readonly inputs have light background */
+:deep(.form-container input[readonly]),
+:deep(.form-container input[disabled]) {
+  background-color: #F9FAFB !important;
+  color: #000000 !important;
+}
+
+/* Info boxes and alerts */
+:deep(.form-container .bg-indigo-100),
+:deep(.form-container .bg-orange-50),
+:deep(.form-container .bg-green-50),
+:deep(.form-container .bg-gray-50) {
+  background-color: #F9FAFB !important;
+  border-color: #D1D5DB !important;
+}
+
+:deep(.form-container .text-indigo-900),
+:deep(.form-container .text-orange-900),
+:deep(.form-container .text-green-900) {
+  color: #000000 !important;
+}
+
+:deep(.form-container .text-indigo-800),
+:deep(.form-container .text-orange-800),
+:deep(.form-container .text-green-800) {
+  color: #374151 !important;
+}
+
+/* Card styling inside sections */
+:deep(.form-container .technician-card) {
+  background-color: #FFFFFF !important;
+  border-color: #D1D5DB !important;
+}
+
+/* Remove dark mode specific styles */
+:deep(.dark) {
+  /* Override dark mode styles for form */
+}
+
+/* FINAL GLOBAL OVERRIDES - Force white background and black text for ALL form elements */
+/* This ensures all dropdowns, selects, and checkboxes have proper styling */
+
+/* All combobox/dropdown buttons - SPECIFIC targeting */
+:deep(.form-container button[role="combobox"]),
+:deep(.form-container [role="combobox"]),
+:deep(.form-container .customer-select button),
+:deep(.form-container .customer-select [role="combobox"]) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+:deep(.form-container button[role="combobox"] *),
+:deep(.form-container [role="combobox"] *),
+:deep(.form-container .customer-select button *),
+:deep(.form-container .customer-select [role="combobox"] *) {
+  color: #000000 !important;
+}
+
+/* All dropdown menu items - SPECIFIC targeting */
+:deep(.form-container [role="listbox"] [role="option"]),
+:deep(.form-container [role="option"]) {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+:deep(.form-container [role="listbox"] [role="option"] *),
+:deep(.form-container [role="option"] *) {
+  color: #000000 !important;
+}
+
+:deep(.form-container [role="listbox"] [role="option"]:hover),
+:deep(.form-container [role="option"]:hover) {
+  background-color: #F9FAFB !important;
+  color: #000000 !important;
+}
+
+:deep(.form-container [role="listbox"] [role="option"]:hover *),
+:deep(.form-container [role="option"]:hover *) {
+  color: #000000 !important;
+}
+
+/* All checkboxes - SPECIFIC targeting */
+:deep(.form-container input[type="checkbox"]),
+:deep(.form-container .toggle-switch input[type="checkbox"]) {
+  background-color: #FFFFFF !important;
+  border: 2px solid #D1D5DB !important;
+  color: #000000 !important;
+  appearance: checkbox !important;
+  -webkit-appearance: checkbox !important;
+  -moz-appearance: checkbox !important;
+}
+
+:deep(.form-container input[type="checkbox"]:checked),
+:deep(.form-container .toggle-switch input[type="checkbox"]:checked) {
+  background-color: #2563EB !important;
+  border-color: #2563EB !important;
+}
+
+/* Override any inline dark styles */
+:deep(.form-container *[style*="background-color: rgb(31, 41, 55)"]),
+:deep(.form-container *[style*="background-color: rgb(17, 24, 39)"]),
+:deep(.form-container *[style*="background-color: #1F2937"]),
+:deep(.form-container *[style*="background-color: #111827"]) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+}
+
+:deep(.form-container *[style*="color: rgb(229, 231, 235)"]),
+:deep(.form-container *[style*="color: rgb(209, 213, 219)"]),
+:deep(.form-container *[style*="color: #E5E7EB"]),
+:deep(.form-container *[style*="color: #D1D5DB"]) {
+  color: #000000 !important;
 }
 </style>
 
 <template>
-  <div class="max-h-[85vh] overflow-y-auto relative bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-950 scroll-smooth">
+  <div class="flex flex-col h-full bg-white overflow-hidden">
+    <div class="flex-1 overflow-y-auto scroll-smooth p-6 min-h-0">
       
       <!-- Header -->
-      <div class="mb-8 text-center pb-6 border-b-2 border-blue-200 dark:border-blue-800">
-        <div class="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-indigo-600 p-3 rounded-2xl mb-4 shadow-lg">
-          <UIcon name="file-plus" class="w-10 h-10 text-white" />
+      <div class="mb-6 text-center pb-6 border-b border-gray-200">
+        <div class="inline-flex items-center justify-center bg-blue-600 p-3 rounded-xl mb-4 shadow-sm">
+          <LucideIcon name="file-plus" :size="40" class="text-white" />
         </div>
-        <h1 class="text-3xl font-black text-gray-900 dark:text-gray-100 mb-2">
+        <h1 class="text-2xl font-bold text-black mb-2">
           Add Installation Report
         </h1>
-        <p class="text-base text-gray-700 dark:text-gray-300 max-w-2xl mx-auto">
+        <p class="text-base text-gray-600 max-w-2xl mx-auto">
           Document completed new installation with team assignment and optional MikroTik auto-provisioning
         </p>
         
@@ -1428,32 +2292,33 @@ onMounted(async () => {
           <button
             type="button"
             @click="loadTestData"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
           >
-            <UIcon name="beaker" class="w-5 h-5" />
+            <LucideIcon name="refresh-cw" :size="20" />
             Load Test Data (Debug)
           </button>
         </div>
       </div>
       
       <UForm
+        ref="formRef"
         :schema="schema"
         :state="state"
         class="form-container space-y-6"
         @submit="onSubmit"
       >
         <!-- Basic Installation Information -->
-        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 sm:p-6 rounded-lg">
-          <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4 flex items-center">
-            <LucideIcon name="info" :size="20" class="mr-2" />
-            Basic Installation Information
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <h3 class="text-lg font-semibold text-black mb-3 flex items-center gap-2">
+            <LucideIcon name="info" :size="20" class="text-blue-600" />
+            Customer Information
           </h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <UFormGroup name="customer_id">
               <template #label>
                 <div class="flex items-center gap-2">
                   <LucideIcon name="user" :size="16" class="text-gray-600" />
-                  <span>Customer <span class="text-red-500">*</span></span>
+                  <span class="text-black font-medium">Customer <span class="text-red-500">*</span></span>
                 </div>
               </template>
               <USelectMenu
@@ -1465,6 +2330,7 @@ onMounted(async () => {
                 option-attribute="name"
                 value-attribute="id"
                 :search-attributes="['name', 'phone']"
+                class="w-full customer-select"
               />
             </UFormGroup>
             
@@ -1472,16 +2338,16 @@ onMounted(async () => {
               <template #label>
                 <div class="flex items-center gap-2">
                   <LucideIcon name="check-circle" :size="16" class="text-gray-600" />
-                  <span>Status</span>
+                  <span class="text-black font-medium">Status</span>
                 </div>
               </template>
               <UInput 
                 v-model="state.status" 
                 readonly 
                 disabled
-                class="bg-gray-100 dark:bg-gray-700"
+                class="bg-gray-100 customer-input"
               />
-              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              <p class="text-xs text-gray-600 mt-1">
                 <LucideIcon name="info" :size="14" class="inline mr-1" />
                 Installation reports are always "completed" since technicians document after finishing the work
               </p>
@@ -1491,16 +2357,16 @@ onMounted(async () => {
               <template #label>
                 <div class="flex items-center gap-2">
                   <LucideIcon name="tag" :size="16" class="text-gray-600" />
-                  <span>Installation Type</span>
+                  <span class="text-black font-medium">Installation Type</span>
                 </div>
               </template>
               <UInput 
                 v-model="state.installation_type" 
                 readonly 
                 disabled
-                class="bg-gray-100 dark:bg-gray-700"
+                class="bg-gray-100 customer-input"
               />
-              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              <p class="text-xs text-gray-600 mt-1">
                 <LucideIcon name="info" :size="14" class="inline mr-1" />
                 This form is for new installations only. Use separate forms for maintenance (from trouble tickets) or upgrades
               </p>
@@ -1513,7 +2379,7 @@ onMounted(async () => {
                   <span>On Air Date</span>
                 </div>
               </template>
-              <UInput v-model="state.on_air_date" type="date" />
+              <UInput v-model="state.on_air_date" type="date" class="w-full customer-input date-input-clickable" />
             </UFormGroup>
             
             <UFormGroup name="trial_end_date">
@@ -1523,7 +2389,7 @@ onMounted(async () => {
                   <span>Trial End Date</span>
                 </div>
               </template>
-              <UInput v-model="state.trial_end_date" type="date" />
+              <UInput v-model="state.trial_end_date" type="date" class="w-full customer-input date-input-clickable" />
             </UFormGroup>
             
             <UFormGroup name="service_ready_date">
@@ -1533,7 +2399,7 @@ onMounted(async () => {
                   <span>Service Ready Date</span>
                 </div>
               </template>
-              <UInput v-model="state.service_ready_date" type="date" />
+              <UInput v-model="state.service_ready_date" type="date" class="w-full customer-input date-input-clickable" />
             </UFormGroup>
             
             <UFormGroup name="installation_completed_at">
@@ -1543,7 +2409,7 @@ onMounted(async () => {
                   <span>Installation Completed At</span>
                 </div>
               </template>
-              <UInput v-model="state.installation_completed_at" type="datetime-local" />
+              <UInput v-model="state.installation_completed_at" type="datetime-local" class="w-full customer-input date-input-clickable" />
             </UFormGroup>
             
             <!-- Terminal Installation Checkbox -->
@@ -1598,7 +2464,7 @@ onMounted(async () => {
             </UFormGroup>
           </div>
           
-          <UFormGroup name="notes">
+          <UFormGroup name="notes" class="mt-4">
             <template #label>
               <div class="flex items-center gap-2">
                 <LucideIcon name="document-text" :size="16" class="text-gray-600" />
@@ -1609,24 +2475,28 @@ onMounted(async () => {
               v-model="state.notes" 
               placeholder="Additional notes about the installation"
               :rows="3"
+              class="w-full customer-input"
             />
           </UFormGroup>
         </div>
 
         <!-- Technician Team Section -->
-        <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:bg-gradient-to-br dark:from-indigo-900/30 dark:to-purple-900/30 p-4 sm:p-6 rounded-xl border-2 border-indigo-100 dark:border-indigo-800 shadow-sm">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
             <div>
-              <h3 class="text-xl font-bold text-indigo-900 dark:text-indigo-100 flex items-center gap-2">
-                <div class="bg-indigo-500 p-2 rounded-lg">
-                  <LucideIcon name="user-group" :size="20" class="text-white" />
-                </div>
-                Installation Team
+              <h3 class="text-lg font-semibold text-black mb-3 flex items-center gap-2">
+                <LucideIcon name="user-group" :size="20" class="text-blue-600" />
+                Installation Details
                 <span class="text-red-500">*</span>
               </h3>
-              <p class="text-sm text-indigo-700 dark:text-indigo-300 mt-1">Assign technicians with their roles and responsibilities</p>
+              <p class="text-sm text-gray-600 mt-1">Assign technicians with their roles and responsibilities</p>
             </div>
-            <UButton @click="addTechnician" size="lg" color="indigo">
+            <UButton 
+              @click="addTechnician" 
+              size="lg" 
+              color="indigo"
+              class="add-technician-button"
+            >
               <template #leading>
                 <LucideIcon name="plus-circle" :size="20" />
               </template>
@@ -1634,15 +2504,15 @@ onMounted(async () => {
             </UButton>
           </div>
           
-          <div v-if="state.technicians.length === 0" class="text-center py-8 px-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-indigo-200 dark:border-indigo-700">
-            <LucideIcon name="user-group" :size="64" class="text-indigo-300 dark:text-indigo-600 mx-auto mb-3" />
-            <p class="text-gray-600 dark:text-gray-300 font-medium">No technicians assigned yet</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Click "Add Technician" to assign your installation team</p>
+          <div v-if="state.technicians.length === 0" class="text-center py-8 px-4 bg-white rounded-lg border-2 border-dashed border-gray-300">
+            <LucideIcon name="user-group" :size="64" class="text-gray-400 mx-auto mb-3" />
+            <p class="text-gray-600 font-medium">No technicians assigned yet</p>
+            <p class="text-sm text-gray-500 mt-1">Click "Add Technician" to assign your installation team</p>
           </div>
           
           <div v-else class="space-y-4 overflow-hidden">
             <div v-for="(tech, index) in state.technicians" :key="index" 
-              class="technician-card bg-white dark:bg-gray-800 rounded-xl border-2 border-indigo-200 dark:border-indigo-700 p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-200">
+              class="technician-card bg-white rounded-xl border-2 border-gray-200 p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-200">
               
               <!-- Header Section -->
               <div class="flex items-center justify-between mb-4">
@@ -1650,9 +2520,9 @@ onMounted(async () => {
                   <div class="bg-indigo-500 text-white font-bold rounded-full w-8 h-8 flex items-center justify-center text-sm flex-shrink-0">
                     {{ index + 1 }}
                   </div>
-                  <span class="text-base font-semibold text-gray-700 dark:text-gray-200">Technician {{ index + 1 }}</span>
+                  <span class="text-base font-semibold text-gray-700">Technician {{ index + 1 }}</span>
                 </div>
-                <div v-if="tech.is_primary" class="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full text-xs font-bold">
+                <div v-if="tech.is_primary" class="flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
                   <LucideIcon name="star" :size="16" />
                   PRIMARY
                 </div>
@@ -1662,7 +2532,7 @@ onMounted(async () => {
               <div class="space-y-4">
                 <!-- Technician Selection -->
                 <div class="w-full">
-                  <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  <label class="block text-sm font-semibold text-black mb-2">
                     Select Technician <span class="text-red-500">*</span>
                   </label>
                   <USelectMenu
@@ -1675,9 +2545,9 @@ onMounted(async () => {
                     value-attribute="id"
                     :search-attributes="['name']"
                     size="lg"
-                    class="w-full"
+                    class="w-full customer-select"
                   />
-                  <p v-if="getAvailableTechniciansForIndex(index).length === 0" class="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                  <p v-if="getAvailableTechniciansForIndex(index).length === 0" class="text-xs text-orange-600 mt-1">
                     ⚠️ All available technicians have been assigned. Remove other assignments to see more options.
                   </p>
                 </div>
@@ -1686,7 +2556,7 @@ onMounted(async () => {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <!-- Role Selection -->
                   <div class="w-full">
-                    <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                    <label class="block text-sm font-semibold text-black mb-2">
                       Role <span class="text-red-500">*</span>
                     </label>
                     <USelectMenu
@@ -1699,20 +2569,20 @@ onMounted(async () => {
                       value-attribute="value"
                       option-attribute="label"
                       size="lg"
-                      class="w-full"
+                      class="w-full customer-select"
                     />
                   </div>
                   
                   <!-- Action Buttons -->
                   <div class="w-full">
-                    <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Actions</label>
+                    <label class="block text-sm font-semibold text-black mb-2">Actions</label>
                     <div class="flex gap-2 w-full">
                       <UButton 
                         @click="setPrimaryTechnician(index)"
                         :color="tech.is_primary ? 'green' : 'gray'"
                         :variant="tech.is_primary ? 'solid' : 'outline'"
                         size="lg"
-                        class="flex-1 min-w-0"
+                        class="flex-1 min-w-0 primary-button"
                         :disabled="tech.is_primary"
                       >
                         <LucideIcon name="star" :size="16" />
@@ -1735,26 +2605,26 @@ onMounted(async () => {
                 
                 <!-- Notes Section -->
                 <div class="w-full">
-                  <label class="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  <label class="block text-sm font-semibold text-black mb-2">
                     Notes <span class="text-gray-500 text-xs font-normal">(optional)</span>
                   </label>
                   <UInput 
                     v-model="tech.notes" 
                     placeholder="e.g., Responsible for fiber splicing, familiar with this area, etc."
                     size="lg"
-                    class="w-full"
+                    class="w-full customer-input"
                   />
                 </div>
               </div>
             </div>
           </div>
           
-          <div class="mt-4 p-4 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg border border-indigo-200 dark:border-indigo-700">
+          <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <div class="flex items-start gap-2">
-              <LucideIcon name="info" :size="20" class="text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
-              <div class="text-sm text-indigo-900 dark:text-indigo-100">
+              <LucideIcon name="info" :size="20" class="text-blue-600 flex-shrink-0 mt-0.5" />
+              <div class="text-sm text-black">
                 <p class="font-semibold mb-1">Team Requirements:</p>
-                <ul class="list-disc list-inside space-y-1 text-indigo-800 dark:text-indigo-200">
+                <ul class="list-disc list-inside space-y-1 text-gray-700">
                   <li>At least one <strong>Senior</strong> technician is required</li>
                   <li>Primary technician will be the main point of contact</li>
                   <li>You can assign multiple technicians for complex installations</li>
@@ -1764,30 +2634,248 @@ onMounted(async () => {
           </div>
         </div>
 
-        <!-- MikroTik Provisioning Section -->
-        <div class="mikrotik-section bg-gradient-to-br from-cyan-50 to-blue-50 dark:bg-gradient-to-br dark:from-cyan-900/30 dark:to-blue-900/30 p-4 sm:p-6 rounded-xl border-2 border-cyan-100 dark:border-cyan-800 shadow-sm">
-          <div class="mb-5">
-            <h3 class="text-xl font-bold text-cyan-900 dark:text-cyan-100 flex items-center gap-2">
-              <div class="bg-cyan-500 p-2 rounded-lg">
-                <LucideIcon name="server-stack" :size="20" class="text-white" />
+        <!-- Network Device Information -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <h3 class="text-lg font-semibold text-black mb-3 flex items-center gap-2">
+            <LucideIcon name="cpu-chip" :size="20" class="text-blue-600" />
+            Network Device Information
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <UFormGroup name="assets_id">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="package" :size="16" class="text-gray-600" />
+                  <span>Asset <span class="text-red-500">*</span></span>
+                </div>
+              </template>
+              <USelectMenu
+                v-model="state.assets_id"
+                :options="state.assets"
+                placeholder="Select asset"
+                searchable
+                searchable-placeholder="Search by brand/model"
+                option-attribute="display"
+                value-attribute="id"
+                :search-attributes="['brand', 'type', 'model']"
+                @change="onAssetChange(state.assets_id)"
+                class="w-full customer-select"
+              />
+            </UFormGroup>
+
+            <UFormGroup name="product_id">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="wifi" :size="16" class="text-gray-600" />
+                  <span>Package/Product <span class="text-red-500">*</span></span>
+                </div>
+              </template>
+              <USelectMenu
+                v-model="state.product_id"
+                :options="state.products"
+                placeholder="Select internet package"
+                searchable
+                searchable-placeholder="Search by package name or speed"
+                option-attribute="display"
+                value-attribute="id"
+                :search-attributes="['name', 'description']"
+                class="w-full customer-select"
+              />
+              <p class="text-xs text-gray-600 mt-1">
+                <LucideIcon name="info" :size="14" class="inline mr-1" />
+                Package selection will automatically set the bandwidth limit for MikroTik provisioning
+              </p>
+            </UFormGroup>
+            
+            <UFormGroup name="switch_id">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="network" :size="16" class="text-gray-600" />
+                  <span>Switch ID</span>
+                </div>
+              </template>
+              <UInput v-model="state.switch_id" placeholder="Enter switch ID" class="w-full customer-input" />
+            </UFormGroup>
+            
+            <UFormGroup name="port_number">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="activity" :size="16" class="text-gray-600" />
+                  <span>Port Number</span>
+                </div>
+              </template>
+              <UInput v-model="state.port_number" placeholder="Enter port number" class="w-full customer-input" />
+            </UFormGroup>
+            
+            <UFormGroup name="remote_port">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="activity" :size="16" class="text-gray-600" />
+                  <span>Remote Port</span>
+                </div>
+              </template>
+              <UInput v-model="state.remote_port" placeholder="Enter remote port" class="w-full customer-input" />
+            </UFormGroup>
+            
+            <UFormGroup name="eth_port">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="cable" :size="16" class="text-gray-600" />
+                  <span>ETH Port</span>
+                </div>
+              </template>
+              <UInput v-model="state.eth_port" placeholder="Enter ETH port" class="w-full customer-input" />
+            </UFormGroup>
+            
+            <UFormGroup name="mac_address">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="network" :size="16" class="text-gray-600" />
+                  <span>MAC Address</span>
+                </div>
+              </template>
+              <div>
+                <USelectMenu
+                  v-model="state.asset_item_id"
+                  :options="availableAssetItems[state.assets_id] || []"
+                  :placeholder="!state.assets_id ? 'Select an asset first' : 'Select MAC Address'"
+                  :disabled="!state.assets_id || (availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length === 0)"
+                  class="w-full customer-select"
+                />
+                <div v-if="state.assets_id && availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length === 0" class="text-xs text-red-500 mt-1 flex items-center">
+                  <LucideIcon name="alert-triangle" :size="12" class="mr-1" />
+                  No available devices for this asset
+                </div>
+                <div v-else-if="state.assets_id && availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length > 0" class="text-xs text-green-600 mt-1">
+                  {{ availableAssetItems[state.assets_id].length }} device(s) available
+                </div>
               </div>
+            </UFormGroup>
+            
+            <UFormGroup name="ip_static">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="map-pin" :size="16" class="text-gray-600" />
+                  <span>IP Static</span>
+                </div>
+              </template>
+              <div class="flex gap-2">
+                <UInput 
+                  v-model="state.ip_static" 
+                  placeholder="192.168.1.100" 
+                  class="flex-1 customer-input"
+                />
+                <UButton 
+                  @click="fetchDHCPLease"
+                  color="blue"
+                  variant="outline"
+                  size="sm"
+                  :loading="state.fetchingDHCP"
+                  :disabled="!state.mac_address"
+                  title="Fetch actual IP address from MikroTik DHCP lease"
+                >
+                  <template #leading>
+                    <LucideIcon name="refresh-cw" :size="16" />
+                  </template>
+                  Fetch DHCP
+                </UButton>
+              </div>
+              <p v-if="state.dhcpStatus" class="text-xs mt-1" :class="state.dhcpStatus.success ? 'text-green-600' : 'text-red-600'">
+                {{ state.dhcpStatus.message }}
+              </p>
+              <p v-else class="text-xs text-gray-500 mt-1">
+                <LucideIcon name="info" :size="14" class="inline mr-1" />
+                This button will fetch the actual IP address assigned by your MikroTik router's DHCP server
+              </p>
+            </UFormGroup>
+            
+            <UFormGroup name="kepemilikan_perangkat">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="key" :size="16" class="text-gray-600" />
+                  <span>Device Ownership</span>
+                </div>
+              </template>
+              <USelectMenu
+                v-model="state.kepemilikan_perangkat"
+                :options="[
+                  { value: 'owned', label: 'Owned' },
+                  { value: 'leased', label: 'Leased' },
+                  { value: 'customer', label: 'Customer' }
+                ]"
+                value-attribute="value"
+                option-attribute="label"
+                placeholder="Select ownership"
+                class="w-full customer-select"
+              />
+            </UFormGroup>
+            
+            <UFormGroup name="status_perangkat">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="activity" :size="16" class="text-gray-600" />
+                  <span>Device Status</span>
+                </div>
+              </template>
+              <USelectMenu
+                v-model="state.status_perangkat"
+                :options="[
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                  { value: 'maintenance', label: 'Maintenance' },
+                  { value: 'faulty', label: 'Faulty' }
+                ]"
+                value-attribute="value"
+                option-attribute="label"
+                placeholder="Select device status"
+                class="w-full customer-select"
+              />
+            </UFormGroup>
+            
+            <UFormGroup name="last_ping_status">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="signal" :size="16" class="text-gray-600" />
+                  <span>Last Ping Status</span>
+                </div>
+              </template>
+              <USelectMenu
+                v-model="state.last_ping_status"
+                :options="[
+                  { value: 'up', label: 'Up' },
+                  { value: 'down', label: 'Down' },
+                  { value: 'unknown', label: 'Unknown' }
+                ]"
+                value-attribute="value"
+                option-attribute="label"
+                placeholder="Select ping status"
+                class="w-full customer-select"
+              />
+            </UFormGroup>
+          </div>
+        </div>
+
+        <!-- MikroTik Provisioning Section -->
+        <div class="mikrotik-section bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div class="mb-5">
+            <h3 class="text-lg font-semibold text-black mb-3 flex items-center gap-2">
+              <LucideIcon name="server-stack" :size="20" class="text-blue-600" />
               MikroTik Auto-Provisioning
-              <span class="text-xs font-normal text-gray-600 dark:text-gray-400 ml-2">(Optional)</span>
+              <span class="text-xs font-normal text-gray-500 ml-2">(Optional)</span>
             </h3>
-            <p class="text-sm text-cyan-700 dark:text-cyan-300 mt-1">Automatically configure customer on RouterOS/Winbox</p>
+            <p class="text-sm text-gray-600 mt-1">Automatically configure customer on RouterOS/Winbox</p>
           </div>
           
           <!-- MAC Address Preview -->
           <div class="mb-4">
-            <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
+            <label class="block text-sm font-bold text-black mb-2">
               MAC Address
               <span class="text-xs text-gray-500 ml-2">(from Network Device)</span>
             </label>
-            <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <span v-if="state.mac_address" class="font-mono text-gray-900 dark:text-gray-100 text-sm">
+            <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <span v-if="state.mac_address" class="font-mono text-black text-sm">
                 {{ state.mac_address }}
               </span>
-              <span v-else class="text-gray-500 dark:text-gray-400 text-sm italic">
+              <span v-else class="text-gray-500 text-sm italic">
                 Select a MAC address in Network Device section above
               </span>
             </div>
@@ -1795,7 +2883,7 @@ onMounted(async () => {
           
           <div class="mikrotik-form grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="mikrotik-field">
-              <label class="block text-sm font-bold text-gray-900 dark:text-gray-100 mb-2">
+              <label class="block text-sm font-bold text-black mb-2">
                 Max Bandwidth Limit
                 <span v-if="state.product_id" class="text-green-600 text-xs font-normal ml-2">(Auto-set from package)</span>
               </label>
@@ -1806,13 +2894,13 @@ onMounted(async () => {
                   size="lg"
                   icon="arrow-trending-up"
                   :readonly="!!state.product_id"
-                  :class="state.product_id ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600' : ''"
+                  :class="state.product_id ? 'bg-green-50 border-green-300 customer-input' : 'customer-input'"
                 />
                 <div v-if="state.product_id" class="absolute inset-y-0 right-0 flex items-center pr-3">
                   <LucideIcon name="check-circle" :size="20" class="text-green-500" />
                 </div>
               </div>
-              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              <p class="text-xs text-gray-600 mt-1">
                 <span v-if="state.product_id" class="text-green-600">
                   <LucideIcon name="info" :size="14" class="inline mr-1" />
                   Bandwidth automatically set from selected package. Select a package above to override.
@@ -1825,16 +2913,16 @@ onMounted(async () => {
             
             <!-- Provisioning Toggle Switches -->
             <div class="sm:col-span-2 space-y-3 mt-4">
-              <div class="toggle-switch flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-cyan-200 dark:border-cyan-700">
+              <div class="toggle-switch flex items-center justify-between p-4 bg-white rounded-lg border-2 border-gray-200">
                 <div class="flex items-center gap-3">
-                  <div class="bg-cyan-100 dark:bg-cyan-900/50 p-2 rounded-lg">
-                    <LucideIcon name="bolt" :size="20" class="text-cyan-600 dark:text-cyan-400" />
+                  <div class="bg-blue-100 p-2 rounded-lg">
+                    <LucideIcon name="bolt" :size="20" class="text-blue-600" />
                   </div>
                   <div>
-                    <label for="auto_provision" class="text-sm font-bold text-gray-900 dark:text-gray-100 cursor-pointer">
+                    <label for="auto_provision" class="text-sm font-bold text-black cursor-pointer">
                       Enable Auto-Provisioning
                     </label>
-                    <p class="text-xs text-gray-600 dark:text-gray-400">Automatically configure customer on MikroTik after creation</p>
+                    <p class="text-xs text-gray-600">Automatically configure customer on MikroTik after creation</p>
                   </div>
                 </div>
                 <input 
@@ -1846,18 +2934,18 @@ onMounted(async () => {
               </div>
               
               <div 
-                class="toggle-switch flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg border-2 transition-all"
-                :class="state.auto_provision ? 'border-orange-200 dark:border-orange-700' : 'border-gray-200 dark:border-gray-700 opacity-50'"
+                class="toggle-switch flex items-center justify-between p-4 bg-white rounded-lg border-2 transition-all"
+                :class="state.auto_provision ? 'border-orange-200' : 'border-gray-200 opacity-50'"
               >
                 <div class="flex items-center gap-3">
-                  <div class="bg-orange-100 dark:bg-orange-900/50 p-2 rounded-lg">
-                    <LucideIcon name="eye" :size="20" class="text-orange-600 dark:text-orange-400" />
+                  <div class="bg-orange-100 p-2 rounded-lg">
+                    <LucideIcon name="eye" :size="20" class="text-orange-600" />
                   </div>
                   <div>
-                    <label for="dry_run" class="text-sm font-bold text-gray-900 dark:text-gray-100 cursor-pointer" :class="!state.auto_provision && 'opacity-50'">
+                    <label for="dry_run" class="text-sm font-bold text-black cursor-pointer" :class="!state.auto_provision && 'opacity-50'">
                       Dry Run Mode
                     </label>
-                    <p class="text-xs text-gray-600 dark:text-gray-400" :class="!state.auto_provision && 'opacity-50'">
+                    <p class="text-xs text-gray-600" :class="!state.auto_provision && 'opacity-50'">
                       Preview commands without executing (test mode)
                     </p>
                   </div>
@@ -1877,20 +2965,20 @@ onMounted(async () => {
               <div 
                 class="p-4 rounded-lg border-2 flex items-start gap-3"
                 :class="state.dry_run 
-                  ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700' 
-                  : 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700'"
+                  ? 'bg-orange-50 border-orange-300' 
+                  : 'bg-green-50 border-green-300'"
               >
                 <LucideIcon 
                   :name="state.dry_run ? 'eye' : 'check-circle'" 
                   :size="24"
                   class="flex-shrink-0"
-                  :class="state.dry_run ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'"
+                  :class="state.dry_run ? 'text-orange-600' : 'text-green-600'"
                 />
                 <div>
-                  <p class="font-bold text-sm" :class="state.dry_run ? 'text-orange-900 dark:text-orange-100' : 'text-green-900 dark:text-green-100'">
+                  <p class="font-bold text-sm" :class="state.dry_run ? 'text-orange-900' : 'text-green-900'">
                     {{ state.dry_run ? '🔍 Dry Run Mode Active' : '⚡ Live Provisioning Mode' }}
                   </p>
-                  <p class="text-sm mt-1" :class="state.dry_run ? 'text-orange-800 dark:text-orange-200' : 'text-green-800 dark:text-green-200'">
+                  <p class="text-sm mt-1" :class="state.dry_run ? 'text-orange-800' : 'text-green-800'">
                     <span v-if="state.dry_run">
                       Commands will be <strong>generated and displayed</strong> in the browser console but <strong>not executed</strong> on MikroTik. Use this to preview what will happen.
                     </span>
@@ -1903,13 +2991,13 @@ onMounted(async () => {
             </div>
             
             <div v-else class="md:col-span-2 mt-2">
-              <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 flex items-start gap-3">
+              <div class="p-4 bg-gray-50 rounded-lg border-2 border-gray-200 flex items-start gap-3">
                 <LucideIcon name="power" :size="24" class="text-gray-400 flex-shrink-0" />
                 <div>
-                  <p class="font-bold text-sm text-gray-900 dark:text-gray-100">
+                  <p class="font-bold text-sm text-black">
                     Auto-Provisioning Disabled
                   </p>
-                  <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  <p class="text-sm text-gray-600 mt-1">
                     Enable auto-provisioning to automatically configure this customer on MikroTik RouterOS. Manual provisioning will be required otherwise.
                   </p>
                 </div>
@@ -1919,9 +3007,9 @@ onMounted(async () => {
         </div>
 
         <!-- Document Information -->
-        <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg document-info-section">
-          <h3 class="text-lg font-semibold text-green-800 dark:text-green-200 mb-4 flex items-center">
-            <LucideIcon name="file-text" :size="20" class="mr-2" />
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 document-info-section">
+          <h3 class="text-lg font-semibold text-black mb-3 flex items-center gap-2">
+            <LucideIcon name="file-text" :size="20" class="text-blue-600" />
             Document Information
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1942,6 +3030,7 @@ onMounted(async () => {
                 value-attribute="value"
                 option-attribute="label"
                 placeholder="Select document type"
+                class="w-full customer-select"
                 :ui="{
                   container: 'relative z-50'
                 }"
@@ -1974,16 +3063,16 @@ onMounted(async () => {
         </div>
 
         <!-- Technician Photo Documentation -->
-        <div class="bg-gradient-to-r from-amber-50 to-orange-50 dark:bg-gradient-to-br dark:from-amber-900/30 dark:to-orange-900/30 p-4 sm:p-6 rounded-xl border-2 border-amber-100 dark:border-amber-800 shadow-sm technician-photo-section">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 technician-photo-section">
           <div class="flex items-center mb-6">
-            <div class="bg-amber-500 p-2 rounded-lg mr-3">
-              <LucideIcon name="camera" :size="20" class="text-white" />
-            </div>
-            <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">Technician Photo Documentation</h3>
+            <h3 class="text-lg font-semibold text-black flex items-center gap-2">
+              <LucideIcon name="camera" :size="20" class="text-blue-600" />
+              Technician Notes
+            </h3>
           </div>
           
           <div class="mb-4">
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <p class="text-sm text-gray-600 mb-4">
               Document your PSB progress with photos (maximum 10 images). Images will be automatically compressed to reduce file size.
             </p>
             
@@ -2059,224 +3148,10 @@ onMounted(async () => {
           </UFormGroup>
         </div>
 
-        <!-- Network Device Information -->
-        <div class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
-          <h3 class="text-lg font-semibold text-purple-800 dark:text-purple-200 mb-4 flex items-center">
-            <LucideIcon name="cpu-chip" :size="20" class="mr-2" />
-            Network Device Information
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <UFormGroup name="assets_id">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="package" :size="16" class="text-gray-600" />
-                  <span>Asset <span class="text-red-500">*</span></span>
-                </div>
-              </template>
-              <USelectMenu
-                v-model="state.assets_id"
-                :options="state.assets"
-                placeholder="Select asset"
-                searchable
-                searchable-placeholder="Search by brand/model"
-                option-attribute="display"
-                value-attribute="id"
-                :search-attributes="['brand', 'type', 'model']"
-                @change="onAssetChange(state.assets_id)"
-              />
-            </UFormGroup>
-
-            <UFormGroup name="product_id">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="wifi" :size="16" class="text-gray-600" />
-                  <span>Package/Product <span class="text-red-500">*</span></span>
-                </div>
-              </template>
-              <USelectMenu
-                v-model="state.product_id"
-                :options="state.products"
-                placeholder="Select internet package"
-                searchable
-                searchable-placeholder="Search by package name or speed"
-                option-attribute="display"
-                value-attribute="id"
-                :search-attributes="['name', 'description']"
-              />
-              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                <LucideIcon name="info" :size="14" class="inline mr-1" />
-                Package selection will automatically set the bandwidth limit for MikroTik provisioning
-              </p>
-            </UFormGroup>
-            
-            <UFormGroup name="switch_id">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="network" :size="16" class="text-gray-600" />
-                  <span>Switch ID</span>
-                </div>
-              </template>
-              <UInput v-model="state.switch_id" placeholder="Enter switch ID" />
-            </UFormGroup>
-            
-            <UFormGroup name="port_number">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="activity" :size="16" class="text-gray-600" />
-                  <span>Port Number</span>
-                </div>
-              </template>
-              <UInput v-model="state.port_number" placeholder="Enter port number" />
-            </UFormGroup>
-            
-            <UFormGroup name="remote_port">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="activity" :size="16" class="text-gray-600" />
-                  <span>Remote Port</span>
-                </div>
-              </template>
-              <UInput v-model="state.remote_port" placeholder="Enter remote port" />
-            </UFormGroup>
-            
-            <UFormGroup name="eth_port">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="cable" :size="16" class="text-gray-600" />
-                  <span>ETH Port</span>
-                </div>
-              </template>
-              <UInput v-model="state.eth_port" placeholder="Enter ETH port" />
-            </UFormGroup>
-            
-            <UFormGroup name="mac_address">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="network" :size="16" class="text-gray-600" />
-                  <span>MAC Address</span>
-                </div>
-              </template>
-              <div>
-                <USelectMenu
-                  v-model="state.asset_item_id"
-                  :options="availableAssetItems[state.assets_id] || []"
-                  :placeholder="!state.assets_id ? 'Select an asset first' : 'Select MAC Address'"
-                  :disabled="!state.assets_id || (availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length === 0)"
-                />
-                <div v-if="state.assets_id && availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length === 0" class="text-xs text-red-500 mt-1 flex items-center">
-                  <LucideIcon name="alert-triangle" :size="12" class="mr-1" />
-                  No available devices for this asset
-                </div>
-                <div v-else-if="state.assets_id && availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length > 0" class="text-xs text-green-600 mt-1">
-                  {{ availableAssetItems[state.assets_id].length }} device(s) available
-                </div>
-              </div>
-            </UFormGroup>
-            
-            <UFormGroup name="ip_static">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="map-pin" :size="16" class="text-gray-600" />
-                  <span>IP Static</span>
-                </div>
-              </template>
-              <div class="flex gap-2">
-                <UInput 
-                  v-model="state.ip_static" 
-                  placeholder="192.168.1.100" 
-                  class="flex-1"
-                />
-                <UButton 
-                  @click="fetchDHCPLease"
-                  color="blue"
-                  variant="outline"
-                  size="sm"
-                  :loading="state.fetchingDHCP"
-                  :disabled="!state.mac_address"
-                  title="Fetch actual IP address from MikroTik DHCP lease"
-                >
-                  <template #leading>
-                    <LucideIcon name="refresh-cw" :size="16" />
-                  </template>
-                  Fetch DHCP
-                </UButton>
-              </div>
-              <p v-if="state.dhcpStatus" class="text-xs mt-1" :class="state.dhcpStatus.success ? 'text-green-600' : 'text-red-600'">
-                {{ state.dhcpStatus.message }}
-              </p>
-              <p v-else class="text-xs text-gray-500 mt-1">
-                <LucideIcon name="info" :size="14" class="inline mr-1" />
-                This button will fetch the actual IP address assigned by your MikroTik router's DHCP server
-              </p>
-            </UFormGroup>
-            
-            <UFormGroup name="kepemilikan_perangkat">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="key" :size="16" class="text-gray-600" />
-                  <span>Device Ownership</span>
-                </div>
-              </template>
-              <USelectMenu
-                v-model="state.kepemilikan_perangkat"
-                :options="[
-                  { value: 'owned', label: 'Owned' },
-                  { value: 'leased', label: 'Leased' },
-                  { value: 'customer', label: 'Customer' }
-                ]"
-                value-attribute="value"
-                option-attribute="label"
-                placeholder="Select ownership"
-              />
-            </UFormGroup>
-            
-            <UFormGroup name="status_perangkat">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="activity" :size="16" class="text-gray-600" />
-                  <span>Device Status</span>
-                </div>
-              </template>
-              <USelectMenu
-                v-model="state.status_perangkat"
-                :options="[
-                  { value: 'active', label: 'Active' },
-                  { value: 'inactive', label: 'Inactive' },
-                  { value: 'maintenance', label: 'Maintenance' },
-                  { value: 'faulty', label: 'Faulty' }
-                ]"
-                value-attribute="value"
-                option-attribute="label"
-                placeholder="Select device status"
-              />
-            </UFormGroup>
-            
-            <UFormGroup name="last_ping_status">
-              <template #label>
-                <div class="flex items-center gap-2">
-                  <LucideIcon name="signal" :size="16" class="text-gray-600" />
-                  <span>Last Ping Status</span>
-                </div>
-              </template>
-              <USelectMenu
-                v-model="state.last_ping_status"
-                :options="[
-                  { value: 'up', label: 'Up' },
-                  { value: 'down', label: 'Down' },
-                  { value: 'unknown', label: 'Unknown' }
-                ]"
-                value-attribute="value"
-                option-attribute="label"
-                placeholder="Select ping status"
-              />
-            </UFormGroup>
-          </div>
-        </div>
-
         <!-- Customer Service Information -->
-        <div class="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
-          <h3 class="text-lg font-semibold text-orange-800 dark:text-orange-200 mb-4 flex items-center">
-            <LucideIcon name="wrench" :size="20" class="mr-2" />
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <h3 class="text-lg font-semibold text-black mb-3 flex items-center gap-2">
+            <LucideIcon name="wrench" :size="20" class="text-blue-600" />
             Customer Service Information
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2298,6 +3173,7 @@ onMounted(async () => {
                 value-attribute="value"
                 option-attribute="label"
                 placeholder="Select cable type"
+                class="w-full customer-select"
               />
             </UFormGroup>
             
@@ -2308,7 +3184,7 @@ onMounted(async () => {
                   <span>Cable Length (meters)</span>
                 </div>
               </template>
-              <UInput v-model="state.cable_length" type="number" placeholder="Enter cable length" />
+              <UInput v-model="state.cable_length" type="number" placeholder="Enter cable length" class="w-full customer-input" />
             </UFormGroup>
             
             <UFormGroup name="end_port_type">
@@ -2329,6 +3205,7 @@ onMounted(async () => {
                 value-attribute="value"
                 option-attribute="label"
                 placeholder="Select end port type"
+                class="w-full customer-select"
               />
             </UFormGroup>
             
@@ -2339,7 +3216,7 @@ onMounted(async () => {
                   <span>User Login</span>
                 </div>
               </template>
-              <UInput v-model="state.user_login" placeholder="Enter user login" />
+              <UInput v-model="state.user_login" placeholder="Enter user login" class="w-full customer-input" />
             </UFormGroup>
             
             <UFormGroup name="password">
@@ -2349,7 +3226,7 @@ onMounted(async () => {
                   <span>Password</span>
                 </div>
               </template>
-              <UInput v-model="state.password" type="password" placeholder="Enter password" />
+              <UInput v-model="state.password" type="password" placeholder="Enter password" class="w-full customer-input" />
             </UFormGroup>
             
             <UFormGroup name="user_status">
@@ -2370,11 +3247,12 @@ onMounted(async () => {
                 value-attribute="value"
                 option-attribute="label"
                 placeholder="Select user status"
+                class="w-full customer-select"
               />
             </UFormGroup>
           </div>
           
-          <UFormGroup name="installation_notes">
+          <UFormGroup name="installation_notes" class="mt-4">
             <template #label>
               <div class="flex items-center gap-2">
                 <LucideIcon name="document-text" :size="16" class="text-gray-600" />
@@ -2385,61 +3263,81 @@ onMounted(async () => {
               v-model="state.installation_notes" 
               placeholder="Additional notes about the installation process"
               :rows="3"
+              class="w-full customer-input"
             />
           </UFormGroup>
         </div>
 
 
-        <!-- Submit Button -->
-        <div class="sticky bottom-0 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 p-4 sm:p-6 bg-gradient-to-r from-white to-blue-50 dark:from-gray-800 dark:to-blue-950 border-t-2 border-blue-200 dark:border-blue-800 shadow-lg">
-          <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <!-- Requirements Check -->
-            <div class="text-sm text-gray-700 dark:text-gray-300">
-              <div class="flex items-center gap-2">
-                <div v-if="!state.customer_id || state.technicians.length === 0 || !state.assets_id || !state.product_id" class="flex items-center gap-2 text-orange-600 dark:text-orange-400">
-                  <LucideIcon name="alert-triangle" :size="20" />
-                  <span class="font-semibold">Please complete required fields (Customer, Technicians, Asset, Package)</span>
-                </div>
-                <div v-else class="flex items-center gap-2 text-green-600 dark:text-green-400">
-                  <LucideIcon name="check-circle" :size="20" />
-                  <span class="font-semibold">Ready to submit</span>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Action Buttons -->
-            <div class="flex gap-3 w-full sm:w-auto">
-              <UButton 
-                type="button" 
-                color="gray" 
-                variant="outline"
-                size="xl"
-                @click="closeModal"
-                class="flex-1 sm:flex-initial"
-              >
-                <template #leading>
-                  <LucideIcon name="x-circle" :size="20" />
-                </template>
-                Cancel
-              </UButton>
-              <UButton 
-                type="submit" 
-                color="blue"
-                size="xl"
-                :loading="state.loading"
-                :disabled="!state.customer_id || state.technicians.length === 0 || !state.assets_id || !state.product_id"
-                class="flex-1 sm:flex-initial bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-              >
-                <template #leading>
-                  <LucideIcon name="file-check" :size="20" />
-                </template>
-                <span class="font-bold">Create Installation Report</span>
-              </UButton>
-            </div>
-          </div>
-        </div>
       </UForm>
     </div>
+    
+    <!-- Fixed Footer Bar - Always visible at bottom -->
+    <div class="flex-shrink-0 p-4 sm:p-6 bg-white border-t border-gray-200 shadow-lg mt-auto overflow-hidden max-w-full">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 max-w-full">
+        <!-- Requirements Check -->
+        <div class="text-sm text-gray-700 flex-1 min-w-0 w-full sm:w-auto">
+          <div class="flex items-start sm:items-center gap-2">
+            <LucideIcon 
+              v-if="!state.customer_id || state.technicians.length === 0 || !state.assets_id || !state.product_id"
+              name="alert-triangle" 
+              :size="20" 
+              class="flex-shrink-0 text-orange-600 mt-0.5 sm:mt-0" 
+            />
+            <LucideIcon 
+              v-else
+              name="check-circle" 
+              :size="20" 
+              class="flex-shrink-0 text-green-600 mt-0.5 sm:mt-0" 
+            />
+            <span 
+              v-if="!state.customer_id || state.technicians.length === 0 || !state.assets_id || !state.product_id"
+              class="font-semibold text-orange-600 break-words"
+            >
+              Please complete required fields (Customer, Technicians, Asset, Package)
+            </span>
+            <span 
+              v-else
+              class="font-semibold text-green-600"
+            >
+              Ready to submit
+            </span>
+          </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="flex gap-3 w-full sm:w-auto flex-shrink-0">
+          <UButton 
+            type="button" 
+            color="gray" 
+            variant="outline"
+            size="lg"
+            @click="closeModal"
+            class="flex-1 sm:flex-initial bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300 whitespace-nowrap"
+          >
+            <template #leading>
+              <LucideIcon name="x-circle" :size="20" />
+            </template>
+            Cancel
+          </UButton>
+          <UButton 
+            type="button"
+            color="blue"
+            size="lg"
+            :loading="state.loading"
+            :disabled="!state.customer_id || state.technicians.length === 0 || !state.assets_id || !state.product_id"
+            class="flex-1 sm:flex-initial bg-blue-600 text-white hover:bg-blue-700 whitespace-nowrap"
+            @click="submitForm"
+          >
+            <template #leading>
+              <LucideIcon name="file-check" :size="20" />
+            </template>
+            <span class="font-bold">Save Report</span>
+          </UButton>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Technician Photo Modal -->
   <UModal v-model="state.showTechnicianModal">

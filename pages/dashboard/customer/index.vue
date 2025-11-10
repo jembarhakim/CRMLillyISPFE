@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { watch, onMounted, computed } from "vue";
-import FormCustomerInstallation from "./FormCustomerInstallation.vue";
-import FormAddComponent from "./FormAddComponent.vue";
-import CustomerDetailModal from "./CustomerDetailModal.vue";
-import BroadcastFeature from "@/components/BroadcastFeature.vue";
-import LucideIcon from "@/components/LucideIcon.vue";
-import { customerAdminApi } from "@/api/admin/customer";
-import { invoiceAdminApi } from "@/api/admin/invoice";
-import { useNotification } from "@/composables/useNotification";
-import { useNavigationContext } from "@/composables/useNavigationContext";
+import { watch, onMounted, ref, computed } from 'vue'
+import FormCustomerInstallation from './FormCustomerInstallation.vue'
+import FormAddComponent from './FormAddCustomer.vue'
+import CustomerDetailModal from './CustomerDetailModal.vue'
+import CustomerDeleteConfirmationModal from '@/components/CustomerDeleteConfirmationModal.vue'
+import LucideIcon from '@/components/LucideIcon.vue'
+import BroadcastFeature from '@/components/BroadcastFeature.vue'
+import { customerAdminApi } from '@/api/admin/customer'
+import { invoiceAdminApi } from '@/api/admin/invoice'
+import { useNotification } from '@/composables/useNotification'
+import { useNavigationContext } from '@/composables/useNavigationContext'
 // Set page title
 useHead({
   title: "Customer Management - CRM System",
@@ -36,6 +37,57 @@ onMounted(() => {
     showInstallationModal.value = false;
     modalData.value = { isEdit: false, data: null };
   });
+  
+  // Setup installation report modal dialog panel sizing
+  const setupInstallationModal = () => {
+    const dialogPanels = document.querySelectorAll('[id^="headlessui-dialog-panel"]')
+    dialogPanels.forEach((panel) => {
+      // Check if this panel contains our installation report modal content
+      if (panel.querySelector('.installation-card')) {
+        // Add unique attribute to identify this modal
+        panel.setAttribute('data-installation-report-modal', 'true')
+      }
+    })
+  }
+  
+  // Watch for modal opening to setup dialog panel
+  watch(showInstallationModal, (isOpen) => {
+    if (isOpen) {
+      nextTick(() => {
+        setupInstallationModal()
+        
+        // Use MutationObserver to catch dynamically added dialog panels
+        const observer = new MutationObserver(() => {
+          setupInstallationModal()
+        })
+        
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true
+        })
+        
+        // Cleanup observer after a delay
+        setTimeout(() => {
+          observer.disconnect()
+        }, 1000)
+      })
+    }
+  })
+  
+  // Also check immediately
+  nextTick(() => {
+    setupInstallationModal()
+    
+    // Use MutationObserver for dynamic content
+    const observer = new MutationObserver(() => {
+      setupInstallationModal()
+    })
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    })
+  })
 });
 
 let customer = ref<any[]>([]);
@@ -461,6 +513,35 @@ onMounted(async () => {
 });
 
 const columns = [
+    {
+        key: 'number',
+        label: 'Number'
+    }, {
+        key: 'name',
+        label: 'Name'
+    }, {
+        key: 'phone',
+        label: 'Phone'
+    }, {
+        key: 'status',
+        label: 'Status'
+    }, {
+        key: 'address',
+        label: 'Address'
+    }, {
+        key: 'area_name',
+        label: 'Area Code'
+    }, {
+        key: 'product_name',
+        label: 'Packet Internet'
+    }, {
+        key: 'customer_type',
+        label: 'Customer Type'
+    }, {
+        key: 'actions',
+        label: 'Actions'
+    }
+]
   {
     key: "number",
     label: "Number",
@@ -771,6 +852,7 @@ function closeDetailModal() {
 
 function navigateToInstallationReports(customerId: string) {
   // Navigate to installation reports page with customer filter
+    // @ts-expect-error - Nuxt auto-imports
   navigateTo(
     `/dashboard/report/customer-installation/reports?customer_id=${customerId}`
   );
@@ -958,13 +1040,16 @@ const relatedCustomers = computed(() => {
 
     <!-- Search and Filter -->
     <div class="flex flex-col sm:flex-row gap-4">
-      <div class="flex-1">
+      <div class="flex-1 search-input-wrapper">
         <UInput
           v-model="q"
           placeholder="Search customers by name, email, phone..."
-          icon="search"
-          class="w-full"
-        />
+          class="w-full text-white placeholder:text-white/70"
+        >
+          <template #leading>
+            <LucideIcon name="search" :size="16" style="color: #FFFFFF;" />
+          </template>
+        </UInput>
       </div>
     </div>
 
@@ -1121,7 +1206,7 @@ const relatedCustomers = computed(() => {
                 v-if="customer.hasInstallationReport"
                 class="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap"
               >
-                <UIcon name="check-circle" class="w-3 h-3 mr-1.5" />
+                <LucideIcon name="file-text" :size="12" class="mr-1.5" />
                 {{
                   customer.installationReportCount > 1
                     ? `${customer.installationReportCount} Reports`
@@ -1148,44 +1233,35 @@ const relatedCustomers = computed(() => {
                 {{ customer.pendingInvoiceCount || 0 }} Pending
               </span>
               <!-- Device Status Indicator -->
-              <span
-                v-if="customer.hasInstallationReport"
-                :class="[
-                  'inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap',
-                  getCustomerDeviceStatus(customer) === 'down'
-                    ? 'bg-red-100 text-red-800'
-                    : getCustomerDeviceStatus(customer) === 'mixed'
-                    ? 'bg-orange-100 text-orange-800'
-                    : getCustomerDeviceStatus(customer) === 'up'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-800',
-                ]"
-                :title="`Device Status: ${getCustomerDeviceStatus(
-                  customer
-                ).toUpperCase()}`"
-              >
-                <UIcon
-                  :name="
-                    getCustomerDeviceStatus(customer) === 'down'
-                      ? 'x-circle'
-                      : getCustomerDeviceStatus(customer) === 'mixed'
-                      ? 'alert-triangle'
-                      : getCustomerDeviceStatus(customer) === 'up'
-                      ? 'check-circle'
-                      : 'question-mark-circle'
-                  "
-                  class="w-3 h-3 mr-1.5"
+              <span v-if="customer.hasInstallationReport" 
+                    :class="[
+                      'inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap',
+                      getCustomerDeviceStatus(customer) === 'down' 
+                        ? 'bg-red-100 text-red-800' 
+                        : getCustomerDeviceStatus(customer) === 'mixed'
+                        ? 'bg-orange-100 text-orange-800'
+                        : getCustomerDeviceStatus(customer) === 'up'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
+                    ]"
+                    :title="`Device Status: ${getCustomerDeviceStatus(customer).toUpperCase()}`">
+                <LucideIcon 
+                  :name="getCustomerDeviceStatus(customer) === 'down' ? 'x-circle' : getCustomerDeviceStatus(customer) === 'mixed' ? 'alert-triangle' : getCustomerDeviceStatus(customer) === 'up' ? 'check-circle' : 'question-mark-circle'" 
+                  :size="12" 
+                  class="mr-1.5" 
                 />
                 {{ getCustomerDeviceStatus(customer).toUpperCase() }}
               </span>
             </div>
           </div>
           <UDropdown :items="items(customer)">
-            <UButton
-              color="gray"
-              variant="ghost"
-              icon="ellipsis-horizontal-20-solid"
-            />
+            <UButton 
+              color="gray" 
+              variant="ghost" 
+              class="mobile-actions-btn flex-shrink-0 min-w-[44px] h-11 px-2 border border-gray-300 rounded-lg hover:bg-gray-100 shadow-sm"
+            >
+              <LucideIcon name="ellipsis-vertical" :size="20" class="text-gray-700" />
+            </UButton>
           </UDropdown>
         </div>
 
@@ -1212,20 +1288,16 @@ const relatedCustomers = computed(() => {
 
           <!-- Customer Type Indicators -->
           <div class="flex items-center gap-2 flex-wrap">
-            <UIcon name="tag" class="w-4 h-4 text-gray-400" />
+            <LucideIcon name="tag" :size="16" class="text-gray-400" />
             <div class="flex gap-1 flex-wrap">
-              <span
-                v-if="customer.is_internet === 'yes'"
-                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-              >
-                <UIcon name="wifi" class="w-3 h-3 mr-1" />
+              <span v-if="customer.is_internet === 'yes'" 
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <LucideIcon name="wifi" :size="12" class="mr-1" />
                 Internet
               </span>
-              <span
-                v-if="customer.is_collaborator === 'yes'"
-                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
-              >
-                <UIcon name="handshake" class="w-3 h-3 mr-1" />
+              <span v-if="customer.is_collaborator === 'yes'" 
+                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                <LucideIcon name="handshake" :size="12" class="mr-1" />
                 Collaborator
               </span>
               <span
@@ -1243,14 +1315,14 @@ const relatedCustomers = computed(() => {
                 "
                 class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
               >
-                <UIcon name="user" class="w-3 h-3 mr-1" />
+                <LucideIcon name="user" :size="12" class="mr-1" />
                 Regular
               </span>
             </div>
           </div>
           <!-- NEW: Packet Internet Information -->
           <div class="flex items-start gap-2">
-            <UIcon name="wifi" class="w-4 h-4 text-gray-400 mt-0.5" />
+            <LucideIcon name="wifi" :size="16" class="text-gray-400 mt-0.5" />
             <div class="flex-1">
               <div
                 v-if="customer.products && customer.products.length > 0"
@@ -1290,7 +1362,13 @@ const relatedCustomers = computed(() => {
     <!-- Desktop Table View -->
     <div class="hidden sm:block">
       <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <UTable :rows="rows" :columns="columns" class="w-full">
+        <UTable :rows="rows" :columns="columns" class="w-full customer-table">
+          <template #number-data="{ row }">
+            <div class="table-cell-content">
+              <span class="text-sm font-medium text-gray-700">{{ row.number }}</span>
+            </div>
+          </template>
+
           <template #name-data="{ row }">
             <div class="flex items-center space-x-3 flex-wrap">
               <button
@@ -1306,157 +1384,136 @@ const relatedCustomers = computed(() => {
               >
                 {{ row.name }}
               </button>
-              <div class="flex items-center gap-2 flex-wrap">
-                <span
-                  v-if="row.hasInstallationReport"
-                  class="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap"
-                  :title="`Has ${row.installationReportCount} Installation Report(s)`"
-                >
-                  <UIcon name="check-circle" class="w-3 h-3 mr-1.5" />
-                  {{
-                    row.installationReportCount > 1
-                      ? `${row.installationReportCount} Reports`
-                      : "Report"
-                  }}
+            </div>
+          </template>
+
+          <template #phone-data="{ row }">
+            <div class="table-cell-content">
+              <span class="text-sm text-gray-700 whitespace-nowrap">{{ row.phone }}</span>
+            </div>
+          </template>
+
+          <template #status-data="{ row }">
+            <div class="table-cell-content">
+              <div class="flex flex-col gap-1 items-start">
+                <!-- Status Badge -->
+                <span v-if="!row.hasInstallationReport" 
+                      class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 whitespace-nowrap">
+                  <LucideIcon name="check-circle" :size="12" class="mr-1" />
+                  Active
                 </span>
-                <!-- Invoice Status Badge -->
-                <span
-                  v-if="row.hasUnpaidInvoice"
-                  class="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-800 whitespace-nowrap"
-                  :title="`${row.unpaidInvoiceCount || 0} unpaid invoice(s)`"
-                >
-                  <UIcon name="alert-circle" class="w-3 h-3 mr-1.5" />
-                  {{ row.unpaidInvoiceCount || 0 }} Unpaid
+                <span v-else-if="getCustomerDeviceStatus(row) === 'down'" 
+                      class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 whitespace-nowrap">
+                  <LucideIcon name="x-circle" :size="12" class="mr-1" />
+                  Down
+                  <span v-if="row.installationReportCount > 0" class="ml-1 text-red-600 font-semibold">
+                    ({{ row.installationReportCount }} {{ row.installationReportCount > 1 ? 'reports' : 'report' }})
+                  </span>
                 </span>
-                <span
-                  v-if="row.hasPendingInvoice"
-                  class="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 whitespace-nowrap"
-                  :title="`${row.pendingInvoiceCount || 0} pending invoice(s)`"
-                >
-                  <UIcon name="clock" class="w-3 h-3 mr-1.5" />
-                  {{ row.pendingInvoiceCount || 0 }} Pending
+                <span v-else-if="getCustomerDeviceStatus(row) === 'mixed'" 
+                      class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 whitespace-nowrap">
+                  <LucideIcon name="alert-triangle" :size="12" class="mr-1" />
+                  Mixed
+                  <span v-if="row.installationReportCount > 0" class="ml-1 text-orange-600 font-semibold">
+                    ({{ row.installationReportCount }} {{ row.installationReportCount > 1 ? 'reports' : 'report' }})
+                  </span>
                 </span>
-                <!-- Device Status Indicator -->
-                <span
-                  v-if="row.hasInstallationReport"
-                  :class="[
-                    'inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap',
-                    getCustomerDeviceStatus(row) === 'down'
-                      ? 'bg-red-100 text-red-800'
-                      : getCustomerDeviceStatus(row) === 'mixed'
-                      ? 'bg-orange-100 text-orange-800'
-                      : getCustomerDeviceStatus(row) === 'up'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800',
-                  ]"
-                  :title="`Device Status: ${getCustomerDeviceStatus(
-                    row
-                  ).toUpperCase()}`"
-                >
-                  <UIcon
-                    :name="
-                      getCustomerDeviceStatus(row) === 'down'
-                        ? 'x-circle'
-                        : getCustomerDeviceStatus(row) === 'mixed'
-                        ? 'alert-triangle'
-                        : getCustomerDeviceStatus(row) === 'up'
-                        ? 'check-circle'
-                        : 'question-mark-circle'
-                    "
-                    class="w-3 h-3 mr-1.5"
-                  />
-                  {{ getCustomerDeviceStatus(row).toUpperCase() }}
+                <span v-else-if="getCustomerDeviceStatus(row) === 'up'" 
+                      class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 whitespace-nowrap">
+                  <LucideIcon name="check-circle" :size="12" class="mr-1" />
+                  Up
+                  <span v-if="row.installationReportCount > 0" class="ml-1 text-green-600 font-semibold">
+                    ({{ row.installationReportCount }} {{ row.installationReportCount > 1 ? 'reports' : 'report' }})
+                  </span>
                 </span>
+                <span v-else 
+                      class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 whitespace-nowrap">
+                  <LucideIcon name="question-mark-circle" :size="12" class="mr-1" />
+                  Unknown
+                </span>
+              </div>
+            </div>
+          </template>
+
+          <template #address-data="{ row }">
+            <div class="table-cell-content-address">
+              <div 
+                class="text-sm text-gray-700 cursor-help address-text" 
+                :title="row.address"
+                style="text-overflow: ellipsis; white-space: nowrap; overflow: hidden;"
+              >
+                {{ row.address }}
               </div>
             </div>
           </template>
 
           <template #area_name-data="{ row }">
-            <div class="flex items-center gap-2">
-              <span class="text-sm text-gray-600">{{
-                row.area?.name_city || "N/A"
-              }}</span>
-              <span
-                v-if="row.area?.code_name"
-                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
-              >
-                {{ row.area.code_name }}
-              </span>
+            <div class="table-cell-content">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="text-sm text-gray-700 whitespace-nowrap">{{ row.area?.name_city || 'N/A' }}</span>
+                <span v-if="row.area?.code_name" 
+                      class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-600 whitespace-nowrap">
+                  {{ row.area.code_name }}
+                </span>
+              </div>
             </div>
           </template>
 
           <template #product_name-data="{ row }">
-            <div
-              v-if="row.products && row.products.length > 0"
-              class="space-y-1"
-            >
-              <div
-                v-for="(product, index) in row.products"
-                :key="product.id"
-                class="flex items-center gap-2"
-              >
-                <span
-                  class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
-                >
-                  {{ product.name }}
-                </span>
-                <span
-                  v-if="product.downloadSpeed && product.uploadSpeed"
-                  class="text-xs text-gray-500"
-                >
-                  {{ product.downloadSpeed }}M/{{ product.uploadSpeed }}M
-                </span>
+            <div class="table-cell-content-product">
+              <div v-if="row.products && row.products.length > 0" class="product-list">
+                <div class="flex flex-col gap-1">
+                  <template v-for="(product, index) in row.products" :key="product.id">
+                    <div class="flex items-center gap-1.5">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 whitespace-nowrap">
+                        {{ product.name }}
+                      </span>
+                      <span v-if="product.downloadSpeed && product.uploadSpeed" 
+                            class="text-xs text-gray-500 whitespace-nowrap">
+                        {{ product.downloadSpeed }}M/{{ product.uploadSpeed }}M
+                      </span>
+                    </div>
+                  </template>
+                </div>
               </div>
-              <div v-if="row.product_count > 1" class="text-xs text-gray-500">
-                {{ row.product_count }} different packages
+              <div v-else class="text-sm text-gray-500 italic">
+                No package assigned
               </div>
             </div>
-            <div v-else class="text-gray-500 italic">No package assigned</div>
           </template>
 
           <template #customer_type-data="{ row }">
-            <div class="flex flex-col gap-1">
-              <span
-                v-if="row.is_internet === 'yes'"
-                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-              >
-                <UIcon name="wifi" class="w-3 h-3 mr-1" />
-                Internet
-              </span>
-              <span
-                v-if="row.is_collaborator === 'yes'"
-                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
-              >
-                <UIcon name="handshake" class="w-3 h-3 mr-1" />
-                Collaborator
-              </span>
-              <span
-                v-if="row.is_terminal"
-                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-cyan-100 text-cyan-800"
-              >
-                <UIcon name="server" class="w-3 h-3 mr-1" />
-                Terminal
-              </span>
-              <span
-                v-if="
-                  row.is_internet !== 'yes' &&
-                  row.is_collaborator !== 'yes' &&
-                  !row.is_terminal
-                "
-                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
-              >
-                <UIcon name="user" class="w-3 h-3 mr-1" />
-                Regular
-              </span>
+            <div class="table-cell-content">
+              <div class="flex flex-wrap gap-1 items-center">
+                <span v-if="row.is_internet === 'yes'" 
+                      class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 whitespace-nowrap">
+                  <LucideIcon name="wifi" :size="12" class="mr-1" />
+                  Internet
+                </span>
+                <span v-if="row.is_collaborator === 'yes'" 
+                      class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 whitespace-nowrap">
+                  <LucideIcon name="handshake" :size="12" class="mr-1" />
+                  Collaborator
+                </span>
+                <span v-if="row.is_internet !== 'yes' && row.is_collaborator !== 'yes'" 
+                      class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 whitespace-nowrap">
+                  <LucideIcon name="user" :size="12" class="mr-1" />
+                  Regular
+                </span>
+              </div>
             </div>
           </template>
 
           <template #actions-data="{ row }">
-            <UDropdown :items="items(row)">
-              <UButton color="gray">
-                <LucideIcon name="ellipsis-vertical" :size="20" />
-              </UButton>
-            </UDropdown>
+            <div class="table-cell-content">
+              <div class="flex justify-center">
+                <UDropdown :items="items(row)">
+                  <UButton color="gray" size="sm">
+                    <LucideIcon name="ellipsis-vertical" :size="16" />
+                  </UButton>
+                </UDropdown>
+              </div>
+            </div>
           </template>
         </UTable>
       </div>
@@ -1490,13 +1547,35 @@ const relatedCustomers = computed(() => {
     />
 
     <!-- Installation Report Modal -->
-    <UModal v-model="showInstallationModal" :prevent-close="false">
-      <UCard class="max-w-7xl max-h-[95vh] overflow-hidden">
+    <UModal 
+      v-model="showInstallationModal" 
+      :prevent-close="false" 
+      :ui="{ 
+        width: 'w-[95vw]', 
+        height: 'h-auto max-h-[95vh]',
+        background: 'bg-white'
+      }"
+      class="installation-report-modal"
+    >
+      <UCard 
+        class="w-full max-w-none md:max-w-none lg:max-w-none max-h-[95vh] flex flex-col bg-white installation-card overflow-hidden" 
+        :ui="{ 
+          background: 'bg-white', 
+          body: { padding: 'p-0', background: 'bg-white', base: 'flex-1 flex flex-col min-h-0 overflow-hidden' }, 
+          header: { background: 'bg-white', padding: 'p-6', base: 'bg-white flex-shrink-0' },
+          base: 'bg-white flex flex-col overflow-hidden'
+        }"
+      >
         <template #header>
-          <div class="flex justify-between items-center">
-            <h3 class="text-lg font-semibold">Installation Report</h3>
-            <UButton @click="closeInstallationModal" variant="ghost" size="sm">
-              <UIcon name="x" />
+          <div class="flex justify-between items-center bg-white rounded-xl border-b border-gray-200 pb-4">
+            <h3 class="text-xl font-bold text-black">Installation Report</h3>
+            <UButton 
+              @click="closeInstallationModal" 
+              variant="outline" 
+              size="md"
+              class="close-button-installation"
+            >
+              <LucideIcon name="x" :size="20" />
             </UButton>
           </div>
         </template>
@@ -1511,3 +1590,456 @@ const relatedCustomers = computed(() => {
     </UModal>
   </div>
 </template>
+
+<style scoped>
+/* CRITICAL: Override HeadlessUI dialog panel max-width for Installation Report Modal */
+/* ONLY target HeadlessUI dialog panels that are ancestors of installation report modal */
+/* Mobile: Keep default size */
+@media (max-width: 639px) {
+  .installation-report-modal :deep([id^="headlessui-dialog-panel"]),
+  :deep(.installation-report-modal ~ [id^="headlessui-dialog-panel"]) {
+    max-width: 95vw !important;
+    width: 95vw !important;
+  }
+}
+
+/* Desktop: Make it larger like FormAddCustomer */
+@media (min-width: 640px) {
+  .installation-report-modal :deep([id^="headlessui-dialog-panel"]),
+  :deep(.installation-report-modal ~ [id^="headlessui-dialog-panel"]) {
+    max-width: none !important;
+    width: 95vw !important;
+  }
+  
+  /* Specifically override the sm:max-w-lg Tailwind class that sets max-width: 32rem */
+  .installation-report-modal :deep([id^="headlessui-dialog-panel"].sm\:max-w-lg),
+  .installation-report-modal :deep([id^="headlessui-dialog-panel"][class*="max-w-lg"]),
+  :deep(.installation-report-modal ~ [id^="headlessui-dialog-panel"].sm\:max-w-lg),
+  :deep(.installation-report-modal ~ [id^="headlessui-dialog-panel"][class*="max-w-lg"]) {
+    max-width: none !important;
+    width: 95vw !important;
+  }
+  
+  /* Alternative: Target any dialog panel that contains our installation report modal content */
+  :deep([id^="headlessui-dialog-panel"]:has(.installation-card)) {
+    max-width: none !important;
+    width: 95vw !important;
+  }
+  
+  :deep([id^="headlessui-dialog-panel"]:has(.installation-card).sm\:max-w-lg),
+  :deep([id^="headlessui-dialog-panel"]:has(.installation-card)[class*="max-w-lg"]) {
+    max-width: none !important;
+    width: 95vw !important;
+  }
+}
+
+/* Installation Report Modal - White background */
+.installation-report-modal :deep([class*="UModal"]),
+.installation-report-modal :deep([id^="headlessui-dialog-panel"]) {
+  background-color: #FFFFFF !important;
+}
+
+:deep(.installation-report-modal [class*="UModal"]),
+:deep(.installation-report-modal [id^="headlessui-dialog-panel"]) {
+  background-color: #FFFFFF !important;
+}
+
+/* Modal overlay - ensure it doesn't interfere */
+:deep([id^="headlessui-dialog-overlay"]) {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Card container */
+.installation-card,
+:deep(.installation-card),
+:deep(.installation-report-modal [class*="UCard"]),
+:deep(.installation-report-modal [class*="ui-card"]) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+}
+
+/* Desktop: Make card full width */
+@media (min-width: 640px) {
+  .installation-card,
+  :deep(.installation-card),
+  :deep(.installation-report-modal [class*="UCard"]),
+  :deep(.installation-report-modal [class*="ui-card"]) {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+/* Card header - white background */
+:deep(.installation-card [class*="header"]),
+:deep(.installation-report-modal [class*="UCard"] [class*="header"]),
+:deep(.installation-report-modal [class*="ui-card"] [class*="header"]),
+:deep(.installation-card > div:first-child),
+:deep(.installation-report-modal [class*="UCard"] > div:first-child),
+:deep(.installation-report-modal [class*="ui-card"] > div:first-child) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+/* Card body */
+:deep(.installation-card [class*="body"]),
+:deep(.installation-report-modal [class*="UCard"] [class*="body"]),
+:deep(.installation-report-modal [class*="ui-card"] [class*="body"]) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  flex: 1 !important;
+  overflow: hidden !important;
+}
+
+/* Ensure modal panel allows scrolling and doesn't overflow */
+:deep([id^="headlessui-dialog-panel"]) {
+  max-height: 95vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+:deep([id^="headlessui-dialog-panel"] .installation-card) {
+  max-height: 95vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  height: 100% !important;
+}
+
+/* Ensure card body contains all content */
+:deep(.installation-card [class*="body"]) {
+  overflow: hidden !important;
+  max-height: 100% !important;
+}
+
+/* All text in modal header */
+:deep(.installation-card [class*="header"] *),
+:deep(.installation-report-modal [class*="UCard"] [class*="header"] *),
+:deep(.installation-report-modal [class*="ui-card"] [class*="header"] *) {
+  color: #000000 !important;
+}
+
+/* Override any dark mode styles in modal */
+:deep(.installation-card [class*="dark:bg-gray-800"]),
+:deep(.installation-card [class*="dark:text-gray-200"]),
+:deep(.installation-report-modal [class*="UCard"] [class*="dark:bg-gray-800"]),
+:deep(.installation-report-modal [class*="UCard"] [class*="dark:text-gray-200"]),
+:deep(.installation-report-modal [class*="ui-card"] [class*="dark:bg-gray-800"]),
+:deep(.installation-report-modal [class*="ui-card"] [class*="dark:text-gray-200"]) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+/* Force remove any dark backgrounds from header */
+:deep(.installation-card [class*="header"]),
+:deep(.installation-report-modal [class*="UCard"] [class*="header"]) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  background-image: none !important;
+}
+
+/* Override any gradient or dark backgrounds in header */
+:deep(.installation-card [class*="header"][style*="background"]),
+:deep(.installation-report-modal [class*="UCard"] [class*="header"][style*="background"]) {
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  background-image: none !important;
+}
+
+/* Ensure modal panel has white background */
+:deep([id^="headlessui-dialog-panel"] [class*="UCard"]),
+:deep([id^="headlessui-dialog-panel"] [class*="ui-card"]) {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+}
+
+/* Override any gradient backgrounds */
+:deep([class*="UCard"] [class*="bg-gradient"]),
+:deep([class*="ui-card"] [class*="bg-gradient"]) {
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+}
+
+/* Close button styling for Installation Report modal */
+.close-button-installation {
+  border: 2px solid #D1D5DB !important;
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.close-button-installation:hover {
+  background-color: #FEF2F2 !important;
+  border-color: #F87171 !important;
+  color: #DC2626 !important;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1) !important;
+  transform: scale(1.05) !important;
+}
+
+.close-button-installation:active {
+  transform: scale(0.95) !important;
+}
+
+.close-button-installation:focus {
+  outline: 2px solid #2563EB !important;
+  outline-offset: 2px !important;
+}
+
+/* Search input text color - ensure white text is visible */
+.search-input-wrapper :deep(input) {
+  color: white !important;
+}
+
+.search-input-wrapper :deep(input::placeholder) {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Search icon color - ensure white icon */
+.search-input-wrapper :deep([class*="leading"] svg),
+.search-input-wrapper :deep([class*="leading"] path),
+.search-input-wrapper :deep(svg) {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
+/* Table styling for better appearance and alignment */
+.customer-table :deep(table) {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  table-layout: auto;
+}
+
+.customer-table :deep(th) {
+  padding: 12px 16px !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  color: #374151 !important;
+  background-color: #f9fafb !important;
+  border-bottom: 2px solid #e5e7eb !important;
+  white-space: nowrap;
+  vertical-align: middle !important;
+  text-align: left;
+}
+
+/* Column width adjustments */
+.customer-table :deep(th:first-child),
+.customer-table :deep(td:first-child) {
+  width: 5%;
+  min-width: 60px;
+}
+
+.customer-table :deep(th:nth-child(2)),
+.customer-table :deep(td:nth-child(2)) {
+  width: 12%;
+  min-width: 120px;
+  max-width: 200px;
+}
+
+.customer-table :deep(th:nth-child(3)),
+.customer-table :deep(td:nth-child(3)) {
+  width: 10%;
+  min-width: 100px;
+  max-width: 140px;
+}
+
+.customer-table :deep(th:nth-child(4)),
+.customer-table :deep(td:nth-child(4)) {
+  width: 12%;
+  min-width: 130px;
+  max-width: 180px;
+}
+
+.customer-table :deep(th:nth-child(5)),
+.customer-table :deep(td:nth-child(5)) {
+  width: 20%;
+  min-width: 200px;
+  max-width: 350px;
+}
+
+.customer-table :deep(th:nth-child(6)),
+.customer-table :deep(td:nth-child(6)) {
+  width: 12%;
+  min-width: 120px;
+  max-width: 200px;
+}
+
+.customer-table :deep(th:nth-child(7)),
+.customer-table :deep(td:nth-child(7)) {
+  width: 15%;
+  min-width: 180px;
+  max-width: 300px;
+}
+
+.customer-table :deep(th:nth-child(8)),
+.customer-table :deep(td:nth-child(8)) {
+  width: 10%;
+  min-width: 120px;
+  max-width: 180px;
+}
+
+.customer-table :deep(th:last-child),
+.customer-table :deep(td:last-child) {
+  width: 6%;
+  min-width: 80px;
+  text-align: center;
+}
+
+.customer-table :deep(td) {
+  padding: 12px 16px !important;
+  vertical-align: middle !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  font-size: 0.875rem !important;
+}
+
+.customer-table :deep(tbody tr) {
+  transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.customer-table :deep(tbody tr:hover) {
+  background-color: #f9fafb !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.customer-table :deep(tbody tr:nth-child(even)) {
+  background-color: #ffffff !important;
+}
+
+.customer-table :deep(tbody tr:nth-child(even):hover) {
+  background-color: #f9fafb !important;
+}
+
+/* Table cell content wrapper for consistent alignment */
+.table-cell-content {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  vertical-align: middle;
+}
+
+/* Special alignment for name column with badges */
+.table-cell-content-name {
+  display: flex;
+  align-items: flex-start;
+  min-height: 32px;
+  vertical-align: middle;
+  padding: 4px 0;
+}
+
+/* Special alignment for product column */
+.table-cell-content-product {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  vertical-align: middle;
+}
+
+/* Special alignment for address column */
+.table-cell-content-address {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  vertical-align: middle;
+}
+
+/* Address text with ellipsis */
+.address-text {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 100%;
+  display: block;
+}
+
+/* Product list styling */
+.product-list {
+  max-width: 100%;
+}
+
+/* Ensure badges are properly aligned */
+.customer-table :deep(.inline-flex) {
+  vertical-align: middle;
+}
+
+/* Mobile Actions Button - Ensure visibility */
+@media (max-width: 640px) {
+  /* Make Actions button more visible on mobile */
+  :deep(.mobile-actions-btn),
+  :deep(.mobile-actions-btn button),
+  :deep(.mobile-actions-btn [class*="UButton"]) {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    border: 1px solid #d1d5db !important;
+    background-color: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    padding: 0 !important;
+  }
+  
+  :deep(.mobile-actions-btn:hover),
+  :deep(.mobile-actions-btn button:hover),
+  :deep(.mobile-actions-btn [class*="UButton"]:hover) {
+    background-color: #f3f4f6 !important;
+    border-color: #9ca3af !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+  
+  /* Ensure icon is visible inside Actions button */
+  :deep(.mobile-actions-btn svg),
+  :deep(.mobile-actions-btn [class*="LucideIcon"]) {
+    color: #374151 !important;
+    opacity: 1 !important;
+    display: block !important;
+  }
+}
+</style>
+
+<style>
+/* Global styles for HeadlessUI dialog panel - ONLY affects installation report modal */
+/* Target dialog panel with data-installation-report-modal attribute (added via JavaScript) */
+/* Desktop: Make it larger like FormAddCustomer */
+@media (min-width: 640px) {
+  [id^="headlessui-dialog-panel"][data-installation-report-modal="true"] {
+    max-width: none !important;
+    width: 95vw !important;
+  }
+  
+  /* Override sm:max-w-lg class specifically (removes 32rem constraint) */
+  [id^="headlessui-dialog-panel"][data-installation-report-modal="true"].sm\:max-w-lg,
+  [id^="headlessui-dialog-panel"][data-installation-report-modal="true"][class*="max-w-lg"] {
+    max-width: none !important;
+    width: 95vw !important;
+  }
+}
+
+/* Alternative: Target dialog panel by containing installation-card class */
+@media (min-width: 640px) {
+  [id^="headlessui-dialog-panel"]:has(.installation-card) {
+    max-width: none !important;
+    width: 95vw !important;
+  }
+  
+  [id^="headlessui-dialog-panel"]:has(.installation-card).sm\:max-w-lg,
+  [id^="headlessui-dialog-panel"]:has(.installation-card)[class*="max-w-lg"] {
+    max-width: none !important;
+    width: 95vw !important;
+  }
+}
+</style>
