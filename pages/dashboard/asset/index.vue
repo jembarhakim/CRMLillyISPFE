@@ -8,6 +8,7 @@ import { defaultAssets } from "./asset.model";
 import { tableColumns } from "./table";
 import { format } from "date-fns";
 import LucideIcon from '@/components/LucideIcon.vue';
+import { computed, onMounted, ref } from 'vue';
 
 const notification = useNotificationStore();
 
@@ -41,7 +42,7 @@ const filteredRows = computed(() => {
     );
   }
 
-  const newData = defaultAssets.value.filter((person) => {
+  const newData = defaultAssets.value.filter((person: { [s: string]: unknown; } | ArrayLike<unknown>) => {
     return Object.values(person).some((value) => {
       return String(value).toLowerCase().includes(q.value.toLowerCase());
     });
@@ -213,6 +214,19 @@ function cancelDeleteTransaction() {
   transactionToDelete.value = null;
 }
 
+// Navigation helper functions for template usage
+function goToAssetItems() {
+  navigateTo('/dashboard/asset/items')
+}
+
+function goToItemsCatalog() {
+  navigateTo('/dashboard/asset/items-catalog')
+}
+
+function goToAssetDetail(assetId: string) {
+  navigateTo(`/dashboard/asset/${assetId}`)
+}
+
 // Load transactions on mount
 onMounted(() => {
   loadGoodsTransactions();
@@ -232,7 +246,7 @@ onMounted(() => {
       label="Manage Asset Items"
       color="blue"
       variant="outline"
-      @click="navigateTo('/dashboard/asset/items')"
+      @click="goToAssetItems"
       class="w-full sm:w-auto"
       size="lg"
     />
@@ -240,7 +254,7 @@ onMounted(() => {
       label="Items Catalog"
       color="purple"
       variant="outline"
-      @click="navigateTo('/dashboard/asset/items-catalog')"
+      @click="goToItemsCatalog"
       class="w-full sm:w-auto"
       size="lg"
     >
@@ -353,7 +367,7 @@ onMounted(() => {
           color="blue"
           variant="ghost"
           size="sm"
-          @click="navigateTo(`/dashboard/asset/${row.id}`)"
+          @click="goToAssetDetail(row.id)"
           class="flex-1"
         >
           <template #leading>

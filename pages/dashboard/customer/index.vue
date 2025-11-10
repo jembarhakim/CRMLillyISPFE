@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, onMounted, ref, computed } from 'vue'
+import { watch, onMounted, ref, computed, nextTick } from 'vue'
 import FormCustomerInstallation from './FormCustomerInstallation.vue'
 import FormAddComponent from './FormAddCustomer.vue'
 import CustomerDetailModal from './CustomerDetailModal.vue'
@@ -31,48 +31,55 @@ watch(
   }
 );
 
-// Listen for global modal clear events
-onMounted(() => {
+// Simple modal state (declared early for use in watch)
+const showInstallationModal = ref(false);
+const modalData = ref({ isEdit: false, data: null as any });
+
+// Setup installation report modal dialog panel sizing
+const setupInstallationModal = () => {
+  const dialogPanels = document.querySelectorAll('[id^="headlessui-dialog-panel"]')
+  dialogPanels.forEach((panel) => {
+    // Check if this panel contains our installation report modal content
+    if (panel.querySelector('.installation-card')) {
+      // Add unique attribute to identify this modal
+      panel.setAttribute('data-installation-report-modal', 'true')
+    }
+  })
+}
+
+// Watch for modal opening to setup dialog panel
+watch(showInstallationModal, (isOpen) => {
+  if (isOpen) {
+    nextTick(() => {
+      setupInstallationModal()
+      
+      // Use MutationObserver to catch dynamically added dialog panels
+      const observer = new MutationObserver(() => {
+        setupInstallationModal()
+      })
+      
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      })
+      
+      // Cleanup observer after a delay
+      setTimeout(() => {
+        observer.disconnect()
+      }, 1000)
+    })
+  }
+})
+
+// Listen for global modal clear events and load data
+onMounted(async () => {
+  // Load data after component is mounted to ensure notification system is ready
+  await getData();
+  
   window.addEventListener("clear-all-modals", () => {
     showInstallationModal.value = false;
     modalData.value = { isEdit: false, data: null };
   });
-  
-  // Setup installation report modal dialog panel sizing
-  const setupInstallationModal = () => {
-    const dialogPanels = document.querySelectorAll('[id^="headlessui-dialog-panel"]')
-    dialogPanels.forEach((panel) => {
-      // Check if this panel contains our installation report modal content
-      if (panel.querySelector('.installation-card')) {
-        // Add unique attribute to identify this modal
-        panel.setAttribute('data-installation-report-modal', 'true')
-      }
-    })
-  }
-  
-  // Watch for modal opening to setup dialog panel
-  watch(showInstallationModal, (isOpen) => {
-    if (isOpen) {
-      nextTick(() => {
-        setupInstallationModal()
-        
-        // Use MutationObserver to catch dynamically added dialog panels
-        const observer = new MutationObserver(() => {
-          setupInstallationModal()
-        })
-        
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true
-        })
-        
-        // Cleanup observer after a delay
-        setTimeout(() => {
-          observer.disconnect()
-        }, 1000)
-      })
-    }
-  })
   
   // Also check immediately
   nextTick(() => {
@@ -507,41 +514,7 @@ function onCustomerDeleted() {
   getData(); // Refresh the customer list
 }
 
-// Load data after component is mounted to ensure notification system is ready
-onMounted(async () => {
-  await getData();
-});
-
 const columns = [
-    {
-        key: 'number',
-        label: 'Number'
-    }, {
-        key: 'name',
-        label: 'Name'
-    }, {
-        key: 'phone',
-        label: 'Phone'
-    }, {
-        key: 'status',
-        label: 'Status'
-    }, {
-        key: 'address',
-        label: 'Address'
-    }, {
-        key: 'area_name',
-        label: 'Area Code'
-    }, {
-        key: 'product_name',
-        label: 'Packet Internet'
-    }, {
-        key: 'customer_type',
-        label: 'Customer Type'
-    }, {
-        key: 'actions',
-        label: 'Actions'
-    }
-]
   {
     key: "number",
     label: "Number",
@@ -553,6 +526,10 @@ const columns = [
   {
     key: "phone",
     label: "Phone",
+  },
+  {
+    key: "status",
+    label: "Status",
   },
   {
     key: "address",
@@ -804,10 +781,6 @@ function OpenModalAddCustomer(isEdit: boolean, data: any) {
   });
 }
 
-// Simple modal state
-const showInstallationModal = ref(false);
-const modalData = ref({ isEdit: false, data: null as any });
-
 function OpenModalReportInstallation(isEdit: boolean, data: any) {
   console.log("[CustomerIndex] OpenModalReportInstallation called:", {
     isEdit,
@@ -852,7 +825,6 @@ function closeDetailModal() {
 
 function navigateToInstallationReports(customerId: string) {
   // Navigate to installation reports page with customer filter
-    // @ts-expect-error - Nuxt auto-imports
   navigateTo(
     `/dashboard/report/customer-installation/reports?customer_id=${customerId}`
   );

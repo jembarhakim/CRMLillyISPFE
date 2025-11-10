@@ -8,6 +8,9 @@ declare global {
 
   // Nuxt helpers
   const definePageMeta: typeof import('#imports')['definePageMeta']
+  const navigateTo: typeof import('#app')['navigateTo']
+  const useHead: typeof import('#app')['useHead']
+  const useRoute: typeof import('vue-router')['useRoute']
 
   // Our composables
   const useApiHost: typeof import('@/composables/useApiHost')['useApiHost']
