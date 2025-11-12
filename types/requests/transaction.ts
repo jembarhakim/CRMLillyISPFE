@@ -2,6 +2,7 @@ export type CreateTransactionRequest = {
         type_cash: string,
         type_in_out: string,
         account_id: string,
+        invoice_id?: string,
         date: string,
         description: string,
         file: string,

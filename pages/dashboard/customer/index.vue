@@ -100,6 +100,7 @@ onMounted(async () => {
 let customer = ref<any[]>([]);
 let installationReports = ref<any[]>([]);
 let invoices = ref<any[]>([]);
+const isLoading = ref(false);
 
 // Real-time device status cache
 const deviceStatusCache = ref<
@@ -258,10 +259,24 @@ type DropdownItem = {
 };
 
 async function getData() {
+  isLoading.value = true;
   try {
-    const response = await customerAdminApi().getAllCustomers();
-    response.data.forEach((customer: any) => {
-      customer.number = response.data.indexOf(customer) + 1;
+    // Parallelize all API calls for faster loading
+    const [customersResponse, installationReportsResponse, invoicesResponse] = await Promise.all([
+      customerAdminApi().getAllCustomers(),
+      customerAdminApi().getInstallationReportComplete().catch(err => {
+        console.error("Failed to load installation reports:", err);
+        return { data: [] };
+      }),
+      invoiceAdminApi().getAllInvoices().catch(err => {
+        console.error("Failed to load invoices:", err);
+        return { data: [] };
+      })
+    ]);
+
+    // Process customers data
+    customersResponse.data.forEach((customer: any) => {
+      customer.number = customersResponse.data.indexOf(customer) + 1;
       customer.area_name =
         customer.area.name_city +
         "-" +
@@ -275,22 +290,63 @@ async function getData() {
         customer.longitude;
     });
 
-    customer.value = [...response.data];
+    customer.value = [...customersResponse.data];
+    installationReports.value = installationReportsResponse.data || [];
+    invoices.value = invoicesResponse.data || [];
 
-    // Load installation reports to get product information and check which customers have reports
-    await loadInstallationReports();
+    // Update customer data with installation report status
+    customer.value.forEach((customerItem: any) => {
+      const customerReports = installationReports.value.filter(
+        (report: any) => report.customer_id === customerItem.id
+      );
+      const reportCount = customerReports.length;
+      customerItem.hasInstallationReport = reportCount > 0;
+      customerItem.installationReportCount = reportCount;
+
+      // Check if customer has any terminal installation (is_terminal = 'yes')
+      customerItem.is_terminal = customerReports.some(
+        (report: any) => report.is_terminal === "yes"
+      );
+    });
 
     // Update packet internet information from installation reports
     updatePacketInternetInfo();
 
-    // Load invoices to check for unpaid/pending invoices
-    await loadInvoices();
+    // Update customer data with invoice status
+    customer.value.forEach((customerItem: any) => {
+      const customerInvoices = invoices.value.filter(
+        (invoice: any) => invoice.customer_id === customerItem.id
+      );
+
+      const unpaidInvoices = customerInvoices.filter(
+        (invoice: any) => invoice.status === "unpaid"
+      );
+      const pendingInvoices = customerInvoices.filter(
+        (invoice: any) => invoice.status === "pending"
+      );
+
+      customerItem.hasUnpaidInvoice = unpaidInvoices.length > 0;
+      customerItem.hasPendingInvoice = pendingInvoices.length > 0;
+      customerItem.unpaidInvoiceCount = unpaidInvoices.length;
+      customerItem.pendingInvoiceCount = pendingInvoices.length;
+      customerItem.totalUnpaidPendingInvoices =
+        unpaidInvoices.length + pendingInvoices.length;
+    });
+
+    // Defer device status refresh to after initial render (non-blocking)
+    nextTick(() => {
+      refreshDeviceStatuses().catch(err => {
+        console.error("Failed to refresh device statuses:", err);
+      });
+    });
   } catch (err) {
     console.error("Error loading customers:", err);
     // Only show notification if it's available
     if (notification && notification.error) {
       notification.error("Error", String(err));
     }
+  } finally {
+    isLoading.value = false;
   }
 }
 
@@ -346,8 +402,10 @@ async function loadInstallationReports() {
       }
     });
 
-    // Refresh device statuses after loading installation reports
-    await refreshDeviceStatuses();
+    // Refresh device statuses after loading installation reports (non-blocking)
+    refreshDeviceStatuses().catch(err => {
+      console.error("Failed to refresh device statuses:", err);
+    });
   } catch (error) {
     console.error("❌ [ERROR] Failed to load installation reports:", error);
     // Set all customers as not having installation reports if API fails
@@ -566,20 +624,29 @@ watch([q, statusFilter, invoiceFilter], () => {
 });
 
 const rows = computed(() => {
+  // Return empty array if data is not loaded yet
+  if (!customer.value || customer.value.length === 0) {
+    return [];
+  }
+
   let dataToShow = customer.value;
 
   // Apply search filter if query exists
   if (q.value) {
-    dataToShow = customerData.value.filter((customer) => {
+    dataToShow = customer.value.filter((customer) => {
       return Object.values(customer).some((value) => {
         return String(value).toLowerCase().includes(q.value.toLowerCase());
       });
     });
   }
 
+  // Filter out any invalid/null/undefined rows
+  dataToShow = dataToShow.filter((customer) => customer != null && typeof customer === 'object');
+
   // Apply device status filter
   if (statusFilter.value !== "all") {
     dataToShow = dataToShow.filter((customer) => {
+      if (!customer) return false;
       const customerStatus = getCustomerDeviceStatus(customer);
       return customerStatus === statusFilter.value;
     });
@@ -588,6 +655,7 @@ const rows = computed(() => {
   // Apply invoice status filter
   if (invoiceFilter.value !== "all") {
     dataToShow = dataToShow.filter((customer) => {
+      if (!customer) return false;
       if (invoiceFilter.value === "unpaid") {
         return customer.hasUnpaidInvoice === true;
       } else if (invoiceFilter.value === "pending") {
@@ -603,7 +671,14 @@ const rows = computed(() => {
   }
 
   // Sort customers: down devices first, then mixed, then by name
+  if (!dataToShow || dataToShow.length === 0) {
+    return [];
+  }
+
   const sortedData = dataToShow.sort((a: any, b: any) => {
+    // Safety check for null/undefined
+    if (!a || !b) return 0;
+    
     const aStatus = getCustomerDeviceStatus(a);
     const bStatus = getCustomerDeviceStatus(b);
 
@@ -618,6 +693,7 @@ const rows = computed(() => {
     }
 
     // If same priority, sort by name
+    if (!a.name || !b.name) return 0;
     return a.name.localeCompare(b.name);
   });
 
@@ -944,6 +1020,16 @@ const relatedCustomers = computed(() => {
 
 <template>
   <div class="space-y-6">
+    <!-- Loading State -->
+    <div v-if="isLoading" class="flex items-center justify-center py-12">
+      <div class="text-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mb-4"></div>
+        <p class="text-gray-600">Loading customers...</p>
+      </div>
+    </div>
+
+    <!-- Content (hidden while loading) -->
+    <div v-else class="space-y-6">
     <!-- Header Section -->
     <div
       class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
@@ -1560,6 +1646,8 @@ const relatedCustomers = computed(() => {
         />
       </UCard>
     </UModal>
+    </div>
+    <!-- End of v-else content -->
   </div>
 </template>
 

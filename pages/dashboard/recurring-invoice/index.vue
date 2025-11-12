@@ -2,13 +2,16 @@
 import { recurringInvoiceAdminApi } from "@/api/admin/recurring-invoice";
 import FormAddRecurringInvoice from "./FormAddRecurringInvoice.vue";
 import * as currency from "@/helper/currency";
-import type { RecurringInvoice, UpdateRecurringInvoiceStatusRequest } from "@/api/admin/recurring-invoice";
+import type {
+  RecurringInvoice,
+  UpdateRecurringInvoiceStatusRequest,
+} from "@/api/admin/recurring-invoice";
 import LucideIcon from "@/components/LucideIcon.vue";
 
 // Set page title
 useHead({
-  title: 'Recurring Invoices - CRM System'
-})
+  title: "Recurring Invoices - CRM System",
+});
 
 const router = useRouter();
 const toast = useToast();
@@ -85,7 +88,7 @@ async function getData() {
       title: "Error",
       description: "Failed to fetch recurring invoices",
       color: "red",
-      timeout: 3000
+      timeout: 3000,
     });
   } finally {
     loading.value = false;
@@ -102,7 +105,8 @@ const filteredRows = computed(() => {
       return (
         invoice.customer.name.toLowerCase().includes(q.value.toLowerCase()) ||
         invoice.id.toLowerCase().includes(q.value.toLowerCase()) ||
-        (invoice.description && invoice.description.toLowerCase().includes(q.value.toLowerCase()))
+        (invoice.description &&
+          invoice.description.toLowerCase().includes(q.value.toLowerCase()))
       );
     });
   }
@@ -110,7 +114,9 @@ const filteredRows = computed(() => {
   // Filter by date
   if (dateFilter.value) {
     filteredData = filteredData.filter((invoice) => {
-      const invoiceDate = new Date(invoice.invoice_date).toISOString().split('T')[0];
+      const invoiceDate = new Date(invoice.invoice_date)
+        .toISOString()
+        .split("T")[0];
       return invoiceDate === dateFilter.value;
     });
   }
@@ -125,11 +131,16 @@ const filteredRows = computed(() => {
   // Filter by frequency
   if (frequencyFilter.value) {
     filteredData = filteredData.filter((invoice) => {
-      return invoice.frequency.toLowerCase() === frequencyFilter.value.toLowerCase();
+      return (
+        invoice.frequency.toLowerCase() === frequencyFilter.value.toLowerCase()
+      );
     });
   }
 
-  return filteredData.slice((page.value - 1) * pageCount.value, page.value * pageCount.value);
+  return filteredData.slice(
+    (page.value - 1) * pageCount.value,
+    page.value * pageCount.value
+  );
 });
 
 // Clear filters
@@ -224,23 +235,24 @@ function viewRecurringInvoice(invoice: RecurringInvoice) {
 async function generateInvoice(invoice: RecurringInvoice) {
   try {
     // Compute invoice_date = next_invoice_date, due_date keeps original gap
-    const baseInvoiceDate = new Date(invoice.next_invoice_date)
-    const origInvoiceDate = new Date(invoice.invoice_date)
-    const origDueDate = new Date(invoice.due_date)
-    const msGap = origDueDate.getTime() - origInvoiceDate.getTime()
-    const computedDueDate = new Date(baseInvoiceDate.getTime() + msGap)
+    const baseInvoiceDate = new Date(invoice.next_invoice_date);
+    const origInvoiceDate = new Date(invoice.invoice_date);
+    const origDueDate = new Date(invoice.due_date);
+    const msGap = origDueDate.getTime() - origInvoiceDate.getTime();
+    const computedDueDate = new Date(baseInvoiceDate.getTime() + msGap);
 
-    const response = await recurringInvoiceAdminApi().generateInvoiceFromRecurring({
-      id: invoice.id,
-      invoice_date: baseInvoiceDate.toISOString(),
-      due_date: computedDueDate.toISOString()
-    });
-    
+    const response =
+      await recurringInvoiceAdminApi().generateInvoiceFromRecurring({
+        id: invoice.id,
+        invoice_date: baseInvoiceDate.toISOString(),
+        due_date: computedDueDate.toISOString(),
+      });
+
     toast.add({
       title: "Success",
       description: "Invoice generated successfully",
       color: "green",
-      timeout: 3000
+      timeout: 3000,
     });
 
     // Refresh list so next_invoice_date updates in UI
@@ -256,7 +268,7 @@ async function generateInvoice(invoice: RecurringInvoice) {
       title: "Error",
       description: "Failed to generate invoice",
       color: "red",
-      timeout: 3000
+      timeout: 3000,
     });
   }
 }
@@ -270,16 +282,18 @@ async function toggleRecurringStatus(invoice: RecurringInvoice) {
       id: invoice.id,
       status: newStatus as "active" | "stopped" | "completed",
     };
-    
+
     await recurringInvoiceAdminApi().updateRecurringInvoiceStatus(request);
-    
+
     toast.add({
       title: "Success",
-      description: `Recurring invoice ${newStatus === "active" ? "resumed" : "stopped"} successfully`,
+      description: `Recurring invoice ${
+        newStatus === "active" ? "resumed" : "stopped"
+      } successfully`,
       color: "green",
-      timeout: 3000
+      timeout: 3000,
     });
-    
+
     await getData();
   } catch (error) {
     console.error("Error updating status:", error);
@@ -287,7 +301,7 @@ async function toggleRecurringStatus(invoice: RecurringInvoice) {
       title: "Error",
       description: "Failed to update recurring invoice status",
       color: "red",
-      timeout: 3000
+      timeout: 3000,
     });
   } finally {
     updatingStatus.value = false;
@@ -299,18 +313,18 @@ async function deleteRecurringInvoice(id: string) {
   if (!confirm("Are you sure you want to delete this recurring invoice?")) {
     return;
   }
-  
+
   deleting.value = true;
   try {
     await recurringInvoiceAdminApi().deleteRecurringInvoice(id);
-    
+
     toast.add({
       title: "Success",
       description: "Recurring invoice deleted successfully",
       color: "green",
-      timeout: 3000
+      timeout: 3000,
     });
-    
+
     await getData();
   } catch (error) {
     console.error("Error deleting recurring invoice:", error);
@@ -318,7 +332,7 @@ async function deleteRecurringInvoice(id: string) {
       title: "Error",
       description: "Failed to delete recurring invoice",
       color: "red",
-      timeout: 3000
+      timeout: 3000,
     });
   } finally {
     deleting.value = false;
@@ -339,38 +353,50 @@ onMounted(() => {
         <h1 class="text-2xl font-bold text-gray-900">Recurring Invoices</h1>
         <p class="text-gray-600">Manage recurring invoice templates</p>
       </div>
-      <UButton 
-        label="+ Add Recurring Invoice" 
+      <UButton
+        label="+ Add Recurring Invoice"
         color="blue"
-        @click="openModalAddRecurringInvoice(false, null)" 
+        @click="openModalAddRecurringInvoice(false, null)"
       />
     </div>
 
     <!-- Filter Section -->
-    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+    <div
+      class="bg-gray-50 p-4 rounded-lg border border-gray-200 dark:border-gray-700"
+    >
       <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
         <!-- Customer Search Filter -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Filter Customer</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1"
+            >Filter Customer</label
+          >
           <UInput v-model="q" placeholder="Search customer..." />
         </div>
-        
+
         <!-- Date Filter -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Date</label>
-          <UInput v-model="dateFilter" type="date" placeholder="Select date..." />
+          <label class="block text-sm font-medium text-gray-700 mb-1"
+            >Filter by Date</label
+          >
+          <UInput
+            v-model="dateFilter"
+            type="date"
+            placeholder="Select date..."
+          />
         </div>
-        
+
         <!-- Status Filter -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
-          <USelectMenu 
-            v-model="statusFilter" 
+          <label class="block text-sm font-medium text-gray-700 mb-1"
+            >Filter by Status</label
+          >
+          <USelectMenu
+            v-model="statusFilter"
             :options="[
               { label: 'All Status', value: '' },
               { label: 'Active', value: 'active' },
               { label: 'Stopped', value: 'stopped' },
-              { label: 'Completed', value: 'completed' }
+              { label: 'Completed', value: 'completed' },
             ]"
             option-attribute="label"
             value-attribute="value"
@@ -380,28 +406,30 @@ onMounted(() => {
 
         <!-- Frequency Filter -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Frequency</label>
-          <USelectMenu 
-            v-model="frequencyFilter" 
+          <label class="block text-sm font-medium text-gray-700 mb-1"
+            >Filter by Frequency</label
+          >
+          <USelectMenu
+            v-model="frequencyFilter"
             :options="[
               { label: 'All Frequencies', value: '' },
               { label: 'Monthly', value: 'monthly' },
               { label: 'Quarterly', value: 'quarterly' },
-              { label: 'Yearly', value: 'yearly' }
+              { label: 'Yearly', value: 'yearly' },
             ]"
             option-attribute="label"
             value-attribute="value"
             placeholder="Select frequency..."
           />
         </div>
-        
+
         <!-- Clear Filters Button -->
         <div class="flex items-end">
-          <UButton 
-            @click="clearFilters" 
-            color="gray" 
-            variant="outline"
-            class="w-full"
+          <UButton
+            @click="clearFilters"
+            color="gray"
+            variant="solid"
+            class="w-full filter-button bg-gray-700 dark:bg-gray-800 text-white hover:bg-gray-100 dark:hover:bg-gray-200 hover:text-gray-900 dark:hover:text-gray-900 transition-colors duration-200"
           >
             Clear Filters
           </UButton>
@@ -411,13 +439,13 @@ onMounted(() => {
 
     <!-- Table -->
     <div class="bg-white rounded-lg shadow">
-      <UTable 
-        :rows="filteredRows" 
+      <UTable
+        :rows="filteredRows"
         :columns="columns"
         :loading="loading"
         :empty-state="{
           icon: 'file-text',
-          label: 'No recurring invoices found'
+          label: 'No recurring invoices found',
         }"
       >
         <template #id-data="{ row }">
@@ -444,14 +472,13 @@ onMounted(() => {
         </template>
 
         <template #next_invoice_date-data="{ row }">
-          <span class="font-medium">{{ new Date(row.next_invoice_date).toLocaleDateString() }}</span>
+          <span class="font-medium">{{
+            new Date(row.next_invoice_date).toLocaleDateString()
+          }}</span>
         </template>
 
         <template #status-data="{ row }">
-          <UBadge 
-            :color="getStatusColor(row.status)" 
-            variant="subtle"
-          >
+          <UBadge :color="getStatusColor(row.status)" variant="subtle">
             {{ row.status.charAt(0).toUpperCase() + row.status.slice(1) }}
           </UBadge>
         </template>
@@ -469,8 +496,8 @@ onMounted(() => {
 
       <!-- Pagination -->
       <div class="px-4 py-3 border-t border-gray-200">
-        <UPagination 
-          v-model="page" 
+        <UPagination
+          v-model="page"
           :page-count="pageCount"
           :total="recurringInvoices.length"
           show-last
@@ -522,5 +549,33 @@ onMounted(() => {
 :deep(th button) {
   color: #374151 !important;
   font-weight: 500 !important;
+}
+
+/* Filter button - dark by default, light on hover */
+:deep(.filter-button) {
+  background-color: #374151 !important; /* gray-700 - dark background */
+  color: #ffffff !important; /* white text */
+  border-color: #374151 !important;
+}
+
+:deep(.dark .filter-button) {
+  background-color: #1f2937 !important; /* gray-800 - dark background */
+  color: #ffffff !important; /* white text */
+  border-color: #1f2937 !important;
+}
+
+/* Hover effect - light background with dark text */
+:deep(.filter-button:hover),
+:deep(.filter-button:hover *) {
+  background-color: #f3f4f6 !important; /* gray-100 - light background */
+  color: #111827 !important; /* gray-900 - dark text */
+  border-color: #e5e7eb !important;
+}
+
+:deep(.dark .filter-button:hover),
+:deep(.dark .filter-button:hover *) {
+  background-color: #e5e7eb !important; /* gray-200 - light background */
+  color: #111827 !important; /* gray-900 - dark text */
+  border-color: #d1d5db !important;
 }
 </style>

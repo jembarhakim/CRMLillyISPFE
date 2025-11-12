@@ -15,6 +15,11 @@ import { WhatsappApi } from "@/api/admin/wa";
 
 import { useNotification } from "@/composables/useNotification";
 import LucideIcon from "@/components/LucideIcon.vue";
+import { accountAdminApi } from "@/api/admin/account";
+import { transactionAdminApi } from "@/api/admin/transaction";
+
+// Initialize notification early so it's available for all functions
+const notification = useNotification();
 
 // Dynamic import for client-side only usage
 // Set page title
@@ -24,6 +29,11 @@ useHead({
 });
 
 let customer = ref<any[]>([]);
+
+// Ensure customer is always initialized as an array
+if (!customer.value || !Array.isArray(customer.value)) {
+  customer.value = [];
+}
 
 const isLoading = ref(false);
 
@@ -49,7 +59,30 @@ const statusConfirmationData = ref<{
   currentStatus: string;
 
   invoiceData: any;
+  account_id: string;
+  method: string;
 } | null>(null);
+
+// Accounts for transaction
+const accounts = ref<Array<{ label: string; value: string }>>([]);
+const loadingAccounts = ref(false);
+
+// Fetch accounts
+async function fetchAccounts() {
+  loadingAccounts.value = true;
+  try {
+    const response = await accountAdminApi().getAllAccount();
+    accounts.value = (response.data || []).map((account: any) => ({
+      label: account.name,
+      value: account.id,
+    }));
+  } catch (error) {
+    console.error("Error fetching accounts:", error);
+    notification.error("Error", "Failed to load accounts");
+  } finally {
+    loadingAccounts.value = false;
+  }
+}
 
 // PDF view tracking state
 
@@ -226,9 +259,29 @@ async function getData() {
       const custName = invoice?.customer?.name || "";
 
       invoice.customer_display = code ? `${code} - ${custName}` : custName;
+      
+      // Ensure nested objects exist to prevent Object.keys() errors
+      if (!invoice.customer) {
+        invoice.customer = {};
+      }
+      if (!invoice.customer.area) {
+        invoice.customer.area = {};
+      }
     });
 
-    customer.value = [...data];
+    // Ensure all items are valid objects before assigning
+    customer.value = data.filter((item: any) => {
+      if (!item || typeof item !== 'object') return false;
+      // Ensure customer object exists (even if empty) to prevent Object.keys() errors
+      if (!item.customer) {
+        item.customer = {};
+      }
+      // Ensure all nested objects are initialized
+      if (!item.customer.area) {
+        item.customer.area = {};
+      }
+      return true;
+    });
 
     // Lazy-init router job cache: don't auto-fetch all to avoid burst.
 
@@ -269,7 +322,12 @@ async function updateStatus(id: string, status: string, currentStatus: string) {
       currentStatus: currentStatus,
 
       invoiceData: invoiceData,
+      account_id: "",
+      method: "",
     };
+    
+    // Fetch accounts when opening modal
+    await fetchAccounts();
 
     // Show confirmation modal
 
@@ -286,54 +344,47 @@ async function updateStatus(id: string, status: string, currentStatus: string) {
 async function proceedWithStatusUpdate(
   id: string,
   status: string,
-  currentStatus: string
+  currentStatus: string,
+  account_id?: string,
+  method?: string
 ) {
   try {
-    const response = await invoiceAdminApi().updateStatusInvoice(id, {
-      status,
-    });
+    const payload: any = { status };
+    // Include account_id and method if provided (for paid/pending status)
+    if (account_id) payload.account_id = account_id;
+    if (method) payload.method = method;
+    
+    const response = await invoiceAdminApi().updateStatusInvoice(id, payload);
 
     notification.success("Success", response.message);
 
     // After a status update, refresh router jobs for this invoice
-
     try {
       await fetchRouterJobs(id);
     } catch (_) {}
 
     // Update the specific invoice in the local array instead of refreshing all data
-
     const invoiceIndex = customer.value.findIndex((inv) => inv.id === id);
-
     if (invoiceIndex !== -1) {
       customer.value[invoiceIndex].status = status;
     }
-
     return response;
   } catch (err: any) {
     const raw = typeof err === "string" ? err : err?.message || "";
-
     // Friendlier message for MikroTik scheduler not found
-
     if (/mikrotik.*scheduler.*not\s*found/i.test(raw)) {
       const pretty =
         "Scheduler tidak ditemukan. Pastikan nama scheduler sesuai dengan kode area customer di MikroTik.";
-
       notification.error("MikroTik Error", pretty + `\n(${raw})`);
     } else {
       const message = raw || "Terjadi kesalahan";
-
       notification.error("Error", String(message));
     }
-
     // Revert the status back to original on error
-
     const invoiceIndex = customer.value.findIndex((inv) => inv.id === id);
-
     if (invoiceIndex !== -1) {
       customer.value[invoiceIndex].status = currentStatus;
     }
-
     throw err;
   }
 }
@@ -342,27 +393,66 @@ async function proceedWithStatusUpdate(
 
 async function confirmStatusChange() {
   if (statusConfirmationData.value) {
-    // Store invoice ID before closing modal
+    // Validate account and method selection
+    if (!statusConfirmationData.value.account_id) {
+      notification.error("Error", "Please select an account");
+      return;
+    }
+    
+    if (!statusConfirmationData.value.method) {
+      notification.error("Error", "Please select a payment method");
+      return;
+    }
 
+    // Store invoice ID and data before closing modal
     const invoiceId = statusConfirmationData.value.invoiceId;
-
     const newStatus = statusConfirmationData.value.newStatus;
+    const invoiceData = statusConfirmationData.value.invoiceData;
+    const accountId = statusConfirmationData.value.account_id;
+    const paymentMethod = statusConfirmationData.value.method;
 
     try {
+      // Update invoice status - the backend will create transaction and update saldo atomically
       await proceedWithStatusUpdate(
         invoiceId,
-
         newStatus,
-
-        statusConfirmationData.value.currentStatus
+        statusConfirmationData.value.currentStatus,
+        accountId,
+        paymentMethod
       );
 
-      // Close modal first
+      // Refresh invoice from server to get complete data with transaction
+      if (newStatus === "paid") {
+        try {
+          const fresh = await invoiceAdminApi().getInvoice(invoiceId);
+          const freshData = fresh?.data;
+          if (freshData) {
+            const existingInvoiceIndex = customer.value.findIndex(
+              (inv) => inv.id === invoiceId
+            );
+            if (existingInvoiceIndex !== -1) {
+              // Merge server data into local representation and normalize fields
+              customer.value[existingInvoiceIndex] = {
+                ...customer.value[existingInvoiceIndex],
+                ...freshData,
+                total_paid: freshData.transaction?.amount || freshData.total_paid || Number(invoiceData?.amount || 0),
+                transaction: freshData.transaction,
+                amount_due: Math.max(0, Number(freshData.amount || 0) - (freshData.transaction?.amount || Number(invoiceData?.amount || 0))),
+                status: freshData.status || "paid",
+                number: customer.value[existingInvoiceIndex].number, // Preserve number
+                customer_display: customer.value[existingInvoiceIndex].customer_display, // Preserve display name
+              };
+            }
+          }
+        } catch (refreshErr) {
+          console.warn("Failed to refresh invoice after updating status:", refreshErr);
+        }
+      }
 
+      // Close modal
       closeStatusConfirmationModal();
 
       // If status was successfully changed to 'paid', automatically open PDF
-
       if (newStatus === "paid") {
         console.log(
           "Status changed to paid, opening PDF automatically for invoice:",
@@ -370,11 +460,9 @@ async function confirmStatusChange() {
         );
 
         // Use nextTick to ensure modal is closed and UI is updated
-
         await nextTick();
 
         // Small delay to ensure status update is reflected in UI
-
         setTimeout(async () => {
           try {
             console.log("Attempting to open PDF for invoice:", invoiceId);
@@ -393,7 +481,6 @@ async function confirmStatusChange() {
       }
     } catch (error) {
       console.error("Error updating status:", error);
-
       closeStatusConfirmationModal();
     }
   }
@@ -581,7 +668,15 @@ async function sendWhatsapp(number: string, id: string) {
     .sendWhatsapp({
       number,
 
-      message: `berikut invoice yang harus anda bayarkan sekarang \n\nKami berikan Link untuk melihat invoice \n\nhttps://skripsi.rtrsite.com/invoice/${id} \n\nSilahkan menuju dashboard login customer kami https://skripsi.rtrsite.com/login \n\nTerimakasih`,
+      message: `berikut invoice yang harus anda bayarkan sekarang 
+
+Kami berikan Link untuk melihat invoice 
+
+https://rndpolije.lilly.net.id/invoice/${id}
+
+Silahkan menuju dashboard login customer kami https://skripsi.rtrsite.com/login 
+
+Terimakasih`,
     })
 
     .then((response) => {
@@ -834,7 +929,24 @@ function clearFilters() {
 }
 
 const filteredRows = computed(() => {
-  let filteredData = customer.value;
+  // Ensure customer.value is always an array
+  if (!customer.value || !Array.isArray(customer.value)) {
+    return [];
+  }
+  
+  // Filter out any null/undefined entries and ensure all are objects
+  let filteredData = customer.value.filter((invoice) => {
+    return invoice && typeof invoice === 'object' && invoice !== null;
+  });
+  
+  // Ensure all rows have required properties to prevent Object.keys() errors
+  filteredData = filteredData.map((invoice) => {
+    // Ensure invoice is a valid object with at least an id
+    if (!invoice.id) {
+      invoice.id = invoice.id || `temp-${Math.random()}`;
+    }
+    return invoice;
+  });
 
   // Filter by search query (customer name only)
   // Filter by search query (customer name only)
@@ -943,8 +1055,6 @@ const items = (row: any) => {
 
   return menuItems;
 };
-
-const notification = useNotification();
 
 const modal = useModal();
 
@@ -1381,13 +1491,16 @@ async function printAllUnpaidInvoices() {
       <UButton label="Add Invoice" @click="OpenModalAddCustomer(false, null)" />
 
       <UButton
-        icon="refresh-cw"
         color="gray"
         variant="soft"
         :loading="isLoading"
         @click="getData"
         title="Refresh Data"
-      />
+      >
+        <template #leading>
+          <LucideIcon name="refresh-cw" :size="16" />
+        </template>
+      </UButton>
     </div>
 
     <UButton
@@ -1459,8 +1572,8 @@ async function printAllUnpaidInvoices() {
         <UButton
           @click="clearFilters"
           color="gray"
-          variant="outline"
-          class="w-full"
+          variant="solid"
+          class="w-full filter-button"
         >
           Clear Filters
         </UButton>
@@ -1468,7 +1581,7 @@ async function printAllUnpaidInvoices() {
     </div>
   </div>
 
-  <UTable :rows="filteredRows" :columns="columns" :loading="isLoading">
+  <UTable :rows="filteredRows || []" :columns="columns || []" :loading="isLoading">
     <template #actions-data="{ row }">
       <UDropdown :items="items(row)">
         <UButton color="gray">
@@ -1875,6 +1988,45 @@ async function printAllUnpaidInvoices() {
             </div>
           </div>
 
+          <!-- Transaction Details -->
+          <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+            <h4 class="font-medium text-blue-900 dark:text-blue-100 mb-3">
+              Transaction Details
+            </h4>
+
+            <div class="space-y-4">
+              <UFormGroup label="Account" name="account_id" required>
+                <USelectMenu
+                  v-model="statusConfirmationData.account_id"
+                  :options="accounts"
+                  value-attribute="value"
+                  option-attribute="label"
+                  placeholder="Select account..."
+                  :loading="loadingAccounts"
+                />
+                <template #help>
+                  <span class="text-xs text-gray-500">Select the account for this transaction</span>
+                </template>
+              </UFormGroup>
+
+              <UFormGroup label="Payment Method" name="method" required>
+                <USelectMenu
+                  v-model="statusConfirmationData.method"
+                  :options="[
+                    { label: 'Transfer', value: 'transfer' },
+                    { label: 'Manual', value: 'manual' }
+                  ]"
+                  value-attribute="value"
+                  option-attribute="label"
+                  placeholder="Select payment method..."
+                />
+                <template #help>
+                  <span class="text-xs text-gray-500">Select the payment method</span>
+                </template>
+              </UFormGroup>
+            </div>
+          </div>
+
           <!-- Confirmation Question -->
 
           <div class="text-center">
@@ -1885,6 +2037,9 @@ async function printAllUnpaidInvoices() {
 
             <p class="text-sm text-blue-600 dark:text-blue-400 mt-2">
               💡 PDF invoice akan terbuka otomatis setelah konfirmasi
+            </p>
+            <p class="text-xs text-gray-500 mt-1">
+              A transaction record will be created automatically
             </p>
           </div>
         </div>
@@ -2043,3 +2198,33 @@ async function printAllUnpaidInvoices() {
     </UCard>
   </UModal>
 </template>
+
+<style scoped>
+/* Filter button - dark by default, light on hover */
+:deep(.filter-button) {
+  background-color: #374151 !important; /* gray-700 - dark background */
+  color: #ffffff !important; /* white text */
+  border-color: #374151 !important;
+}
+
+:deep(.dark .filter-button) {
+  background-color: #1f2937 !important; /* gray-800 - dark background */
+  color: #ffffff !important; /* white text */
+  border-color: #1f2937 !important;
+}
+
+/* Hover effect - light background with dark text */
+:deep(.filter-button:hover),
+:deep(.filter-button:hover *) {
+  background-color: #f3f4f6 !important; /* gray-100 - light background */
+  color: #111827 !important; /* gray-900 - dark text */
+  border-color: #e5e7eb !important;
+}
+
+:deep(.dark .filter-button:hover),
+:deep(.dark .filter-button:hover *) {
+  background-color: #e5e7eb !important; /* gray-200 - light background */
+  color: #111827 !important; /* gray-900 - dark text */
+  border-color: #d1d5db !important;
+}
+</style>
