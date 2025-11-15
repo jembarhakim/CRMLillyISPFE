@@ -43,7 +43,10 @@ export type UpdateCompleteInstallationReportRequest = {
   trial_end_date?: string;
   service_ready_date?: string;
   installation_completed_at?: string;
-  
+  is_terminal?: string; // 'yes' or 'no'
+  terminal_customer_installation_id?: string; // Installation ID of the terminal installation (from customer_installations table)
+  latitude?: number; // Installation location latitude
+  longitude?: number; // Installation location longitude
   
   // Network Devices (multiple devices support)
   network_devices?: NetworkDeviceRequest[];
@@ -407,4 +410,12 @@ export type CompleteInstallationReportWithTechnicianPhotosResponse = {
   product_price?: number;
   product_download_speed_mbps?: number;
   product_upload_speed_mbps?: number;
+  
+  // Terminal information
+  is_terminal?: string;
+  terminal_customer_installation_id?: string;
+  
+  // Installation location
+  latitude?: number;
+  longitude?: number;
 }

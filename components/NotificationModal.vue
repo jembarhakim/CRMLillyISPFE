@@ -12,14 +12,16 @@
       <div
         v-if="isVisible"
         class="fixed inset-0 z-[10000] flex items-center justify-center"
-        @click="closeModal"
       >
-        <!-- Overlay -->
-        <div class="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+        <!-- Overlay - clickable to close -->
+        <div 
+          class="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+          @click="closeModal"
+        ></div>
         
         <!-- Modal Content -->
         <div
-          class="relative bg-slate-900 text-white rounded-xl shadow-2xl max-w-md w-full mx-4 p-6"
+          class="relative bg-slate-900 text-white rounded-xl shadow-2xl max-w-md w-full mx-4 p-6 z-10"
           @click.stop
         >
           <!-- Close Button -->

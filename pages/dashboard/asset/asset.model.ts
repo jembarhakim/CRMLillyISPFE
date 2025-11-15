@@ -14,10 +14,8 @@ export const asset :CreateAssetRequest= {
   model: "",
   serial_number: "",
   date: new Date(),
-  company_id: undefined,
   price: 0,
   description: "",
-  site: "",
 };
 
 // Note: status and status_in_out are now tracked at the asset_item level

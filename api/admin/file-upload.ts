@@ -10,7 +10,10 @@ export const uploadFileAdminApi = () => {
   const formData = new FormData();
   formData.append("name", data.name);
   formData.append("path", data.path);
-  formData.append("file", data.file); // pa
+  formData.append("file", data.file);
+  if (data.archive_installation_id) {
+    formData.append("archive_installation_id", data.archive_installation_id);
+  }
       const response = await fetch(`${api}/api/file-upload`, {
         method: "POST",
         headers: {

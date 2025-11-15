@@ -80,6 +80,8 @@ const state = reactive({
   trial_end_date: "",
   service_ready_date: "",
   installation_completed_at: "",
+  is_terminal: "no", // Whether this is a terminal installation ('yes' or 'no')
+  terminal_customer_installation_id: "", // Installation ID of the terminal installation (from customer_installations table)
 
   // Multiple Technicians with Roles
   technicians: [] as Array<{
@@ -125,6 +127,7 @@ const state = reactive({
   assets: [] as any[],
   products: [] as any[], // Available products/packages
   documentPreview: "",
+  terminalInstallations: [] as any[], // List of terminal installations (from customer_installations where is_terminal = 'yes')
   
   // Asset item tracking
   asset_item_id: "" as string | any, // Track the specific asset item selected
@@ -192,6 +195,14 @@ watch(() => state.product_id, (newProductId: string) => {
     const uploadMbps = selectedProduct.upload_speed_mbps || 10;
     state.max_limit = `${downloadMbps}M/${uploadMbps}M`;
     console.log('Updated MikroTik bandwidth to:', state.max_limit, 'for product:', selectedProduct.name);
+  }
+});
+
+// Watch for is_terminal checkbox - clear terminal installation selection when unchecked
+watch(() => state.is_terminal, (isTerminal: string) => {
+  if (isTerminal !== 'yes') {
+    // Clear terminal installation selection when unchecked (but keep dropdown available)
+    state.terminal_customer_installation_id = "";
   }
 });
 
@@ -337,6 +348,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       return;
     }
 
+    // Terminal customer selection is optional - no validation needed
+    // But if is_terminal is 'yes', terminal_customer_id should be set (optional validation)
+    // Note: Removed required validation - terminal selection is always optional
+
     // Check for duplicate technician assignments
     const technicianIds = state.technicians
       .map((tech: any) => tech.technician_id)
@@ -363,6 +378,11 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     formData.append('trial_end_date', state.trial_end_date);
     formData.append('service_ready_date', state.service_ready_date);
     formData.append('installation_completed_at', state.installation_completed_at);
+    formData.append('is_terminal', state.is_terminal);
+    // Terminal installation ID can be set for any installation (not just terminal installations)
+    if (state.terminal_customer_installation_id) {
+      formData.append('terminal_customer_installation_id', state.terminal_customer_installation_id);
+    }
     
     // Multiple technicians (send as JSON)
     formData.append('technicians', JSON.stringify(state.technicians));
@@ -1029,6 +1049,95 @@ async function loadProducts() {
   }
 }
 
+async function loadTerminalCustomers() {
+  console.log('[FormCustomerInstallation] Loading terminal installations...');
+  try {
+    // Use the API endpoint to get terminal installations
+    const api = useApiHost();
+    const url = `${api}/api/admin/customer-installation?is_terminal=yes`;
+    console.log('[FormCustomerInstallation] Fetching from URL:', url);
+    
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${useCookie("token").value}`,
+      },
+    });
+    
+    console.log('[FormCustomerInstallation] Response status:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[FormCustomerInstallation] Response error:', errorText);
+      throw new Error(`Failed to fetch terminal installations: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('[FormCustomerInstallation] Raw API response:', data);
+    
+    // Handle both response formats: {success: true, data: [...]} or direct array
+    const installations = data.success ? (data.data || []) : (data.data || data || []);
+    console.log('[FormCustomerInstallation] Extracted installations:', installations.length, installations);
+    
+    if (installations && installations.length > 0) {
+      // Backend should already filter by is_terminal=yes, but double-check for safety
+      const terminalInstallations = installations.filter((inst: any) => {
+        const isTerminal = inst.is_terminal === 'yes' || inst.is_terminal === 'Yes' || inst.is_terminal === true;
+        console.log('[FormCustomerInstallation] Installation:', inst.id, 'is_terminal:', inst.is_terminal, 'matches:', isTerminal);
+        return isTerminal;
+      });
+      
+      console.log('[FormCustomerInstallation] Terminal installations after filter:', terminalInstallations.length);
+      
+      // Map installations to options with installation ID as value and customer info as display
+      state.terminalInstallations = terminalInstallations.map((inst: any) => {
+        // Get customer name from relationship or customer_id
+        let customerName = 'Unknown Customer';
+        let customerPhone = '';
+        
+        if (inst.customer && inst.customer.name) {
+          customerName = inst.customer.name;
+          customerPhone = inst.customer.phone || '';
+        } else if (inst.Customer && inst.Customer.name) {
+          customerName = inst.Customer.name;
+          customerPhone = inst.Customer.phone || '';
+        }
+        
+        // Format installation date if available
+        const installDate = inst.installation_completed_at || inst.createdAt || '';
+        const dateStr = installDate ? new Date(installDate).toLocaleDateString() : '';
+        
+        // Create display string: "Customer Name - Installation ID (Date)"
+        const display = `${customerName} - ${inst.id.substring(0, 8)}${dateStr ? ` (${dateStr})` : ''}`;
+        
+        console.log('[FormCustomerInstallation] Mapped installation:', {
+          id: inst.id,
+          customer_name: customerName,
+          display: display
+        });
+        
+        return {
+          id: inst.id, // Installation ID as value
+          installation_id: inst.id,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          customer_id: inst.customer_id || inst.CustomerID,
+          display: display
+        };
+      });
+      
+      console.log('[FormCustomerInstallation] Terminal installations loaded:', state.terminalInstallations.length, state.terminalInstallations);
+    } else {
+      console.warn('[FormCustomerInstallation] No installations returned from API');
+      state.terminalInstallations = [];
+    }
+  } catch (error) {
+    console.error('[FormCustomerInstallation] Failed to load terminal installations:', error);
+    state.terminalInstallations = [];
+  }
+}
+
 // Load available asset items when an asset is selected
 async function onAssetChange(assetId: string) {
   // Always clear the MAC address selection when asset changes
@@ -1268,6 +1377,15 @@ onMounted(async () => {
       loadAssets(),
       loadProducts()
     ]);
+    
+    // Always load terminal installations (available for all installations)
+    await loadTerminalCustomers();
+    
+    // Load edit mode data if applicable
+    if (props.isEdit && props.data) {
+      state.is_terminal = props.data.is_terminal || 'no';
+      state.terminal_customer_installation_id = props.data.terminal_customer_installation_id || "";
+    }
     
     console.log('[FormCustomerInstallation] Data loaded successfully:', {
       customers: state.customers.length,
@@ -2292,6 +2410,57 @@ onMounted(async () => {
                 </div>
               </template>
               <UInput v-model="state.installation_completed_at" type="datetime-local" class="w-full customer-input date-input-clickable" />
+            </UFormGroup>
+            
+            <!-- Terminal Installation Checkbox -->
+            <div class="sm:col-span-2">
+              <div class="flex items-center p-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-blue-200 dark:border-blue-700">
+                <input
+                  type="checkbox"
+                  :checked="state.is_terminal === 'yes'"
+                  @change="state.is_terminal = ($event.target as HTMLInputElement).checked ? 'yes' : 'no'"
+                  id="is_terminal"
+                  class="w-5 h-5 text-blue-600 bg-gray-100 border-2 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                />
+                <label for="is_terminal" class="ml-3 text-sm font-semibold text-gray-900 dark:text-gray-100 cursor-pointer">
+                  <div class="flex items-center gap-2">
+                    <LucideIcon name="server" :size="18" class="text-blue-600" />
+                    <span>Terminal Installation</span>
+                  </div>
+                  <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 font-normal">
+                    Check this if this installation is for a terminal (HTB) that will serve multiple customers
+                  </p>
+                </label>
+              </div>
+            </div>
+            
+            <!-- Terminal Installation Selection (always available) -->
+            <UFormGroup name="terminal_customer_installation_id" class="sm:col-span-2">
+              <template #label>
+                <div class="flex items-center gap-2">
+                  <LucideIcon name="server" :size="16" class="text-gray-600" />
+                  <span>Select Terminal Installation</span>
+                </div>
+              </template>
+              <USelectMenu
+                v-model="state.terminal_customer_installation_id"
+                :options="state.terminalInstallations"
+                placeholder="Select terminal installation (HTB)"
+                searchable
+                searchable-placeholder="Search by customer name or installation ID"
+                option-attribute="display"
+                value-attribute="id"
+                :search-attributes="['customer_name', 'installation_id']"
+                :loading="state.loading"
+              />
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                <LucideIcon name="info" :size="14" class="inline mr-1" />
+                Select the terminal installation (HTB) that this installation is connected to. Only installations with is_terminal = 'yes' are shown.
+              </p>
+              <p v-if="state.terminalInstallations.length === 0 && !state.loading" class="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                <LucideIcon name="alert-triangle" :size="14" class="inline mr-1" />
+                No terminal installations found. Please create a terminal installation first.
+              </p>
             </UFormGroup>
           </div>
           

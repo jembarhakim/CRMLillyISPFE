@@ -64,7 +64,7 @@
                 />
               </UFormGroup>
 
-              <UFormGroup label="Technician" name="technician_id" required>
+              <UFormGroup label="Leader Technician (Senior)" name="technician_id" required>
                 <USelect
                   v-model="state.technician_id"
                   :options="technicianOptions"
@@ -127,6 +127,114 @@
                   placeholder="Select Completion Date"
                   class="custom-input"
                 />
+              </UFormGroup>
+
+              <!-- Installation Location -->
+              <UFormGroup label="Latitude" name="latitude">
+                <UInput
+                  v-model="state.latitude"
+                  type="number"
+                  step="any"
+                  placeholder="e.g., -6.2088"
+                  class="custom-input"
+                />
+              </UFormGroup>
+
+              <UFormGroup label="Longitude" name="longitude">
+                <UInput
+                  v-model="state.longitude"
+                  type="number"
+                  step="any"
+                  placeholder="e.g., 106.8456"
+                  class="custom-input"
+                />
+              </UFormGroup>
+            </div>
+            
+            <!-- Location Preview -->
+            <div v-if="state.latitude && state.longitude" class="mt-4 p-4 bg-rose-50 rounded-lg border border-rose-200">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-rose-800">Installation Location</p>
+                  <p class="text-xs text-rose-600 font-mono">{{ state.latitude }}, {{ state.longitude }}</p>
+                </div>
+                <UButton 
+                  @click="openGoogleMaps(state.latitude!, state.longitude!)" 
+                  color="rose" 
+                  variant="outline" 
+                  size="xs"
+                >
+                  <template #leading>
+                    <LucideIcon name="external-link" :size="14" />
+                  </template>
+                  Open in Maps
+                </UButton>
+              </div>
+            </div>
+          </div>
+
+          <!-- Terminal Installation Section -->
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-6 rounded-xl border border-blue-100 mt-4 sm:mt-6">
+            <div class="flex items-center mb-4 sm:mb-6">
+              <div class="bg-blue-500 p-2 rounded-lg mr-2 sm:mr-3">
+                <LucideIcon name="server" :size="16" class="text-white" />
+              </div>
+              <h2 class="text-lg sm:text-xl font-bold text-gray-800">Terminal Installation</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <!-- Terminal Installation Checkbox -->
+              <div class="sm:col-span-2">
+                <div class="flex items-center p-4 bg-blue-50 rounded-lg border-2 border-blue-300 shadow-sm">
+                  <input
+                    type="checkbox"
+                    :checked="state.is_terminal === 'yes'"
+                    @change="state.is_terminal = ($event.target as HTMLInputElement).checked ? 'yes' : 'no'"
+                    id="is_terminal"
+                    class="w-5 h-5 text-blue-600 bg-white border-2 border-gray-400 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <label for="is_terminal" class="ml-3 flex-1 cursor-pointer">
+                    <div class="flex items-center gap-2 mb-1">
+                      <LucideIcon name="server" :size="18" class="text-blue-600 flex-shrink-0" />
+                      <span class="text-base font-semibold text-gray-900">Terminal Installation</span>
+                    </div>
+                    <p class="text-xs text-gray-700 mt-1 font-normal">
+                      Check this if this installation is for a terminal (HTB) that will serve multiple customers
+                    </p>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Terminal Customer Selection (always available) -->
+              <UFormGroup name="terminal_customer_installation_id" class="sm:col-span-2">
+                <template #label>
+                  <div class="flex items-center gap-2">
+                    <LucideIcon name="server" :size="16" class="text-gray-600" />
+                    <span class="text-gray-900 font-semibold">Select Terminal Installation</span>
+                    <span class="text-gray-500 text-xs font-normal">(Optional)</span>
+                  </div>
+                </template>
+                <div class="bg-white rounded-lg p-2 border-2 border-gray-300 shadow-sm terminal-customer-wrapper">
+                  <USelectMenu
+                    v-model="state.terminal_customer_installation_id"
+                    :options="terminalInstallationOptions"
+                    placeholder="Select terminal installation (HTB)"
+                    searchable
+                    searchable-placeholder="Search by customer name or installation ID"
+                    option-attribute="display"
+                    value-attribute="id"
+                    :search-attributes="['customer_name', 'installation_id']"
+                    class="terminal-customer-select"
+                  />
+                </div>
+                <p class="text-xs text-gray-600 mt-1">
+                  <LucideIcon name="info" :size="14" class="inline mr-1" />
+                  Select the terminal installation (HTB) that this installation is connected to. Only installations with is_terminal = 'yes' are shown.
+                </p>
+                <p v-if="terminalInstallationOptions.length === 0 && !loading" class="text-xs text-orange-600 mt-1">
+                  <LucideIcon name="alert-triangle" :size="14" class="inline mr-1" />
+                  No terminal installations found. Please create a terminal installation first.
+                </p>
               </UFormGroup>
             </div>
 
@@ -234,18 +342,13 @@
             
             <div class="mb-6">
               <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold text-gray-700">Network Devices</h3>
-                <UButton @click="addNetworkDevice" size="sm" color="cyan" class="shadow-md">
-                  <UIcon name="plus" class="mr-1" />
-                  Add Device
-                </UButton>
+                <h3 class="text-lg font-semibold text-gray-700">Network Devices</h3>                
               </div>
             
               <div v-for="(device, index) in state.network_devices" :key="index" class="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm">
                 <div class="flex justify-between items-center mb-4">
                   <h4 class="text-lg font-semibold text-gray-700 flex items-center">
                     <UIcon name="cpu-chip" class="mr-2 text-cyan-500" />
-                    Network Device {{ index + 1 }}
                   </h4>
                   <UButton @click="removeNetworkDevice(index)" size="sm" color="red" variant="outline" class="hover:bg-red-50">
                     <UIcon name="trash-2" />
@@ -263,7 +366,12 @@
                     class="custom-select"
                     @change="onAssetChange(device.assets_id, index)"
                   />
-                  
+                  <div v-if="device.assets_id" class="flex items-center text-sm text-gray-600">
+                    <UIcon name="info" class="mr-2 text-cyan-500" />
+                    <span>
+                      {{ getAssetDisplayName(device.assets_id) }}
+                    </span>
+                  </div>
                 </div>
                 
                 <!-- Network Configuration -->
@@ -689,7 +797,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
-import { object, string } from 'yup'
+import { object, string, number } from 'yup'
 import type { FormSubmitEvent } from '#ui/types'
 import { customerAdminApi } from '@/api/admin/customer'
 import { assetAdminApi } from '@/api/admin/asset'
@@ -722,6 +830,8 @@ const schema = object({
   notes: string().optional(),
   document_type: string().optional(),
   document_photo: string().optional(),
+  latitude: number().optional(),
+  longitude: number().optional(),
 })
 
 // Form state
@@ -737,6 +847,12 @@ const state = reactive({
   trial_end_date: "",
   service_ready_date: "",
   installation_completed_at: "",
+  is_terminal: "no", // Whether this is a terminal installation ('yes' or 'no')
+  terminal_customer_installation_id: "", // Installation ID of the terminal installation (from customer_installations table)
+  
+  // Installation location
+  latitude: undefined as number | undefined,
+  longitude: undefined as number | undefined,
   
   // Network Devices
   network_devices: [] as any[],
@@ -842,6 +958,7 @@ const isCompressing = ref(false);
 const customerOptions = ref<any[]>([]);
 const technicianOptions = ref<any[]>([]);
 const assetOptions = ref<any[]>([]);
+const terminalInstallationOptions = ref<any[]>([]);
 
 // Available asset items for MAC address selection
 const availableAssetItems = ref<{[assetId: string]: any[]}>({});
@@ -908,6 +1025,12 @@ const cableStatusOptions = [
 ];
 
 // Helper function to get full image URL
+// Open Google Maps with coordinates
+function openGoogleMaps(latitude: number, longitude: number) {
+  const url = `https://www.google.com/maps?q=${latitude},${longitude}`;
+  window.open(url, '_blank');
+}
+
 function getFullImageUrl(imagePath: string): string {
   if (!imagePath) return '';
   
@@ -919,13 +1042,26 @@ function getFullImageUrl(imagePath: string): string {
   // Get the API host from environment
   const apiHost = useApiHost();
   
+  // Normalize path separators (handle both / and \)
+  let normalizedPath = imagePath.replace(/\\/g, '/');
+  
+  // Remove leading slash if present to avoid double slashes
+  if (normalizedPath.startsWith('/')) {
+    normalizedPath = normalizedPath.substring(1);
+  }
+  
+  // If path already starts with uploads/, use it directly
+  if (normalizedPath.startsWith('uploads/')) {
+    return `${apiHost}/${normalizedPath}`;
+  }
+  
   // If it's just a filename (document photo), construct the full path
-  if (!imagePath.includes('/')) {
-    return `${apiHost}/uploads/installations/documents/${imagePath}`;
+  if (!normalizedPath.includes('/')) {
+    return `${apiHost}/uploads/installations/documents/${normalizedPath}`;
   }
   
   // If it's a relative path, prepend the API host
-  return `${apiHost}/${imagePath}`;
+  return `${apiHost}/${normalizedPath}`;
 }
 
 // Load initial data
@@ -934,6 +1070,7 @@ onMounted(async () => {
     loadCustomers(),
     loadTechnicians(),
     loadAssets(),
+    loadTerminalCustomers(),
     loadInstallationReport()
   ]);
 });
@@ -943,29 +1080,171 @@ async function loadInstallationReport() {
     const response = await customerAdminApi().getCompleteInstallationReport(installationId);
     const report = response.data;
     
+    console.log('[loadInstallationReport] Full report data:', report);
+    
     if (report) {
       // Populate form with existing data
       state.customer_id = report.customer_id || "";
       state.technician_id = report.technician_id || "";
-      state.status = report.installation_status || "pending";
-      state.notes = report.notes || "";
+      state.status = report.installation_status || report.status || "pending";
+      state.notes = report.notes || report.installation_notes || "";
       state.document_type = report.document_type || "";
       state.document_photo = report.document_photo || "";
       state.installation_type = report.installation_type || "new_installation";
       state.on_air_date = report.on_air_date ? report.on_air_date.split('T')[0] : "";
       state.trial_end_date = report.trial_end_date ? report.trial_end_date.split('T')[0] : "";
       state.service_ready_date = report.service_ready_date ? report.service_ready_date.split('T')[0] : "";
-      state.installation_completed_at = report.installation_completed_at ? report.installation_completed_at.replace('Z', '') : "";
+      state.is_terminal = report.is_terminal || "no";
+      state.terminal_customer_installation_id = report.terminal_customer_installation_id || "";
+      state.latitude = report.latitude;
+      state.longitude = report.longitude;
+      
+      // Handle installation_completed_at - handle various date formats
+      if (report.installation_completed_at) {
+        let dateStr = report.installation_completed_at;
+        // Remove timezone indicators
+        dateStr = dateStr.replace('Z', '').replace(/\+.*$/, '');
+        // If it's a full datetime string, convert to datetime-local format (YYYY-MM-DDTHH:mm)
+        if (dateStr.includes('T')) {
+          // Truncate to datetime-local format (remove seconds/milliseconds if present)
+          dateStr = dateStr.substring(0, 16);
+        }
+        state.installation_completed_at = dateStr;
+        console.log('[loadInstallationReport] installation_completed_at:', {
+          original: report.installation_completed_at,
+          processed: state.installation_completed_at
+        });
+      } else {
+        state.installation_completed_at = "";
+      }
       
       // Installation Team - Load from installation_technicians relationship
       installationTeam.value = report.installation_technicians || [];
       
       // Network Devices - Load with proper asset item mapping
-      state.network_devices = (report.network_devices || []).map((device: any) => ({
-        ...device,
-        asset_item_id: '', // Will be set when user selects from asset_items
-        mac_address: device.mac_address || '', // Current MAC address from network_devices table
-      }));
+      const networkDevicesData = report.network_devices || [];
+      state.network_devices = [];
+      
+      // Process each network device sequentially to load asset items
+      for (let i = 0; i < networkDevicesData.length; i++) {
+        const device = networkDevicesData[i];
+        console.log('[loadInstallationReport] Processing network device:', device);
+        
+        // Get assets_id from device - handle GORM String type or direct string
+        let assetsId = "";
+        if (device.assets_id) {
+          // Handle GORM String type (object with String property) or direct string
+          if (typeof device.assets_id === 'object' && device.assets_id.String !== undefined) {
+            assetsId = device.assets_id.String;
+          } else if (typeof device.assets_id === 'string') {
+            assetsId = device.assets_id;
+          } else {
+            assetsId = String(device.assets_id);
+          }
+        } else if (device.asset?.id) {
+          assetsId = device.asset.id;
+        } else if (device.assets?.id) {
+          assetsId = device.assets.id;
+        }
+        
+        console.log('[loadInstallationReport] Extracted assets_id:', assetsId);
+        
+        // Get asset_item_id if it exists in the device (from asset_item relationship)
+        let assetItemId = "";
+        if (device.asset_item_id) {
+          // Handle GORM String type or direct string
+          if (typeof device.asset_item_id === 'object' && device.asset_item_id.String !== undefined) {
+            assetItemId = device.asset_item_id.String;
+          } else if (typeof device.asset_item_id === 'string') {
+            assetItemId = device.asset_item_id;
+          } else {
+            assetItemId = String(device.asset_item_id);
+          }
+        } else if (device.asset_item?.id) {
+          assetItemId = device.asset_item.id;
+        }
+        
+        console.log('[loadInstallationReport] Extracted asset_item_id:', assetItemId);
+        
+        // If assets_id exists, load asset items for this asset to populate dropdown
+        if (assetsId) {
+          try {
+            // Load available asset items (status=in_stock)
+            const assetItemsResponse = await assetItemAdminApi().getAvailableAssetItems(assetsId);
+            const availableItems: any[] = [];
+            
+            if (assetItemsResponse.success && assetItemsResponse.data) {
+              availableItems.push(...assetItemsResponse.data.map((item: any) => ({
+                value: item.id,
+                label: `${item.mac_address} (${item.status})`,
+                id: item.id,
+                mac_address: item.mac_address,
+                status: item.status,
+                asset_id: item.asset_id
+              })));
+            }
+            
+            // If asset_item_id exists, also load that specific item (even if it's in_use)
+            // This ensures the currently assigned device appears in the dropdown
+            if (assetItemId) {
+              try {
+                const assignedItemResponse = await assetItemAdminApi().getAssetItem(assetItemId);
+                if (assignedItemResponse.success && assignedItemResponse.data) {
+                  const assignedItem = assignedItemResponse.data;
+                  // Check if this item belongs to the same asset
+                  const assignedAssetId = assignedItem.asset_id || assignedItem.asset?.id || "";
+                  if (assignedAssetId === assetsId) {
+                    // Add to list if not already present
+                    const exists = availableItems.find((item: any) => item.id === assetItemId);
+                    if (!exists) {
+                      availableItems.push({
+                        value: assignedItem.id,
+                        label: `${assignedItem.mac_address} (${assignedItem.status || 'in_use'})`,
+                        id: assignedItem.id,
+                        mac_address: assignedItem.mac_address,
+                        status: assignedItem.status || 'in_use',
+                        asset_id: assignedAssetId
+                      });
+                    }
+                    // Set MAC address from assigned item
+                    device.mac_address = assignedItem.mac_address || device.mac_address;
+                  }
+                }
+              } catch (error) {
+                console.error(`Failed to load assigned asset item ${assetItemId}:`, error);
+              }
+            }
+            
+            // Store all items (both available and assigned)
+            availableAssetItems.value[assetsId] = availableItems;
+            
+            console.log(`[loadInstallationReport] Loaded ${availableItems.length} asset items for asset ${assetsId}`, {
+              available: assetItemsResponse.success ? assetItemsResponse.data?.length || 0 : 0,
+              assigned: assetItemId ? 1 : 0
+            });
+          } catch (error) {
+            console.error(`Failed to load asset items for asset ${assetsId}:`, error);
+            availableAssetItems.value[assetsId] = [];
+          }
+        }
+        
+        // Add device to state
+        state.network_devices.push({
+          id: device.id,
+          assets_id: assetsId,
+          asset_item_id: assetItemId || "",
+          switch_id: device.switch_id || "",
+          port_number: device.port_number || "",
+          remote_port: device.remote_port || "",
+          eth_port: device.eth_port || "",
+          mac_address: device.mac_address || "",
+          ip_static: device.ip_static || "",
+          kepemilikan_perangkat: device.kepemilikan_perangkat || "owned",
+          status_perangkat: device.status_perangkat || "active",
+          last_ping_status: device.last_ping_status || "unknown",
+          product_id: device.product_id || "",
+        });
+      }
       
       // Customer Services
       state.customer_services = report.customer_services || [];
@@ -973,14 +1252,48 @@ async function loadInstallationReport() {
       // Cables
       state.cables = report.cables || [];
       
-      // Images
-      state.image_ids = report.image_ids || [];
-      state.previews = report.images ? report.images.map((img: any) => getFullImageUrl(img.full_path || img.file)) : [];
+      // Images - filter out technician photos (they're handled separately)
+      const installationImages = (report.images || []).filter((img: any) => {
+        const path = (img.file || img.full_path || '').toLowerCase();
+        return path && !path.includes('technician_photos');
+      });
       
-      // Technician Photos
-      state.technician_photos = report.technician_photos || [];
+      state.image_ids = installationImages.map((img: any) => img.id).filter(Boolean);
+      state.previews = installationImages.map((img: any) => getFullImageUrl(img.full_path || img.file));
+      
+      // Technician Photos - extract from images array (filter by technician_photos path)
+      const technicianPhotosFromImages = (report.images || []).filter((img: any) => {
+        const path = (img.file || img.full_path || '').toLowerCase();
+        return path && path.includes('technician_photos');
+      });
+      
+      if (technicianPhotosFromImages.length > 0) {
+        // Extract file paths from technician photo images
+        state.technician_photos = technicianPhotosFromImages.map((img: any) => {
+          const path = img.file || img.full_path || '';
+          // Normalize path separators
+          return path.replace(/\\/g, '/');
+        });
+        state.technician_photo_previews = state.technician_photos.map((photo: string) => getFullImageUrl(photo));
+      } else if (report.technician_photos && Array.isArray(report.technician_photos)) {
+        // Fallback: use technician_photos array directly if available
+        state.technician_photos = report.technician_photos.map((photo: any) => {
+          const path = typeof photo === 'string' ? photo : (photo.file || photo.full_path || photo);
+          return path.replace(/\\/g, '/');
+        });
+        state.technician_photo_previews = state.technician_photos.map((photo: string) => getFullImageUrl(photo));
+      } else {
+        state.technician_photos = [];
+        state.technician_photo_previews = [];
+      }
+      
       state.technician_photos_notes = report.technician_photos_notes || "";
-      state.technician_photo_previews = report.technician_photos ? report.technician_photos.map((photo: string) => getFullImageUrl(photo)) : [];
+      
+      console.log('[loadInstallationReport] Technician photos loaded:', {
+        count: state.technician_photos.length,
+        photos: state.technician_photos,
+        previews: state.technician_photo_previews
+      });
       
       // Set PSB date if available
       if (report.tgl_permintaan_psb) {
@@ -1028,37 +1341,200 @@ async function loadAssets() {
         name: `${asset.brand} ${asset.model} (${asset.serial_number})`,
         brand: asset.brand,
         model: asset.model,
+        type: asset.type || "",
         serial_number: asset.serial_number
       }));
+      console.log('[loadAssets] Loaded assets:', assetOptions.value.length);
     }
   } catch (error) {
     console.error("Failed to load assets:", error);
   }
 }
 
+async function loadTerminalCustomers() {
+  console.log('[loadTerminalCustomers] Loading terminal installations...');
+  try {
+    // Use the API endpoint to get terminal installations
+    const api = useApiHost();
+    const url = `${api}/api/admin/customer-installation?is_terminal=yes`;
+    console.log('[loadTerminalCustomers] Fetching from URL:', url);
+    
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${useCookie("token").value}`,
+      },
+    });
+    
+    console.log('[loadTerminalCustomers] Response status:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[loadTerminalCustomers] Response error:', errorText);
+      throw new Error(`Failed to fetch terminal installations: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('[loadTerminalCustomers] Raw API response:', data);
+    
+    // Handle both response formats: {success: true, data: [...]} or direct array
+    const installations = data.success ? (data.data || []) : (data.data || data || []);
+    console.log('[loadTerminalCustomers] Extracted installations:', installations.length, installations);
+    
+    if (installations && installations.length > 0) {
+      // Backend should already filter by is_terminal=yes, but double-check for safety
+      const terminalInstallations = installations.filter((inst: any) => {
+        const isTerminal = inst.is_terminal === 'yes' || inst.is_terminal === 'Yes' || inst.is_terminal === true;
+        console.log('[loadTerminalCustomers] Installation:', inst.id, 'is_terminal:', inst.is_terminal, 'matches:', isTerminal);
+        return isTerminal;
+      });
+      
+      console.log('[loadTerminalCustomers] Terminal installations after filter:', terminalInstallations.length);
+      
+      // Map installations to options with installation ID as value and customer info as display
+      terminalInstallationOptions.value = terminalInstallations.map((inst: any) => {
+        // Get customer name from relationship or customer_id
+        let customerName = 'Unknown Customer';
+        let customerPhone = '';
+        
+        if (inst.customer && inst.customer.name) {
+          customerName = inst.customer.name;
+          customerPhone = inst.customer.phone || '';
+        } else if (inst.Customer && inst.Customer.name) {
+          customerName = inst.Customer.name;
+          customerPhone = inst.Customer.phone || '';
+        }
+        
+        // Format installation date if available
+        const installDate = inst.installation_completed_at || inst.createdAt || '';
+        const dateStr = installDate ? new Date(installDate).toLocaleDateString() : '';
+        
+        // Create display string: "Customer Name - Installation ID (Date)"
+        const display = `${customerName} - ${inst.id.substring(0, 8)}${dateStr ? ` (${dateStr})` : ''}`;
+        
+        console.log('[loadTerminalCustomers] Mapped installation:', {
+          id: inst.id,
+          customer_name: customerName,
+          display: display
+        });
+        
+        return {
+          id: inst.id, // Installation ID as value
+          installation_id: inst.id,
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          customer_id: inst.customer_id || inst.CustomerID,
+          display: display
+        };
+      });
+      
+      console.log('[loadTerminalCustomers] Terminal installations loaded:', terminalInstallationOptions.value.length, terminalInstallationOptions.value);
+    } else {
+      console.warn('[loadTerminalCustomers] No installations returned from API');
+      terminalInstallationOptions.value = [];
+    }
+  } catch (error) {
+    console.error('[loadTerminalCustomers] Failed to load terminal installations:', error);
+    terminalInstallationOptions.value = [];
+  }
+}
+
+// Helper function to get asset display name (brand + model + type)
+function getAssetDisplayName(assetId: string): string {
+  if (!assetId) return "";
+  const asset = assetOptions.value.find((a: any) => a.id === assetId);
+  if (!asset) return "";
+  
+  // Try to get brand, model, type from asset object
+  const brand = asset.brand || "";
+  const model = asset.model || "";
+  const type = asset.type || "";
+  
+  // Construct display name: "Brand Model Type" or "Brand Model" if type not available
+  if (brand && model && type) {
+    return `${brand} ${model} ${type}`;
+  } else if (brand && model) {
+    return `${brand} ${model}`;
+  } else if (asset.name) {
+    return asset.name;
+  }
+  return "";
+}
+
 // Load available asset items when an asset is selected
 async function onAssetChange(assetId: string, deviceIndex: number) {
-  // Always clear the MAC address selection when asset changes
-  state.network_devices[deviceIndex].mac_address = "";
-  state.network_devices[deviceIndex].asset_item_id = "";
+  // Always clear the MAC address selection when asset changes (unless there's an existing assignment)
+  const currentDevice = deviceIndex >= 0 && deviceIndex < state.network_devices.length 
+    ? state.network_devices[deviceIndex] 
+    : null;
+  
+  // Don't clear if we're just reloading (user might have selected a different asset type)
+  if (currentDevice && currentDevice.assets_id !== assetId) {
+    currentDevice.mac_address = "";
+    currentDevice.asset_item_id = "";
+  }
   
   if (!assetId) {
+    availableAssetItems.value[assetId] = [];
     return;
   }
 
   try {
-    // Always reload asset items for the selected asset (don't cache to ensure fresh data)
+    // Load available asset items (status=in_stock)
     const response = await assetItemAdminApi().getAvailableAssetItems(assetId);
-    if (response.success) {
-      availableAssetItems.value[assetId] = response.data.map((item: any) => ({
-        value: item.id, // Use item ID as value for better tracking
+    const availableItems: any[] = [];
+    
+    if (response.success && response.data) {
+      availableItems.push(...response.data.map((item: any) => ({
+        value: item.id,
         label: `${item.mac_address} (${item.status})`,
         id: item.id,
         mac_address: item.mac_address,
-        status: item.status
-      }));
-    } else {
-      availableAssetItems.value[assetId] = [];
+        status: item.status,
+        asset_id: item.asset_id
+      })));
+    }
+    
+    // If there's a currently assigned asset_item_id, also load it (even if in_use)
+    if (currentDevice && currentDevice.asset_item_id) {
+      try {
+        const assignedItemResponse = await assetItemAdminApi().getAssetItem(currentDevice.asset_item_id);
+        if (assignedItemResponse.success && assignedItemResponse.data) {
+          const assignedItem = assignedItemResponse.data;
+          const assignedAssetId = assignedItem.asset_id || assignedItem.asset?.id || "";
+          // Only add if it belongs to the selected asset
+          if (assignedAssetId === assetId) {
+            const exists = availableItems.find((item: any) => item.id === currentDevice.asset_item_id);
+            if (!exists) {
+              availableItems.push({
+                value: assignedItem.id,
+                label: `${assignedItem.mac_address} (${assignedItem.status || 'in_use'})`,
+                id: assignedItem.id,
+                mac_address: assignedItem.mac_address,
+                status: assignedItem.status || 'in_use',
+                asset_id: assignedAssetId
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to load assigned asset item:`, error);
+      }
+    }
+    
+    availableAssetItems.value[assetId] = availableItems;
+    
+    console.log(`[onAssetChange] Loaded ${availableItems.length} asset items for asset ${assetId}`, {
+      available: response.success ? response.data?.length || 0 : 0,
+      assigned: currentDevice?.asset_item_id ? 1 : 0
+    });
+    
+    if (availableItems.length === 0) {
+      console.warn(`[onAssetChange] No asset items found for asset ${assetId}. This could mean:
+        1. No asset items have been created for this asset type
+        2. All asset items are in use (status=in_use) and none are in_stock
+        3. The asset_id might be incorrect`);
     }
   } catch (error) {
     console.error("Failed to load available asset items:", error);
@@ -1177,15 +1653,11 @@ async function handleFileUpload(event: Event) {
   for (const file of Array.from(files)) {
     if (file.type.startsWith("image/")) {
       try {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("name", `installation_${Date.now()}_${file.name}`);
-        formData.append("path", `installations/${state.technician_id}/${state.customer_id}`);
-        
         const response = await uploadFileAdminApi().createUploadFile({
           name: `installation_${Date.now()}_${file.name}`,
           path: `installations/${state.technician_id}/${state.customer_id}`,
           file: file,
+          archive_installation_id: installationId, // Pass installation ID for edit mode
         });
         
         if (response.data?.id) {
@@ -1437,6 +1909,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       trial_end_date: state.trial_end_date,
       service_ready_date: state.service_ready_date,
       installation_completed_at: state.installation_completed_at,
+      is_terminal: state.is_terminal,
+      terminal_customer_installation_id: state.terminal_customer_installation_id || undefined,
+      latitude: state.latitude,
+      longitude: state.longitude,
       network_devices: state.network_devices,
       customer_services: state.customer_services,
       cables: state.cables,
@@ -1518,6 +1994,134 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
 :deep(.custom-select select) {
   @apply bg-white border-gray-300 text-gray-900 focus:border-emerald-500 focus:ring-emerald-500;
+}
+
+:deep(.custom-select .usm-container) {
+  @apply bg-white border-gray-300 text-gray-900;
+}
+
+:deep(.custom-select .usm-menu) {
+  @apply bg-white border-gray-300 text-gray-900;
+}
+
+/* Force white background for terminal customer select - comprehensive styling */
+.terminal-customer-wrapper {
+  background-color: white !important;
+}
+
+:deep(.terminal-customer-wrapper) {
+  background-color: white !important;
+}
+
+:deep(.terminal-customer-wrapper *) {
+  background-color: white !important;
+  color: #111827 !important;
+}
+
+:deep(.terminal-customer-select) {
+  background-color: white !important;
+  color: #111827 !important;
+}
+
+:deep(.terminal-customer-select *) {
+  background-color: white !important;
+  color: #111827 !important;
+}
+
+:deep(.terminal-customer-select .usm-container) {
+  background-color: white !important;
+  border-color: #d1d5db !important;
+  color: #111827 !important;
+}
+
+:deep(.terminal-customer-select .usm-menu) {
+  background-color: white !important;
+  border-color: #d1d5db !important;
+  color: #111827 !important;
+}
+
+:deep(.terminal-customer-select input) {
+  background-color: white !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+
+:deep(.terminal-customer-select button) {
+  background-color: white !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+
+:deep(.terminal-customer-select [role="button"]) {
+  background-color: white !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+
+:deep(.terminal-customer-select [role="option"]) {
+  background-color: white !important;
+  color: #111827 !important;
+}
+
+:deep(.terminal-customer-select [role="option"]:hover) {
+  background-color: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+:deep(.terminal-customer-select ul) {
+  background-color: white !important;
+  color: #111827 !important;
+}
+
+:deep(.terminal-customer-select li) {
+  background-color: white !important;
+  color: #111827 !important;
+}
+
+:deep(.terminal-customer-select li:hover) {
+  background-color: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+:deep(.terminal-customer-select div) {
+  background-color: white !important;
+  color: #111827 !important;
+}
+
+:deep(.terminal-customer-select span) {
+  color: #111827 !important;
+}
+
+:deep(.terminal-customer-select p) {
+  color: #111827 !important;
+}
+
+/* Target dropdown menu specifically */
+:deep(.terminal-customer-wrapper [role="listbox"]) {
+  background-color: white !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+
+:deep(.terminal-customer-wrapper [role="listbox"] [role="option"]) {
+  background-color: white !important;
+  color: #111827 !important;
+}
+
+:deep(.terminal-customer-wrapper [role="listbox"] [role="option"]:hover) {
+  background-color: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+/* Override any dark mode classes */
+:deep(.terminal-customer-wrapper .dark) {
+  background-color: white !important;
+  color: #111827 !important;
+}
+
+:deep(.terminal-customer-select .dark) {
+  background-color: white !important;
+  color: #111827 !important;
 }
 
 :deep(.custom-textarea) {

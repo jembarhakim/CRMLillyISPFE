@@ -42,6 +42,7 @@ import { useRolePermissions } from '@/composables/useRolePermissions'
 import { useNotification } from '@/composables/useNotification'
 import { useApiHost } from '@/composables/useApiHost'
 import TechnicianChecklist from '@/components/TechnicianChecklist.vue'
+import CustomerDetailModal from '@/pages/dashboard/customer/CustomerDetailModal.vue'
 
 const authStore = useAuthStore()
 const { userRole, isAdmin, isCustomerService, isNOC, isTechnician } = useRolePermissions()
@@ -148,6 +149,10 @@ const selectedLocation = ref<{
   lng?: number | null
 } | null>(null)
 
+// Customer detail modal state
+const showCustomerDetailModal = ref(false)
+const selectedCustomerId = ref<string | null>(null)
+
 async function openLocationDetail(ticket: any) {
   selectedLocation.value = {
     customer_name: ticket.customer_name,
@@ -186,6 +191,16 @@ const googleMapsUrl = computed(() => {
   const q = `${selectedLocation.value.lat},${selectedLocation.value.lng}`
   return `https://www.google.com/maps?q=${encodeURIComponent(q)}`
 })
+
+function openCustomerDetailModal(customerId: string) {
+  selectedCustomerId.value = customerId
+  showCustomerDetailModal.value = true
+}
+
+function closeCustomerDetailModal() {
+  showCustomerDetailModal.value = false
+  selectedCustomerId.value = null
+}
 
 // Search functionality
 const searchQuery = ref('')
@@ -1073,6 +1088,32 @@ const getTicketActions = (ticket: any) => {
   if (ticket.status === 'finished') {
     const isInformation = ticket.verified_by_cs === true || ticket.verified_by_cs === 1 || ticket.classification === 'info'
     if (!isInformation) {
+      // Allow technician to view their completed checklist for finished tickets
+      if (isTechnician.value && ticket.assigned_to) {
+        let actualUserID = null
+        if (process.client && authStore.token) {
+          try {
+            const tokenParts = authStore.token.split('.')
+            if (tokenParts.length === 3) {
+              const payload = JSON.parse(atob(tokenParts[1]))
+              actualUserID = payload.sub || payload.user_id || payload.id
+            }
+          } catch (e) {
+            // ignore
+          }
+        }
+        
+        if (ticket.assigned_to === actualUserID || ticket.assigned_to === authStore.user?.user_id) {
+          actions.push({
+            label: 'Lihat Checklist',
+            color: 'bg-gray-600',
+            action: () => openTechnicianChecklist(ticket.id, actualUserID || authStore.user?.user_id || '', true),
+            show: true,
+            tooltip: 'Lihat checklist yang telah diselesaikan (hanya baca)'
+          })
+        }
+      }
+      
       if ((isAdmin.value || isCustomerService.value) && ticket.assigned_to) {
         actions.push({
           label: 'Lihat Progress (Selesai)',
@@ -1171,13 +1212,25 @@ const getTicketActions = (ticket: any) => {
 
       // For technicians who are assigned to the ticket
       if (ticket.assigned_to && (ticket.assigned_to === actualUserID)) {
-        actions.push({
-          label: 'Checklist Teknisi',
-          color: 'bg-blue-600',
-          action: () => openTechnicianChecklist(ticket.id, actualUserID || authStore.user?.user_id || ''),
-          show: true,
-          tooltip: 'Buka checklist teknisi'
-        })
+        // If ticket is completed, show "View Checklist" button (read-only)
+        if (ticket.technician_completed) {
+          actions.push({
+            label: 'Lihat Checklist',
+            color: 'bg-gray-600',
+            action: () => openTechnicianChecklist(ticket.id, actualUserID || authStore.user?.user_id || '', true),
+            show: true,
+            tooltip: 'Lihat checklist yang telah diselesaikan (hanya baca)'
+          })
+        } else {
+          // If ticket is not completed, show editable "Checklist Teknisi" button
+          actions.push({
+            label: 'Checklist Teknisi',
+            color: 'bg-blue-600',
+            action: () => openTechnicianChecklist(ticket.id, actualUserID || authStore.user?.user_id || '', false),
+            show: true,
+            tooltip: 'Buka checklist teknisi'
+          })
+        }
       }
     }
     if ((isAdmin.value || isCustomerService.value) && ticket.assigned_to) {
@@ -1206,6 +1259,32 @@ const getTicketActions = (ticket: any) => {
   else if (ticket.status === 'ongoing' &&
     (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE') &&
     ticket.technician_completed) {
+
+    // Allow technician to view their completed checklist even when ticket is with CS
+    if (isTechnician.value && ticket.assigned_to) {
+      let actualUserID = null
+      if (process.client && authStore.token) {
+        try {
+          const tokenParts = authStore.token.split('.')
+          if (tokenParts.length === 3) {
+            const payload = JSON.parse(atob(tokenParts[1]))
+            actualUserID = payload.sub || payload.user_id || payload.id
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+      
+      if (ticket.assigned_to === actualUserID || ticket.assigned_to === authStore.user?.user_id) {
+        actions.push({
+          label: 'Lihat Checklist',
+          color: 'bg-gray-600',
+          action: () => openTechnicianChecklist(ticket.id, actualUserID || authStore.user?.user_id || '', true),
+          show: true,
+          tooltip: 'Lihat checklist yang telah diselesaikan (hanya baca)'
+        })
+      }
+    }
 
     if (isAdmin.value || isCustomerService.value) {
       actions.push({
@@ -2294,6 +2373,11 @@ const visibleAndSortedTickets = computed(() => {
             <div class="text-sm"><span class="font-medium">Bujur:</span> {{ selectedLocation?.lng ?? '-' }}</div>
           </div>
           <div class="mt-4 flex justify-end gap-2">
+            <button v-if="selectedLocation?.customer_id" 
+              @click="openCustomerDetailModal(selectedLocation.customer_id); showLocationModal = false"
+              class="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700">
+              Detail Pelanggan
+            </button>
             <a v-if="googleMapsUrl" :href="googleMapsUrl" target="_blank" rel="noopener"
               class="px-4 py-2 rounded bg-sky-600 text-white hover:bg-sky-700">Buka di Google Maps</a>
             <button class="px-4 py-2 rounded bg-gray-300 text-gray-700 hover:bg-gray-400"
@@ -2740,8 +2824,7 @@ const visibleAndSortedTickets = computed(() => {
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white rounded-lg w-full max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
         <div class="p-6">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-semibold">Checklist Teknisi</h3>
+          <div class="flex justify-end items-center mb-4">
             <button @click="showTechnicianChecklist = false" class="text-gray-500 hover:text-gray-700">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -2754,5 +2837,12 @@ const visibleAndSortedTickets = computed(() => {
         </div>
       </div>
     </div>
+
+    <!-- Customer Detail Modal -->
+    <CustomerDetailModal
+      v-if="showCustomerDetailModal && selectedCustomerId"
+      :customer-id="selectedCustomerId"
+      @close="closeCustomerDetailModal"
+    />
   </div>
 </template>

@@ -20,6 +20,14 @@ export const tableColumns = [
     label: "Status",
   },
   {
+    key: "company",
+    label: "Company",
+  },
+  {
+    key: "site",
+    label: "Site",
+  },
+  {
     key: "created_at",
     label: "Created At",
   },

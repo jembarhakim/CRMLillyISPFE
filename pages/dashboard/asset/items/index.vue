@@ -155,11 +155,25 @@ const items = (row: any) => [
 
 <template>
   <div class="space-y-4">
-    <div class="flex justify-between items-center">
-      <h1 class="text-2xl font-bold text-gray-900">Asset Items Management</h1>
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div class="flex items-center gap-3">
+        <UButton
+          @click="navigateTo('/dashboard/asset')"
+          color="gray"
+          variant="outline"
+          class="w-full sm:w-auto hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+        >
+          <LucideIcon name="arrow-left" :size="16" class="mr-2" />
+          <span class="hidden sm:inline">Back to Assets</span>
+          <span class="sm:hidden">Back</span>
+        </UButton>
+        <h1 class="text-2xl font-bold text-gray-900">Asset Items Management</h1>
+      </div>
       <UButton
         label="Add Asset Item"
         @click="OpenModalAddAssetItem(false, null)"
+        class="w-full sm:w-auto"
+        size="lg"
       />
     </div>
 
@@ -200,6 +214,12 @@ const items = (row: any) => [
               "
               :label="row.status.replace('_', ' ').toUpperCase()"
             />
+          </template>
+          <template #company-data="{ row }">
+            <span class="text-sm">{{ row.company?.name || "No Company" }}</span>
+          </template>
+          <template #site-data="{ row }">
+            <span class="text-sm">{{ row.site || "Not specified" }}</span>
           </template>
           <template #created_at-data="{ row }">
             <span>{{ formatDate(row.created_at) }}</span>

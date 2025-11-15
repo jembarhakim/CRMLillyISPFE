@@ -26,14 +26,6 @@ export const tableColumns = [
     label: "Date",
   },
   {
-    key: "company",
-    label: "Company",
-  },
-  {
-    key: "site",
-    label: "Site",
-  },
-  {
     key: "description",
     label: "Description",
   },

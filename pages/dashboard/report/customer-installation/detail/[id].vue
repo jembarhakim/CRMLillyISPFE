@@ -1,4 +1,4 @@
- on<template>
+<template>
   <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
     <div class="container mx-auto p-4 sm:p-6">
       <!-- Header Section -->
@@ -283,6 +283,38 @@
                     <label class="text-sm font-medium text-green-600">Completed At</label>
                     <p class="text-lg text-gray-700">{{ formatDateTime(report.installation_completed_at) }}</p>
                   </div>                  
+                </div>
+              </div>
+              
+              <!-- Installation Location -->
+              <div v-if="report.latitude && report.longitude" class="bg-gradient-to-br from-rose-50 to-pink-100 p-6 rounded-xl border border-rose-200">
+                <div class="flex items-center mb-4">
+                  <div class="w-10 h-10 bg-rose-500 rounded-full flex items-center justify-center mr-3">
+                    <LucideIcon name="map-pin" :size="18" class="text-white" />
+                  </div>
+                  <h4 class="text-lg font-semibold text-rose-800">Installation Location</h4>
+                </div>
+                <div class="space-y-3">
+                  <div>
+                    <label class="text-sm font-medium text-rose-600">Coordinates</label>
+                    <p class="text-lg font-mono text-gray-800 bg-gray-100 px-3 py-1 rounded">
+                      {{ report.latitude }}, {{ report.longitude }}
+                    </p>
+                  </div>
+                  <div>
+                    <UButton 
+                      @click="openGoogleMaps(report.latitude, report.longitude)" 
+                      color="rose" 
+                      variant="solid" 
+                      size="sm"
+                      class="w-full bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-semibold shadow-lg"
+                    >
+                      <template #leading>
+                        <LucideIcon name="external-link" :size="16" />
+                      </template>
+                      Open in Google Maps
+                    </UButton>
+                  </div>
                 </div>
               </div>
             </div>
@@ -718,6 +750,62 @@
           </div>
         </div>
 
+        <!-- Terminal Information -->
+        <div v-if="report.is_terminal === 'yes' || report.terminal_customer_installation_id" class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div class="bg-gradient-to-r from-cyan-500 to-teal-500 px-8 py-4">
+            <h3 class="text-xl font-bold text-white flex items-center">
+              <LucideIcon name="link" :size="20" class="mr-3" />
+              Terminal Information
+            </h3>
+          </div>
+          <div class="p-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Is Terminal Status -->
+              <div class="bg-gradient-to-br from-cyan-50 to-cyan-100 p-6 rounded-xl border border-cyan-200">
+                <div class="flex items-center mb-4">
+                  <div class="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center mr-3">
+                    <LucideIcon name="check-circle" :size="18" class="text-white" />
+                  </div>
+                  <h4 class="text-lg font-semibold text-cyan-800">Terminal Status</h4>
+                </div>
+                <div class="flex items-center space-x-3">
+                  <span v-if="report.is_terminal === 'yes'" 
+                        class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold text-sm flex items-center">
+                    <LucideIcon name="check" :size="16" class="mr-2" />
+                    This is a Terminal Installation
+                  </span>
+                  <span v-else 
+                        class="px-4 py-2 bg-gray-100 text-gray-800 rounded-full font-semibold text-sm">
+                    Regular Installation
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Connected Terminal Customer -->
+              <div class="bg-gradient-to-br from-teal-50 to-teal-100 p-6 rounded-xl border border-teal-200">
+                <div class="flex items-center mb-4">
+                  <div class="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center mr-3">
+                    <LucideIcon name="link-2" :size="18" class="text-white" />
+                  </div>
+                  <h4 class="text-lg font-semibold text-teal-800">Connected Terminal</h4>
+                </div>
+                <div v-if="report.terminal_customer_installation_id && terminalInstallationInfo" class="space-y-2">
+                  <p class="text-lg font-semibold text-gray-800">{{ terminalInstallationInfo.customer_name }}</p>
+                  <p class="text-sm text-teal-600">Installation ID: {{ report.terminal_customer_installation_id.substring(0, 8) }}...</p>
+                  <p class="text-xs text-gray-500">Customer: {{ terminalInstallationInfo.customer_name }}</p>
+                </div>
+                <div v-else-if="report.terminal_customer_installation_id && !terminalInstallationInfo" class="space-y-2">
+                  <p class="text-lg font-semibold text-gray-800">Loading...</p>
+                  <p class="text-sm text-teal-600">Installation ID: {{ report.terminal_customer_installation_id.substring(0, 8) }}...</p>
+                </div>
+                <div v-else class="text-center py-4">
+                  <p class="text-gray-500 text-sm">No terminal connection</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Installation Team Information -->
         <div v-if="report.installation_team_name || report.installation_team_phone" class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div class="bg-gradient-to-r from-indigo-500 to-purple-500 px-8 py-4">
@@ -1125,6 +1213,7 @@ const technicianTeam = ref<InstallationTechnicianTeamResponse[]>([]);
 const showDocumentModal = ref(false);
 const showDeleteModal = ref(false);
 const deleteConfirmationChecked = ref(false);
+const terminalInstallationInfo = ref<{ customer_name: string; installation_id: string; customer_id: string } | null>(null);
 
 // Navigation context management
 const { getBackNavigation, clearNavigationContext } = useNavigationContext();
@@ -1243,6 +1332,11 @@ async function loadReport() {
       // Refresh device status after report is loaded
       if (report.value.ip_static) {
         await refreshDeviceStatus();
+      }
+      
+      // Load terminal installation information if terminal_customer_installation_id exists
+      if (report.value.terminal_customer_installation_id) {
+        await loadTerminalInstallationInfo(report.value.terminal_customer_installation_id);
       }
     }
   } catch (error) {
@@ -2005,6 +2099,31 @@ function getRoleDisplayName(role: string) {
       return '🔧 Helper';
     default:
       return role;
+  }
+}
+
+// Open Google Maps with coordinates
+function openGoogleMaps(latitude: number, longitude: number) {
+  const url = `https://www.google.com/maps?q=${latitude},${longitude}`;
+  window.open(url, '_blank');
+}
+
+// Load terminal installation information
+async function loadTerminalInstallationInfo(terminalInstallationId: string) {
+  try {
+    const response = await customerAdminApi().getCompleteInstallationReport(terminalInstallationId);
+    if (response.data) {
+      const installation = response.data;
+      const customerName = installation.customer?.name || 'Unknown Customer';
+      terminalInstallationInfo.value = {
+        customer_name: customerName,
+        installation_id: installation.id,
+        customer_id: installation.customer_id || ''
+      };
+    }
+  } catch (error) {
+    console.error('Failed to load terminal installation information:', error);
+    terminalInstallationInfo.value = null;
   }
 }
 </script>

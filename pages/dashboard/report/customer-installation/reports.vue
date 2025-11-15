@@ -9,7 +9,7 @@
             <p class="text-sm text-gray-600 mt-1">View and manage installation reports</p>
           </div>
           <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <UButton @click="navigateTo('/dashboard/report/customer-installation')" 
+            <UButton @click="goBackToDashboard" 
                      color="gray" variant="outline"
                      class="w-full sm:w-auto">
               <LucideIcon name="arrow-left" :size="16" class="mr-2" />
@@ -819,6 +819,11 @@ function viewReport(installationId: string) {
 function editReport(installationId: string) {
   // Navigate to edit page or open edit modal
   navigateTo(`/dashboard/report/customer-installation/edit/${installationId}`);
+}
+
+// Navigation helper for template
+function goBackToDashboard() {
+  navigateTo('/dashboard/report/customer-installation')
 }
 
 function deleteReport(installationId: string) {

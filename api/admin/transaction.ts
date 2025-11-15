@@ -40,6 +40,7 @@ export const transactionAdminApi = () => {
         type_cash: "",
         type_in_out: "",
         account_id: "",
+        invoice_id: "",
         date: "",
         description: "",
         file: "",

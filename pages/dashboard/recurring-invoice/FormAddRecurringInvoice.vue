@@ -6,7 +6,8 @@ import { recurringInvoiceAdminApi } from "@/api/admin/recurring-invoice";
 import { networkDeviceAdminApi } from "@/api/admin/network-device";
 import type { RecurringInvoiceItem } from "@/api/admin/recurring-invoice";
 import { internetPackageAdminApi } from "@/api/admin/internet-package";
-import { onMounted, onUnmounted, nextTick } from 'vue';
+import { onMounted, onUnmounted, nextTick, computed, ref, reactive, watch } from 'vue';
+import { formatIDR } from "@/helper/currency";
 
 const props = defineProps({
   isEdit: {
@@ -95,12 +96,18 @@ async function populateInvoiceItemsFromNetworkDevices(customerId: string) {
     
     if (devicesWithProducts.length > 0) {
       // Clear existing items and populate with network device products
-      state.invoice_items = devicesWithProducts.map((device: any) => ({
-        name: `${device.product.name} - ${device.mac_address || 'Device'}`,
-        qty: 1,
-        price: device.product.price,
-        total: device.product.price,
-      }));
+      state.invoice_items = devicesWithProducts.map((device: any, index: number) => {
+        const price = device.product.price || 0;
+        // Initialize formatted values
+        quantityInputs.value[index] = "1";
+        formattedPrices.value[index] = price > 0 ? price.toLocaleString("id-ID") : "";
+        return {
+          name: `${device.product.name} - ${device.mac_address || 'Device'}`,
+          qty: 1,
+          price: price,
+          total: price,
+        };
+      });
       
       // Update total amount
       calculateTotal();
@@ -117,6 +124,8 @@ async function populateInvoiceItemsFromNetworkDevices(customerId: string) {
         price: 0,
         total: 0,
       }];
+      quantityInputs.value = { 0: "1" };
+      formattedPrices.value = { 0: "" };
       calculateTotal();
     }
   } catch (error) {
@@ -148,12 +157,16 @@ async function getProducts() {
 
 // Invoice item functions
 function addItem() {
+  const newIndex = state.invoice_items.length;
   state.invoice_items.push({
     name: "",
     qty: 1,
     price: 0,
     total: 0,
   });
+  // Initialize quantity input state and price format
+  quantityInputs.value[newIndex] = "1";
+  formattedPrices.value[newIndex] = "";
 }
 
 function removeItem(index: number) {
@@ -163,13 +176,16 @@ function removeItem(index: number) {
   }
 }
 
+// Keep updateItem for backward compatibility but use new handlers
 function updateItem(index: number, field: keyof RecurringInvoiceItem, value: string | number) {
-  (state.invoice_items[index] as any)[field] = value;
-  
-  if (field === "qty" || field === "price") {
-    const item = state.invoice_items[index];
-    item.total = item.qty * item.price;
-    calculateTotal();
+  if (field === "qty") {
+    handleQuantityInput(index, value.toString());
+    handleQuantityBlur(index);
+  } else if (field === "price") {
+    handlePriceInput(index, value.toString());
+    handlePriceBlur(index);
+  } else {
+    (state.invoice_items[index] as any)[field] = value;
   }
 }
 
@@ -187,6 +203,84 @@ function setItemProduct(index: number, selectedLabel: string) {
 
 function calculateTotal() {
   state.amount = state.invoice_items.reduce((acc, item) => acc + item.total, 0);
+}
+
+// Number formatting utilities - using same pattern as FormDeposit.vue
+function parseNumber(value: string): number {
+  if (!value) return 0;
+  const cleaned = value.toString().replace(/[^\d]/g, '');
+  return cleaned ? parseFloat(cleaned) : 0;
+}
+
+// Computed property untuk menampilkan format mata uang (Amount field)
+const formattedAmount = computed({
+  get: () => {
+    // Format dengan separator ribuan
+    const numericAmount = state.amount || 0;
+    return numericAmount > 0 ? numericAmount.toLocaleString("id-ID") : "";
+  },
+  set: (value) => {
+    // Remove non-numeric characters
+    const numericValue = value.toString().replace(/[^\d]/g, "");
+    state.amount = numericValue ? parseFloat(numericValue) : 0;
+  },
+});
+
+// Function untuk format display
+const displayAmount = computed(() => {
+  const numericAmount = state.amount || 0;
+  return numericAmount > 0 ? formatIDR(numericAmount) : "Rp 0,00";
+});
+
+// Computed properties for price and quantity inputs (per item)
+const formattedPrices = ref<Record<number, string>>({});
+const quantityInputs = ref<Record<number, string>>({});
+
+// Handle price input with formatting
+function handlePriceInput(index: number, value: string) {
+  // Store formatted value for display
+  const numericValue = parseNumber(value);
+  formattedPrices.value[index] = numericValue > 0 ? numericValue.toLocaleString("id-ID") : "";
+  
+  // Update actual price value
+  state.invoice_items[index].price = numericValue;
+  const item = state.invoice_items[index];
+  item.total = item.qty * item.price;
+  calculateTotal();
+}
+
+// Handle price blur - finalize the value
+function handlePriceBlur(index: number) {
+  const item = state.invoice_items[index];
+  formattedPrices.value[index] = item.price > 0 ? item.price.toLocaleString("id-ID") : "";
+  calculateTotal();
+}
+
+// Handle quantity input - allow free typing, validate on blur
+function handleQuantityInput(index: number, value: string) {
+  // Store raw input value for display
+  quantityInputs.value[index] = value;
+  
+  // Only update state if it's a valid number, but don't enforce min yet
+  const numValue = parseNumber(value);
+  if (!isNaN(numValue) && numValue >= 0) {
+    state.invoice_items[index].qty = Math.max(1, Math.floor(numValue));
+    const item = state.invoice_items[index];
+    item.total = item.qty * item.price;
+    calculateTotal();
+  }
+}
+
+// Handle quantity blur - finalize the value
+function handleQuantityBlur(index: number) {
+  const value = quantityInputs.value[index] || state.invoice_items[index].qty.toString();
+  const numValue = parseNumber(value);
+  const qty = Math.max(1, Math.floor(numValue)); // Ensure minimum 1 and integer
+  state.invoice_items[index].qty = qty;
+  quantityInputs.value[index] = qty.toString(); // Update display value
+  const item = state.invoice_items[index];
+  item.total = item.qty * item.price;
+  calculateTotal();
 }
 
 // Calculate next invoice date based on frequency
@@ -314,13 +408,24 @@ watch(
           total: 0,
         },
       ];
+      // Initialize formatted values for edit mode
+      state.invoice_items.forEach((item, index) => {
+        quantityInputs.value[index] = item.qty.toString();
+        formattedPrices.value[index] = item.price > 0 ? item.price.toLocaleString("id-ID") : "";
+      });
     }
   },
   { immediate: true }
 );
 
-// Initialize
+// Initialize quantity inputs and price formats on mount
 onMounted(() => {
+  // Initialize formatted values for existing items
+  state.invoice_items.forEach((item, index) => {
+    quantityInputs.value[index] = item.qty.toString();
+    formattedPrices.value[index] = item.price > 0 ? item.price.toLocaleString("id-ID") : "";
+  });
+  
   nextTick(() => {
     // Observe DOM to tag the correct HeadlessUI panel even when portalled or re-rendered
     const observer = new MutationObserver(() => {
@@ -478,30 +583,51 @@ onMounted(() => {
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
                 <UInput 
-                  :model-value="item.qty"
-                  @update:model-value="updateItem(index, 'qty', Number($event))"
-                  type="number"
-                  min="1"
+                  :model-value="quantityInputs[index] ?? item.qty.toString()" 
+                  type="text"
+                  inputmode="numeric"
+                  class="text-center font-medium"
+                  @update:modelValue="(val: string) => handleQuantityInput(index, val)"
+                  @blur="handleQuantityBlur(index)"
                 />
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Price</label>
-                <UInput 
-                  :model-value="item.price"
-                  @update:model-value="updateItem(index, 'price', Number($event))"
-                  type="number"
-                  min="0"
-                />
+                <div class="relative">
+                  <UInput 
+                    :model-value="formattedPrices[index] ?? (item.price > 0 ? item.price.toLocaleString('id-ID') : '')" 
+                    type="text"
+                    inputmode="numeric"
+                    class="font-semibold text-gray-900 pr-12"
+                    placeholder="0"
+                    @update:modelValue="(val: string) => handlePriceInput(index, val)"
+                    @blur="handlePriceBlur(index)"
+                  />
+                  <div class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
+                    Rp
+                  </div>
+                </div>
+                <div class="text-xs text-gray-600 mt-1">
+                  Value: {{ item.price > 0 ? formatIDR(item.price) : 'Rp 0,00' }}
+                </div>
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Total</label>
-                <UInput 
-                  :model-value="item.total"
-                  readonly
-                  class="bg-gray-50"
-                />
+                <div class="relative">
+                  <UInput 
+                    :model-value="item.total > 0 ? item.total.toLocaleString('id-ID') : '0'" 
+                    readonly
+                    class="bg-gray-50 cursor-not-allowed font-bold text-lg text-gray-900 pr-12"
+                  />
+                  <div class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                    Rp
+                  </div>
+                </div>
+                <div class="text-xs text-gray-600 mt-1">
+                  Value: {{ item.total > 0 ? formatIDR(item.total) : 'Rp 0,00' }}
+                </div>
               </div>
 
               <div class="flex items-end">
@@ -523,11 +649,11 @@ onMounted(() => {
             <div class="flex justify-between items-center">
               <span class="text-lg font-medium text-gray-900">Total Amount:</span>
               <span class="text-xl font-bold text-blue-600">
-                {{ new Intl.NumberFormat('id-ID', { 
-                  style: 'currency', 
-                  currency: 'IDR' 
-                }).format(state.amount) }}
+                {{ displayAmount }}
               </span>
+            </div>
+            <div class="text-sm text-gray-600 mt-1">
+              Formatted: {{ formattedAmount || '0' }}
             </div>
           </div>
         </div>

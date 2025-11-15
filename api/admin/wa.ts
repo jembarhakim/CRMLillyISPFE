@@ -25,31 +25,35 @@ export const WhatsappApi = () => {
       });
 
       const contentType = response.headers.get("content-type") || "";
-
-      if (!response.ok) {
-        // Try parse JSON if available, otherwise raw text
-        let errorMessage = `Failed to send WhatsApp message`;
-        try {
-          if (contentType.includes("application/json")) {
-            const errorData = await response.json();
-            errorMessage = errorData?.message || errorData?.error || errorMessage;
-          } else {
-            const text = await response.text();
-            errorMessage = text || errorMessage;
-          }
-        } catch {
-          // Ignore parsing errors and use default message
+      
+      // Parse response first to check for error status
+      let responseData: any;
+      try {
+        if (contentType.includes("application/json")) {
+          responseData = await response.json();
+        } else {
+          const text = await response.text();
+          responseData = { message: text };
         }
+      } catch {
+        // If parsing fails, treat as error
+        throw new Error(`Failed to parse response from WhatsApp API`);
+      }
+
+      // Check if response indicates error (even if HTTP status is 200)
+      if (responseData && (responseData.status === 'error' || responseData.status === false)) {
+        const errorMessage = responseData.message || responseData.error || 'Failed to send WhatsApp message';
         throw new Error(errorMessage);
       }
 
-      // Happy path: prefer JSON; if server returns text, wrap it
-      try {
-        return await response.json();
-      } catch {
-        const text = await response.text();
-        return { message: text } as any;
+      // Check HTTP status code
+      if (!response.ok) {
+        const errorMessage = responseData?.message || responseData?.error || `HTTP ${response.status}: Failed to send WhatsApp message`;
+        throw new Error(errorMessage);
       }
+
+      // Return successful response
+      return responseData;
     },
   };
 };

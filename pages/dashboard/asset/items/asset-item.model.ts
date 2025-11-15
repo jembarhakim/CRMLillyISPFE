@@ -15,6 +15,8 @@ export const assetItem: CreateAssetItemRequest = {
   mac_address: "",
   serial_number: "",
   status: "in_stock",
+  company_id: undefined,
+  site: "",
 };
 
 export const assetItemStatus = [
