@@ -69,11 +69,11 @@ div[aria-haspopup="listbox"] button::after {
   pointer-events: none !important;
   z-index: 1 !important;
   /* Using SVG chevron-down icon */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5' /%3E%3C/svg%3E") !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5' /%3E%3C/svg%3E") !important;
   background-size: contain !important;
   background-repeat: no-repeat !important;
   background-position: center !important;
-  opacity: 0.5 !important;
+  opacity: 1 !important;
   transition: opacity 0.2s ease, transform 0.2s ease !important;
   display: block !important;
 }
@@ -84,7 +84,7 @@ div[aria-haspopup="listbox"][aria-expanded="true"] button::after,
 div[aria-haspopup="listbox"][data-headlessui-state="open"] > button::after,
 div[aria-haspopup="listbox"][data-headlessui-state="open"] button::after {
   transform: translateY(-50%) rotate(180deg) !important;
-  opacity: 0.7 !important;
+  opacity: 1 !important;
 }
 
 /* IMPORTANT: UDropdown buttons don't have aria-haspopup="listbox", so they won't match the rules above */
@@ -95,7 +95,7 @@ div[aria-haspopup="listbox"][data-headlessui-state="open"] button::after {
 .dark div[aria-haspopup="listbox"] > button::after,
 .dark div[aria-haspopup="listbox"] button::after {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='%23ffffff'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5' /%3E%3C/svg%3E") !important;
-  opacity: 0.6 !important;
+  opacity: 1 !important;
 }
 
 .dark div[aria-haspopup="listbox"][aria-expanded="true"] > button::after,
@@ -105,5 +105,3 @@ div[aria-haspopup="listbox"][data-headlessui-state="open"] button::after {
   transform: translateY(-50%) rotate(180deg) !important;
   opacity: 0.8 !important;
 }
-
-

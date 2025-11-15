@@ -54,16 +54,19 @@ const columns = [
     key: "invoice_date",
     label: "Invoice Date",
     sortable: true,
+    class: "hidden md:table-cell", // Hide on mobile
   },
   {
     key: "due_date",
     label: "Due Date",
     sortable: true,
+    class: "hidden lg:table-cell", // Hide on mobile and tablet
   },
   {
     key: "next_invoice_date",
     label: "Next Invoice",
     sortable: true,
+    class: "hidden xl:table-cell", // Hide on smaller screens
   },
   {
     key: "status",
@@ -429,7 +432,7 @@ onMounted(() => {
             @click="clearFilters"
             color="gray"
             variant="solid"
-            class="w-full filter-button bg-gray-700 dark:bg-gray-800 text-white hover:bg-gray-100 dark:hover:bg-gray-200 hover:text-gray-900 dark:hover:text-gray-900 transition-colors duration-200"
+            class="w-full filter-button bg-gray-700 dark:bg-gray-800 text-white hover:bg-gray-900 dark:hover:bg-gray-700 transition-colors duration-200"
           >
             Clear Filters
           </UButton>
@@ -437,8 +440,26 @@ onMounted(() => {
       </div>
     </div>
 
+    <UCard
+      class="mb-4 border-blue-200"
+      :ui="{ background: 'bg-black dark:bg-black' }"
+    >
+      <div class="flex items-start gap-3">
+        <LucideIcon
+          name="info"
+          :size="20"
+          class="text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0"
+        />
+        <div>
+          <h4 class="font-medium text-blue-900 dark:text-blue-100">Pro Tip</h4>
+          <p class="text-sm text-blue-700 dark:text-blue-300 mt-1">
+            Klik kolom tabel untuk melihat hasil filter sesuai kolom
+          </p>
+        </div>
+      </div>
+    </UCard>
     <!-- Table -->
-    <div class="bg-white rounded-lg shadow">
+    <div class="bg-white rounded-lg shadow overflow-x-auto">
       <UTable
         :rows="filteredRows"
         :columns="columns"
@@ -447,6 +468,7 @@ onMounted(() => {
           icon: 'file-text',
           label: 'No recurring invoices found',
         }"
+        class="min-w-full"
       >
         <template #id-data="{ row }">
           <span class="font-mono text-sm">#{{ row.id.slice(-8) }}</span>
@@ -509,6 +531,23 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* Sortable column indicators - hover effects for table headers */
+:deep(table thead th button:hover) {
+  background-color: #374151 !important;
+  color: #ffffff !important;
+  border-color: #374151 !important;
+}
+
+:deep(table thead th button:hover *) {
+  color: #ffffff !important;
+}
+
+/* Add cursor pointer to indicate clickable headers */
+:deep(table thead th button) {
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
 /* Clean, visible table headers like the reference */
 :deep(table thead th) {
   color: #374151 !important;
@@ -577,5 +616,16 @@ onMounted(() => {
   background-color: #e5e7eb !important; /* gray-200 - light background */
   color: #111827 !important; /* gray-900 - dark text */
   border-color: #d1d5db !important;
+}
+
+/* Table row hover - white background */
+:deep(tbody tr:hover),
+:deep(.u-table tbody tr:hover) {
+  background-color: #ffffff !important;
+}
+
+:deep(.dark tbody tr:hover),
+:deep(.dark .u-table tbody tr:hover) {
+  background-color: #ffffff !important;
 }
 </style>

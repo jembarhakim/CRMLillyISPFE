@@ -490,7 +490,7 @@ onMounted(() => {
 
           <template #items-data="{ row }">
             <div class="flex flex-col">
-              <span v-if="row.items && row.items.length > 0" class="font-medium text-gray-900 dark:text-gray-100 text-sm">
+              <span v-if="row.items && row.items.length > 0" class="font-medium text-gray-900 dark:text-gray-900 text-sm">
                 {{ row.items.length }} item(s)
               </span>
               <span v-else class="font-medium text-gray-900 dark:text-gray-100 text-sm">
@@ -516,7 +516,7 @@ onMounted(() => {
           </template>
 
           <template #notes-data="{ row }">
-            <span class="text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate" :title="row.notes">
+            <span class="text-sm text-gray-600 dark:text-gray-900 max-w-xs truncate" :title="row.notes">
               {{ row.notes || '-' }}
             </span>
           </template>

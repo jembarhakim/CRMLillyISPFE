@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { object, string, type InferType } from "yup";
 import type { FormSubmitEvent } from "#ui/types";
-import { reactive, watch, ref, onMounted, onUnmounted, nextTick } from "vue";
+import { reactive, watch, ref } from "vue";
 import { customerAdminApi } from "@/api/admin/customer";
 import { areaAdminApi } from "@/api/admin/area";
 // Removed internet package and network device imports - handled during installation
@@ -297,167 +297,6 @@ async function getDataOptions() {
 }
 await getDataOptions()
 
-// Mark this modal's dialog panel with a unique identifier
-onMounted(() => {
-  nextTick(() => {
-    // Setup date input click handler to open calendar picker
-    const setupDateInput = () => {
-      const dateInputs = document.querySelectorAll('.date-input-clickable input[type="date"]');
-      dateInputs.forEach((dateInput) => {
-        const input = dateInput as HTMLInputElement;
-        // Check if listener already added
-        if (!(input as any).__datePickerSetup) {
-          (input as any).__datePickerSetup = true;
-          
-          // Add click handler to open date picker
-          input.addEventListener('click', function(e) {
-            // Use showPicker() if available (modern browsers)
-            if (this.showPicker && typeof this.showPicker === 'function') {
-              try {
-                const pickerResult = (this.showPicker as () => Promise<void>)();
-                pickerResult?.catch(() => {
-                  // Fallback: just focus
-                  this.focus();
-                });
-              } catch (error) {
-                // Fallback: just focus if showPicker fails
-                this.focus();
-              }
-            }
-          });
-          
-          // Also handle focus event
-          input.addEventListener('focus', function() {
-            // Small delay to ensure input is fully focused
-            setTimeout(() => {
-              if (this.showPicker && typeof this.showPicker === 'function') {
-                try {
-                  const pickerResult = (this.showPicker as () => Promise<void>)();
-                  pickerResult?.catch(() => {
-                    // Silently fail if showPicker is not available
-                  });
-                } catch (error) {
-                  // Silently fail if showPicker fails
-                }
-              }
-            }, 100);
-          });
-        }
-      });
-    };
-    
-    // Setup immediately
-    setupDateInput();
-    
-    // Also setup when DOM changes (for dynamic content)
-    const dateInputObserver = new MutationObserver(() => {
-      setupDateInput();
-    });
-    
-    dateInputObserver.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-    
-    // Add class to body when modal is open
-    document.body.classList.add('customer-form-modal-open')
-    
-    // Function to style dropdown popovers
-    const styleDropdownPopovers = () => {
-      // Find all popover/menu elements that might be dropdowns
-      const popovers = document.querySelectorAll('[id^="headlessui-popover"], [id^="headlessui-menu"]')
-      popovers.forEach((popover: any) => {
-        // Check if this popover is related to our customer form
-        const hasCustomerForm = document.querySelector('.customer-form-content')
-        if (hasCustomerForm) {
-          // Add data attribute to identify customer form dropdowns
-          popover.setAttribute('data-customer-form-dropdown', 'true')
-          
-          // Force white background on the popover itself
-          if (popover.style) {
-            popover.style.backgroundColor = '#FFFFFF'
-            popover.style.color = '#000000'
-          }
-          
-          // Force white background on all nested elements
-          const allElements = popover.querySelectorAll('*')
-          allElements.forEach((el: any) => {
-            if (el.style) {
-              const bgColor = window.getComputedStyle(el).backgroundColor
-              // Override dark backgrounds (black, dark gray, etc.)
-              if (bgColor && (
-                bgColor.includes('rgb(17, 24, 39)') || 
-                bgColor.includes('rgb(0, 0, 0)') || 
-                bgColor.includes('rgb(31, 41, 55)') ||
-                bgColor.includes('rgb(3, 7, 18)') ||
-                bgColor.includes('rgb(15, 23, 42)')
-              )) {
-                el.style.backgroundColor = '#FFFFFF'
-                el.style.color = '#000000'
-              }
-              // Also check for dark theme classes and remove them
-              if (el.classList) {
-                el.classList.remove('dark', 'bg-gray-900', 'bg-black', 'bg-gray-800', 'bg-gray-950')
-                el.classList.add('bg-white')
-              }
-            }
-          })
-        }
-      })
-    }
-    
-    // Find the HeadlessUI dialog panel that contains our customer form content
-    const observer = new MutationObserver(() => {
-      const dialogPanels = document.querySelectorAll('[id^="headlessui-dialog-panel"]')
-      dialogPanels.forEach((panel) => {
-        // Check if this panel contains our customer form content
-        if (panel.querySelector('.customer-form-content')) {
-          // Add unique attribute to identify this modal
-          panel.setAttribute('data-customer-form-modal', 'true')
-        }
-      })
-      
-      // Style any new dropdown popovers that appear
-      styleDropdownPopovers()
-    })
-    
-    // Start observing
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    })
-    
-    // Also check immediately
-    const dialogPanels = document.querySelectorAll('[id^="headlessui-dialog-panel"]')
-    dialogPanels.forEach((panel) => {
-      if (panel.querySelector('.customer-form-content')) {
-        panel.setAttribute('data-customer-form-modal', 'true')
-      }
-    })
-    
-    // Style dropdowns immediately
-    styleDropdownPopovers()
-    
-    // Also observe for popover changes specifically
-    const popoverObserver = new MutationObserver(() => {
-      styleDropdownPopovers()
-    })
-    
-    popoverObserver.observe(document.body, {
-      childList: true,
-      subtree: false
-    })
-    
-    // Cleanup observers when component unmounts
-    onUnmounted(() => {
-      observer.disconnect()
-      popoverObserver.disconnect()
-      dateInputObserver.disconnect()
-      document.body.classList.remove('customer-form-modal-open')
-    })
-  })
-})
-
 </script>
 
 <style scoped>
@@ -591,396 +430,49 @@ onMounted(() => {
   transform: translateZ(0);
 }
 
-/* Smooth animations */
-.transition-all {
-  transition: all 0.2s ease-in-out;
-}
-
-/* Better focus states for accessibility */
-button:focus,
-input:focus,
-select:focus {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
-}
-
-/* Loading states */
-.loading {
-  opacity: 0.7;
-  pointer-events: none;
-}
-
-/* Responsive typography */
-@media (max-width: 640px) {
-  .text-lg {
-    font-size: 1rem;
-  }
-  
-  .text-2xl {
-    font-size: 1.25rem;
-  }
-}
-
-/* Card shadows and borders for better visual hierarchy - soft shadows */
-.bg-white {
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px 0 rgba(0, 0, 0, 0.04);
-}
-
-/* Ensure modal background is white */
-.customer-form-modal :deep(.ui-modal),
-.customer-form-modal :deep([class*="ui-modal"]) {
-  background-color: #FFFFFF !important;
-}
-
-.customer-form-modal :deep(.ui-modal > div),
-.customer-form-modal :deep(.ui-modal > .ui-card) {
-  background-color: #FFFFFF !important;
-}
-
-/* Perfect column alignment */
-.grid-cols-1.md\\:grid-cols-2 > div {
-  display: flex;
-  flex-direction: column;
-}
-
-/* Consistent label spacing */
-.space-y-1 > label {
-  margin-bottom: 0.25rem;
-  font-weight: 500;
-  line-height: 1.5;
-}
-
-/* Ensure all form elements have consistent height */
-.space-y-1 input,
-.space-y-1 select,
-.space-y-1 [role="combobox"] {
-  min-height: 42px;
-}
-
-/* Perfect grid alignment */
-.grid.grid-cols-1.md\\:grid-cols-2 {
-  align-items: start;
-}
-
-/* Consistent spacing for form groups */
-.space-y-1 {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
-
-/* Single column layout spacing */
-.space-y-4 > * + * {
-  margin-top: 1rem;
-}
-
-/* Ensure proper spacing between form sections */
-.space-y-4 {
-  display: flex;
-  flex-direction: column;
-}
-
-/* Custom input styling - white background, clean borders */
-:deep(.customer-input input),
-:deep(.customer-input) {
-  background-color: #F9FAFB !important;
-  border-color: #D1D5DB !important;
+/* Force light mode text colors */
+h1, h2, h3, h4, h5, h6, label, span, p {
   color: #000000 !important;
-}
-
-:deep(.customer-input input:focus),
-:deep(.customer-input:focus-within) {
-  border-color: #2563EB !important;
-  outline: none !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
-}
-
-:deep(.customer-input input::placeholder) {
-  color: #6B7280 !important;
-}
-
-/* Date input calendar icon styling - make it black and visible */
-/* For Chrome, Safari, Edge (WebKit browsers) */
-:deep(.customer-input input[type="date"]::-webkit-calendar-picker-indicator) {
-  filter: brightness(0) !important;
-  opacity: 1 !important;
-  cursor: pointer !important;
-  background-color: transparent !important;
-  width: 20px !important;
-  height: 20px !important;
-  padding: 2px !important;
-  margin-right: 5px !important;
-}
-
-:deep(.customer-input input[type="date"]::-webkit-calendar-picker-indicator:hover) {
-  opacity: 0.8 !important;
-  filter: brightness(0) opacity(0.8) !important;
-}
-
-/* For Firefox */
-:deep(.customer-input input[type="date"]) {
-  color-scheme: light !important;
-}
-
-:deep(.customer-input input[type="date"]::-moz-calendar-picker-indicator) {
-  filter: brightness(0) saturate(100%) !important;
-  opacity: 1 !important;
-  cursor: pointer !important;
-}
-
-/* Ensure date input text is black */
-:deep(.customer-input input[type="date"]) {
-  color: #000000 !important;
-}
-
-/* Make date input clickable and ensure calendar opens */
-:deep(.date-input-clickable input[type="date"]) {
-  cursor: pointer !important;
-  pointer-events: auto !important;
-}
-
-:deep(.date-input-clickable) {
-  cursor: pointer !important;
-  pointer-events: auto !important;
-}
-
-:deep(.date-input-clickable input[type="date"]:focus) {
-  cursor: pointer !important;
-}
-
-/* Custom select menu styling - clean white background */
-:deep(.customer-select button),
-:deep(.customer-select [role="combobox"]) {
-  background-color: #FFFFFF !important;
-  border-color: #D1D5DB !important;
-  color: #000000 !important;
-}
-
-:deep(.customer-select button:focus),
-:deep(.customer-select [role="combobox"]:focus),
-:deep(.customer-select:focus-within button) {
-  border-color: #2563EB !important;
-  outline: none !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
-}
-
-/* Select menu dropdown container/popover - white background */
-:deep(.customer-select [role="listbox"]),
-:deep(.customer-select [role="menu"]),
-:deep(.customer-select [data-headlessui-state]),
-:deep(.customer-select [class*="ui-menu"]),
-:deep(.customer-select [class*="ui-popover"]),
-:deep(.customer-select [class*="popover"]),
-:deep(.customer-select [class*="menu"]),
-:deep(.customer-select > div > div),
-:deep(.customer-select ul),
-:deep(.customer-select [id*="headlessui-popover"]),
-:deep(.customer-select [id*="headlessui-menu"]) {
-  background-color: #FFFFFF !important;
-  border-color: #D1D5DB !important;
-  color: #000000 !important;
-}
-
-/* Select menu dropdown items */
-:deep(.customer-select [role="option"]) {
-  color: #000000 !important;
-  background-color: #FFFFFF !important;
-}
-
-:deep(.customer-select [role="option"]:hover),
-:deep(.customer-select [role="option"][data-headlessui-state="active"]) {
-  background-color: #F9FAFB !important;
-  color: #000000 !important;
-}
-
-/* Ensure all nested elements in dropdown are white */
-:deep(.customer-select [role="listbox"] *),
-:deep(.customer-select [role="menu"] *),
-:deep(.customer-select [class*="ui-menu"] *),
-:deep(.customer-select [class*="ui-popover"] *) {
-  background-color: transparent !important;
-}
-
-/* Override any dark theme classes that might be applied */
-:deep(.customer-select [class*="dark"]),
-:deep(.customer-select [class*="bg-gray-900"]),
-:deep(.customer-select [class*="bg-black"]) {
-  background-color: #FFFFFF !important;
-}
-
-/* Form labels - ensure high contrast */
-label {
-  color: #000000 !important;
-}
-
-/* Ensure all text is readable on white background */
-.customer-form-content {
-  color: #000000 !important;
-}
-
-/* UFormGroup label styling */
-:deep(.customer-form-content [class*="UFormGroup"] label),
-:deep(.customer-form-content [class*="form-group"] label) {
-  color: #000000 !important;
-  font-weight: 500 !important;
-}
-
-/* Close button styling - make it more visible */
-.close-button {
-  border: 2px solid #D1D5DB !important;
-  background-color: #FFFFFF !important;
-  color: #374151 !important;
-  min-width: 40px !important;
-  min-height: 40px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: 8px !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
-  transition: all 0.2s ease-in-out !important;
-}
-
-.close-button:hover {
-  background-color: #FEF2F2 !important;
-  border-color: #F87171 !important;
-  color: #DC2626 !important;
-  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1) !important;
-  transform: scale(1.05) !important;
-}
-
-.close-button:active {
-  transform: scale(0.95) !important;
-}
-
-.close-button:focus {
-  outline: 2px solid #2563EB !important;
-  outline-offset: 2px !important;
 }
 </style>
 
-<style>
-/* Global styles for HeadlessUI dialog panel - ONLY affects customer form modal */
-/* Target dialog panel with data-customer-form-modal attribute (added via JavaScript) */
-[id^="headlessui-dialog-panel"][data-customer-form-modal="true"] {
-  max-width: none !important;
-  width: 95vw !important;
-}
-
-/* Override sm:max-w-lg class specifically (removes 32rem constraint) */
-/* ONLY for customer form modal */
-@media (min-width: 640px) {
-  [id^="headlessui-dialog-panel"][data-customer-form-modal="true"].sm\:max-w-lg,
-  [id^="headlessui-dialog-panel"][data-customer-form-modal="true"][class*="max-w-lg"] {
-    max-width: none !important;
-    width: 95vw !important;
-  }
-}
-
-/* Global styles for USelectMenu dropdowns in customer form - target portalled elements */
-/* These styles target dropdown menus that are portalled to body */
-[id^="headlessui-dialog-panel"][data-customer-form-modal="true"] ~ [id^="headlessui-popover"],
-[id^="headlessui-dialog-panel"][data-customer-form-modal="true"] ~ [id^="headlessui-menu"],
-body > [id^="headlessui-popover"]:has([role="option"]),
-body > [id^="headlessui-menu"]:has([role="option"]),
-body.customer-form-modal-open [id^="headlessui-popover"],
-body.customer-form-modal-open [id^="headlessui-menu"],
-[id^="headlessui-popover"][data-customer-form-dropdown="true"],
-[id^="headlessui-menu"][data-customer-form-dropdown="true"] {
-  background-color: #FFFFFF !important;
-  border-color: #D1D5DB !important;
-  color: #000000 !important;
-}
-
-/* Target all popover/menu containers that might contain customer form dropdowns */
-body.customer-form-modal-open [id^="headlessui-popover"] [role="listbox"],
-body.customer-form-modal-open [id^="headlessui-popover"] [role="menu"],
-body.customer-form-modal-open [id^="headlessui-menu"] [role="listbox"],
-body.customer-form-modal-open [id^="headlessui-menu"] [role="menu"],
-[id^="headlessui-popover"][data-customer-form-dropdown="true"] [role="listbox"],
-[id^="headlessui-popover"][data-customer-form-dropdown="true"] [role="menu"],
-[id^="headlessui-menu"][data-customer-form-dropdown="true"] [role="listbox"],
-[id^="headlessui-menu"][data-customer-form-dropdown="true"] [role="menu"],
-body.customer-form-modal-open [id^="headlessui-popover"] ul,
-body.customer-form-modal-open [id^="headlessui-menu"] ul,
-[id^="headlessui-popover"][data-customer-form-dropdown="true"] ul,
-[id^="headlessui-menu"][data-customer-form-dropdown="true"] ul,
-body.customer-form-modal-open [id^="headlessui-popover"] [class*="ui-menu"],
-body.customer-form-modal-open [id^="headlessui-menu"] [class*="ui-menu"],
-[id^="headlessui-popover"][data-customer-form-dropdown="true"] [class*="ui-menu"],
-[id^="headlessui-menu"][data-customer-form-dropdown="true"] [class*="ui-menu"] {
-  background-color: #FFFFFF !important;
-  border-color: #D1D5DB !important;
-  color: #000000 !important;
-}
-
-/* Target dropdown options */
-body.customer-form-modal-open [id^="headlessui-popover"] [role="option"],
-body.customer-form-modal-open [id^="headlessui-menu"] [role="option"],
-[id^="headlessui-popover"][data-customer-form-dropdown="true"] [role="option"],
-[id^="headlessui-menu"][data-customer-form-dropdown="true"] [role="option"],
-body.customer-form-modal-open [id^="headlessui-popover"] li,
-body.customer-form-modal-open [id^="headlessui-menu"] li,
-[id^="headlessui-popover"][data-customer-form-dropdown="true"] li,
-[id^="headlessui-menu"][data-customer-form-dropdown="true"] li {
-  background-color: #FFFFFF !important;
-  color: #000000 !important;
-}
-
-body.customer-form-modal-open [id^="headlessui-popover"] [role="option"]:hover,
-body.customer-form-modal-open [id^="headlessui-menu"] [role="option"]:hover,
-[id^="headlessui-popover"][data-customer-form-dropdown="true"] [role="option"]:hover,
-[id^="headlessui-menu"][data-customer-form-dropdown="true"] [role="option"]:hover,
-body.customer-form-modal-open [id^="headlessui-popover"] [role="option"][data-headlessui-state="active"],
-body.customer-form-modal-open [id^="headlessui-menu"] [role="option"][data-headlessui-state="active"],
-[id^="headlessui-popover"][data-customer-form-dropdown="true"] [role="option"][data-headlessui-state="active"],
-[id^="headlessui-menu"][data-customer-form-dropdown="true"] [role="option"][data-headlessui-state="active"],
-body.customer-form-modal-open [id^="headlessui-popover"] li:hover,
-body.customer-form-modal-open [id^="headlessui-menu"] li:hover,
-[id^="headlessui-popover"][data-customer-form-dropdown="true"] li:hover,
-[id^="headlessui-menu"][data-customer-form-dropdown="true"] li:hover {
-  background-color: #F9FAFB !important;
-  color: #000000 !important;
-}
-
-/* Override any dark theme classes in dropdowns */
-body.customer-form-modal-open [id^="headlessui-popover"] [class*="dark"],
-body.customer-form-modal-open [id^="headlessui-popover"] [class*="bg-gray-900"],
-body.customer-form-modal-open [id^="headlessui-popover"] [class*="bg-black"],
-body.customer-form-modal-open [id^="headlessui-menu"] [class*="dark"],
-body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-gray-900"],
-body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
-[id^="headlessui-popover"][data-customer-form-dropdown="true"] [class*="dark"],
-[id^="headlessui-popover"][data-customer-form-dropdown="true"] [class*="bg-gray-900"],
-[id^="headlessui-popover"][data-customer-form-dropdown="true"] [class*="bg-black"],
-[id^="headlessui-menu"][data-customer-form-dropdown="true"] [class*="dark"],
-[id^="headlessui-menu"][data-customer-form-dropdown="true"] [class*="bg-gray-900"],
-[id^="headlessui-menu"][data-customer-form-dropdown="true"] [class*="bg-black"] {
-  background-color: #FFFFFF !important;
-}
-</style>
 
 <template>
-  <UModal :ui="{ width: 'w-[95vw]', height: 'h-auto max-h-[95vh] overflow-y-auto', background: 'bg-white' }" class="customer-form-modal">
-    <div class="w-full max-w-none mx-auto p-4 lg:p-8 overflow-y-auto max-h-[95vh] customer-form-content bg-white">
-      <!-- Modal Header -->
-      <div class="flex items-center justify-between mb-6 p-4 bg-white rounded-xl shadow-sm border border-gray-200">
-        <h1 class="text-xl font-bold text-black">
-          {{ props.isEdit ? "Edit" : "Add New" }} Customer
-        </h1>
-        <UButton 
-          @click="closeModal" 
-          variant="outline" 
-          color="gray"
-          size="md"
-          class="close-button"
-        >
-          <LucideIcon name="x" :size="22" />
-        </UButton>
-      </div>
+  <UModal 
+    :ui="{ 
+      width: 'sm:max-w-6xl', 
+      container: 'items-center',
+      background: 'bg-white dark:bg-white'
+    }" 
+  >
+    <UCard 
+      :ui="{
+        background: 'bg-white',
+        ring: '',
+        divide: 'divide-y divide-gray-200',
+        header: { background: 'bg-white' },
+        body: { background: 'bg-white' },
+        footer: { background: 'bg-white' }
+      }"
+    >
+      <template #header>
+        <div class="flex items-center justify-between">
+          <h1 class="text-xl font-bold text-black">
+            {{ props.isEdit ? "Edit" : "Add New" }} Customer
+          </h1>
+          <UButton 
+            @click="closeModal" 
+            color="gray"
+            variant="ghost"
+            icon="i-heroicons-x-mark-20-solid"
+            class="-my-1"
+          />
+        </div>
+      </template>
 
       <UForm :schema="schema" :state="state" class="space-y-6" @submit="onSubmit">
         <!-- Desktop: Two-column layout, Mobile: Single column -->
-        <div class="flex flex-col md:flex-row gap-6">
+        <div class="flex flex-col lg:flex-row gap-6">
           <!-- Left Column: Customer & Business Information -->
           <div class="flex-1 space-y-6">
             <!-- Customer Information Section -->
@@ -1312,39 +804,23 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
         </div>
         
         <!-- Submit Button -->
-        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
-          <div class="text-sm text-gray-700 flex items-center gap-1">
-            <LucideIcon name="info" :size="16" />
-            <span>All fields marked with * are required</span>
-          </div>
-          <div class="flex gap-3 w-full sm:w-auto">
-            <UButton 
-              type="button" 
-              @click="closeModal" 
-              variant="outline" 
-              color="gray"
-              size="lg"
-              class="flex-1 sm:flex-initial border-gray-300 text-gray-700 hover:bg-gray-50"
-            >
-              <template #leading>
-                <LucideIcon name="x" :size="16" />
-              </template>
-              Cancel
-            </UButton>
-            <UButton 
-              type="submit" 
-              color="blue"
-              size="lg"
-              class="flex-1 sm:flex-initial"
-            >
-              <template #leading>
-                <LucideIcon name="check" :size="16" />
-              </template>
-              Submit
-            </UButton>
-          </div>
+        <div class="flex justify-end gap-3 pt-4 border-t">
+          <UButton 
+            type="button" 
+            @click="closeModal" 
+            color="gray"
+            variant="outline"
+          >
+            Cancel
+          </UButton>
+          <UButton 
+            type="submit" 
+            color="primary"
+          >
+            {{ props.isEdit ? 'Update' : 'Create' }} Customer
+          </UButton>
         </div>
       </UForm>
-    </div>
+    </UCard>
   </UModal>
 </template>

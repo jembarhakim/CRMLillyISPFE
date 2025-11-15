@@ -501,7 +501,7 @@
                 <!-- Cable and Port Information -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <UInput
-                    v-model="service.cable_length"
+                    v-model="service.length"
                     type="number"
                     placeholder="Cable Length (m)"
                     class="custom-input"
