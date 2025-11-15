@@ -240,118 +240,95 @@
         </div>
 
         <!-- Desktop Table View -->
-        <div class="hidden sm:block overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Technician
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tgl. Permintaan PSB
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tgl. Selesai Instalasi
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Durasi PSB
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status PSB
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Assets
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-if="loading" class="text-center">
-                <td colspan="10" class="px-6 py-4">
-                  <div class="flex justify-center">
-                    <UIcon name="refresh-cw" class="animate-spin text-2xl" />
-                  </div>
-                </td>
-              </tr>
-              <tr v-else-if="filteredReports.length === 0" class="text-center">
-                <td colspan="10" class="px-6 py-4 text-gray-500">
-                  No installation reports found
-                </td>
-              </tr>
-              <tr v-else v-for="report in paginatedReports" :key="report.installation_id" class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap">
+        <div class="hidden sm:block">
+          <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <UTable :rows="paginatedReports" :columns="columns" class="w-full installation-reports-table">
+              <template #customer-data="{ row }">
+                <div class="table-cell-content">
                   <div>
-                    <div class="text-sm font-medium text-gray-900">{{ report.customer_name || 'Unknown' }}</div>
-                    <div class="text-sm text-gray-500">{{ report.customer_phone || '-' }}</div>
+                    <div class="text-sm font-medium text-gray-900">{{ row.customer_name || 'Unknown' }}</div>
+                    <div class="text-sm text-gray-500">{{ row.customer_phone || '-' }}</div>
                   </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                </div>
+              </template>
+
+              <template #technician-data="{ row }">
+                <div class="table-cell-content">
                   <div>
-                    <div class="text-sm font-medium text-gray-900">{{ report.technician_name || 'Unknown' }}</div>
-                    <div class="text-sm text-gray-500">{{ report.technician_phone || '-' }}</div>
+                    <div class="text-sm font-medium text-gray-900">{{ row.technician_name || 'Unknown' }}</div>
+                    <div class="text-sm text-gray-500">{{ row.technician_phone || '-' }}</div>
                   </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                </div>
+              </template>
+
+              <template #type-data="{ row }">
+                <div class="table-cell-content">
                   <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                    {{ report.installation_type || 'Unknown' }}
+                    {{ row.installation_type || 'Unknown' }}
                   </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span :class="getStatusColor(report.installation_status)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
-                    {{ report.installation_status || 'Unknown' }}
+                </div>
+              </template>
+
+              <template #status-data="{ row }">
+                <div class="table-cell-content">
+                  <span :class="getStatusColor(row.installation_status)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
+                    {{ row.installation_status || 'Unknown' }}
                   </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ formatDate(report.tgl_permintaan_psb) }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ formatDate(report.installation_completed_at) }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <span v-if="report.durasi_psb !== null && report.durasi_psb !== undefined" class="font-medium">
-                    {{ report.durasi_psb }} hari
+                </div>
+              </template>
+
+              <template #tgl_permintaan_psb-data="{ row }">
+                <div class="table-cell-content">
+                  <span class="text-sm text-gray-900 whitespace-nowrap">{{ formatDate(row.tgl_permintaan_psb) }}</span>
+                </div>
+              </template>
+
+              <template #tgl_selesai_instalasi-data="{ row }">
+                <div class="table-cell-content">
+                  <span class="text-sm text-gray-900 whitespace-nowrap">{{ formatDate(row.installation_completed_at) }}</span>
+                </div>
+              </template>
+
+              <template #durasi_psb-data="{ row }">
+                <div class="table-cell-content">
+                  <span v-if="row.durasi_psb !== null && row.durasi_psb !== undefined" class="text-sm font-medium text-gray-900 whitespace-nowrap">
+                    {{ row.durasi_psb }} hari
                   </span>
-                  <span v-else class="text-gray-400">-</span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span v-if="report.status_psb" 
-                        :class="report.status_psb === 'Tepat Waktu' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
-                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
-                    {{ report.status_psb }}
+                  <span v-else class="text-sm text-gray-400 whitespace-nowrap">-</span>
+                </div>
+              </template>
+
+              <template #status_psb-data="{ row }">
+                <div class="table-cell-content">
+                  <span v-if="row.status_psb"
+                        :class="row.status_psb === 'Tepat Waktu' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full whitespace-nowrap">
+                    {{ row.status_psb }}
                   </span>
-                  <span v-else class="text-gray-400">-</span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900">{{ report.router_brand || '-' }} {{ report.router_model || '' }}</div>
-                  <div class="text-sm text-gray-500">{{ report.mac_address || '-' }}</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div class="flex space-x-2">
-                    <UButton @click="viewReport(report.installation_id)" size="sm" color="blue" variant="outline">
-                      View
-                    </UButton>
-                    <UButton @click="editReport(report.installation_id)" size="sm" color="green" variant="outline">
-                      Edit
-                    </UButton>
-                    <UButton @click="deleteReport(report.installation_id)" size="sm" color="red" variant="outline">
-                      Delete
-                    </UButton>
+                  <span v-else class="text-sm text-gray-400 whitespace-nowrap">-</span>
+                </div>
+              </template>
+
+              <template #assets-data="{ row }">
+                <div class="table-cell-content">
+                  <div class="text-sm text-gray-900 truncate">{{ row.router_brand || '-' }} {{ row.router_model || '' }}</div>
+                  <div class="text-sm text-gray-500 truncate">{{ row.mac_address || '-' }}</div>
+                </div>
+              </template>
+
+              <template #actions-data="{ row }">
+                <div class="table-cell-content">
+                  <div class="flex justify-center">
+                    <UDropdown :items="items(row)">
+                      <UButton color="gray" size="sm">
+                        <LucideIcon name="ellipsis-vertical" :size="16" />
+                      </UButton>
+                    </UDropdown>
                   </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </div>
+              </template>
+            </UTable>
+          </div>
         </div>
 
         <!-- Pagination -->
@@ -565,10 +542,61 @@ import type { InstallationReportCompleteResponse } from "@/types/requests/instal
 import { useNavigationContext } from "@/composables/useNavigationContext";
 import LucideIcon from "@/components/LucideIcon.vue";
 
+type DropdownItem = {
+  label: string
+  icon: string
+  click: () => void
+  disabled?: boolean
+}
+
 // Apply auth middleware
 definePageMeta({
   middleware: 'auth'
 })
+
+// Table columns definition matching Customer table format
+const columns = [
+  {
+    key: 'customer',
+    label: 'Customer'
+  },
+  {
+    key: 'technician',
+    label: 'Technician'
+  },
+  {
+    key: 'type',
+    label: 'Type'
+  },
+  {
+    key: 'status',
+    label: 'Status'
+  },
+  {
+    key: 'tgl_permintaan_psb',
+    label: 'Tgl. Permintaan PSB'
+  },
+  {
+    key: 'tgl_selesai_instalasi',
+    label: 'Tgl. Selesai Instalasi'
+  },
+  {
+    key: 'durasi_psb',
+    label: 'Durasi PSB'
+  },
+  {
+    key: 'status_psb',
+    label: 'Status PSB'
+  },
+  {
+    key: 'assets',
+    label: 'Assets'
+  },
+  {
+    key: 'actions',
+    label: 'Actions'
+  }
+]
 
 const loading = ref(false);
 const reports = ref<InstallationReportCompleteResponse[]>([]);
@@ -584,7 +612,7 @@ const itemsPerPage = ref(10);
 const totalItems = computed(() => filteredReports.value.length);
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.value));
 
-// Paginated reports
+// Paginated reports for mobile view
 const paginatedReports = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value;
   const end = start + itemsPerPage.value;
@@ -916,6 +944,27 @@ function formatDate(dateString: string | undefined) {
     day: 'numeric'
   });
 }
+
+const items = (row: InstallationReportCompleteResponse) => {
+  const baseItems: DropdownItem[][] = [
+    [{
+      label: 'View Report',
+      icon: 'eye-20-solid',
+      click: () => viewReport(row.installation_id)
+    }, {
+      label: 'Edit Report',
+      icon: 'pencil-square-20-solid',
+      click: () => editReport(row.installation_id)
+    }],
+    [{
+      label: 'Delete Report',
+      icon: 'trash-2-20-solid',
+      click: () => deleteReport(row.installation_id)
+    }]
+  ]
+
+  return baseItems
+}
 </script>
 
 <style scoped>
@@ -985,5 +1034,135 @@ function formatDate(dateString: string | undefined) {
 .search-input-dark :deep([class*="UInput"]) {
   background-color: #1e293b !important;
   background: #1e293b !important;
+}
+
+/* Table styling for better appearance and alignment - matching Customer table */
+.installation-reports-table :deep(table) {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  table-layout: auto;
+}
+
+.installation-reports-table :deep(th) {
+  padding: 12px 16px !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  color: #374151 !important;
+  background-color: #f9fafb !important;
+  border-bottom: 2px solid #e5e7eb !important;
+  white-space: nowrap;
+  vertical-align: middle !important;
+  text-align: left;
+}
+
+/* Column width adjustments for Installation Reports table */
+.installation-reports-table :deep(th:first-child),
+.installation-reports-table :deep(td:first-child) {
+  width: 12%;
+  min-width: 140px;
+}
+
+.installation-reports-table :deep(th:nth-child(2)),
+.installation-reports-table :deep(td:nth-child(2)) {
+  width: 12%;
+  min-width: 140px;
+}
+
+.installation-reports-table :deep(th:nth-child(3)),
+.installation-reports-table :deep(td:nth-child(3)) {
+  width: 8%;
+  min-width: 100px;
+}
+
+.installation-reports-table :deep(th:nth-child(4)),
+.installation-reports-table :deep(td:nth-child(4)) {
+  width: 10%;
+  min-width: 120px;
+}
+
+.installation-reports-table :deep(th:nth-child(5)),
+.installation-reports-table :deep(td:nth-child(5)) {
+  width: 12%;
+  min-width: 140px;
+}
+
+.installation-reports-table :deep(th:nth-child(6)),
+.installation-reports-table :deep(td:nth-child(6)) {
+  width: 12%;
+  min-width: 140px;
+}
+
+.installation-reports-table :deep(th:nth-child(7)),
+.installation-reports-table :deep(td:nth-child(7)) {
+  width: 8%;
+  min-width: 100px;
+}
+
+.installation-reports-table :deep(th:nth-child(8)),
+.installation-reports-table :deep(td:nth-child(8)) {
+  width: 10%;
+  min-width: 120px;
+}
+
+.installation-reports-table :deep(th:nth-child(9)),
+.installation-reports-table :deep(td:nth-child(9)) {
+  width: 15%;
+  min-width: 180px;
+}
+
+.installation-reports-table :deep(th:last-child),
+.installation-reports-table :deep(td:last-child) {
+  width: 6%;
+  min-width: 80px;
+  text-align: center;
+}
+
+.installation-reports-table :deep(td) {
+  padding: 12px 16px !important;
+  vertical-align: middle !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  font-size: 0.875rem !important;
+}
+
+.installation-reports-table :deep(tbody tr) {
+  transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.installation-reports-table :deep(tbody tr:hover) {
+  background-color: #f9fafb !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.installation-reports-table :deep(tbody tr:nth-child(even)) {
+  background-color: #ffffff !important;
+}
+
+.installation-reports-table :deep(tbody tr:nth-child(even):hover) {
+  background-color: #f9fafb !important;
+}
+
+/* Table cell content wrapper for consistent alignment */
+.table-cell-content {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  vertical-align: middle;
+}
+
+/* Ensure badges are properly aligned */
+.installation-reports-table :deep(.inline-flex) {
+  vertical-align: middle;
+}
+
+/* Action buttons styling */
+.installation-reports-table :deep([class*="UButton"]) {
+  padding: 4px 8px !important;
+  height: auto !important;
+}
+
+.installation-reports-table :deep([class*="UButton"] svg) {
+  width: 16px !important;
+  height: 16px !important;
 }
 </style>
