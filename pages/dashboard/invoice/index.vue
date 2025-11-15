@@ -1491,7 +1491,7 @@ async function printAllUnpaidInvoices() {
       <UButton label="Add Invoice" @click="OpenModalAddCustomer(false, null)" />
 
       <UButton
-        color="blue"
+        color="gray"
         variant="soft"
         :loading="isLoading"
         @click="getData"

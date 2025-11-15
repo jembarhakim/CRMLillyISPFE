@@ -1493,7 +1493,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
   <!-- Dashboard Header with Reset Button -->
   <div class="flex justify-between items-center mb-6">
     <h1 class="text-2xl font-bold text-gray-800">Dashboard Overview</h1>
-    <UButton icon="undo-2" color="blue" variant="soft" size="sm" @click="resetFilters"
+    <UButton icon="undo-2" color="gray" variant="soft" size="sm" @click="resetFilters"
       title="Reset all filters to default and refresh data">
       Reset
     </UButton>

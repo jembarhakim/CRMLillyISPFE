@@ -3340,20 +3340,8 @@ onMounted(async () => {
   </div>
 
   <!-- Technician Photo Modal -->
-  <UModal :ui="{ 
-      width: 'sm:max-w-6xl', 
-      container: 'items-center',
-      background: 'bg-white dark:bg-white'
-    }" v-model="state.showTechnicianModal"
-    >
-    <UCard :ui="{
-        background: 'bg-white',
-        ring: '',
-        divide: 'divide-y divide-gray-200',
-        header: { background: 'bg-white' },
-        body: { background: 'bg-white' },
-        footer: { background: 'bg-white' }
-      }">
+  <UModal v-model="state.showTechnicianModal">
+    <UCard>
       <template #header>
         <div class="flex justify-between items-center">
           <h3 class="text-lg font-semibold">Technician Photo Preview</h3>
