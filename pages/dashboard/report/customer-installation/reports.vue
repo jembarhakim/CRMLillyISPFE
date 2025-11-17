@@ -361,175 +361,153 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <UModal :model-value="showDeleteModal" @update:model-value="showDeleteModal = $event" :ui="{ width: 'w-full sm:max-w-lg' }">
-      <UCard class="bg-white dark:bg-gray-800">
-        <template #header>
-          <div class="flex items-center justify-between bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 p-4 -m-4 mb-4 rounded-t-lg">
-            <h3 class="text-xl font-bold text-red-700 dark:text-red-300 flex items-center">
-              <div class="bg-red-500 p-3 rounded-xl mr-4 shadow-lg">
-                <UIcon name="trash-2" class="w-6 h-6 text-white" />
-              </div>
-              Delete Installation Report
-            </h3>
+    <UModal
+      :model-value="showDeleteModal"
+      @update:model-value="showDeleteModal = $event"
+      class="delete-modal"
+      :ui="{ background: 'bg-white' }"
+      teleport="body"
+    >
+      <div class="portrait-modal-panel" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+        <div class="portrait-modal-inner bg-white rounded-xl shadow-lg">
+          <!-- Header -->
+          <header class="portrait-modal-header p-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 id="delete-modal-title" class="text-lg font-bold text-gray-900">Delete Installation Report</h2>
             <UButton
-              color="gray"
-              variant="ghost"
-              icon="x"
               @click="closeDeleteModal"
-              :disabled="deleting"
-              class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            />
-          </div>
-        </template>
+              variant="outline"
+              color="gray"
+              size="md"
+              class="delete-close-button"
+              aria-label="Close delete dialog"
+            >
+              <LucideIcon name="x" :size="20" />
+            </UButton>
+          </header>
 
-        <div class="space-y-6">
-          <!-- Customer Information -->
-          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-5 border-2 border-blue-200 dark:border-blue-700">
-            <div class="flex items-center gap-4">
-              <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
-                <UIcon name="user" class="text-white text-2xl" />
+          <!-- Scrollable content area -->
+          <div class="portrait-modal-body overflow-y-auto p-4 space-y-4">
+            <!-- Customer Information -->
+            <section class="bg-white rounded-lg p-4 border border-gray-200">
+              <h3 class="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <LucideIcon name="user" class="w-5 h-5 text-blue-600" />
+                Customer Information
+              </h3>
+              <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-md p-3 border border-blue-100">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white">
+                    <LucideIcon name="user" class="w-5 h-5" />
+                  </div>
+                  <div class="truncate">
+                    <div class="font-semibold text-gray-800 text-sm">{{ selectedReport?.customer_name || 'Unknown Customer' }}</div>
+                    <div class="text-xs text-gray-500 font-mono mt-1">ID: {{ selectedReport?.installation_id || 'N/A' }}</div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h4 class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ selectedReport?.customer_name || 'Unknown Customer' }}</h4>
-                <p class="text-sm text-gray-600 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded mt-1">
-                  ID: {{ selectedReport?.installation_id || 'N/A' }}
-                </p>
+            </section>
+
+            <!-- Critical Warning -->
+            <section class="bg-white rounded-lg p-4 border border-gray-200">
+              <h3 class="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <LucideIcon name="alert-triangle" class="w-5 h-5 text-red-600" />
+                Critical Warning
+              </h3>
+              <div class="bg-red-50 border border-red-200 rounded-md p-3">
+                <div class="flex gap-3">
+                  <div class="flex-shrink-0">
+                    <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white">
+                      <LucideIcon name="alert-triangle" class="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div class="flex-1 text-sm text-red-800">
+                    <strong class="block mb-2">⚠️ CRITICAL WARNING</strong>
+                    <p class="mb-2">You are about to <span class="font-bold">PERMANENTLY DELETE</span> this installation report and all associated data.</p>
+                    <ul class="list-disc list-inside text-red-700 space-y-1">
+                      <li>Delete the installation report and clean up RouterOS configurations</li>
+                      <li>Update MAC status to "in_stock"</li>
+                      <li>Remove technician assignments and assets</li>
+                      <li>Delete associated invoices and network items</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
-            </div>
+            </section>
+
+            <!-- Impact Summary -->
+            <section class="bg-white rounded-lg p-4 border border-gray-200">
+              <h3 class="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <LucideIcon name="info" class="w-5 h-5 text-gray-600" />
+                Impact Summary
+              </h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="p-3 bg-white rounded border">
+                  <div class="text-xs text-gray-500">Customer</div>
+                  <div class="font-semibold text-gray-900 text-sm">{{ selectedReport?.customer_name || 'Unknown' }}</div>
+                </div>
+                <div class="p-3 bg-white rounded border">
+                  <div class="text-xs text-gray-500">Status</div>
+                  <div class="font-semibold text-sm" :class="getStatusColor(selectedReport?.installation_status)">{{ selectedReport?.installation_status || 'Unknown' }}</div>
+                </div>
+                <div class="p-3 bg-white rounded border">
+                  <div class="text-xs text-gray-500">Report ID</div>
+                  <div class="font-mono text-sm text-gray-800">{{ selectedReport?.installation_id || 'N/A' }}</div>
+                </div>
+                <div class="p-3 bg-white rounded border">
+                  <div class="text-xs text-gray-500">MAC Address</div>
+                  <div class="font-mono text-sm text-blue-800">{{ selectedReport?.mac_address || 'Not available' }}</div>
+                </div>
+              </div>
+            </section>
           </div>
 
-          <!-- Warning Message -->
-          <div class="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/30 dark:to-pink-900/30 border-2 border-red-300 dark:border-red-600 rounded-xl p-6 shadow-lg">
-            <div class="flex items-start">
-              <div class="bg-red-500 p-3 rounded-full mr-4 flex-shrink-0 shadow-lg">
-                <UIcon name="alert-triangle" class="text-white text-2xl" />
+          <!-- Footer: Delete Confirmation (fixed at bottom of modal panel) -->
+          <footer class="portrait-modal-footer border-t border-gray-200 p-4 bg-white">
+            <div class="space-y-3">
+              <div class="bg-yellow-50 border border-yellow-200 rounded-md p-3 flex items-start gap-3">
+                <UCheckbox v-model="deleteConfirmationChecked" :disabled="deleting" color="red" class="mt-1" />
+                <div class="text-sm text-gray-800">
+                  I understand that this action will <span class="font-bold text-red-700 mx-1">PERMANENTLY DELETE</span> the installation report for
+                  <strong class="text-blue-600">"{{ selectedReport?.customer_name || 'Unknown' }}"</strong> and all associated data.
+                  <div class="text-xs text-red-600 mt-1 flex items-center"><LucideIcon name="alert-triangle" class="w-4 h-4 mr-1" />This action CANNOT be undone!</div>
+                </div>
               </div>
-              <div class="flex-1">
-                <h5 class="text-xl font-bold text-red-800 dark:text-red-200 mb-3">⚠️ CRITICAL WARNING</h5>
-                <p class="text-red-700 dark:text-red-300 text-base leading-relaxed mb-4 font-medium">
-                  You are about to <strong class="text-red-900 dark:text-red-100">PERMANENTLY DELETE</strong> this installation report and all associated data.
-                </p>
-                <div class="bg-white dark:bg-gray-800 border-2 border-red-400 dark:border-red-500 rounded-lg p-4 shadow-inner">
-                  <p class="text-red-800 dark:text-red-200 text-base font-bold mb-3 flex items-center">
-                    <UIcon name="list-bullet" class="w-5 h-5 mr-2" />
-                    This action will:
-                  </p>
-                  <ul class="text-red-700 dark:text-red-300 text-sm list-disc list-inside space-y-2 font-medium">
-                    <li class="flex items-start">
-                      <UIcon name="trash-2" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                      <strong>Delete the installation report and clean up all Mikrotik RouterOS configurations</strong>
-                    </li>
-                    <li class="flex items-start">
-                      <UIcon name="refresh-cw" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                      <strong>Update the MAC address status back to "in_stock"</strong>
-                    </li>
-                    <li class="flex items-start">
-                      <UIcon name="user-group" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                      <strong>Remove all related technician assignments and asset transactions</strong>
-                    </li>
-                    <li class="flex items-start">
-                      <UIcon name="cpu-chip" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                      <strong>Delete all associated network devices, cables, and images</strong>
-                    </li>
-                    <li class="flex items-start">
-                      <UIcon name="refresh-cw" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                      <strong>Delete all associated recurring invoices</strong>
-                    </li>
-                    <li class="flex items-start">
-                      <UIcon name="settings-6-tooth" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                      <strong>Disable Mikrotik configurations: queue rules, hotspot bindings, netwatch entries, schedulers, scripts, and DHCP leases</strong>
-                    </li>
-                  </ul>
+
+              <div class="flex flex-col sm:flex-row sm:justify-end sm:items-center gap-3">
+                <div class="text-xs text-gray-600 flex items-center gap-1">
+                  <LucideIcon name="info" class="w-4 h-4 text-yellow-600" />
+                  All warnings must be read
+                </div>
+                <div class="flex gap-3 w-full sm:w-auto">
+                  <UButton
+                    type="button"
+                    @click="closeDeleteModal"
+                    variant="outline"
+                    color="gray"
+                    size="lg"
+                    :disabled="deleting"
+                    class="flex-1 sm:flex-initial"
+                  >
+                    Cancel
+                  </UButton>
+                  <UButton
+                    type="submit"
+                    @click="confirmDelete"
+                    color="red"
+                    variant="solid"
+                    size="lg"
+                    :loading="deleting"
+                    :disabled="!deleteConfirmationChecked"
+                    class="flex-1 sm:flex-initial font-semibold shadow-sm"
+                  >
+                    <LucideIcon v-if="!deleting" name="trash-2" :size="18" class="mr-2" />
+                    {{ deleting ? 'Deleting...' : 'Delete Report' }}
+                  </UButton>
                 </div>
               </div>
             </div>
-          </div>
-
-          <!-- Impact Summary -->
-          <div class="bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-700 dark:to-slate-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl p-5 shadow-lg">
-            <h6 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
-              <div class="bg-gray-500 p-2 rounded-lg mr-3">
-                <UIcon name="info" class="w-5 h-5 text-white" />
-              </div>
-              Impact Summary
-            </h6>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
-                <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Customer:</span>
-                <span class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ selectedReport?.customer_name || 'Unknown' }}</span>
-              </div>
-              <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
-                <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Status:</span>
-                <span class="px-3 py-1 rounded-full text-sm font-bold" :class="getStatusColor(selectedReport?.installation_status)">
-                  {{ selectedReport?.installation_status || 'Unknown' }}
-                </span>
-              </div>
-              <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
-                <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 block">Report ID:</span>
-                <span class="font-mono text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-800 dark:text-gray-200">{{ selectedReport?.installation_id || 'N/A' }}</span>
-              </div>
-              <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
-                <span class="text-sm font-semibold text-gray-600 dark:text-gray-400 block">MAC Address:</span>
-                <span class="font-mono text-sm bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded text-blue-800 dark:text-blue-200">{{ selectedReport?.mac_address || 'Not available' }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Confirmation Checkbox -->
-          <div class="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-2 border-yellow-300 dark:border-yellow-600 rounded-xl p-5 shadow-lg">
-            <label class="flex items-start cursor-pointer group">
-              <UCheckbox 
-                v-model="deleteConfirmationChecked" 
-                class="mt-1 scale-125"
-                :disabled="deleting"
-                color="red"
-              />
-              <div class="ml-4 flex-1">
-                <p class="text-base text-gray-800 dark:text-gray-200 leading-relaxed">
-                  I understand that this action will 
-                  <span class="inline-flex items-center px-2 py-1 rounded bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 font-bold mx-1">
-                    PERMANENTLY DELETE
-                  </span>
-                  the installation report for 
-                  <strong class="text-blue-600 dark:text-blue-400">"{{ selectedReport?.customer_name || 'Unknown Customer' }}"</strong> 
-                  and all associated data.
-                </p>
-                <p class="text-sm text-red-600 dark:text-red-400 font-semibold mt-2 flex items-center">
-                  <UIcon name="alert-triangle" class="w-4 h-4 mr-1" />
-                  This action CANNOT be undone!
-                </p>
-              </div>
-            </label>
-          </div>
-
-          <!-- Action Buttons -->
-          <div class="flex flex-col sm:flex-row justify-end gap-4 pt-4">
-            <UButton
-              @click="closeDeleteModal"
-              color="gray"
-              variant="outline"
-              size="xl"
-              :disabled="deleting"
-              class="w-full sm:w-auto border-2 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold"
-            >
-              <UIcon name="x" class="mr-2" />
-              Cancel
-            </UButton>
-            <UButton
-              @click="confirmDelete"
-              color="red"
-              variant="solid"
-              size="xl"
-              :loading="deleting"
-              :disabled="!deleteConfirmationChecked"
-              class="w-full sm:w-auto bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 border-2 border-red-500 shadow-lg font-bold"
-            >
-              <UIcon name="trash-2" class="mr-2" />
-              {{ deleting ? 'Deleting...' : 'Delete Installation Report' }}
-            </UButton>
-          </div>
+          </footer>
         </div>
-      </UCard>
+      </div>
     </UModal>
   </div>
 </template>
@@ -973,201 +951,145 @@ const items = (row: InstallationReportCompleteResponse) => {
 </script>
 
 <style scoped>
-/* Deep selector untuk mengoverride UFormGroup label */
-:deep(.filter-label),
-:deep(.filter-label *),
-:deep([class*="filter-label"]),
-:deep([class*="filter-label"] *) {
-  color: #000000 !important;
-  font-weight: 700 !important;
-  font-size: 14px !important;
+/* ===== modal: keep footer INSIDE panel and sticky within modal ===== */
+.delete-modal :deep([id^="headlessui-dialog-overlay"]) {
+  position: fixed !important;
+  inset: 0 !important;
+  background-color: rgba(17,24,39,0.45) !important;
+  z-index: 60 !important;
 }
 
-/* Fallback dengan selector yang lebih spesifik */
-:deep(.form-group label),
-:deep(.form-group .label),
-:deep(.u-form-group label),
-:deep(.u-form-group .label) {
-  color: #000000 !important;
-  font-weight: 700 !important;
-  font-size: 14px !important;
+/* Panel wrapper: center & bounded height */
+.portrait-modal-panel,
+.delete-modal :deep([id^="headlessui-dialog-panel"]) {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 70 !important;
+
+  width: min(420px, 95vw) !important;
+  max-width: 95vw !important;
+  max-height: 90vh !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  overflow: hidden !important; /* IMPORTANT: prevent children from escaping */
+  border-radius: 12px !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.18) !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
-/* Global override untuk semua label di komponen ini */
-:deep(label) {
-  color: #000000 !important;
-  font-weight: 700 !important;
-  font-size: 14px !important;
-}
-
-/* Search input dark background styling */
-.search-input-dark :deep(input),
-.search-input-dark :deep([class*="input"]),
-.search-input-dark :deep([role="textbox"]) {
-  background-color: #1e293b !important;
-  background: #1e293b !important;
-  border-color: #334155 !important;
-  color: white !important;
-}
-
-.search-input-dark :deep(input:focus),
-.search-input-dark :deep([class*="input"]:focus),
-.search-input-dark :deep([role="textbox"]:focus) {
-  background-color: #1e293b !important;
-  background: #1e293b !important;
-  border-color: #475569 !important;
-  outline: none !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
-}
-
-.search-input-dark :deep(input::placeholder) {
-  color: rgba(255, 255, 255, 0.7) !important;
-}
-
-/* Search icon color - ensure white icon */
-.search-icon-white,
-.search-input-dark :deep([class*="leading"] svg),
-.search-input-dark :deep([class*="leading"] path),
-.search-input-dark :deep(svg) {
-  color: #FFFFFF !important;
-  stroke: #FFFFFF !important;
-  fill: none !important;
-}
-
-/* Ensure the input wrapper itself has dark background */
-.search-input-dark :deep([class*="ui-input"]),
-.search-input-dark :deep([class*="UInput"]) {
-  background-color: #1e293b !important;
-  background: #1e293b !important;
-}
-
-/* Table styling for better appearance and alignment - matching Customer table */
-.installation-reports-table :deep(table) {
-  border-collapse: separate;
-  border-spacing: 0;
-  width: 100%;
-  table-layout: auto;
-}
-
-.installation-reports-table :deep(th) {
-  padding: 12px 16px !important;
-  font-weight: 600 !important;
-  font-size: 0.875rem !important;
-  color: #374151 !important;
-  background-color: #f9fafb !important;
-  border-bottom: 2px solid #e5e7eb !important;
-  white-space: nowrap;
-  vertical-align: middle !important;
-  text-align: left;
-}
-
-/* Column width adjustments for Installation Reports table */
-.installation-reports-table :deep(th:first-child),
-.installation-reports-table :deep(td:first-child) {
-  width: 12%;
-  min-width: 140px;
-}
-
-.installation-reports-table :deep(th:nth-child(2)),
-.installation-reports-table :deep(td:nth-child(2)) {
-  width: 12%;
-  min-width: 140px;
-}
-
-.installation-reports-table :deep(th:nth-child(3)),
-.installation-reports-table :deep(td:nth-child(3)) {
-  width: 8%;
-  min-width: 100px;
-}
-
-.installation-reports-table :deep(th:nth-child(4)),
-.installation-reports-table :deep(td:nth-child(4)) {
-  width: 10%;
-  min-width: 120px;
-}
-
-.installation-reports-table :deep(th:nth-child(5)),
-.installation-reports-table :deep(td:nth-child(5)) {
-  width: 12%;
-  min-width: 140px;
-}
-
-.installation-reports-table :deep(th:nth-child(6)),
-.installation-reports-table :deep(td:nth-child(6)) {
-  width: 12%;
-  min-width: 140px;
-}
-
-.installation-reports-table :deep(th:nth-child(7)),
-.installation-reports-table :deep(td:nth-child(7)) {
-  width: 8%;
-  min-width: 100px;
-}
-
-.installation-reports-table :deep(th:nth-child(8)),
-.installation-reports-table :deep(td:nth-child(8)) {
-  width: 10%;
-  min-width: 120px;
-}
-
-.installation-reports-table :deep(th:nth-child(9)),
-.installation-reports-table :deep(td:nth-child(9)) {
-  width: 15%;
-  min-width: 180px;
-}
-
-.installation-reports-table :deep(th:last-child),
-.installation-reports-table :deep(td:last-child) {
-  width: 6%;
-  min-width: 80px;
-  text-align: center;
-}
-
-.installation-reports-table :deep(td) {
-  padding: 12px 16px !important;
-  vertical-align: middle !important;
-  border-bottom: 1px solid #e5e7eb !important;
-  font-size: 0.875rem !important;
-}
-
-.installation-reports-table :deep(tbody tr) {
-  transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.installation-reports-table :deep(tbody tr:hover) {
-  background-color: #f9fafb !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-}
-
-.installation-reports-table :deep(tbody tr:nth-child(even)) {
-  background-color: #ffffff !important;
-}
-
-.installation-reports-table :deep(tbody tr:nth-child(even):hover) {
-  background-color: #f9fafb !important;
-}
-
-/* Table cell content wrapper for consistent alignment */
-.table-cell-content {
+/* Inner container: header fixed, body scrolls, footer sticky */
+.portrait-modal-inner {
   display: flex;
-  align-items: center;
-  min-height: 32px;
-  vertical-align: middle;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
-/* Ensure badges are properly aligned */
-.installation-reports-table :deep(.inline-flex) {
-  vertical-align: middle;
+/* Header (non-scrolling) */
+.portrait-modal-header {
+  flex: 0 0 auto;
+  padding: 1rem;
+  border-bottom: 1px solid rgba(229,231,235,1);
 }
 
-/* Action buttons styling */
-.installation-reports-table :deep([class*="UButton"]) {
-  padding: 4px 8px !important;
-  height: auto !important;
+/* Body: scrollable area inside panel */
+.portrait-modal-body {
+  flex: 1 1 auto;
+  min-height: 0; /* VITAL for flex scrolling */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 1rem;
+  box-sizing: border-box;
+
+  /* Add extra bottom padding so content can scroll above the sticky footer */
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
 }
 
-.installation-reports-table :deep([class*="UButton"] svg) {
-  width: 16px !important;
-  height: 16px !important;
+/* Footer: sticky within the panel (NOT fixed to viewport) */
+.portrait-modal-footer {
+  position: sticky;       /* keeps footer at bottom of panel while body scrolls */
+  bottom: 0;              /* relative to the panel */
+  left: 0;
+  z-index: 12;            /* above body content inside panel */
+  width: 100%;
+  flex: 0 0 auto;
+  padding: 1rem;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(229,231,235,1);
+  background: linear-gradient(#ffffff, #ffffff); /* avoid transparency artifacts */
+  box-shadow: 0 -6px 12px rgba(0,0,0,0.04);
+  box-sizing: border-box;
 }
+
+/* Ensure action buttons are properly visible and don't overflow */
+.portrait-modal-footer .flex.gap-3 {
+  width: 100%;
+}
+
+/* Mobile: center buttons vertically, desktop: align to end */
+@media (max-width: 640px) {
+  .portrait-modal-footer .flex.gap-3 {
+    justify-content: center;
+  }
+}
+
+@media (min-width: 641px) {
+  .portrait-modal-footer .flex.gap-3 {
+    justify-content: flex-end;
+  }
+}
+
+.portrait-modal-footer .flex.gap-3 > * {
+  min-width: 0; /* allow buttons to shrink */
+}
+
+/* Mobile adjustments (panel near full height but contained) */
+@media (max-width: 640px) {
+  .portrait-modal-panel,
+  .delete-modal :deep([id^="headlessui-dialog-panel"]) {
+    top: 1rem !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: calc(100vw - 1.5rem) !important;
+    max-height: calc(100vh - 2rem) !important;
+  }
+  .portrait-modal-body { padding-bottom: calc(0.75rem + env(safe-area-inset-bottom)); }
+  .portrait-modal-footer { padding-bottom: calc(0.75rem + env(safe-area-inset-bottom)); }
+}
+
+/* Keep close button style unchanged but ensure it doesn't escape layout */
+.delete-close-button {
+  border: 2px solid #D1D5DB !important;
+  background-color: #FFFFFF !important;
+  color: #374151 !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 8px !important;
+}
+
+.delete-close-button:hover {
+  background-color: #FEF2F2 !important;
+  border-color: #F87171 !important;
+  color: #DC2626 !important;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1) !important;
+  transform: scale(1.05) !important;
+}
+
+.delete-close-button:active {
+  transform: scale(0.95) !important;
+}
+
+.delete-close-button:focus {
+  outline: 2px solid #2563EB !important;
+  outline-offset: 2px !important;
+}
+/* ===== end modal scroll fix ===== */
 </style>
