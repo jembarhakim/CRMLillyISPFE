@@ -7,8 +7,8 @@ import GoodsTransactionModal from "./GoodsTransactionModal.vue";
 import { defaultAssets } from "./asset.model";
 import { tableColumns } from "./table";
 import { format } from "date-fns";
-import LucideIcon from '@/components/LucideIcon.vue';
-import { computed, onMounted, ref } from 'vue';
+import LucideIcon from "@/components/LucideIcon.vue";
+import { computed, onMounted, ref } from "vue";
 
 const notification = useNotificationStore();
 
@@ -29,7 +29,7 @@ const showGoodsModal = ref(false);
 const goodsTransactions = ref<any[]>([]);
 const goodsTransactionPage = ref(1);
 const goodsTransactionPageCount = 10;
-const goodsTransactionFilter = ref<'all' | 'in' | 'out'>('all');
+const goodsTransactionFilter = ref<"all" | "in" | "out">("all");
 const loadingTransactions = ref(false);
 const showDeleteModal = ref(false);
 const transactionToDelete = ref<string | null>(null);
@@ -42,11 +42,13 @@ const filteredRows = computed(() => {
     );
   }
 
-  const newData = defaultAssets.value.filter((person: { [s: string]: unknown; } | ArrayLike<unknown>) => {
-    return Object.values(person).some((value) => {
-      return String(value).toLowerCase().includes(q.value.toLowerCase());
-    });
-  });
+  const newData = defaultAssets.value.filter(
+    (person: { [s: string]: unknown } | ArrayLike<unknown>) => {
+      return Object.values(person).some((value) => {
+        return String(value).toLowerCase().includes(q.value.toLowerCase());
+      });
+    }
+  );
   return newData.slice((page.value - 1) * pageCount, page.value * pageCount);
 });
 
@@ -133,16 +135,18 @@ async function loadGoodsTransactions() {
   loadingTransactions.value = true;
   try {
     const params: any = {};
-    if (goodsTransactionFilter.value !== 'all') {
+    if (goodsTransactionFilter.value !== "all") {
       params.transaction_type = goodsTransactionFilter.value;
     }
-    
-    const response = await itemsTransactionAdminApi().getItemsTransactions(params);
+
+    const response = await itemsTransactionAdminApi().getItemsTransactions(
+      params
+    );
     if (response.success) {
       goodsTransactions.value = response.data || [];
     }
   } catch (error) {
-    console.error('Failed to load goods transactions:', error);
+    console.error("Failed to load goods transactions:", error);
   } finally {
     loadingTransactions.value = false;
   }
@@ -151,11 +155,13 @@ async function loadGoodsTransactions() {
 // Filtered goods transactions
 const filteredGoodsTransactions = computed(() => {
   let filtered = goodsTransactions.value;
-  
-  if (goodsTransactionFilter.value !== 'all') {
-    filtered = filtered.filter(t => t.transaction_type === goodsTransactionFilter.value);
+
+  if (goodsTransactionFilter.value !== "all") {
+    filtered = filtered.filter(
+      (t) => t.transaction_type === goodsTransactionFilter.value
+    );
   }
-  
+
   const start = (goodsTransactionPage.value - 1) * goodsTransactionPageCount;
   const end = start + goodsTransactionPageCount;
   return filtered.slice(start, end);
@@ -163,12 +169,12 @@ const filteredGoodsTransactions = computed(() => {
 
 // Get transaction type display
 function getTransactionTypeDisplay(type: string) {
-  return type === 'out' ? 'OUT (Keluar)' : 'IN (Masuk)';
+  return type === "out" ? "OUT (Keluar)" : "IN (Masuk)";
 }
 
 // Get transaction type color
 function getTransactionTypeColor(type: string) {
-  return type === 'out' ? 'red' : 'green';
+  return type === "out" ? "red" : "green";
 }
 
 // Format transaction item name
@@ -179,9 +185,9 @@ function getTransactionItemName(transaction: any) {
     if (firstItem.asset) {
       return `${firstItem.asset.brand} ${firstItem.asset.model} (${firstItem.asset.serial_number})`;
     }
-    return firstItem.id_items || 'Unknown Item';
+    return firstItem.id_items || "Unknown Item";
   }
-  return 'No Items';
+  return "No Items";
 }
 
 // Open delete confirmation modal
@@ -193,18 +199,26 @@ function deleteGoodsTransaction(id: string) {
 // Confirm and perform deletion
 async function confirmDeleteTransaction() {
   if (!transactionToDelete.value) return;
-  
+
   try {
     // Determine transaction type from the transaction
-    const transaction = goodsTransactions.value.find(t => t.id === transactionToDelete.value);
-    const transactionType = transaction?.transaction_type || 'out';
-    await itemsTransactionAdminApi().deleteItemsTransaction(transactionToDelete.value, transactionType);
-    notification.success('Success', 'Transaction deleted successfully');
+    const transaction = goodsTransactions.value.find(
+      (t) => t.id === transactionToDelete.value
+    );
+    const transactionType = transaction?.transaction_type || "out";
+    await itemsTransactionAdminApi().deleteItemsTransaction(
+      transactionToDelete.value,
+      transactionType
+    );
+    notification.success("Success", "Transaction deleted successfully");
     await loadGoodsTransactions();
     showDeleteModal.value = false;
     transactionToDelete.value = null;
   } catch (error: any) {
-    notification.error('Error', error.message || 'Failed to delete transaction');
+    notification.error(
+      "Error",
+      error.message || "Failed to delete transaction"
+    );
   }
 }
 
@@ -216,15 +230,15 @@ function cancelDeleteTransaction() {
 
 // Navigation helper functions for template usage
 function goToAssetItems() {
-  navigateTo('/dashboard/asset/items')
+  navigateTo("/dashboard/asset/items");
 }
 
 function goToItemsCatalog() {
-  navigateTo('/dashboard/asset/items-catalog')
+  navigateTo("/dashboard/asset/items-catalog");
 }
 
 function goToAssetDetail(assetId: string) {
-  navigateTo(`/dashboard/asset/${assetId}`)
+  navigateTo(`/dashboard/asset/${assetId}`);
 }
 
 // Load transactions on mount
@@ -236,8 +250,8 @@ onMounted(() => {
 <template>
   <!-- Action Buttons - Responsive -->
   <div class="flex flex-col sm:flex-row gap-2 mb-4">
-    <UButton 
-      label="Add Asset" 
+    <UButton
+      label="Add Asset"
       @click="OpenModalAddAsset(false, null)"
       class="w-full sm:w-auto"
       size="lg"
@@ -278,9 +292,9 @@ onMounted(() => {
 
   <!-- Search Filter - Responsive -->
   <div class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700">
-    <UInput 
-      v-model="q" 
-      placeholder="Filter asset..." 
+    <UInput
+      v-model="q"
+      placeholder="Filter asset..."
       class="w-full"
       size="lg"
       icon="i-heroicons-magnifying-glass"
@@ -328,10 +342,15 @@ onMounted(() => {
     >
       <div class="flex items-start justify-between mb-3">
         <div class="flex-1 min-w-0">
-          <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
-            {{ row.type || row.brand || 'Asset' }}
+          <h3
+            class="text-base font-semibold text-gray-900 dark:text-gray-100 truncate"
+          >
+            {{ row.type || row.brand || "Asset" }}
           </h3>
-          <p v-if="row.brand && row.model" class="text-sm text-gray-600 dark:text-gray-400 mt-1 truncate">
+          <p
+            v-if="row.brand && row.model"
+            class="text-sm text-gray-600 dark:text-gray-400 mt-1 truncate"
+          >
             {{ row.brand }} {{ row.model }}
           </p>
         </div>
@@ -344,15 +363,29 @@ onMounted(() => {
 
       <div class="space-y-2 text-sm">
         <div v-if="row.serial_number" class="flex items-start">
-          <span class="font-medium text-gray-700 dark:text-gray-300 w-24 flex-shrink-0">Serial:</span>
-          <span class="text-gray-900 dark:text-gray-100 break-all font-mono text-xs">{{ row.serial_number }}</span>
+          <span
+            class="font-medium text-gray-700 dark:text-gray-300 w-24 flex-shrink-0"
+            >Serial:</span
+          >
+          <span
+            class="text-gray-900 dark:text-gray-100 break-all font-mono text-xs"
+            >{{ row.serial_number }}</span
+          >
         </div>
         <div v-if="row.date" class="flex items-center">
-          <span class="font-medium text-gray-700 dark:text-gray-300 w-24 flex-shrink-0">Date:</span>
-          <span class="text-gray-900 dark:text-gray-100">{{ formatDate(row.date) }}</span>
+          <span
+            class="font-medium text-gray-700 dark:text-gray-300 w-24 flex-shrink-0"
+            >Date:</span
+          >
+          <span class="text-gray-900 dark:text-gray-100">{{
+            formatDate(row.date)
+          }}</span>
         </div>
         <div v-if="row.asset_items" class="flex items-center">
-          <span class="font-medium text-gray-700 dark:text-gray-300 w-24 flex-shrink-0">Items:</span>
+          <span
+            class="font-medium text-gray-700 dark:text-gray-300 w-24 flex-shrink-0"
+            >Items:</span
+          >
           <UBadge
             :label="`${row.asset_items?.length || 0} items`"
             color="blue"
@@ -362,7 +395,9 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+      <div
+        class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex gap-2"
+      >
         <UButton
           color="blue"
           variant="ghost"
@@ -405,15 +440,23 @@ onMounted(() => {
   </div>
 
   <!-- Goods Transactions Section -->
-  <div class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+  <div
+    class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+  >
     <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+      >
         <div class="flex-1 min-w-0">
-          <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <h3
+            class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2"
+          >
             <LucideIcon name="package" :size="20" />
             <span class="truncate">Goods Transactions</span>
           </h3>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1 hidden sm:block">
+          <p
+            class="text-sm text-gray-600 dark:text-gray-400 mt-1 hidden sm:block"
+          >
             Record and track goods going in and out of inventory
           </p>
         </div>
@@ -449,14 +492,29 @@ onMounted(() => {
     </div>
 
     <div v-if="loadingTransactions" class="p-8 text-center">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Loading transactions...</p>
+      <div
+        class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
+      ></div>
+      <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+        Loading transactions...
+      </p>
     </div>
 
-    <div v-else-if="filteredGoodsTransactions.length === 0" class="p-8 text-center">
-      <LucideIcon name="package-x" :size="48" class="mx-auto text-gray-400 mb-3" />
-      <p class="text-gray-600 dark:text-gray-400 font-medium">No transactions found</p>
-      <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">Click "Record Goods Transaction" to add your first transaction</p>
+    <div
+      v-else-if="filteredGoodsTransactions.length === 0"
+      class="p-8 text-center"
+    >
+      <LucideIcon
+        name="package-x"
+        :size="48"
+        class="mx-auto text-gray-400 mb-3"
+      />
+      <p class="text-gray-600 dark:text-gray-400 font-medium">
+        No transactions found
+      </p>
+      <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">
+        Click "Record Goods Transaction" to add your first transaction
+      </p>
     </div>
 
     <template v-else>
@@ -475,129 +533,187 @@ onMounted(() => {
             ]"
             class="dashboard-table transaction-table-responsive"
           >
-          <template #date-data="{ row }">
-            <span class="text-sm">{{ formatDate(row.date || row.created_at) }}</span>
-          </template>
+            <template #date-data="{ row }">
+              <span class="text-sm">{{
+                formatDate(row.date || row.created_at)
+              }}</span>
+            </template>
 
-          <template #transaction_type-data="{ row }">
-            <UBadge
-              :label="getTransactionTypeDisplay(row.transaction_type)"
-              :color="getTransactionTypeColor(row.transaction_type)"
-              variant="soft"
-              size="sm"
-            />
-          </template>
+            <template #transaction_type-data="{ row }">
+              <UBadge
+                :label="getTransactionTypeDisplay(row.transaction_type)"
+                :color="getTransactionTypeColor(row.transaction_type)"
+                variant="soft"
+                size="sm"
+              />
+            </template>
 
-          <template #items-data="{ row }">
-            <div class="flex flex-col">
-              <span v-if="row.items && row.items.length > 0" class="font-medium text-gray-900 dark:text-gray-100 text-sm">
-                {{ row.items.length }} item(s)
-              </span>
-              <span v-else class="font-medium text-gray-900 dark:text-gray-100 text-sm">
-                No items
-              </span>
-              <div v-for="(item, idx) in row.items?.slice(0, 2)" :key="idx" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {{ item.item_name || (item.asset ? `${item.asset.brand} ${item.asset.model}` : item.id_items) }} - {{ item.quantity }} {{ item.unit }}
+            <template #items-data="{ row }">
+              <div class="flex flex-col">
+                <span
+                  v-if="row.items && row.items.length > 0"
+                  class="font-medium text-gray-900 dark:text-gray-900 text-sm"
+                >
+                  {{ row.items.length }} item(s)
+                </span>
+                <span
+                  v-else
+                  class="font-medium text-gray-900 dark:text-gray-100 text-sm"
+                >
+                  No items
+                </span>
+                <div
+                  v-for="(item, idx) in row.items?.slice(0, 2)"
+                  :key="idx"
+                  class="text-xs text-gray-500 dark:text-gray-400 mt-1"
+                >
+                  {{
+                    item.item_name ||
+                    (item.asset
+                      ? `${item.asset.brand} ${item.asset.model}`
+                      : item.id_items)
+                  }}
+                  - {{ item.quantity }} {{ item.unit }}
+                </div>
+                <span
+                  v-if="row.items && row.items.length > 2"
+                  class="text-xs text-gray-400 italic"
+                >
+                  +{{ row.items.length - 2 }} more
+                </span>
               </div>
-              <span v-if="row.items && row.items.length > 2" class="text-xs text-gray-400 italic">
-                +{{ row.items.length - 2 }} more
+            </template>
+
+            <template #quantity-data="{ row }">
+              <div
+                v-if="row.items && row.items.length > 0"
+                class="flex flex-col"
+              >
+                <span class="font-medium text-sm">{{
+                  row.items.reduce(
+                    (sum: number, item: any) => sum + item.quantity,
+                    0
+                  )
+                }}</span>
+                <span class="text-xs text-gray-500"> total quantity </span>
+              </div>
+              <span v-else class="text-gray-400">-</span>
+            </template>
+
+            <template #notes-data="{ row }">
+              <span
+                class="text-sm text-gray-600 dark:text-gray-900 max-w-xs truncate"
+                :title="row.notes"
+              >
+                {{ row.notes || "-" }}
               </span>
-            </div>
-          </template>
+            </template>
 
-          <template #quantity-data="{ row }">
-            <div v-if="row.items && row.items.length > 0" class="flex flex-col">
-              <span class="font-medium text-sm">{{ row.items.reduce((sum: number, item: any) => sum + item.quantity, 0) }}</span>
-              <span class="text-xs text-gray-500">
-                total quantity
-              </span>
-            </div>
-            <span v-else class="text-gray-400">-</span>
-          </template>
-
-          <template #notes-data="{ row }">
-            <span class="text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate" :title="row.notes">
-              {{ row.notes || '-' }}
-            </span>
-          </template>
-
-          <template #actions-data="{ row }">
-            <UButton
-              color="red"
-              variant="ghost"
-              size="xs"
-              @click="deleteGoodsTransaction(row.id)"
-            >
-              <template #leading>
-                <LucideIcon name="trash-2" :size="14" />
-              </template>
-              Delete
-            </UButton>
-          </template>
+            <template #actions-data="{ row }">
+              <UButton
+                color="red"
+                variant="ghost"
+                size="xs"
+                @click="deleteGoodsTransaction(row.id)"
+              >
+                <template #leading>
+                  <LucideIcon name="trash-2" :size="14" />
+                </template>
+                Delete
+              </UButton>
+            </template>
           </UTable>
         </div>
       </div>
 
       <!-- Mobile Card View -->
       <div class="md:hidden space-y-3 p-4">
-      <div
-        v-for="transaction in filteredGoodsTransactions"
-        :key="transaction.id"
-        class="bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
-      >
-        <div class="flex items-start justify-between mb-3">
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-2">
-              <UBadge
-                :label="getTransactionTypeDisplay(transaction.transaction_type)"
-                :color="getTransactionTypeColor(transaction.transaction_type)"
-                variant="soft"
-                size="sm"
-              />
-              <span class="text-xs text-gray-500 dark:text-gray-400">
-                {{ formatDate(transaction.date || transaction.created_at) }}
-              </span>
+        <div
+          v-for="transaction in filteredGoodsTransactions"
+          :key="transaction.id"
+          class="bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+        >
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-2">
+                <UBadge
+                  :label="
+                    getTransactionTypeDisplay(transaction.transaction_type)
+                  "
+                  :color="getTransactionTypeColor(transaction.transaction_type)"
+                  variant="soft"
+                  size="sm"
+                />
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ formatDate(transaction.date || transaction.created_at) }}
+                </span>
+              </div>
             </div>
-          </div>
-          <UButton
-            color="red"
-            variant="ghost"
-            size="xs"
-            @click="deleteGoodsTransaction(transaction.id)"
-          >
-            <LucideIcon name="trash-2" :size="16" />
-          </UButton>
-        </div>
-
-        <div v-if="transaction.items && transaction.items.length > 0" class="space-y-2 mb-3">
-          <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            {{ transaction.items.length }} item(s) • Total: {{ transaction.items.reduce((sum: number, item: any) => sum + item.quantity, 0) }}
-          </div>
-          <div class="space-y-1">
-            <div
-              v-for="(item, idx) in transaction.items.slice(0, 3)"
-              :key="idx"
-              class="text-sm bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700"
+            <UButton
+              color="red"
+              variant="ghost"
+              size="xs"
+              @click="deleteGoodsTransaction(transaction.id)"
             >
-              <div class="font-medium text-gray-900 dark:text-gray-100">
-                {{ item.item_name || (item.asset ? `${item.asset.brand} ${item.asset.model}` : item.id_items) }}
-              </div>
-              <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                Qty: {{ item.quantity }} {{ item.unit }}
-              </div>
+              <LucideIcon name="trash-2" :size="16" />
+            </UButton>
+          </div>
+
+          <div
+            v-if="transaction.items && transaction.items.length > 0"
+            class="space-y-2 mb-3"
+          >
+            <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              {{ transaction.items.length }} item(s) • Total:
+              {{
+                transaction.items.reduce(
+                  (sum: number, item: any) => sum + item.quantity,
+                  0
+                )
+              }}
             </div>
-            <div v-if="transaction.items.length > 3" class="text-xs text-gray-500 dark:text-gray-400 italic text-center pt-1">
-              +{{ transaction.items.length - 3 }} more item(s)
+            <div class="space-y-1">
+              <div
+                v-for="(item, idx) in transaction.items.slice(0, 3)"
+                :key="idx"
+                class="text-sm bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700"
+              >
+                <div class="font-medium text-gray-900 dark:text-gray-100">
+                  {{
+                    item.item_name ||
+                    (item.asset
+                      ? `${item.asset.brand} ${item.asset.model}`
+                      : item.id_items)
+                  }}
+                </div>
+                <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  Qty: {{ item.quantity }} {{ item.unit }}
+                </div>
+              </div>
+              <div
+                v-if="transaction.items.length > 3"
+                class="text-xs text-gray-500 dark:text-gray-400 italic text-center pt-1"
+              >
+                +{{ transaction.items.length - 3 }} more item(s)
+              </div>
             </div>
           </div>
-        </div>
 
-        <div v-if="transaction.notes" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-          <div class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Notes:</div>
-          <div class="text-sm text-gray-600 dark:text-gray-400">{{ transaction.notes }}</div>
+          <div
+            v-if="transaction.notes"
+            class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"
+          >
+            <div
+              class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Notes:
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              {{ transaction.notes }}
+            </div>
+          </div>
         </div>
       </div>
-    </div>
     </template>
 
     <!-- Pagination -->
@@ -608,7 +724,13 @@ onMounted(() => {
       <UPagination
         v-model="goodsTransactionPage"
         :page-count="goodsTransactionPageCount"
-        :total="goodsTransactions.filter(t => goodsTransactionFilter === 'all' || t.transaction_type === goodsTransactionFilter).length"
+        :total="
+          goodsTransactions.filter(
+            (t) =>
+              goodsTransactionFilter === 'all' ||
+              t.transaction_type === goodsTransactionFilter
+          ).length
+        "
         :max="7"
         class="w-full sm:w-auto"
       />
@@ -640,7 +762,8 @@ onMounted(() => {
 
       <div class="space-y-4">
         <p class="text-gray-700 dark:text-gray-300">
-          Are you sure you want to delete this transaction? This action cannot be undone.
+          Are you sure you want to delete this transaction? This action cannot
+          be undone.
         </p>
       </div>
 
@@ -653,10 +776,7 @@ onMounted(() => {
           >
             Cancel
           </UButton>
-          <UButton
-            color="red"
-            @click="confirmDeleteTransaction"
-          >
+          <UButton color="red" @click="confirmDeleteTransaction">
             <template #leading>
               <LucideIcon name="trash-2" :size="16" />
             </template>
@@ -675,27 +795,28 @@ onMounted(() => {
   .space-y-3 > * + * {
     margin-top: 0.75rem;
   }
-  
+
   /* Better text truncation for mobile */
   .truncate {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  
+
   /* Break long serial numbers */
   .break-all {
     word-break: break-all;
     overflow-wrap: anywhere;
   }
-  
+
   /* Better font rendering on mobile */
   * {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  
-  button, a {
+
+  button,
+  a {
     min-height: 44px;
     min-width: 44px;
   }
@@ -707,31 +828,31 @@ onMounted(() => {
   .md\:hidden {
     display: none !important;
   }
-  
+
   /* Ensure table has proper width on tablet */
   .table-scroll-container {
     width: 100%;
     overflow-x: auto;
   }
-  
+
   .table-scroll-content {
     min-width: 100%;
     width: max-content;
   }
-  
+
   /* Asset table - wider columns for better readability */
   .asset-table-responsive :deep(table) {
     min-width: 1200px;
     width: 100%;
   }
-  
+
   .asset-table-responsive :deep(td),
   .asset-table-responsive :deep(th) {
     padding: 0.875rem 1rem !important;
     white-space: nowrap;
     min-width: 100px;
   }
-  
+
   /* Serial number column - allow wrapping but with more width */
   .asset-table-responsive :deep(td:nth-child(5)),
   .asset-table-responsive :deep(th:nth-child(5)) {
@@ -740,7 +861,7 @@ onMounted(() => {
     white-space: normal;
     word-break: break-all;
   }
-  
+
   /* Description column - allow wrapping with more width */
   .asset-table-responsive :deep(td:nth-child(9)),
   .asset-table-responsive :deep(th:nth-child(9)) {
@@ -749,7 +870,7 @@ onMounted(() => {
     white-space: normal;
     word-wrap: break-word;
   }
-  
+
   /* Type, Brand, Model columns - reasonable width */
   .asset-table-responsive :deep(td:nth-child(2)),
   .asset-table-responsive :deep(th:nth-child(2)),
@@ -760,19 +881,19 @@ onMounted(() => {
     min-width: 120px;
     white-space: normal;
   }
-  
+
   /* Transaction table - wider columns */
   .transaction-table-responsive :deep(table) {
     min-width: 900px;
     width: 100%;
   }
-  
+
   .transaction-table-responsive :deep(td),
   .transaction-table-responsive :deep(th) {
     padding: 0.875rem 1rem !important;
     white-space: nowrap;
   }
-  
+
   /* Item column in transactions - allow wrapping */
   .transaction-table-responsive :deep(td:nth-child(3)),
   .transaction-table-responsive :deep(th:nth-child(3)) {
@@ -780,7 +901,7 @@ onMounted(() => {
     max-width: 350px;
     white-space: normal;
   }
-  
+
   /* Notes column - allow wrapping */
   .transaction-table-responsive :deep(td:nth-child(5)),
   .transaction-table-responsive :deep(th:nth-child(5)) {
@@ -796,12 +917,12 @@ onMounted(() => {
   .asset-table-responsive :deep(table) {
     min-width: 1400px;
   }
-  
+
   .asset-table-responsive :deep(td),
   .asset-table-responsive :deep(th) {
     padding: 1rem 1.25rem !important;
   }
-  
+
   .transaction-table-responsive :deep(table) {
     min-width: 1000px;
   }
@@ -812,7 +933,7 @@ onMounted(() => {
   .flex-wrap > * {
     min-width: 0;
   }
-  
+
   /* Full width buttons on very small screens */
   .w-full {
     width: 100%;
