@@ -437,7 +437,7 @@
                     </li>
                     <li class="flex items-start">
                       <UIcon name="settings-6-tooth" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                      <strong>Remove Mikrotik configurations: queue rules, hotspot bindings, netwatch entries, schedulers, scripts, and DHCP leases</strong>
+                      <strong>Disable Mikrotik configurations: queue rules, hotspot bindings, netwatch entries, schedulers, scripts, and DHCP leases</strong>
                     </li>
                   </ul>
                 </div>

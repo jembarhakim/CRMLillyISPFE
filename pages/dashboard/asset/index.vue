@@ -548,41 +548,22 @@ onMounted(() => {
               />
             </template>
 
-            <template #items-data="{ row }">
-              <div class="flex flex-col">
-                <span
-                  v-if="row.items && row.items.length > 0"
-                  class="font-medium text-gray-900 dark:text-gray-900 text-sm"
-                >
-                  {{ row.items.length }} item(s)
-                </span>
-                <span
-                  v-else
-                  class="font-medium text-gray-900 dark:text-gray-100 text-sm"
-                >
-                  No items
-                </span>
-                <div
-                  v-for="(item, idx) in row.items?.slice(0, 2)"
-                  :key="idx"
-                  class="text-xs text-gray-500 dark:text-gray-400 mt-1"
-                >
-                  {{
-                    item.item_name ||
-                    (item.asset
-                      ? `${item.asset.brand} ${item.asset.model}`
-                      : item.id_items)
-                  }}
-                  - {{ item.quantity }} {{ item.unit }}
-                </div>
-                <span
-                  v-if="row.items && row.items.length > 2"
-                  class="text-xs text-gray-400 italic"
-                >
-                  +{{ row.items.length - 2 }} more
-                </span>
+          <template #items-data="{ row }">
+            <div class="flex flex-col">
+              <span v-if="row.items && row.items.length > 0" class="font-medium text-gray-900 dark:text-gray-900 text-sm">
+                {{ row.items.length }} item(s)
+              </span>
+              <span v-else class="font-medium text-gray-900 dark:text-gray-100 text-sm">
+                No items
+              </span>
+              <div v-for="(item, idx) in row.items?.slice(0, 2)" :key="idx" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {{ item.item_name || (item.asset ? `${item.asset.brand} ${item.asset.model}` : item.id_items) }} - {{ item.quantity }} {{ item.unit }}
               </div>
-            </template>
+              <span v-if="row.items && row.items.length > 2" class="text-xs text-gray-400 italic">
+                +{{ row.items.length - 2 }} more
+              </span>
+            </div>
+          </template>
 
             <template #quantity-data="{ row }">
               <div
@@ -600,14 +581,11 @@ onMounted(() => {
               <span v-else class="text-gray-400">-</span>
             </template>
 
-            <template #notes-data="{ row }">
-              <span
-                class="text-sm text-gray-600 dark:text-gray-900 max-w-xs truncate"
-                :title="row.notes"
-              >
-                {{ row.notes || "-" }}
-              </span>
-            </template>
+          <template #notes-data="{ row }">
+            <span class="text-sm text-gray-600 dark:text-gray-900 max-w-xs truncate" :title="row.notes">
+              {{ row.notes || '-' }}
+            </span>
+          </template>
 
             <template #actions-data="{ row }">
               <UButton
