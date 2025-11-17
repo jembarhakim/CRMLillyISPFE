@@ -167,74 +167,55 @@
             <UIcon name="file-text" class="text-4xl mb-2" />
             <p>No installation reports found</p>
           </div>
-          <div v-else v-for="report in paginatedReports" :key="report.installation_id" 
+          <div v-else v-for="report in paginatedReports" :key="report.installation_id"
                class="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
             <!-- Report Header -->
             <div class="flex items-start justify-between mb-3">
               <div class="flex-1">
-                <h3 class="font-semibold text-gray-900 text-sm">{{ report.customer_name || 'Unknown' }}</h3>
-                <p class="text-xs text-gray-500">{{ report.customer_phone || '-' }}</p>
+                <button
+                  @click="viewReport(report.installation_id)"
+                  class="text-lg font-semibold hover:underline text-blue-600 hover:text-blue-800"
+                >
+                  {{ report.customer_name || 'Unknown' }}
+                </button>
               </div>
-              <div class="flex flex-col gap-1">
-                <span :class="getStatusColor(report.installation_status)" 
-                      class="px-2 py-1 rounded-full text-xs font-medium">
-                  {{ report.installation_status || 'Unknown' }}
-                </span>
-                <span class="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {{ report.installation_type || 'Unknown' }}
-                </span>
-              </div>
+              <UDropdown :items="items(report)">
+                <UButton
+                  color="gray"
+                  variant="ghost"
+                  class="mobile-actions-btn flex-shrink-0 min-w-[44px] h-11 px-2 border border-gray-300 rounded-lg hover:bg-gray-100 shadow-sm"
+                >
+                  <LucideIcon name="ellipsis-vertical" :size="20" class="text-gray-700" />
+                </UButton>
+              </UDropdown>
             </div>
 
             <!-- Report Details -->
-            <div class="space-y-2 text-xs">
+            <div class="space-y-2 text-sm">
               <div class="flex items-center gap-2">
-                <UIcon name="user" class="w-3 h-3 text-gray-400" />
-                <span class="text-gray-600">Technician: {{ report.technician_name || 'Unknown' }}</span>
+                <UIcon name="user" class="w-4 h-4 text-gray-400" />
+                <span class="text-gray-600">{{ report.technician_name || 'Unknown Technician' }}</span>
               </div>
               <div class="flex items-center gap-2">
-                <UIcon name="phone" class="w-3 h-3 text-gray-400" />
-                <span class="text-gray-600">{{ report.technician_phone || '-' }}</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <UIcon name="calendar" class="w-3 h-3 text-gray-400" />
-                <span class="text-gray-600">PSB: {{ formatDate(report.tgl_permintaan_psb) }}</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <UIcon name="check-circle" class="w-3 h-3 text-gray-400" />
-                <span class="text-gray-600">Completed: {{ formatDate(report.installation_completed_at) }}</span>
-              </div>
-              <div v-if="report.durasi_psb !== null && report.durasi_psb !== undefined" class="flex items-center gap-2">
-                <UIcon name="clock" class="w-3 h-3 text-gray-400" />
-                <span class="text-gray-600">Duration: {{ report.durasi_psb }} hari</span>
+                <UIcon name="wrench" class="w-4 h-4 text-gray-400" />
+                <span class="text-gray-600">{{ report.installation_type || 'Unknown Type' }}</span>
               </div>
               <div v-if="report.status_psb" class="flex items-center gap-2">
-                <UIcon name="flag" class="w-3 h-3 text-gray-400" />
-                <span :class="report.status_psb === 'Tepat Waktu' ? 'text-green-600' : 'text-red-600'" class="font-medium">
+                <UIcon name="flag" class="w-4 h-4 text-gray-400" />
+                <span :class="report.status_psb === 'Tepat Waktu' ? 'text-green-600 font-medium' : 'text-red-600 font-medium'">
                   PSB: {{ report.status_psb }}
                 </span>
               </div>
-              <div class="flex items-center gap-2">
-                <UIcon name="cube" class="w-3 h-3 text-gray-400" />
-                <span class="text-gray-600">{{ report.router_brand || '-' }} {{ report.router_model || '' }}</span>
+              <!-- Status Badges -->
+              <div class="flex items-center gap-2 flex-wrap">
+                <UIcon name="tag" :size="16" class="text-gray-400" />
+                <div class="flex gap-1 flex-wrap">
+                  <span :class="getStatusColor(report.installation_status)"
+                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap">
+                    {{ report.installation_status || 'Unknown' }}
+                  </span>
+                </div>
               </div>
-              <div v-if="report.mac_address" class="flex items-center gap-2">
-                <UIcon name="computer-desktop" class="w-3 h-3 text-gray-400" />
-                <span class="text-gray-600 font-mono text-xs">{{ report.mac_address }}</span>
-              </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="flex gap-2 mt-3">
-              <UButton @click="viewReport(report.installation_id)" size="sm" color="blue" variant="outline" class="flex-1">
-                View
-              </UButton>
-              <UButton @click="editReport(report.installation_id)" size="sm" color="green" variant="outline" class="flex-1">
-                Edit
-              </UButton>
-              <UButton @click="deleteReport(report.installation_id)" size="sm" color="red" variant="outline" class="flex-1">
-                Delete
-              </UButton>
             </div>
           </div>
         </div>
@@ -244,20 +225,19 @@
           <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <UTable :rows="paginatedReports" :columns="columns" class="w-full installation-reports-table">
               <template #customer-data="{ row }">
-                <div class="table-cell-content">
-                  <div>
-                    <div class="text-sm font-medium text-gray-900">{{ row.customer_name || 'Unknown' }}</div>
-                    <div class="text-sm text-gray-500">{{ row.customer_phone || '-' }}</div>
-                  </div>
+                <div class="flex items-center space-x-3 flex-wrap">
+                  <button
+                    @click="viewReport(row.installation_id)"
+                    class="hover:underline font-medium text-blue-600 hover:text-blue-800"
+                  >
+                    {{ row.customer_name || 'Unknown' }}
+                  </button>
                 </div>
               </template>
 
               <template #technician-data="{ row }">
                 <div class="table-cell-content">
-                  <div>
-                    <div class="text-sm font-medium text-gray-900">{{ row.technician_name || 'Unknown' }}</div>
-                    <div class="text-sm text-gray-500">{{ row.technician_phone || '-' }}</div>
-                  </div>
+                  <div class="text-sm font-medium text-gray-900">{{ row.technician_name || 'Unknown' }}</div>
                 </div>
               </template>
 
@@ -277,27 +257,6 @@
                 </div>
               </template>
 
-              <template #tgl_permintaan_psb-data="{ row }">
-                <div class="table-cell-content">
-                  <span class="text-sm text-gray-900 whitespace-nowrap">{{ formatDate(row.tgl_permintaan_psb) }}</span>
-                </div>
-              </template>
-
-              <template #tgl_selesai_instalasi-data="{ row }">
-                <div class="table-cell-content">
-                  <span class="text-sm text-gray-900 whitespace-nowrap">{{ formatDate(row.installation_completed_at) }}</span>
-                </div>
-              </template>
-
-              <template #durasi_psb-data="{ row }">
-                <div class="table-cell-content">
-                  <span v-if="row.durasi_psb !== null && row.durasi_psb !== undefined" class="text-sm font-medium text-gray-900 whitespace-nowrap">
-                    {{ row.durasi_psb }} hari
-                  </span>
-                  <span v-else class="text-sm text-gray-400 whitespace-nowrap">-</span>
-                </div>
-              </template>
-
               <template #status_psb-data="{ row }">
                 <div class="table-cell-content">
                   <span v-if="row.status_psb"
@@ -306,13 +265,6 @@
                     {{ row.status_psb }}
                   </span>
                   <span v-else class="text-sm text-gray-400 whitespace-nowrap">-</span>
-                </div>
-              </template>
-
-              <template #assets-data="{ row }">
-                <div class="table-cell-content">
-                  <div class="text-sm text-gray-900 truncate">{{ row.router_brand || '-' }} {{ row.router_model || '' }}</div>
-                  <div class="text-sm text-gray-500 truncate">{{ row.mac_address || '-' }}</div>
                 </div>
               </template>
 
@@ -532,7 +484,7 @@ definePageMeta({
   middleware: 'auth'
 })
 
-// Table columns definition matching Customer table format
+// Simplified table columns definition - only core information
 const columns = [
   {
     key: 'customer',
@@ -551,24 +503,8 @@ const columns = [
     label: 'Status'
   },
   {
-    key: 'tgl_permintaan_psb',
-    label: 'Tgl. Permintaan PSB'
-  },
-  {
-    key: 'tgl_selesai_instalasi',
-    label: 'Tgl. Selesai Instalasi'
-  },
-  {
-    key: 'durasi_psb',
-    label: 'Durasi PSB'
-  },
-  {
     key: 'status_psb',
     label: 'Status PSB'
-  },
-  {
-    key: 'assets',
-    label: 'Assets'
   },
   {
     key: 'actions',
@@ -1092,4 +1028,85 @@ const items = (row: InstallationReportCompleteResponse) => {
   outline-offset: 2px !important;
 }
 /* ===== end modal scroll fix ===== */
+
+/* Table styling for better appearance and alignment */
+.installation-reports-table :deep(table) {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  table-layout: auto;
+}
+
+.installation-reports-table :deep(th) {
+  padding: 12px 16px !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  color: #374151 !important;
+  background-color: #f9fafb !important;
+  border-bottom: 2px solid #e5e7eb !important;
+  white-space: nowrap;
+  vertical-align: middle !important;
+  text-align: left;
+}
+
+.installation-reports-table :deep(td) {
+  padding: 12px 16px !important;
+  vertical-align: middle !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  font-size: 0.875rem !important;
+}
+
+.installation-reports-table :deep(tbody tr) {
+  transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.installation-reports-table :deep(tbody tr:hover) {
+  background-color: #f9fafb !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Table cell content wrapper for consistent alignment */
+.table-cell-content {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  vertical-align: middle;
+}
+
+/* Mobile Actions Button - Ensure visibility */
+@media (max-width: 640px) {
+  /* Make Actions button more visible on mobile */
+  :deep(.mobile-actions-btn),
+  :deep(.mobile-actions-btn button),
+  :deep(.mobile-actions-btn [class*="UButton"]) {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    border: 1px solid #d1d5db !important;
+    background-color: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    padding: 0 !important;
+  }
+
+  :deep(.mobile-actions-btn:hover),
+  :deep(.mobile-actions-btn button:hover),
+  :deep(.mobile-actions-btn [class*="UButton"]:hover) {
+    background-color: #f3f4f6 !important;
+    border-color: #9ca3af !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Ensure icon is visible inside Actions button */
+  :deep(.mobile-actions-btn svg),
+  :deep(.mobile-actions-btn [class*="LucideIcon"]) {
+    color: #374151 !important;
+    opacity: 1 !important;
+    display: block !important;
+  }
+}
 </style>
