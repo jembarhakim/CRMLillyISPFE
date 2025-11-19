@@ -120,6 +120,9 @@ function OpenModalAddItem(isEdit: boolean, data: any) {
       await getData();
       modal.close();
     },
+    onClose() {
+      modal.close();
+    },
   });
 }
 
@@ -293,4 +296,3 @@ const tableColumns = [
   width: max-content;
 }
 </style>
-
