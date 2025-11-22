@@ -1311,7 +1311,7 @@ const {
 } = useKumaMonitoring(defaultEndpoint)
 
 // Metrics cache for real-time status from Kuma metrics endpoint
-const metricsCache = ref<Record<string, any>>({})
+const metricsCache = ref({})
 
 // Fetch metrics from /api/metrics endpoint
 const fetchMetrics = async () => {
