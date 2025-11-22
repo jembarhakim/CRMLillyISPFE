@@ -1153,8 +1153,8 @@ const getCustomerProductsInfo = () => {
           name: installation.product_name,
           description: installation.product_description || '',
           price: installation.product_price || 0,
-          downloadSpeed: installation.product_download_speed_mbps,
-          uploadSpeed: installation.product_upload_speed_mbps
+          downloadSpeed: installation.download_speed_mbps,
+          uploadSpeed: installation.upload_speed_mbps
         })
       }
     }
@@ -1180,8 +1180,8 @@ const getDeviceProductInfo = (device: any) => {
       name: matchingInstallation.product_name,
       description: matchingInstallation.product_description || '',
       price: matchingInstallation.product_price || 0,
-      downloadSpeed: matchingInstallation.product_download_speed_mbps,
-      uploadSpeed: matchingInstallation.product_upload_speed_mbps
+      downloadSpeed: matchingInstallation.download_speed_mbps,
+      uploadSpeed: matchingInstallation.upload_speed_mbps
     }
   }
 

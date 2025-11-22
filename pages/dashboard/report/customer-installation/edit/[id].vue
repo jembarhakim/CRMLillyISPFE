@@ -501,7 +501,7 @@
                 <!-- Cable and Port Information -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <UInput
-                    v-model="service.length"
+                    v-model="service.cable_length"
                     type="number"
                     placeholder="Cable Length (m)"
                     class="custom-input"
@@ -521,62 +521,7 @@
             </div>
           </div>
 
-          <!-- Cables -->
-          <div class="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-xl border border-yellow-100">
-            <div class="flex items-center mb-6">
-              <div class="bg-yellow-500 p-2 rounded-lg mr-3">
-                <UIcon name="cable" class="text-white text-lg" />
-              </div>
-              <h2 class="text-xl font-bold text-gray-800">Cables</h2>
-            </div>
-            
-            <div class="mb-6">
-              <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold text-gray-700">Cables</h3>
-                <UButton @click="addCable" size="sm" color="yellow" class="shadow-md">
-                  <UIcon name="plus" class="mr-1" />
-                  Add Cable
-                </UButton>
-              </div>
-              
-              <div v-for="(cable, index) in state.cables" :key="index" class="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm">
-                <div class="flex justify-between items-center mb-4">
-                  <h4 class="text-lg font-semibold text-gray-700 flex items-center">
-                    <UIcon name="cable" class="mr-2 text-yellow-500" />
-                    Cable {{ index + 1 }}
-                  </h4>
-                  <UButton @click="removeCable(index)" size="sm" color="red" variant="outline" class="hover:bg-red-50">
-                    <UIcon name="trash-2" />
-                  </UButton>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <UInput
-                    v-model="cable.name"
-                    placeholder="Cable Name"
-                    class="custom-input"
-                  />
-                  <UInput
-                    v-model="cable.type"
-                    placeholder="Cable Type"
-                    class="custom-input"
-                  />
-                  <UInput
-                    v-model.number="cable.length"
-                    type="number"
-                    placeholder="Length (m)"
-                    class="custom-input"
-                  />
-                  <USelect
-                    v-model="cable.status"
-                    :options="cableStatusOptions"
-                    placeholder="Status"
-                    class="custom-select"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+          
 
           <!-- Technician Photo Documentation -->
           <div class="bg-gradient-to-r from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-100">
@@ -859,9 +804,7 @@ const state = reactive({
   
   // Customer Services
   customer_services: [] as any[],
-  
-  // Cables
-  cables: [] as any[],
+
   
   // Images
   image_ids: [] as string[],
@@ -1017,12 +960,7 @@ const pingStatusOptions = [
   { label: "Unknown", value: "unknown" },
 ];
 
-const cableStatusOptions = [
-  { label: "Available", value: "available" },
-  { label: "In Use", value: "in_use" },
-  { label: "Damaged", value: "damaged" },
-  { label: "Retired", value: "retired" },
-];
+
 
 // Helper function to get full image URL
 // Open Google Maps with coordinates
@@ -1249,8 +1187,6 @@ async function loadInstallationReport() {
       // Customer Services
       state.customer_services = report.customer_services || [];
       
-      // Cables
-      state.cables = report.cables || [];
       
       // Images - filter out technician photos (they're handled separately)
       const installationImages = (report.images || []).filter((img: any) => {
@@ -1607,7 +1543,6 @@ function removeNetworkDevice(index: number) {
 function addCustomerService() {
   state.customer_services.push({
     device_id: "",
-    cable_id: "",
     cable_type: "",
     cable_length: 0,
     end_port_type: "",
@@ -1626,18 +1561,9 @@ function removeCustomerService(index: number) {
 }
 
 // Cable methods
-function addCable() {
-  state.cables.push({
-    name: "",
-    type: "",
-    length: 0,
-    status: "available",
-  });
-}
 
-function removeCable(index: number) {
-  state.cables.splice(index, 1);
-}
+
+
 
 // File upload methods
 function triggerFileUpload() {
@@ -1915,7 +1841,6 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       longitude: state.longitude,
       network_devices: state.network_devices,
       customer_services: state.customer_services,
-      cables: state.cables,
       image_ids: state.image_ids,
       technician_photos: state.technician_photos,
       technician_photos_notes: state.technician_photos_notes,
@@ -1929,7 +1854,6 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       technician_photos_notes: submitData.technician_photos_notes,
       network_devices_count: submitData.network_devices?.length || 0,
       customer_services_count: submitData.customer_services?.length || 0,
-      cables_count: submitData.cables?.length || 0,
       image_ids_count: submitData.image_ids?.length || 0
     });
     

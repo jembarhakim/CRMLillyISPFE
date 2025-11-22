@@ -45,13 +45,15 @@
             <div>
               <h5 class="text-red-800 font-semibold mb-2">⚠️ Warning: This action cannot be undone!</h5>
               <p class="text-red-900 text-sm leading-relaxed mb-3">
-                You are about to permanently delete this installation report and all associated data.
+                You are about to archive this installation report. The installation data will be soft deleted but can be reviewed.
               </p>
               <div class="bg-red-100 border border-red-300 rounded-lg p-3">
                 <p class="text-red-900 text-sm font-semibold mb-2">This action will:</p>
                 <ul class="text-red-900 text-sm list-disc list-inside space-y-1">
                   <li><strong>Delete the installation report permanently</strong></li>
-                  <li><strong>Update the MAC address status back to "in_stock"</strong></li>
+                  <li><strong>Update asset: Clear MAC address field back to original sticker value</strong></li>
+                  <li><strong>Set asset status back to "in_stock"</strong></li>
+                  <li><strong>Disable MikroTik configurations instead of deleting them</strong></li>
                   <li><strong>Remove all related technician assignments and asset transactions</strong></li>
                   <li><strong>Delete all associated network devices, cables, and images</strong></li>
                 </ul>
@@ -123,7 +125,6 @@
             variant="solid"
             size="lg"
             :loading="deleting"
-            :disabled="!confirmationChecked"
             class="w-full sm:w-auto bg-red-600 hover:bg-red-700"
           >
             <UIcon name="trash-2" class="mr-2" />
@@ -138,6 +139,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { customerAdminApi } from '@/api/admin/customer'
+import { assetItemAdminApi } from '@/api/admin/asset-item'
+import { mikrotikAdminApi } from '@/api/admin/mikrotik'
 
 interface Props {
   isOpen: boolean
@@ -174,8 +177,18 @@ function closeModal() {
 }
 
 async function confirmDelete() {
-  if (!props.installationId || !confirmationChecked.value || deleting.value) return
-  
+  if (!props.installationId || deleting.value) return
+
+  if (!confirmationChecked.value) {
+    // Show warning notification if confirmation is not checked
+    useToast().add({
+      title: 'Warning!',
+      description: 'Please check the confirmation checkbox before deleting the installation report.',
+      color: 'orange',
+    })
+    return
+  }
+
   deleting.value = true
   
   try {

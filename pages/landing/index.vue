@@ -1310,6 +1310,22 @@ const {
   switchEndpoint: switchMonitoringEndpoint
 } = useKumaMonitoring(defaultEndpoint)
 
+// Metrics cache for real-time status from Kuma metrics endpoint
+const metricsCache = ref<Record<string, any>>({})
+
+// Fetch metrics from /api/metrics endpoint
+const fetchMetrics = async () => {
+  try {
+    const response = await $fetch('/api/metrics')
+    if (response?.monitors) {
+      metricsCache.value = response.monitors
+      console.log('[Metrics] Updated cache with', Object.keys(response.monitors).length, 'monitors')
+    }
+  } catch (error) {
+    console.error('[Metrics] Error fetching:', error)
+  }
+}
+
 // Tab management - dynamically uses endpoint from configuration
 const monitoringTab = ref(defaultEndpoint)
 
@@ -1328,73 +1344,192 @@ const sortedMonitoringGroups = computed(() => {
 })
 
 // Helper functions for monitor status
-const getMonitorStatusColor = (monitor) => {
-  // Since the API doesn't provide status directly, we'll use a default color
-  // In a real implementation, you'd check monitor.status or similar field
-  // For now, we'll use a neutral color that can be updated based on actual API response
-  return '#10b981' // Default to green (assuming active)
+// TEST OVERRIDE: Manually mark certain monitors as DOWN for testing
+const testDownMonitorIds = [7] // Monitor 7 (Test Down) - for testing UI
+
+const getRealStatusData = (monitor) => {
+  // Metrics cache - fetched via /api/metrics endpoint
+  const metricsData = metricsCache.value[monitor.name]
+  
+  if (metricsData) {
+    console.log(`Monitor ${monitor.id} (${monitor.name}) - Metrics status: ${metricsData.status}`)
+    return {
+      status: metricsData.status,
+      msg: metricsData.status === 1 ? 'Operational' : (metricsData.status === 0 ? 'Down' : 'Unknown'),
+      ping: metricsData.responseTime || 0
+    }
+  }
+  
+  // Fallback to heartbeatList from API response
+  if (!monitoringData.value?.heartbeatList) {
+    console.log(`Monitor ${monitor.id} - No metrics or heartbeatList available`)
+    return null
+  }
+
+  // Get history for this monitor
+  const monitorId = String(monitor.id)
+  const history = monitoringData.value.heartbeatList[monitorId]
+  
+  if (!history || history.length === 0) {
+    console.log(`Monitor ${monitor.id} - No history available`)
+    return null
+  }
+
+  // Return the latest heartbeat entry
+  const latestData = history[history.length - 1]
+  console.log(`Monitor ${monitor.id} (${monitor.name}) - Fallback heartbeat data:`, latestData)
+  return latestData
 }
 
 const getMonitorStatusText = (monitor) => {
-  // Return status text based on monitor
-  return 'Operational'
+  const data = getRealStatusData(monitor)
+  
+  // If no data, show pending
+  if (!data) {
+    console.log(`Monitor ${monitor.id} - No data, showing Pending`)
+    return 'Pending'
+  }
+  
+  // Determine status from multiple indicators
+  let status = data.status
+  console.log(`Monitor ${monitor.id} - Initial status: ${status}, Message: ${data.msg}, Ping: ${data.ping}`)
+  
+  // Check if message or other fields indicate failure/down
+  const msgLower = (data.msg || '').toLowerCase()
+  if (msgLower.includes('timeout') || 
+      msgLower.includes('down') || 
+      msgLower.includes('error') ||
+      msgLower.includes('failed') ||
+      msgLower.includes('unreachable') ||
+      msgLower.includes('refused') ||
+      msgLower.includes('test')) {
+    console.log(`Monitor ${monitor.id} - Message indicates DOWN: ${data.msg}`)
+    return 'Down'
+  }
+  
+  if (status === 1) return 'Operational'
+  if (status === 0) return 'Down'
+  if (status === 2) return 'Pending'
+  if (status === 3) return 'Maintenance'
+  
+  return 'Unknown'
+}
+
+const getMonitorStatusColor = (monitor) => {
+  const data = getRealStatusData(monitor)
+  
+  // If no data, show gray (pending)
+  if (!data) return '#9ca3af'
+  
+  const msgLower = (data.msg || '').toLowerCase()
+  
+  // Check message for down/error indicators
+  if (msgLower.includes('timeout') || 
+      msgLower.includes('down') || 
+      msgLower.includes('error') ||
+      msgLower.includes('failed') ||
+      msgLower.includes('unreachable') ||
+      msgLower.includes('refused') ||
+      msgLower.includes('test')) {
+    return '#ef4444' // Red - DOWN
+  }
+  
+  const status = data.status
+  
+  if (status === 1) return '#10b981' // Green - UP
+  if (status === 0) return '#ef4444' // Red - DOWN
+  if (status === 2) return '#eab308' // Yellow - PENDING
+  if (status === 3) return '#3b82f6' // Blue - MAINTENANCE
+  
+  return '#9ca3af' // Gray - Unknown
 }
 
 const isMonitorActive = (monitor) => {
-  // Check if monitor is active (for pulse animation)
-  return true // Default to active
+  const data = getRealStatusData(monitor)
+  if (!data) return false
+  
+  const msgLower = (data.msg || '').toLowerCase()
+  
+  // Check if it's marked as down in message
+  if (msgLower.includes('timeout') || 
+      msgLower.includes('down') || 
+      msgLower.includes('error') ||
+      msgLower.includes('failed') ||
+      msgLower.includes('unreachable') ||
+      msgLower.includes('refused') ||
+      msgLower.includes('test')) {
+    return false
+  }
+  
+  // Only pulse when UP (status === 1)
+  return data.status === 1
 }
 
 const getMonitorUptime = (monitor) => {
-  // Check if monitor has uptime data from API
-  if (monitor.uptime !== undefined && monitor.uptime !== null) {
-    return parseFloat(monitor.uptime).toFixed(2)
-  }
+  const data = getRealStatusData(monitor)
   
-  // If monitor has status and it's "up", assume 100%
-  if (monitor.status === 'up' || monitor.status === 1) {
-    return '100.00'
-  }
+  if (!data) return '---'
   
-  // If monitor has status and it's "down", show 0%
-  if (monitor.status === 'down' || monitor.status === 0) {
+  const msgLower = (data.msg || '').toLowerCase()
+  
+  // Check if down in message
+  if (msgLower.includes('timeout') || 
+      msgLower.includes('down') || 
+      msgLower.includes('error') ||
+      msgLower.includes('failed') ||
+      msgLower.includes('unreachable') ||
+      msgLower.includes('refused') ||
+      msgLower.includes('test')) {
     return '0.00'
   }
   
-  // Default to 100% if status is unknown (monitors are typically up if listed)
-  return '100.00'
+  // Handle specific statuses
+  if (data.status === 1) return '100.00' // UP
+  if (data.status === 0) return '0.00'   // DOWN
+  if (data.status === 2) return '---'    // PENDING
+  
+  return '---'
 }
 
 const getUptimeBars = (monitor) => {
-  // Generate deterministic uptime bar data (40 bars representing recent history)
   const bars = []
-  const baseUptime = parseFloat(getMonitorUptime(monitor))
+  const data = getRealStatusData(monitor)
   
-  // If uptime is 100%, show all green bars with occasional slight variation for realism
-  if (baseUptime >= 99.9) {
-    // Simple seeded random function for deterministic results
-    let seed = monitor.id * 12345
-    
+  if (!data) {
+    // No data - fill with gray (50%)
     for (let i = 0; i < 40; i++) {
-      seed = (seed * 9301 + 49297) % 233280
-      const random = seed / 233280
-      // Show mostly 100% with very slight variation (±0.5%)
-      const variation = (random - 0.5) * 1
-      const uptime = Math.max(99.0, Math.min(100, baseUptime + variation))
-      bars.push(uptime)
+      bars.push(50)
     }
-  } else {
-    // For lower uptime, show more variation
-    let seed = monitor.id * 12345
-    
+    return bars
+  }
+
+  const msgLower = (data.msg || '').toLowerCase()
+  
+  // Check if down in message
+  if (msgLower.includes('timeout') || 
+      msgLower.includes('down') || 
+      msgLower.includes('error') ||
+      msgLower.includes('failed') ||
+      msgLower.includes('unreachable') ||
+      msgLower.includes('refused') ||
+      msgLower.includes('test')) {
+    // All red
     for (let i = 0; i < 40; i++) {
-      seed = (seed * 9301 + 49297) % 233280
-      const random = seed / 233280
-      // Add variation based on actual uptime
-      const variation = (random - 0.5) * (100 - baseUptime) * 0.3
-      const uptime = Math.max(0, Math.min(100, baseUptime + variation))
-      bars.push(uptime)
+      bars.push(0)
     }
+    return bars
+  }
+
+  // Define the value based on status
+  let barValue = 100 // Default Green
+  
+  if (data.status === 0) barValue = 0    // Red (Empty/Down)
+  if (data.status === 2) barValue = 50   // Yellow/Grey (Middle/Pending)
+  if (data.status === 3) barValue = 75   // Blue (Maintenance - partial)
+
+  // Fill the array with 40 bars
+  for (let i = 0; i < 40; i++) {
+    bars.push(barValue) 
   }
   
   return bars
@@ -1506,6 +1641,7 @@ const getUptimeBarColor = (uptime) => {
 let carouselInterval = null
 let testimonialInterval = null
 let teamInterval = null
+let metricsInterval = null
 
 onMounted(() => {
   carouselInterval = setInterval(() => {
@@ -1525,12 +1661,19 @@ onMounted(() => {
   
   // Connect to real-time monitoring (WebSocket-like updates every 5 seconds)
   connectMonitoring()
+  
+  // Fetch metrics immediately and then every 5 seconds
+  fetchMetrics()
+  metricsInterval = setInterval(() => {
+    fetchMetrics()
+  }, 5000)
 })
 
 onUnmounted(() => {
   if (carouselInterval) clearInterval(carouselInterval)
   if (testimonialInterval) clearInterval(testimonialInterval)
   if (teamInterval) clearInterval(teamInterval)
+    if (metricsInterval) clearInterval(metricsInterval)
   disconnectMonitoring()
   window.removeEventListener('scroll', handleScroll)
 })

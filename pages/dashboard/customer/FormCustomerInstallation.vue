@@ -8,10 +8,13 @@ import { assetItemAdminApi } from "@/api/admin/asset-item";
 import { mikrotikAdminApi } from "@/api/admin/mikrotik";
 import { uploadFileAdminApi } from "@/api/admin/file-upload";
 import { useNotificationStore } from "@/stores/notification";
+import { useAuthStore } from "@/stores/auth";
 import { computed, nextTick, watch, reactive, ref, onMounted, onUnmounted } from "vue";
+import { useApiHost } from "@/composables/useApiHost";
 import LucideIcon from '@/components/LucideIcon.vue';
 
 const notification = useNotificationStore();
+const authStore = useAuthStore();
 
 // Add debugging for component initialization
 console.log('[FormCustomerInstallation] Component initializing...');
@@ -122,6 +125,7 @@ const state = reactive({
   loading: false,
   fetchingDHCP: false,
   dhcpStatus: null as { success: boolean; message: string } | null,
+  isTrial: false, // Whether this is a trial installation (affects service_activation_date)
   customers: [] as any[],
   availableTechnicians: [] as any[], // List of available technicians from DB
   assets: [] as any[],
@@ -510,7 +514,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     // Submit using the new API endpoint
     console.log('🚀 Submitting installation report with FormData...');
     console.log('FormData size:', formData.get('document_photo') ? 'File included' : 'No file');
-    
+
     const response = await customerAdminApi().createReportInstallation(formData);
     
     console.log("✅ Success creating installation report", response);
@@ -1061,7 +1065,7 @@ async function loadTerminalCustomers() {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${useCookie("token").value}`,
+        Authorization: `Bearer ${authStore.token}`,
       },
     });
     
@@ -1243,12 +1247,12 @@ async function fetchDHCPLease() {
     const result = await mikrotikAdminApi().getDHCPLease(state.mac_address);
     
     if (result.success) {
-      state.ip_static = result.data.ip_address;
+      state.ip_static = result.data.found_ip;
       state.dhcpStatus = {
         success: true,
-        message: `DHCP lease found: ${result.data.ip_address}`
+        message: `DHCP lease found: MAC ${result.data.mac_address}, IP ${result.data.found_ip}`
       };
-      notification.success('DHCP Lease Found', `IP address ${result.data.ip_address} fetched successfully`);
+      notification.success('DHCP Lease Found', `MAC ${result.data.mac_address}, IP address ${result.data.found_ip} fetched successfully`);
       console.log('DHCP lease response:', result);
     } else {
       const errorMessage = result.message || 'Failed to fetch DHCP lease';

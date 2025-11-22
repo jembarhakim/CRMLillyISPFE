@@ -90,7 +90,6 @@ export type NetworkDeviceRequest = {
 
 export type CustomerServiceRequest = {
   device_id?: string;
-  cable_id?: string;
   cable_type?: string;
   cable_length?: number;
   end_port_type?: string;
@@ -266,11 +265,8 @@ export type InstallationReportCompleteResponse = {
   service_notes?: string;
   installation_team_name?: string;
   installation_team_phone?: string;
-  cable_id?: string;
-  cable_name?: string;
   cable_type?: string;
   cable_length?: number;
-  cable_status?: string;
   end_port_type?: string;
   installation_created_at?: string;
   installation_updated_at?: string;
@@ -279,8 +275,8 @@ export type InstallationReportCompleteResponse = {
   product_name?: string;
   product_description?: string;
   product_price?: number;
-  product_download_speed_mbps?: number;
-  product_upload_speed_mbps?: number;
+  download_speed_mbps?: number;
+  upload_speed_mbps?: number;
   
   // Images relationship (for technician photos)
   images?: Array<{
@@ -396,11 +392,8 @@ export type CompleteInstallationReportWithTechnicianPhotosResponse = {
   service_notes?: string;
   installation_team_name?: string;
   installation_team_phone?: string;
-  cable_id?: string;
-  cable_name?: string;
   cable_type?: string;
   cable_length?: number;
-  cable_status?: string;
   end_port_type?: string;
   installation_created_at?: string;
   installation_updated_at?: string;
@@ -408,8 +401,8 @@ export type CompleteInstallationReportWithTechnicianPhotosResponse = {
   product_name?: string;
   product_description?: string;
   product_price?: number;
-  product_download_speed_mbps?: number;
-  product_upload_speed_mbps?: number;
+  download_speed_mbps?: number;
+  upload_speed_mbps?: number;
   
   // Terminal information
   is_terminal?: string;

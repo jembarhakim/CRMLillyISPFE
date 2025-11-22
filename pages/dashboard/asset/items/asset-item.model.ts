@@ -14,6 +14,7 @@ export const assetItem: CreateAssetItemRequest = {
   asset_id: "",
   mac_address: "",
   serial_number: "",
+  mac_sticker: "",
   status: "in_stock",
   company_id: undefined,
   site: "",
@@ -28,4 +29,3 @@ export const assetItemStatus = [
 ];
 
 export const defaultAssetItems = ref<any[]>([])
-

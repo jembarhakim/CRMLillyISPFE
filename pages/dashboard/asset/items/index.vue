@@ -215,6 +215,9 @@ const items = (row: any) => [
               :label="row.status.replace('_', ' ').toUpperCase()"
             />
           </template>
+          <template #mac_sticker-data="{ row }">
+            <span>{{ row.mac_sticker || '-' }}</span>
+          </template>
           <template #company-data="{ row }">
             <span class="text-sm">{{ row.company?.name || "No Company" }}</span>
           </template>
