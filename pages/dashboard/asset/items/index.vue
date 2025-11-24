@@ -89,13 +89,13 @@ async function deleteAssetItem(itemId: string) {
   await assetItemAdminApi()
     .deleteAssetItem(itemId)
     .then((response) => {
-      useToast().add({
+      useCustomToast().add({
         title: response.message,
       });
       getData();
     })
     .catch((err) => {
-      useToast().add({
+      useCustomToast().add({
         title: err,
         color: "red",
       });
@@ -122,7 +122,7 @@ if (route.query.edit) {
 
 const isOpen = ref(false);
 
-const toast = useToast();
+const toast = useCustomToast();
 const modal = useModal();
 
 function OpenModalAddAssetItem(isEdit: boolean, data: any) {

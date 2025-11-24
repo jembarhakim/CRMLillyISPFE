@@ -63,7 +63,7 @@
               </div>
               <div class="text-center sm:text-right">
                 <span :class="getStatusColor(report.installation_status)"
-                      class="px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold text-white shadow-lg">
+                      class="px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold shadow-lg">
                   {{ report.installation_status || 'Unknown' }}
                 </span>
                 <p class="text-green-100 text-xs sm:text-sm mt-2">{{ formatDate(report.installation_created_at) }}</p>
@@ -818,8 +818,12 @@
                 <div class="bg-white rounded-lg p-4 border-l-4 border-teal-500 shadow-sm">
                   <div class="flex items-center justify-between">
                     <div>
-                      <p class="text-sm font-medium text-teal-700 mb-1">Installation ID:</p>
-                      <p class="font-mono text-sm text-gray-700 break-all">{{ report.terminal_customer_installation_id }}</p>
+                      <p class="text-sm font-medium text-teal-700 mb-1">Linked Customer:</p>
+                      <p class="font-bold text-gray-800 text-lg mb-1">{{ terminalCustomerName || 'Loading...' }}</p>
+                      <p class="text-xs text-gray-500 font-mono flex items-center" title="Installation ID">
+                        <LucideIcon name="hash" :size="12" class="mr-1" />
+                        {{ report.terminal_customer_installation_id }}
+                      </p>
                     </div>
                     <UButton @click="navigateToTerminal(report.terminal_customer_installation_id)"
                              color="white" variant="soft" size="sm"
@@ -836,6 +840,15 @@
         </div>
       </div>
     </div>
+    <!-- Delete Confirmation Modal -->
+    <DeleteInstallationReportModal
+      v-model:isOpen="showDeleteModal"
+      :installation-id="report?.installation_id || ''"
+      :customer-name="report?.customer_name || 'Unknown Customer'"
+      :report-status="report?.installation_status"
+      :mac-address="report?.mac_address"
+      @deleted="handleReportDeleted"
+    />
   </div>
 </template>
 
@@ -845,15 +858,18 @@ import { useRoute, useRouter } from 'vue-router';
 
 interface Report {
   installation_id?: string;
+  customer_id?: string;
   customer_name?: string;
   customer_phone?: string;
   customer_address?: string;
   installation_status?: string;
   installation_created_at?: string;
   installation_completed_at?: string;
+  installation_updated_at?: string;
   tgl_permintaan_psb?: string;
   durasi_psb?: number | null;
   status_psb?: string;
+  technician_id?: string;
   technician_name?: string;
   technician_phone?: string;
   installation_type?: string;
@@ -863,6 +879,7 @@ interface Report {
   latitude?: number;
   longitude?: number;
   installation_notes?: string;
+  network_device_id?: string;
   router_brand?: string;
   router_type?: string;
   router_model?: string;
@@ -880,19 +897,21 @@ interface Report {
   service_notes?: string;
   is_terminal?: string;
   terminal_customer_installation_id?: string;
+  product_id?: string;
   product_name?: string;
   download_speed_mbps?: number;
   upload_speed_mbps?: number;
   product_price?: number;
+  product_description?: string;
   document_type?: string;
   document_photo?: string;
   mac_address?: string;
   ip_static?: string;
   kepemilikan_perangkat?: string;
+  customer_service_id?: string;
   user_login?: string;
   password?: string;
   user_status?: string;
-  product_description?: string;
 }
 
 interface Technician {
@@ -919,6 +938,7 @@ const loading = ref(true);
 const deleting = ref(false);
 const technicianTeam = ref<Technician[]>([]);
 const technicianPhotos = ref<Photo[]>([]);
+const terminalCustomerName = ref<string>('');
 const navigationContext = ref<any>(null);
 
 // Computed properties
@@ -940,12 +960,13 @@ async function fetchReport() {
       return;
     }
 
-    // Simulate API call - replace with actual $fetch when backend is ready
-    const response = await $fetch(`/api/customer-installations/${installationId}`, {
+    // Fetch installation report from API
+    const response: any = await $fetch(`/api/customer-installations/${installationId}`, {
       method: 'GET'
     }).catch(() => null);
-    
-    report.value = response || {};
+
+    // Extract data from the response wrapper
+    report.value = response?.data || response || {};
 
     // Fetch technician team if needed
     if (report.value?.installation_id) {
@@ -956,10 +977,30 @@ async function fetchReport() {
     if (report.value?.installation_id) {
       await fetchTechnicianPhotos(report.value.installation_id);
     }
+
+    // Fetch terminal customer name if linked
+    if (report.value?.terminal_customer_installation_id) {
+      fetchTerminalCustomerName(report.value.terminal_customer_installation_id);
+    }
   } catch (error) {
     console.error('Error loading installation report:', error);
   } finally {
     loading.value = false;
+  }
+}
+
+async function fetchTerminalCustomerName(terminalId: string) {
+  try {
+    const response: any = await $fetch(`/api/customer-installations/${terminalId}`, {
+      method: 'GET'
+    }).catch(() => null);
+    
+    const data = response?.data || response || {};
+    if (data.customer_name) {
+      terminalCustomerName.value = data.customer_name;
+    }
+  } catch (error) {
+    console.error('Error loading terminal customer name:', error);
   }
 }
 
@@ -995,22 +1036,14 @@ function handleBackNavigation() {
   }
 }
 
+const showDeleteModal = ref(false);
+
 async function deleteInstallationReport() {
-  if (!report.value?.installation_id) return;
+  showDeleteModal.value = true;
+}
 
-  try {
-    deleting.value = true;
-    await $fetch(`/api/customer-installations/${report.value.installation_id}`, {
-      method: 'DELETE'
-    });
-
-    // Navigate back after deletion
-    router.push('/dashboard/report/customer-installation');
-  } catch (error) {
-    console.error('Error deleting installation report:', error);
-  } finally {
-    deleting.value = false;
-  }
+function handleReportDeleted() {
+  router.push('/dashboard/report/customer-installation');
 }
 
 function formatDate(dateString: string | undefined) {
@@ -1154,21 +1187,53 @@ function navigateToTerminal(terminalInstallationId: string | undefined) {
   router.push(`/dashboard/report/customer-installation/detail/${terminalInstallationId}`);
 }
 
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgZmlsbD0iI2YzZjRmNiI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIC8+PHRleHQgeD0iNTAiIHk9IjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5Y2EzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+
 function handleTechnicianPhotoError(e: Event) {
   const img = e.target as HTMLImageElement;
   if (img) {
-    img.src = '/placeholder-image.png';
+    // Prevent infinite loop if placeholder also fails
+    if (img.src !== PLACEHOLDER_IMAGE) {
+      img.src = PLACEHOLDER_IMAGE;
+    }
   }
 }
 
 function getDocumentPhotoUrl(photoPath: string | undefined) {
-  if (!photoPath) return '/placeholder-image.png';
-  return photoPath;
+  if (!photoPath) return PLACEHOLDER_IMAGE;
+  if (photoPath.startsWith('http')) return photoPath;
+  
+  const config = useRuntimeConfig();
+  const apiHost = config.public.API_HOST;
+  
+  // Replace backslashes with forward slashes for URL compatibility
+  let normalizedPath = photoPath.replace(/\\/g, '/');
+  
+  // If path doesn't start with uploads/, assume it's just the filename and prepend the directory
+  // Remove leading slash for check if present
+  const checkPath = normalizedPath.startsWith('/') ? normalizedPath.substring(1) : normalizedPath;
+  
+  if (!checkPath.startsWith('uploads/')) {
+    normalizedPath = `uploads/installations/documents/${checkPath}`;
+  }
+  
+  const cleanPath = normalizedPath.startsWith('/') ? normalizedPath.substring(1) : normalizedPath;
+  
+  return `${apiHost}/${cleanPath}`;
 }
 
 function getTechnicianPhotoUrl(photoPath: string | undefined) {
-  if (!photoPath) return '/placeholder-image.png';
-  return photoPath;
+  if (!photoPath) return PLACEHOLDER_IMAGE;
+  if (photoPath.startsWith('http')) return photoPath;
+  
+  const config = useRuntimeConfig();
+  const apiHost = config.public.API_HOST;
+  
+  // Replace backslashes with forward slashes for URL compatibility
+  const normalizedPath = photoPath.replace(/\\/g, '/');
+  const cleanPath = normalizedPath.startsWith('/') ? normalizedPath.substring(1) : normalizedPath;
+  
+  return `${apiHost}/${cleanPath}`;
 }
 
 function openDocumentPhotoModal() {
@@ -1184,7 +1249,10 @@ function openTechnicianPhotoModal(photoPath: string, index: number) {
 function handleDocumentImageError(e: Event) {
   const img = e.target as HTMLImageElement;
   if (img) {
-    img.src = '/placeholder-image.png';
+    // Prevent infinite loop if placeholder also fails
+    if (img.src !== PLACEHOLDER_IMAGE) {
+      img.src = PLACEHOLDER_IMAGE;
+    }
   }
 }
 

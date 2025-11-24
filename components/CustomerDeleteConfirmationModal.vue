@@ -255,7 +255,7 @@ async function confirmDelete() {
   try {
     await customerAdminApi().deleteCustomerWithRelated(props.customerId)
     
-    useToast().add({
+    useAppToast().add({
       title: 'Success',
       description: 'Customer and all related records have been deleted successfully',
       color: 'green'
@@ -264,7 +264,7 @@ async function confirmDelete() {
     emit('deleted')
     closeModal()
   } catch (err: any) {
-    useToast().add({
+    useAppToast().add({
       title: 'Error',
       description: err.message || 'Failed to delete customer',
       color: 'red'

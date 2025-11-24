@@ -17,6 +17,7 @@ import { useNotification } from "@/composables/useNotification";
 import LucideIcon from "@/components/LucideIcon.vue";
 import { accountAdminApi } from "@/api/admin/account";
 import { transactionAdminApi } from "@/api/admin/transaction";
+import { useCustomToast } from "@/composables/useCustomToast";
 
 // Initialize notification early so it's available for all functions
 const notification = useNotification();
@@ -689,7 +690,7 @@ Terimakasih`,
           ? err
           : err?.message || "Gagal mengirim WhatsApp";
 
-      useToast().add({
+      useCustomToast().add({
         title: message,
 
         color: "red",
@@ -793,7 +794,7 @@ async function createRecurringFromInvoice() {
       invoice_items: items,
     });
 
-    useToast().add({ title: "Recurring invoice started", color: "green" });
+    useCustomToast().add({ title: "Recurring invoice started", color: "green" });
 
     showStartRecurringModal.value = false;
   } catch (err: any) {
@@ -1461,7 +1462,7 @@ async function printAllUnpaidInvoices() {
 
     // Show success notification
 
-    const toast = useToast();
+    const toast = useCustomToast();
 
     toast.add({
       title: "Report Generated",

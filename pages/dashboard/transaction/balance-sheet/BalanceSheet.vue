@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCustomToast } from '@/composables/useCustomToast';
 import { formatIDR } from '@/helper/currency';
 
 const props = defineProps<{
@@ -37,7 +38,7 @@ const columns = [
   { key: "saldo", label: "Balance" },
 ];
 
-const toast = useToast();
+const toast = useCustomToast();
 const modal = useModal();
 const count = ref(0);
 

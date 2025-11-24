@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { formatIDR } from "@/helper/currency";
 import FormTranfer from "./FormTranfer.vue";
+import { useCustomToast } from "@/composables/useCustomToast";
 // Set page title
 useHead({
     title: "Transfer Transaction - CRM System",
@@ -44,7 +45,7 @@ function handleClick(row: { id: number }) {
     alert("clicked" + row);
 }
 
-const toast = useToast();
+const toast = useCustomToast();
 const modal = useModal();
 const count = ref(0);
 

@@ -137,7 +137,7 @@ async function getData() {
         checkDeviceStatus();
       } else {
         console.error('Invalid response structure:', response);
-        useToast().add({
+        useCustomToast().add({
           title: 'Invalid response from server',
           color: "red",
         });
@@ -145,7 +145,7 @@ async function getData() {
     })
     .catch((err) => {
       console.error('Error loading dashboard data:', err);
-      useToast().add({
+      useCustomToast().add({
         title: err,
         color: "red",
       });
@@ -244,7 +244,7 @@ async function loadAvailableProducts() {
     }
   } catch (error) {
     console.error('Failed to load products:', error);
-    useToast().add({
+    useCustomToast().add({
       title: 'Failed to load products',
       color: "red",
     });

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { inventoryAdminApi } from '@/api/admin/inventory'
 import { assetAdminApi } from '@/api/admin/asset'
+import { useCustomToast } from '@/composables/useCustomToast'
 
 // Set page title
 useHead({
@@ -70,7 +71,7 @@ async function fetchInventoryStatus() {
     }
   } catch (error) {
     console.error('Failed to fetch inventory status:', error)
-    useToast().add({
+    useCustomToast().add({
       title: 'Failed to fetch inventory data',
       color: 'red'
     })
@@ -83,7 +84,7 @@ async function fetchInventoryStatus() {
 async function createPurchase() {
   try {
     const response = await inventoryAdminApi().createPurchase(purchaseForm)
-    useToast().add({
+    useCustomToast().add({
       title: 'Purchase created successfully!'
     })
     fetchInventoryStatus()
@@ -96,7 +97,7 @@ async function createPurchase() {
       sub_total: 0
     }]
   } catch (error: any) {
-    useToast().add({
+    useCustomToast().add({
       title: error.message || 'Failed to create purchase',
       color: 'red'
     })
@@ -120,12 +121,12 @@ async function createDeployment() {
     }
 
     const response = await inventoryAdminApi().createDeployment(data)
-    useToast().add({
+    useCustomToast().add({
       title: 'Asset deployment successful!'
     })
     fetchInventoryStatus()
   } catch (error: any) {
-    useToast().add({
+    useCustomToast().add({
       title: error.message || 'Failed to deploy asset',
       color: 'red'
     })

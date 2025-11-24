@@ -1,5 +1,5 @@
 <template>
-  <UModal :model-value="isOpen" @update:model-value="$emit('update:isOpen', $event)" :ui="{ width: 'w-full sm:max-w-lg' }">
+  <UModal v-model="isOpenModel" :ui="{ width: 'w-full sm:max-w-lg' }">
     <UCard>
       <template #header>
         <div class="flex items-center justify-between">
@@ -33,7 +33,7 @@
             </div>
             <div>
               <h4 class="text-lg font-semibold text-gray-900">{{ customerName }}</h4>
-              <p class="text-sm text-gray-600">Installation Report ID: {{ installationId }}</p>
+              <p class="text-sm text-gray-100">Installation Report ID: {{ installationId }}</p>
             </div>
           </div>
         </div>
@@ -75,7 +75,7 @@
             </div>
             <div class="flex items-center justify-between">
               <span class="text-gray-600">Report ID:</span>
-              <span class="font-mono text-xs bg-gray-200 px-2 py-1 rounded">{{ installationId }}</span>
+              <span class="font-mono text-xs text-gray-600 bg-gray-200 px-2 py-1 rounded">{{ installationId }}</span>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-gray-600">Status:</span>
@@ -99,7 +99,7 @@
               :disabled="deleting"
               color="red"
             />
-            <span class="ml-3 text-sm text-gray-700 leading-relaxed">
+            <span class="ml-3 text-sm text-gray-100 leading-relaxed">
               I understand that this action will <strong class="text-red-600">permanently delete</strong> the installation report for 
               <strong>"{{ customerName }}"</strong> and all associated data. This action <strong class="text-red-600">cannot be undone</strong>.
             </span>
@@ -116,7 +116,7 @@
             :disabled="deleting"
             class="w-full sm:w-auto"
           >
-            <UIcon name="x" class="mr-2" />
+          <LucideIcon name="x" :size="16" class="text-gray-100" />
             Cancel
           </UButton>
           <UButton
@@ -127,7 +127,7 @@
             :loading="deleting"
             class="w-full sm:w-auto bg-red-600 hover:bg-red-700"
           >
-            <UIcon name="trash-2" class="mr-2" />
+          <LucideIcon name="trash-2" :size="16" class="text-gray-100" />
             {{ deleting ? 'Deleting...' : 'Delete Installation Report' }}
           </UButton>
         </div>
@@ -137,10 +137,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { customerAdminApi } from '@/api/admin/customer'
 import { assetItemAdminApi } from '@/api/admin/asset-item'
 import { mikrotikAdminApi } from '@/api/admin/mikrotik'
+import { useCustomToast } from '@/composables/useCustomToast'
 
 interface Props {
   isOpen: boolean
@@ -163,6 +164,11 @@ const loading = ref(false)
 const deleting = ref(false)
 const confirmationChecked = ref(false)
 
+const isOpenModel = computed({
+  get: () => props.isOpen,
+  set: (value) => emit('update:isOpen', value)
+})
+
 // Watch for modal open to reset state
 watch(() => props.isOpen, (newValue) => {
   if (newValue) {
@@ -181,7 +187,7 @@ async function confirmDelete() {
 
   if (!confirmationChecked.value) {
     // Show warning notification if confirmation is not checked
-    useToast().add({
+    useCustomToast().add({
       title: 'Warning!',
       description: 'Please check the confirmation checkbox before deleting the installation report.',
       color: 'orange',
@@ -195,7 +201,7 @@ async function confirmDelete() {
     await customerAdminApi().deleteInstallationReport(props.installationId)
     
     // Show success notification
-    useToast().add({
+    useCustomToast().add({
       title: 'Success!',
       description: `Installation report for "${props.customerName}" deleted successfully. MAC address status updated to "in_stock".`,
       color: 'green',
@@ -207,7 +213,7 @@ async function confirmDelete() {
     console.error("Error deleting installation report:", err)
     
     // Show error notification
-    useToast().add({
+    useCustomToast().add({
       title: 'Error',
       description: err.message || 'Failed to delete installation report',
       color: 'red',

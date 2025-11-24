@@ -161,7 +161,7 @@ async function onSubmit(event: FormSubmitEvent<AssetItemSchema>) {
   
   // Validate MAC address format
   if (!validateMacAddress(state.mac_address)) {
-    useToast().add({
+    useCustomToast().add({
       title: "Invalid MAC address format. Please use format like: 00:11:22:33:44:55 or 00-11-22-33-44-55",
       color: "red"
     })
@@ -178,21 +178,21 @@ async function onSubmit(event: FormSubmitEvent<AssetItemSchema>) {
 
   if (props.isEdit) {
     await assetItemAdminApi().editAssetItem(props.data.id, submitData).then((response: any) => {
-      useToast().add({ title: response.message })
+      useCustomToast().add({ title: response.message })
       onSuccess()
     }
     ).catch((err: any) => {
-      useToast().add({ title: err, color: "red" })
+      useCustomToast().add({ title: err, color: "red" })
       onSuccess()
     }
     )
   } else {
     await assetItemAdminApi().createAssetItem(submitData).then((response: any) => {
-      useToast().add({ title: response.message })
+      useCustomToast().add({ title: response.message })
       onSuccess()
     }
     ).catch((err: any) => {
-      useToast().add({ title: err, color: "red" })
+      useCustomToast().add({ title: err, color: "red" })
       onSuccess()
     }
     )

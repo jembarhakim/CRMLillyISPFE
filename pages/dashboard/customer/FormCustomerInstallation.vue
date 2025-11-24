@@ -755,7 +755,7 @@ function triggerTechnicianPhotoUpload() {
 }
 
 // Helper function to add click outside handler for toast
-function addToastClickOutsideHandler(toastId: string, toast: ReturnType<typeof useToast>) {
+function addToastClickOutsideHandler(toastId: string, toast: ReturnType<typeof useCustomToast>) {
   // Use multiple ticks to ensure DOM is ready
   nextTick(() => {
     nextTick(() => {
@@ -818,7 +818,7 @@ async function handleTechnicianPhotoUpload(event: Event) {
   const newFilesCount = files.length;
   
   if (currentCount + newFilesCount > 10) {
-    const toast = useToast();
+    const toast = useCustomToast();
     const toastId = `error-max-photos-${Date.now()}`;
     toast.add({
       id: toastId,
@@ -843,7 +843,7 @@ async function handleTechnicianPhotoUpload(event: Event) {
     // Validate file
     const validation = validateFile(file);
     if (!validation.isValid) {
-      const toast = useToast();
+      const toast = useCustomToast();
       const toastId = `error-validation-${Date.now()}-${i}`;
       toast.add({
         id: toastId,
@@ -881,7 +881,7 @@ async function handleTechnicianPhotoUpload(event: Event) {
     
     technicianPhotoSizes.value.push(compressedSize);
     
-    const toast = useToast();
+    const toast = useCustomToast();
     const toastId = `success-photo-${Date.now()}-${i}`;
     toast.add({
       id: toastId,

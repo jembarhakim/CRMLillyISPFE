@@ -3,6 +3,7 @@ import { object, string, type InferType } from 'yup'
 import type { FormSubmitEvent } from '#ui/types'
 import { internetPackageAdminApi } from '@/api/admin/internet-package'
 import { formatIDR } from '@/helper/currency'
+import { useCustomToast } from '@/composables/useCustomToast'
 
 const schema = object({
     name: string()
@@ -86,17 +87,17 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     if (props.isEdit) {
         console.log(props.data.id, state)
         await internetPackageAdminApi().editInternetPacket(props.data.id, state).then((response) => {
-            useToast().add({ title: "Success Update Product", color: "green", description: response.message })
+            useCustomToast().add({ title: "Success Update Product", color: "green", description: response.message })
             onSuccess()
         }).catch((error) => {
-            useToast().add({ title: "Error Update Product", color: "red", description: error })
+            useCustomToast().add({ title: "Error Update Product", color: "red", description: error })
         })
     } else {
         await internetPackageAdminApi().createInternetPackage(state).then((response) => {
-            useToast().add({ title: "Success Create Product", color: "green", description: response.message })
+            useCustomToast().add({ title: "Success Create Product", color: "green", description: response.message })
             onSuccess()
         }).catch((error) => {
-            useToast().add({ title: "Error Create Product", color: "red", description: error })
+            useCustomToast().add({ title: "Error Create Product", color: "red", description: error })
         })
     }
 }

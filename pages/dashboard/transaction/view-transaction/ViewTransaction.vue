@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCustomToast } from '@/composables/useCustomToast';
 import { formatIDR } from '@/helper/currency';
 
 const props = defineProps<{
@@ -59,7 +60,7 @@ function handleClick(row: { id: number }) {
   alert("clicked" + row);
 }
 
-const toast = useToast();
+const toast = useCustomToast();
 const modal = useModal();
 const count = ref(0);
 

@@ -2,6 +2,7 @@
 import { formatIDR } from "@/helper/currency";
 import FormExpense from "./FormExpense.vue";
 import { transactionAdminApi } from "@/api/admin/transaction";
+import { useCustomToast } from "@/composables/useCustomToast";
 
 // Set page title
 useHead({
@@ -65,7 +66,7 @@ function handleClick(row: { id: number }) {
     alert("clicked" + row);
 }
 
-const toast = useToast();
+const toast = useCustomToast();
 const modal = useModal();
 const count = ref(0);
 

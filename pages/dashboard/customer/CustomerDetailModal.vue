@@ -1096,6 +1096,7 @@ import { customerAdminApi } from '@/api/admin/customer'
 import { mikrotikAdminApi } from '@/api/admin/mikrotik'
 import { formatIDR } from '@/helper/currency'
 import LoadingComponent from '@/components/LoadingComponent.vue'
+import { useCustomToast } from '@/composables/useCustomToast'
 
 interface Props {
   customerId: string
@@ -1472,7 +1473,7 @@ const loginAsCustomer = () => {
 }
 
 const revokeAutoLogin = () => {
-  useToast().add({
+  useCustomToast().add({
     title: 'Auto login revoked',
     color: 'green'
   })
@@ -1480,7 +1481,7 @@ const revokeAutoLogin = () => {
 
 const regenerateUrl = () => {
   // Force regeneration of the URL
-  useToast().add({
+  useCustomToast().add({
     title: 'Auto login URL regenerated',
     color: 'green'
   })
@@ -1491,14 +1492,14 @@ const copyAutoLoginUrlToClipboard = async () => {
 
   try {
     await navigator.clipboard.writeText(autoLoginUrl.value)
-    useToast().add({
+    useCustomToast().add({
       title: 'URL Copied',
       description: 'Auto login URL copied to clipboard',
       color: 'green'
     })
   } catch (error) {
     console.error('Failed to copy URL:', error)
-    useToast().add({
+    useCustomToast().add({
       title: 'Error',
       description: 'Failed to copy URL to clipboard',
       color: 'red'
@@ -1510,14 +1511,14 @@ const copyAutoLoginUrlToClipboard = async () => {
 const saveCustomer = async () => {
   try {
     await customerAdminApi().editCustomer(props.customerId, editForm.value)
-    useToast().add({
+    useCustomToast().add({
       title: 'Customer updated successfully',
       color: 'green'
     })
     // Refresh customer data
     await fetchCustomerDetail()
   } catch (error: any) {
-    useToast().add({
+    useCustomToast().add({
       title: 'Failed to update customer',
       description: error.message,
       color: 'red'
@@ -1653,7 +1654,7 @@ const getNetworkDevicesWithMac = () => {
 const isolateCustomer = async () => {
   const macAddresses = getCustomerMacAddresses()
   if (macAddresses.length === 0) {
-    useToast().add({
+    useCustomToast().add({
       title: 'Error',
       description: 'Customer network devices with MAC addresses are required for isolation',
       color: 'red'
@@ -1671,7 +1672,7 @@ const isolateCustomer = async () => {
 
     await Promise.all(promises)
 
-    useToast().add({
+    useCustomToast().add({
       title: 'Success',
       description: `Customer has been isolated - hotspot access restricted for ${macAddresses.length} device(s)`,
       color: 'green'
@@ -1682,7 +1683,7 @@ const isolateCustomer = async () => {
 
   } catch (error: any) {
     console.error('Failed to isolate customer:', error)
-    useToast().add({
+    useCustomToast().add({
       title: 'Error',
       description: error.message || 'Failed to isolate customer',
       color: 'red'
@@ -1695,7 +1696,7 @@ const isolateCustomer = async () => {
 const restoreCustomer = async () => {
   const macAddresses = getCustomerMacAddresses()
   if (macAddresses.length === 0) {
-    useToast().add({
+    useCustomToast().add({
       title: 'Error',
       description: 'Customer network devices with MAC addresses are required for restoration',
       color: 'red'
@@ -1713,7 +1714,7 @@ const restoreCustomer = async () => {
 
     await Promise.all(promises)
 
-    useToast().add({
+    useCustomToast().add({
       title: 'Success',
       description: `Customer access has been restored - hotspot access enabled for ${macAddresses.length} device(s)`,
       color: 'green'
@@ -1724,7 +1725,7 @@ const restoreCustomer = async () => {
 
   } catch (error: any) {
     console.error('Failed to restore customer:', error)
-    useToast().add({
+    useCustomToast().add({
       title: 'Error',
       description: error.message || 'Failed to restore customer access',
       color: 'red'
@@ -1739,14 +1740,14 @@ const copyMacAddress = async (macAddress: string) => {
 
   try {
     await navigator.clipboard.writeText(macAddress)
-    useToast().add({
+    useCustomToast().add({
       title: 'Copied',
       description: 'MAC address copied to clipboard',
       color: 'green'
     })
   } catch (error) {
     console.error('Failed to copy MAC address:', error)
-    useToast().add({
+    useCustomToast().add({
       title: 'Error',
       description: 'Failed to copy MAC address',
       color: 'red'
@@ -1758,7 +1759,7 @@ const copyMacAddress = async (macAddress: string) => {
 const addNewInstallationReport = () => {
   // Navigate to installation report form or open modal
   // For now, show a toast message indicating the feature
-  useToast().add({
+  useCustomToast().add({
     title: 'Add Installation Report',
     description: 'Multiple installation reports are now supported! You can add a new report for this customer.',
     color: 'blue'
@@ -1877,7 +1878,7 @@ const fetchCustomerDetail = async () => {
 
   } catch (err: any) {
     error.value = err.message || 'Failed to fetch customer details'
-    useToast().add({
+    useCustomToast().add({
       title: 'Error',
       description: error.value || 'An error occurred',
       color: 'red'

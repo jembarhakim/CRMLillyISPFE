@@ -616,64 +616,7 @@
             </UFormGroup>
           </div>
 
-          <!-- Images -->
-          <div class="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100">
-            <div class="flex items-center mb-6">
-              <div class="bg-indigo-500 p-2 rounded-lg mr-3">
-                <UIcon name="photo" class="text-white text-lg" />
-              </div>
-              <h2 class="text-xl font-bold text-gray-800">Installation Images</h2>
-            </div>
-            
-            <UFormGroup label="Upload Images" name="image_ids" required>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div
-                  v-for="(preview, index) in state.previews"
-                  :key="index"
-                  class="relative group cursor-pointer bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
-                  @click="state.selectedImage = preview; state.showModal = true"
-                >
-                  <img
-                    :src="preview"
-                    :alt="`Preview ${index + 1}`"
-                    class="w-full h-32 object-cover"
-                  />
-                  <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
-                    <UIcon name="eye" class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xl" />
-                  </div>
-                  <UButton
-                    @click.stop="removeImage(index)"
-                    size="xs"
-                    color="red"
-                    variant="solid"
-                    class="absolute -top-2 -right-2 shadow-lg"
-                  >
-                    <UIcon name="x" />
-                  </UButton>
-                </div>
-                
-                <div
-                  v-if="state.previews.length < 10"
-                  class="w-full h-32 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-all duration-200 bg-white"
-                  @click="triggerFileUpload"
-                >
-                  <div class="text-center">
-                    <UIcon name="plus" class="text-gray-400 text-3xl mb-2" />
-                    <p class="text-sm text-gray-500 font-medium">Add Image</p>
-                  </div>
-                </div>
-              </div>
-              
-              <input
-                ref="fileInput"
-                type="file"
-                accept="image/*"
-                multiple
-                class="hidden"
-                @change="handleFileUpload"
-              />
-            </UFormGroup>
-          </div>
+          
 
           <!-- Submit Button -->
           <div class="bg-gray-50 p-4 sm:p-6 rounded-xl border border-gray-200">
@@ -751,6 +694,7 @@ import { userManagementAdminApi } from '@/api/admin/user-management'
 import { uploadFileAdminApi } from '@/api/admin/file-upload'
 import type { UpdateCompleteInstallationReportRequest } from '@/types/requests/installation-report'
 import LucideIcon from '@/components/LucideIcon.vue'
+import { useCustomToast } from '@/composables/useCustomToast'
 // Remove the custom compression import - we'll use the existing compression function
 
 // Apply auth middleware
@@ -1238,7 +1182,7 @@ async function loadInstallationReport() {
     }
   } catch (error) {
     console.error("Failed to load installation report:", error);
-    useToast().add({
+    useCustomToast().add({
       title: "Error",
       description: "Failed to load installation report",
       color: "red",
@@ -1475,7 +1419,7 @@ async function onAssetChange(assetId: string, deviceIndex: number) {
   } catch (error) {
     console.error("Failed to load available asset items:", error);
     availableAssetItems.value[assetId] = [];
-    useToast().add({
+    useCustomToast().add({
       title: "Error",
       description: "Failed to load available MAC addresses",
       color: "red",
@@ -1626,14 +1570,14 @@ async function handleDocumentPhotoUpload(event: Event) {
         state.document_photo = response.data.file;
         console.log("Document photo filename set to:", state.document_photo);
         
-        useToast().add({
+        useCustomToast().add({
           title: "Success",
           description: "Document photo uploaded successfully",
           color: "green",
         });
       } else {
         console.error("No full_path in response:", response);
-        useToast().add({
+        useCustomToast().add({
           title: "Error",
           description: "Failed to upload document photo",
           color: "red",
@@ -1642,14 +1586,14 @@ async function handleDocumentPhotoUpload(event: Event) {
     } catch (error) {
       console.error("Error uploading document photo:", error);
       const errorMessage = error instanceof Error ? error.message : String(error);
-      useToast().add({
+      useCustomToast().add({
         title: "Error",
         description: "Failed to upload document photo: " + errorMessage,
         color: "red",
       });
     }
   } else {
-    useToast().add({
+    useCustomToast().add({
       title: "Error",
       description: "Please select a valid image file",
       color: "red",
@@ -1696,7 +1640,7 @@ async function handleTechnicianPhotoUpload(event: Event) {
   
   if (currentCount + newFilesCount > 10) {
     console.log('[TechnicianPhotos] ERROR: Photo limit exceeded');
-    useToast().add({
+    useCustomToast().add({
       title: "Error",
       description: `Maximum 10 photos allowed. You currently have ${currentCount} photos and are trying to add ${newFilesCount} more.`,
       color: "red",
@@ -1720,7 +1664,7 @@ async function handleTechnicianPhotoUpload(event: Event) {
       const validation = validateFile(file);
       if (!validation.isValid) {
         console.log(`[TechnicianPhotos] Validation failed for ${file.name}:`, validation.message);
-        useToast().add({
+        useCustomToast().add({
           title: "Error",
           description: validation.message,
           color: "red",
@@ -1757,6 +1701,7 @@ async function handleTechnicianPhotoUpload(event: Event) {
         name: fileName,
         path: uploadPath,
         file: compressedFile,
+        archive_installation_id: installationId,
       });
       
       console.log(`[TechnicianPhotos] Upload response for ${file.name}:`, response);
@@ -1786,7 +1731,7 @@ async function handleTechnicianPhotoUpload(event: Event) {
           sizesCount: technicianPhotoSizes.value.length
         });
         
-        useToast().add({
+        useCustomToast().add({
           title: "Success",
           description: `Photo uploaded successfully. Compressed from ${formatFileSize(originalSize)} to ${formatFileSize(compressedSize)} (${compressionRatio.toFixed(1)}% reduction)`,
           color: "green",
@@ -1797,7 +1742,7 @@ async function handleTechnicianPhotoUpload(event: Event) {
     }
   } catch (error) {
     console.error("Error uploading technician photos:", error);
-    useToast().add({
+    useCustomToast().add({
       title: "Error",
       description: "Failed to upload technician photos",
       color: "red",
@@ -1865,7 +1810,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     
     if (response.success) {
       console.log('[FormSubmission] Update successful');
-      useToast().add({
+      useCustomToast().add({
         title: "Success",
         description: "Installation report updated successfully",
         color: "green",
@@ -1875,7 +1820,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       await navigateTo('/dashboard/report/customer-installation/reports');
     } else {
       console.log('[FormSubmission] API returned success=false:', response);
-      useToast().add({
+      useCustomToast().add({
         title: "Error",
         description: response.message || "Failed to update installation report",
         color: "red",
@@ -1890,7 +1835,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       response: error.response?.data
     });
     
-    useToast().add({
+    useCustomToast().add({
       title: "Error",
       description: error.message || "Failed to update installation report",
       color: "red",

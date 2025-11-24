@@ -43,6 +43,7 @@ import { useNotification } from '@/composables/useNotification'
 import { useApiHost } from '@/composables/useApiHost'
 import TechnicianChecklist from '@/components/TechnicianChecklist.vue'
 import CustomerDetailModal from '@/pages/dashboard/customer/CustomerDetailModal.vue'
+import { useCustomToast } from '@/composables/useCustomToast'
 
 const authStore = useAuthStore()
 const { userRole, isAdmin, isCustomerService, isNOC, isTechnician } = useRolePermissions()
@@ -243,10 +244,10 @@ async function acceptTicket() {
   try {
     await ticketsApi().accept(selectedId.value)
     showAcceptConfirm.value = false
-    useToast().add({ title: 'Diterima', description: 'Tiket diterima.', color: 'primary', timeout: 2500 })
+    useCustomToast().add({ title: 'Diterima', description: 'Tiket diterima.', color: 'primary', timeout: 2500 })
     await refresh()
   } catch (e: any) {
-    useToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal menerima'), color: 'red' })
+    useCustomToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal menerima'), color: 'red' })
   }
 }
 
@@ -269,9 +270,9 @@ async function saveTeam() {
     teamSubmitting.value = true
     await ticketsApi().setTeam(selectedId.value, teamMembers.value)
     showTeamModal.value = false
-    useToast().add({ title: 'Tim tersimpan', description: 'Tim teknisi diperbarui.', color: 'primary', timeout: 2500 })
+    useCustomToast().add({ title: 'Tim tersimpan', description: 'Tim teknisi diperbarui.', color: 'primary', timeout: 2500 })
   } catch (e: any) {
-    useToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal menyimpan tim'), color: 'red' })
+    useCustomToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal menyimpan tim'), color: 'red' })
   } finally { teamSubmitting.value = false }
 }
 
@@ -295,10 +296,10 @@ async function saveStep() {
     stepSubmitting.value = true
     await ticketsApi().addStep(selectedId.value, stepDescription.value, stepImages.value)
     showStepModal.value = false
-    useToast().add({ title: 'Langkah ditambahkan', description: 'Langkah troubleshooting disimpan.', color: 'primary', timeout: 2500 })
+    useCustomToast().add({ title: 'Langkah ditambahkan', description: 'Langkah troubleshooting disimpan.', color: 'primary', timeout: 2500 })
     await refresh()
   } catch (e: any) {
-    useToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal menambahkan langkah'), color: 'red' })
+    useCustomToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal menambahkan langkah'), color: 'red' })
   } finally { stepSubmitting.value = false }
 }
 
@@ -307,10 +308,10 @@ async function verifyClose(id?: number) {
   if (!tid) return
   try {
     await ticketsApi().verifyClose(tid)
-    useToast().add({ title: 'Ditutup', description: 'Tiket diverifikasi & ditutup oleh CS.', color: 'primary', timeout: 2500 })
+    useCustomToast().add({ title: 'Ditutup', description: 'Tiket diverifikasi & ditutup oleh CS.', color: 'primary', timeout: 2500 })
     await refresh()
   } catch (e: any) {
-    useToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal memverifikasi & menutup'), color: 'red' })
+    useCustomToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal memverifikasi & menutup'), color: 'red' })
   }
 }
 
@@ -321,10 +322,10 @@ async function markTechnicianCompleted(id?: number) {
   try {
     // This will be implemented in the backend
     await ticketsApi().markTechnicianJobCompleted(tid)
-    useToast().add({ title: 'Pekerjaan Selesai', description: 'Pekerjaan teknisi telah ditandai sebagai selesai.', color: 'green', timeout: 3000 })
+    useCustomToast().add({ title: 'Pekerjaan Selesai', description: 'Pekerjaan teknisi telah ditandai sebagai selesai.', color: 'green', timeout: 3000 })
     await refresh()
   } catch (e: any) {
-    useToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal menandai pekerjaan sebagai selesai'), color: 'red' })
+    useCustomToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal menandai pekerjaan sebagai selesai'), color: 'red' })
   }
 }
 
@@ -347,10 +348,10 @@ async function saveNetworkArchitecture() {
     networkArchSubmitting.value = true
     await ticketsApi().setNetworkArchitecture(selectedId.value, networkArchitecture.value)
     showNetworkArchModal.value = false
-    useToast().add({ title: 'Arsitektur Diatur', description: 'Arsitektur jaringan berhasil dipilih.', color: 'primary', timeout: 2500 })
+    useCustomToast().add({ title: 'Arsitektur Diatur', description: 'Arsitektur jaringan berhasil dipilih.', color: 'primary', timeout: 2500 })
     await refresh()
   } catch (e: any) {
-    useToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal mengatur arsitektur'), color: 'red' })
+    useCustomToast().add({ title: 'Gagal', description: String(e?.data?.message || e?.message || 'Gagal mengatur arsitektur'), color: 'red' })
   } finally {
     networkArchSubmitting.value = false
   }
@@ -698,7 +699,7 @@ async function sendToNOC() {
   } catch (e: any) {
     console.error('sendToNOC error:', e)
     try {
-      const toast = useToast();
+      const toast = useCustomToast();
       const msg = e?.data?.message || e?.message || 'Gagal mengirim ke NOC'
       toast.add({ title: 'Aksi gagal', description: String(msg), color: 'red', icon: 'alert-triangle', timeout: 5000 })
     } catch { }

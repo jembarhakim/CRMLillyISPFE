@@ -167,7 +167,7 @@ const items = (row: Person) => [
     ],
 ];
 
-const toast = useToast();
+const toast = useCustomToast();
 const modal = useModal();
 </script>
 

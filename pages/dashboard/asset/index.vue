@@ -79,13 +79,13 @@ async function deleteAsset(assetId: string) {
   await assetAdminApi()
     .deleteAsset(assetId)
     .then((response) => {
-      useToast().add({
+      useCustomToast().add({
         title: response.message,
       });
       getData();
     })
     .catch((err) => {
-      useToast().add({
+      useCustomToast().add({
         title: err,
         color: "red",
       });
@@ -96,7 +96,7 @@ async function deleteAsset(assetId: string) {
 await getData();
 const isOpen = ref(false);
 
-const toast = useToast();
+const toast = useCustomToast();
 const modal = useModal();
 
 function OpenModalAddAsset(isEdit: boolean, data: any) {
