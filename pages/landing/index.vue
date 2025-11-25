@@ -1,89 +1,59 @@
 <template>
   <div class="landing-page">
     <!-- Header/Navbar -->
-    <header 
-      class="nav-header py-3 px-4"
-      :class="{ 'scrolled': isScrolled }"
-      :style="{ borderBottomColor: themeColor }"
-    >
+    <header class="nav-header py-3 px-4" :class="{ 'scrolled': isScrolled }" :style="{ borderBottomColor: themeColor }">
       <nav class="container mx-auto flex items-center justify-between max-w-full">
         <div class="flex items-center">
-          <img 
-            src="/statics/images/logolilly.png" 
-            alt="Lilly ISP Logo" 
-            class="h-10 sm:h-12 md:h-14 w-auto" 
-            fetchpriority="high"
-            loading="eager"
-          />
+          <img src="/statics/images/logolilly.png" alt="Lilly ISP Logo" class="h-10 sm:h-12 md:h-14 w-auto"
+            fetchpriority="high" loading="eager" />
         </div>
-        
+
         <div class="hidden lg:flex items-center gap-2 flex-wrap">
-          <button
-            v-for="(tab, index) in tabs"
-            :key="index"
-            @click="navigateToSection(tab.id, index)"
+          <button v-for="(tab, index) in tabs" :key="index" @click="navigateToSection(tab.id, index)"
             :style="selectedTab === index ? { backgroundColor: themeColor, color: 'white' } : { backgroundColor: 'transparent', color: '#d1d5db' }"
-            class="custom_tab px-4 lg:px-6 py-2 text-xs lg:text-sm rounded hover:opacity-90 transition-all"
-          >
+            class="custom_tab px-4 lg:px-6 py-2 text-xs lg:text-sm rounded hover:opacity-90 transition-all">
             {{ tab.label }}
           </button>
-          
+
           <!-- Login Button -->
-          <NuxtLink
-            to="/login"
-            :style="{ backgroundColor: themeColor }"
-            class="px-4 lg:px-6 py-2 text-white text-xs lg:text-sm rounded font-semibold hover:opacity-90 transition-all ml-2"
-          >
+          <NuxtLink to="/login" :style="{ backgroundColor: themeColor }"
+            class="px-4 lg:px-6 py-2 text-white text-xs lg:text-sm rounded font-semibold hover:opacity-90 transition-all ml-2">
             Login
           </NuxtLink>
-          
+
           <!-- Color Picker -->
           <div class="relative ml-2">
-            <button
-              @click="showColorPicker = !showColorPicker"
-              :style="{ backgroundColor: themeColor }"
-              class="color-picker-btn p-2 text-white rounded"
-              title="Theme color"
-            >
+            <button @click="showColorPicker = !showColorPicker" :style="{ backgroundColor: themeColor }"
+              class="color-picker-btn p-2 text-white rounded" title="Theme color">
               <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"/>
-                <circle cx="10" cy="10" r="3"/>
+                <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z" />
+                <circle cx="10" cy="10" r="3" />
               </svg>
             </button>
             <div v-if="showColorPicker" class="absolute right-0 mt-2 p-4 bg-white rounded shadow-lg z-50">
-              <input 
-                v-model="themeColor" 
-                type="color" 
-                class="w-32 h-32 cursor-pointer border-0"
-              />
+              <input v-model="themeColor" type="color" class="w-32 h-32 cursor-pointer border-0" />
             </div>
           </div>
         </div>
-        
+
         <!-- Mobile Menu Button -->
         <button @click="mobileMenuOpen = !mobileMenuOpen" class="lg:hidden text-white">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
       </nav>
-      
+
       <!-- Mobile Menu -->
       <div v-if="mobileMenuOpen" class="lg:hidden bg-gray-800 px-4 py-4 max-w-full">
-        <button
-          v-for="(tab, index) in tabs"
-          :key="index"
+        <button v-for="(tab, index) in tabs" :key="index"
           @click="navigateToSection(tab.id, index); mobileMenuOpen = false"
           :style="selectedTab === index ? { backgroundColor: themeColor, color: 'white' } : {}"
-          class="block w-full text-left px-4 py-3 text-white hover:bg-gray-700 rounded mb-2 text-sm"
-        >
+          class="block w-full text-left px-4 py-3 text-white hover:bg-gray-700 rounded mb-2 text-sm">
           {{ tab.label }}
         </button>
-        <NuxtLink
-          to="/login"
-          :style="{ backgroundColor: themeColor }"
-          class="block w-full text-center px-4 py-3 text-white rounded font-semibold mt-2"
-        >
+        <NuxtLink to="/login" :style="{ backgroundColor: themeColor }"
+          class="block w-full text-center px-4 py-3 text-white rounded font-semibold mt-2">
           Login
         </NuxtLink>
       </div>
@@ -91,58 +61,45 @@
 
     <!-- Hero Carousel -->
     <section class="relative h-[400px] sm:h-[500px] md:h-[600px] lg:h-[639px] overflow-hidden w-full">
-      <div
-        v-for="(slide, index) in slides"
-        :key="index"
-        v-show="currentSlide === index"
+      <div v-for="(slide, index) in slides" :key="index" v-show="currentSlide === index"
         class="absolute inset-0 transition-opacity duration-1000 w-full h-full"
-        :style="{ backgroundImage: `url(${slide.image})`, backgroundSize: 'cover', backgroundPosition: 'center' }"
-      >
-        <div class="absolute inset-0 flex items-center justify-center w-full" style="background-color: rgba(0, 0, 0, 0.68)">
+        :style="{ backgroundImage: `url(${slide.image})`, backgroundSize: 'cover', backgroundPosition: 'center' }">
+        <div class="absolute inset-0 flex items-center justify-center w-full"
+          style="background-color: rgba(0, 0, 0, 0.68)">
           <div class="custom-caption px-4 sm:px-6 md:px-8 w-full max-w-full">
             <h1 class="main_line animation_2 px-4" v-html="slide.title"></h1>
             <div class="h-6 sm:h-8 md:h-10"></div>
             <h4 class="subtitle-text animation_1 max-w-4xl mx-auto px-4" v-html="slide.subtitle"></h4>
             <div class="h-6 sm:h-8 md:h-10"></div>
             <div class="animation_2">
-              <button 
-                :style="{ backgroundColor: themeColor }" 
-                class="px-4 sm:px-6 md:px-8 py-2 sm:py-3 text-white text-sm sm:text-base md:text-lg rounded hover:opacity-90 transition-all"
-              >
+              <button :style="{ backgroundColor: themeColor }"
+                class="px-4 sm:px-6 md:px-8 py-2 sm:py-3 text-white text-sm sm:text-base md:text-lg rounded hover:opacity-90 transition-all">
                 READ MORE
               </button>
             </div>
           </div>
         </div>
       </div>
-      
+
       <!-- Carousel Controls -->
-      <button
-        @click="prevSlide"
-        class="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-30 hover:bg-opacity-50 text-white p-2 sm:p-3 rounded-full transition-all z-10"
-      >
+      <button @click="prevSlide"
+        class="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-30 hover:bg-opacity-50 text-white p-2 sm:p-3 rounded-full transition-all z-10">
         <svg class="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
       </button>
-      <button
-        @click="nextSlide"
-        class="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-30 hover:bg-opacity-50 text-white p-2 sm:p-3 rounded-full transition-all z-10"
-      >
+      <button @click="nextSlide"
+        class="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-30 hover:bg-opacity-50 text-white p-2 sm:p-3 rounded-full transition-all z-10">
         <svg class="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
       </button>
-      
+
       <!-- Carousel Indicators -->
       <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
-        <button
-          v-for="(slide, index) in slides"
-          :key="index"
-          @click="currentSlide = index"
+        <button v-for="(slide, index) in slides" :key="index" @click="currentSlide = index"
           class="w-3 h-3 rounded-full transition-all"
-          :class="currentSlide === index ? 'bg-white' : 'bg-white bg-opacity-50'"
-        ></button>
+          :class="currentSlide === index ? 'bg-white' : 'bg-white bg-opacity-50'"></button>
       </div>
     </section>
 
@@ -150,11 +107,8 @@
     <section class="py-10 sm:py-16 md:py-20 px-4 sm:px-6 md:px-8 w-full max-w-full">
       <div class="container mx-auto max-w-full">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
-          <div
-            v-for="(service, index) in services"
-            :key="index"
-            class="box-shadow bg-white p-4 sm:p-6 rounded-lg text-center w-full"
-          >
+          <div v-for="(service, index) in services" :key="index"
+            class="box-shadow bg-white p-4 sm:p-6 rounded-lg text-center w-full">
             <div :style="{ color: themeColor }" class="text-4xl sm:text-5xl md:text-6xl mb-3 sm:mb-4">
               <i :class="service.icon"></i>
             </div>
@@ -169,19 +123,19 @@
 
     <!-- Company Description Section -->
     <section class="quote w-full">
-      <div class="flex items-center justify-center min-h-[300px] sm:min-h-[350px] md:min-h-[400px] px-4 sm:px-6 md:px-8" style="background-color: rgba(0, 0, 0, 0.68)">
+      <div class="flex items-center justify-center min-h-[300px] sm:min-h-[350px] md:min-h-[400px] px-4 sm:px-6 md:px-8"
+        style="background-color: rgba(0, 0, 0, 0.68)">
         <div class="text-center text-white max-w-4xl w-full">
-          <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">Tentang <span :style="{ color: themeColor }">LILLY</span></h2>
+          <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">Tentang <span
+              :style="{ color: themeColor }">LILLY</span></h2>
           <p class="text-base sm:text-lg md:text-xl leading-relaxed mb-6 sm:mb-8 px-4 text-gray-200">
-            LILLY perusahaan yang bergerak pada bidang Project Management, Konsultan IT dan Internet Service Provider. 
-            Bidang usaha kami mengikuti perkembangan dunia teknologi informasi dengan memberikan solusi, perencanaan, 
-            dan strategi yang terintegrasi sebagai nilai tambah bagi kebutuhan berbagai layanan dibidang Teknologi Informasi.
+            LILLY perusahaan yang bergerak pada bidang Project Management, Konsultan IT dan Internet Service Provider.
+            Bidang usaha kami mengikuti perkembangan dunia teknologi informasi dengan memberikan solusi, perencanaan,
+            dan strategi yang terintegrasi sebagai nilai tambah bagi kebutuhan berbagai layanan dibidang Teknologi
+            Informasi.
           </p>
-          <a
-            href="#id_services"
-            :style="{ backgroundColor: themeColor }"
-            class="inline-block px-6 sm:px-8 md:px-10 py-3 sm:py-4 text-white text-sm sm:text-base md:text-lg rounded hover:opacity-90 transition-all"
-          >
+          <a href="#id_services" :style="{ backgroundColor: themeColor }"
+            class="inline-block px-6 sm:px-8 md:px-10 py-3 sm:py-4 text-white text-sm sm:text-base md:text-lg rounded hover:opacity-90 transition-all">
             Lihat Layanan Kami
           </a>
         </div>
@@ -193,61 +147,57 @@
       <div class="container mx-auto max-w-full">
         <div class="text-center mb-8 sm:mb-12 md:mb-16 px-4">
           <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 text-gray-900">Our Services</h2>
-          <p class="text-base sm:text-lg md:text-xl text-gray-600">Comprehensive internet solutions tailored to your needs.</p>
+          <p class="text-base sm:text-lg md:text-xl text-gray-600">Comprehensive internet solutions tailored to your
+            needs.</p>
         </div>
-        
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0">
-          <div
-            v-for="(portfolio, index) in portfolioItems"
-            :key="index"
-            class="flashcard-container"
-          >
+          <div v-for="(portfolio, index) in portfolioItems" :key="index" class="flashcard-container">
             <div class="flashcard">
               <div class="flashcard-front relative group">
-                <img 
-                  :src="portfolio.image" 
-                  :alt="portfolio.title"
-                  class="w-full h-full object-cover"
-                  @error="handleImageError"
-                />
+                <img :src="portfolio.image" :alt="portfolio.title" class="w-full h-full object-cover"
+                  @error="handleImageError" />
                 <!-- Dark overlay with text -->
-                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-100 group-hover:opacity-0 transition-opacity duration-300">
+                <div
+                  class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-100 group-hover:opacity-0 transition-opacity duration-300">
                   <div class="absolute bottom-0 left-0 right-0 p-6">
                     <h3 class="text-white text-lg font-bold uppercase tracking-wide">{{ portfolio.title }}</h3>
                     <p class="text-gray-200 text-sm mt-2">{{ portfolio.subtitle }}</p>
                   </div>
                 </div>
               </div>
-              <div 
-                class="flashcard-back relative overflow-hidden"
-                :style="{ background: `linear-gradient(135deg, ${themeColor} 0%, #991b1b 100%)` }"
-              >
+              <div class="flashcard-back relative overflow-hidden"
+                :style="{ background: `linear-gradient(135deg, ${themeColor} 0%, #991b1b 100%)` }">
                 <!-- Decorative circles -->
                 <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
                 <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
-                
+
                 <!-- Content -->
                 <div class="relative z-10 flex flex-col items-center justify-center h-full p-4">
                   <!-- Icon -->
-                  <div class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-3">
+                  <div
+                    class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-3">
                     <i class="fas fa-wifi text-2xl text-white"></i>
                   </div>
-                  
+
                   <!-- Title -->
-                  <h3 class="text-white text-sm font-bold text-center mb-2 leading-tight uppercase tracking-wide px-2" style="font-size: 13px; line-height: 1.3;">
+                  <h3 class="text-white text-sm font-bold text-center mb-2 leading-tight uppercase tracking-wide px-2"
+                    style="font-size: 13px; line-height: 1.3;">
                     {{ portfolio.title }}
                   </h3>
-                  
+
                   <!-- Divider -->
                   <div class="w-12 h-0.5 bg-white/50 rounded-full mb-3"></div>
-                  
+
                   <!-- Description -->
-                  <p class="text-white/90 text-xs text-center leading-relaxed px-3" style="font-size: 12px; line-height: 1.5;">
+                  <p class="text-white/90 text-xs text-center leading-relaxed px-3"
+                    style="font-size: 12px; line-height: 1.5;">
                     {{ portfolio.description }}
                   </p>
-                  
+
                   <!-- Learn More Button -->
-                  <button class="mt-3 px-5 py-1.5 bg-white text-gray-900 rounded-full font-semibold text-xs hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg">
+                  <button
+                    class="mt-3 px-5 py-1.5 bg-white text-gray-900 rounded-full font-semibold text-xs hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg">
                     Learn More →
                   </button>
                 </div>
@@ -263,30 +213,19 @@
       <div class="container mx-auto max-w-full">
         <div class="text-center mb-8 sm:mb-12 md:mb-16 px-4">
           <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Why Choose Lilly ISP</h2>
-          <p class="text-base sm:text-lg md:text-xl text-gray-600">We are committed to providing the best internet service experience.</p>
+          <p class="text-base sm:text-lg md:text-xl text-gray-600">We are committed to providing the best internet
+            service experience.</p>
         </div>
-        
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-          <div
-            v-for="(item, index) in aboutItems"
-            :key="index"
-            @mouseenter="hoverAbout(index)"
-            @mouseleave="unhoverAbout(index)"
-            class="my-card box-shadow bg-white rounded-lg overflow-hidden w-full"
-          >
-            <img 
-              :src="item.image" 
-              :alt="item.title"
-              class="w-full h-48 sm:h-56 md:h-64 object-cover"
-              @error="handleImageError"
-            />
+          <div v-for="(item, index) in aboutItems" :key="index" @mouseenter="hoverAbout(index)"
+            @mouseleave="unhoverAbout(index)" class="my-card box-shadow bg-white rounded-lg overflow-hidden w-full">
+            <img :src="item.image" :alt="item.title" class="w-full h-48 sm:h-56 md:h-64 object-cover"
+              @error="handleImageError" />
             <div class="p-4 sm:p-5 md:p-6">
               <div class="text-xs sm:text-sm uppercase mb-2" :style="{ color: themeColor }">Why Choose Us</div>
-              <h3 
-                class="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 transition-colors duration-300"
-                :style="{ color: item.hovered ? themeColor : '#424242' }"
-                :class="{ 'animate-bounce': item.hovered }"
-              >
+              <h3 class="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 transition-colors duration-300"
+                :style="{ color: item.hovered ? themeColor : '#424242' }" :class="{ 'animate-bounce': item.hovered }">
                 {{ item.title }}
               </h3>
               <p class="text-sm sm:text-base text-gray-600">
@@ -303,54 +242,73 @@
       <div class="container mx-auto max-w-full">
         <div class="text-center mb-8 sm:mb-12 md:mb-16 px-4">
           <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 text-gray-900">Visi & Misi</h2>
-          <p class="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">Komitmen kami untuk memberikan layanan IT terbaik</p>
+          <p class="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">Komitmen kami untuk memberikan
+            layanan IT terbaik</p>
         </div>
-        
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 max-w-5xl mx-auto">
           <!-- Visi -->
-          <div class="bg-gradient-to-br from-gray-50 to-white p-6 sm:p-8 rounded-2xl shadow-lg border-l-4" :style="{ borderColor: themeColor }">
+          <div class="bg-gradient-to-br from-gray-50 to-white p-6 sm:p-8 rounded-2xl shadow-lg border-l-4"
+            :style="{ borderColor: themeColor }">
             <div class="flex items-center mb-4 sm:mb-6">
-              <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center" :style="{ backgroundColor: themeColor }">
+              <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center"
+                :style="{ backgroundColor: themeColor }">
                 <i class="fas fa-eye text-xl sm:text-2xl text-white"></i>
               </div>
               <h3 class="text-xl sm:text-2xl font-bold ml-4 text-gray-900">Visi</h3>
             </div>
             <ul class="space-y-3 sm:space-y-4">
               <li class="flex items-start text-gray-700">
-                <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0 mt-0.5" :style="{ color: themeColor }" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0 mt-0.5" :style="{ color: themeColor }"
+                  fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clip-rule="evenodd" />
                 </svg>
                 <span class="text-sm sm:text-base">Dapat memberikan layanan dibidang IT secara komprehensif.</span>
               </li>
               <li class="flex items-start text-gray-700">
-                <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0 mt-0.5" :style="{ color: themeColor }" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0 mt-0.5" :style="{ color: themeColor }"
+                  fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clip-rule="evenodd" />
                 </svg>
                 <span class="text-sm sm:text-base">Mampu mendukung berbagai kebutuhan teknologi IT.</span>
               </li>
             </ul>
           </div>
-          
+
           <!-- Misi -->
-          <div class="bg-gradient-to-br from-gray-50 to-white p-6 sm:p-8 rounded-2xl shadow-lg border-l-4" :style="{ borderColor: themeColor }">
+          <div class="bg-gradient-to-br from-gray-50 to-white p-6 sm:p-8 rounded-2xl shadow-lg border-l-4"
+            :style="{ borderColor: themeColor }">
             <div class="flex items-center mb-4 sm:mb-6">
-              <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center" :style="{ backgroundColor: themeColor }">
+              <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center"
+                :style="{ backgroundColor: themeColor }">
                 <i class="fas fa-bullseye text-xl sm:text-2xl text-white"></i>
               </div>
               <h3 class="text-xl sm:text-2xl font-bold ml-4 text-gray-900">Misi</h3>
             </div>
             <ul class="space-y-3 sm:space-y-4">
               <li class="flex items-start text-gray-700">
-                <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0 mt-0.5" :style="{ color: themeColor }" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0 mt-0.5" :style="{ color: themeColor }"
+                  fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clip-rule="evenodd" />
                 </svg>
-                <span class="text-sm sm:text-base">Melakukan RnD dan implementasi berkala untuk mencapai efisiensi.</span>
+                <span class="text-sm sm:text-base">Melakukan RnD dan implementasi berkala untuk mencapai
+                  efisiensi.</span>
               </li>
               <li class="flex items-start text-gray-700">
-                <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0 mt-0.5" :style="{ color: themeColor }" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0 mt-0.5" :style="{ color: themeColor }"
+                  fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clip-rule="evenodd" />
                 </svg>
-                <span class="text-sm sm:text-base">Memberikan pelayanan purna jual terstruktur mengikuti perubahan.</span>
+                <span class="text-sm sm:text-base">Memberikan pelayanan purna jual terstruktur mengikuti
+                  perubahan.</span>
               </li>
             </ul>
           </div>
@@ -359,42 +317,41 @@
     </section>
 
     <!-- Services Detail Section -->
-    <section id="id_services" class="py-10 sm:py-16 md:py-20 px-4 sm:px-6 md:px-8 bg-gradient-to-br from-gray-50 via-white to-gray-100 w-full max-w-full">
+    <section id="id_services"
+      class="py-10 sm:py-16 md:py-20 px-4 sm:px-6 md:px-8 bg-gradient-to-br from-gray-50 via-white to-gray-100 w-full max-w-full">
       <div class="container mx-auto max-w-full">
         <div class="text-center mb-8 sm:mb-12 md:mb-16 px-4">
           <div class="inline-block mb-3 sm:mb-4">
-            <span class="text-xs sm:text-sm font-semibold uppercase tracking-wider px-3 sm:px-4 py-1.5 sm:py-2 rounded-full" :style="{ backgroundColor: themeColor + '20', color: themeColor }">
+            <span
+              class="text-xs sm:text-sm font-semibold uppercase tracking-wider px-3 sm:px-4 py-1.5 sm:py-2 rounded-full"
+              :style="{ backgroundColor: themeColor + '20', color: themeColor }">
               Layanan Kami
             </span>
           </div>
-          <h2 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 text-gray-900">Perlu Layanan Lain?</h2>
-          <p class="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">Solusi lengkap teknologi informasi untuk berbagai kebutuhan bisnis Anda.</p>
+          <h2 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 text-gray-900">Perlu Layanan
+            Lain?</h2>
+          <p class="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">Solusi lengkap teknologi informasi
+            untuk berbagai kebutuhan bisnis Anda.</p>
         </div>
-        
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-          <div
-            v-for="(service, index) in detailedServices"
-            :key="index"
-            class="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 w-full"
-          >
+          <div v-for="(service, index) in detailedServices" :key="index"
+            class="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 w-full">
             <div class="p-6 sm:p-8">
-              <div 
-                :style="{ backgroundColor: themeColor }" 
-                class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300"
-              >
+              <div :style="{ backgroundColor: themeColor }"
+                class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300">
                 <i :class="service.icon" class="text-3xl sm:text-4xl text-white"></i>
               </div>
               <h3 class="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">{{ service.title }}</h3>
               <p class="text-sm sm:text-base text-gray-600 leading-relaxed">{{ service.description }}</p>
               <div class="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-100">
-                <a 
-                  href="#id_contact_us" 
+                <a href="#id_contact_us"
                   class="inline-flex items-center text-xs sm:text-sm font-semibold transition-colors duration-200"
-                  :style="{ color: themeColor }"
-                >
+                  :style="{ color: themeColor }">
                   Pelajari Lebih Lanjut
-                  <svg class="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  <svg class="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                   </svg>
                 </a>
               </div>
@@ -409,37 +366,26 @@
       <div style="background-color: rgba(0, 0, 0, 0.68)" class="py-10 sm:py-16 md:py-20">
         <div class="container mx-auto px-4 sm:px-6 md:px-8 max-w-full">
           <div class="relative max-w-4xl mx-auto w-full">
-            <div
-              v-for="(testimonial, index) in testimonials"
-              :key="index"
-              v-show="currentTestimonial === index"
-              class="text-center text-white transition-opacity duration-500 px-4"
-            >
-              <img
-                :src="testimonial.image"
-                :alt="testimonial.name"
+            <div v-for="(testimonial, index) in testimonials" :key="index" v-show="currentTestimonial === index"
+              class="text-center text-white transition-opacity duration-500 px-4">
+              <img :src="testimonial.image" :alt="testimonial.name"
                 class="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-lg mx-auto mb-4 sm:mb-6 border-4"
-                :style="{ borderColor: themeColor }"
-                @error="handleImageError"
-              />
+                :style="{ borderColor: themeColor }" @error="handleImageError" />
               <div class="mb-3 sm:mb-4">
                 <h3 class="text-xl sm:text-2xl font-semibold" :style="{ color: themeColor }">{{ testimonial.name }}</h3>
                 <p class="text-xs sm:text-sm uppercase text-gray-300">{{ testimonial.role }}</p>
               </div>
               <p class="text-base sm:text-lg md:text-xl leading-relaxed max-w-3xl mx-auto">
-                "Lilly ISP has provided excellent internet service. Fast connection, stable, and responsive customer support. Highly recommended!"
+                "Lilly ISP has provided excellent internet service. Fast connection, stable, and responsive customer
+                support. Highly recommended!"
               </p>
             </div>
-            
+
             <!-- Navigation -->
             <div class="flex justify-center gap-2 mt-6 sm:mt-8">
-              <button
-                v-for="(testimonial, index) in testimonials"
-                :key="index"
-                @click="currentTestimonial = index"
+              <button v-for="(testimonial, index) in testimonials" :key="index" @click="currentTestimonial = index"
                 class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all"
-                :class="currentTestimonial === index ? 'bg-white' : 'bg-white bg-opacity-50'"
-              ></button>
+                :class="currentTestimonial === index ? 'bg-white' : 'bg-white bg-opacity-50'"></button>
             </div>
           </div>
         </div>
@@ -451,46 +397,35 @@
       <div class="container mx-auto max-w-full">
         <div class="text-center mb-8 sm:mb-12 md:mb-16 px-4">
           <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Our Team</h2>
-          <p class="text-base sm:text-lg md:text-xl text-gray-600">Professional and experienced team ready to serve you.</p>
+          <p class="text-base sm:text-lg md:text-xl text-gray-600">Professional and experienced team ready to serve you.
+          </p>
         </div>
-        
+
         <div class="relative overflow-hidden w-full">
-          <div class="flex transition-transform duration-500" :style="{ transform: `translateX(-${currentTeamSlide * 100}%)` }">
-            <div
-              v-for="slideIndex in 3"
-              :key="slideIndex"
-              class="w-full flex-shrink-0"
-            >
+          <div class="flex transition-transform duration-500"
+            :style="{ transform: `translateX(-${currentTeamSlide * 100}%)` }">
+            <div v-for="slideIndex in 3" :key="slideIndex" class="w-full flex-shrink-0">
               <div class="flex flex-wrap justify-center gap-3 sm:gap-4 px-2">
-                <div
-                  v-for="memberIndex in 4"
-                  :key="memberIndex"
-                  class="team-flashcard-container"
-                >
+                <div v-for="memberIndex in 4" :key="memberIndex" class="team-flashcard-container">
                   <div class="team-flashcard">
                     <div class="flashcard-front">
-                      <img
-                        :src="`/statics/images/team_${memberIndex}.png`"
-                        alt="Team Member"
-                        class="w-full h-full object-cover"
-                        @error="handleImageError"
-                      />
+                      <img :src="`/statics/images/team_${memberIndex}.png`" alt="Team Member"
+                        class="w-full h-full object-cover" @error="handleImageError" />
                     </div>
-                    <div
-                      class="flashcard-back"
-                      :style="{ backgroundColor: themeColor + 'b3' }"
-                    >
+                    <div class="flashcard-back" :style="{ backgroundColor: themeColor + 'b3' }">
                       <h3 class="text-base sm:text-lg md:text-xl font-bold uppercase mb-2">TECHNICAL SUPPORT</h3>
                       <p class="text-xs sm:text-sm italic mb-4 sm:mb-8">Network Specialist</p>
                       <div class="flex gap-3 sm:gap-4">
                         <button class="bg-white rounded-full p-2 sm:p-3 hover:scale-110 transition-transform">
-                          <svg :style="{ color: themeColor }" class="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M10 2a8 8 0 100 16 8 8 0 000-16z"/>
+                          <svg :style="{ color: themeColor }" class="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor"
+                            viewBox="0 0 20 20">
+                            <path d="M10 2a8 8 0 100 16 8 8 0 000-16z" />
                           </svg>
                         </button>
                         <button class="bg-white rounded-full p-2 sm:p-3 hover:scale-110 transition-transform">
-                          <svg :style="{ color: themeColor }" class="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M12.586 4.586a2 2 0 112.828 2.828l-3 3-2.828-2.828 3-3z"/>
+                          <svg :style="{ color: themeColor }" class="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor"
+                            viewBox="0 0 20 20">
+                            <path d="M12.586 4.586a2 2 0 112.828 2.828l-3 3-2.828-2.828 3-3z" />
                           </svg>
                         </button>
                       </div>
@@ -500,16 +435,12 @@
               </div>
             </div>
           </div>
-          
+
           <!-- Team Navigation -->
           <div class="flex justify-center gap-2 mt-6 sm:mt-8">
-            <button
-              v-for="index in 3"
-              :key="index"
-              @click="currentTeamSlide = index - 1"
+            <button v-for="index in 3" :key="index" @click="currentTeamSlide = index - 1"
               class="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all"
-              :class="currentTeamSlide === index - 1 ? 'bg-blue-600' : 'bg-gray-300'"
-            ></button>
+              :class="currentTeamSlide === index - 1 ? 'bg-blue-600' : 'bg-gray-300'"></button>
           </div>
         </div>
       </div>
@@ -519,84 +450,99 @@
     <section id="id_pricing" class="pricing relative w-full">
       <!-- Dark overlay for better text visibility -->
       <div class="absolute inset-0 bg-black/75"></div>
-      
+
       <div class="relative z-10 py-10 sm:py-16 md:py-20">
         <div class="container mx-auto px-4 sm:px-6 md:px-8 max-w-full">
           <div class="text-center mb-8 sm:mb-12 md:mb-16 px-4">
             <div class="inline-block mb-3 sm:mb-4">
-              <span class="text-xs sm:text-sm font-semibold uppercase tracking-wider px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/10 text-white backdrop-blur-sm">
+              <span
+                class="text-xs sm:text-sm font-semibold uppercase tracking-wider px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/10 text-white backdrop-blur-sm">
                 Choose Your Plan
               </span>
             </div>
-            <h2 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 text-white">Internet Packages</h2>
-            <p class="text-base sm:text-lg md:text-xl text-gray-300 max-w-2xl mx-auto">Choose the package that suits your needs and budget. All plans include 24/7 support.</p>
+            <h2 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 text-white">Internet Packages
+            </h2>
+            <p class="text-base sm:text-lg md:text-xl text-gray-300 max-w-2xl mx-auto">Choose the package that suits
+              your needs and budget. All plans include 24/7 support.</p>
           </div>
-          
+
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 max-w-7xl mx-auto">
-            <div
-              v-for="(plan, index) in pricingPlans"
-              :key="index"
+            <div v-for="(plan, index) in pricingPlans" :key="index"
               class="group relative bg-white rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-3 w-full"
-              :class="{ 'ring-2 sm:ring-4 ring-white ring-opacity-50 scale-100 sm:scale-105': plan.popular }"
-            >
+              :class="{ 'ring-2 sm:ring-4 ring-white ring-opacity-50 scale-100 sm:scale-105': plan.popular }">
               <!-- Popular Badge -->
               <div v-if="plan.popular" class="absolute top-0 right-0 z-10">
-                <div class="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[10px] sm:text-xs font-bold px-2 sm:px-4 py-1 sm:py-2 rounded-bl-xl sm:rounded-bl-2xl shadow-lg">
+                <div
+                  class="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[10px] sm:text-xs font-bold px-2 sm:px-4 py-1 sm:py-2 rounded-bl-xl sm:rounded-bl-2xl shadow-lg">
                   ⭐ POPULAR
                 </div>
               </div>
-              
+
               <!-- Header -->
-              <div
-                :style="{ backgroundColor: plan.color }"
-                class="text-white text-center py-6 sm:py-8 relative overflow-hidden"
-              >
+              <div :style="{ backgroundColor: plan.color }"
+                class="text-white text-center py-6 sm:py-8 relative overflow-hidden">
                 <div class="absolute inset-0 opacity-20">
                   <div class="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent"></div>
                 </div>
                 <h3 class="text-2xl sm:text-3xl font-bold uppercase tracking-wide relative z-10">{{ plan.name }}</h3>
                 <p class="text-white/90 mt-2 text-xs sm:text-sm relative z-10 px-2">{{ plan.description }}</p>
               </div>
-              
+
               <!-- Body -->
               <div class="p-4 sm:p-6 md:p-8">
                 <!-- Features List -->
                 <ul class="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
                   <li class="flex items-start text-gray-700">
-                    <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" :style="{ color: plan.color }" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" :style="{ color: plan.color }"
+                      fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clip-rule="evenodd" />
                     </svg>
-                    <span class="text-xs sm:text-sm md:text-base font-medium">Up to <strong>{{ plan.speed }} Mbps</strong></span>
+                    <span class="text-xs sm:text-sm md:text-base font-medium">Up to <strong>{{ plan.speed }}
+                        Mbps</strong></span>
                   </li>
                   <li class="flex items-start text-gray-700">
-                    <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" :style="{ color: plan.color }" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" :style="{ color: plan.color }"
+                      fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clip-rule="evenodd" />
                     </svg>
                     <span class="text-xs sm:text-sm md:text-base">{{ plan.devices }} Connected Devices</span>
                   </li>
                   <li class="flex items-start text-gray-700">
-                    <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" :style="{ color: plan.color }" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" :style="{ color: plan.color }"
+                      fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clip-rule="evenodd" />
                     </svg>
                     <span class="text-xs sm:text-sm md:text-base">{{ plan.support }}</span>
                   </li>
                   <li class="flex items-start text-gray-700">
-                    <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" :style="{ color: plan.color }" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" :style="{ color: plan.color }"
+                      fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clip-rule="evenodd" />
                     </svg>
                     <span class="text-xs sm:text-sm md:text-base">{{ plan.ipType }}</span>
                   </li>
                   <li v-if="plan.bonus" class="flex items-start text-gray-700">
-                    <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" :style="{ color: plan.color }" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" :style="{ color: plan.color }"
+                      fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clip-rule="evenodd" />
                     </svg>
                     <span class="text-xs sm:text-sm md:text-base font-semibold text-green-600">{{ plan.bonus }}</span>
                   </li>
                 </ul>
-                
+
                 <!-- Divider -->
                 <div class="border-t border-gray-200 my-4 sm:my-6"></div>
-                
+
                 <!-- Price -->
                 <div class="text-center mb-4 sm:mb-6">
                   <div class="flex items-center justify-center gap-1">
@@ -607,31 +553,28 @@
                   </div>
                   <p class="text-gray-600 text-xs sm:text-sm mt-1 sm:mt-2">/month</p>
                 </div>
-                
+
                 <!-- CTA Button -->
-                <button
-                  :style="{ backgroundColor: plan.color }"
-                  class="w-full py-3 sm:py-4 text-white text-sm sm:text-base font-bold rounded-lg sm:rounded-xl hover:opacity-90 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                >
+                <button :style="{ backgroundColor: plan.color }"
+                  class="w-full py-3 sm:py-4 text-white text-sm sm:text-base font-bold rounded-lg sm:rounded-xl hover:opacity-90 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
                   Choose Plan
                 </button>
-                
+
                 <!-- Terms -->
                 <p class="text-center text-[10px] sm:text-xs text-gray-500 mt-3 sm:mt-4">Terms and Conditions apply</p>
               </div>
             </div>
           </div>
-          
+
           <!-- Bottom CTA -->
           <div class="text-center mt-10 sm:mt-12 md:mt-16 px-4">
-            <p class="text-white text-base sm:text-lg mb-3 sm:mb-4">Need a custom package? Contact us for special offers!</p>
-            <a
-              href="#id_contact_us"
-              class="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-gray-900 text-sm sm:text-base font-bold rounded-lg sm:rounded-xl hover:bg-gray-100 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
-            >
+            <p class="text-white text-base sm:text-lg mb-3 sm:mb-4">Need a custom package? Contact us for special
+              offers!</p>
+            <a href="#id_contact_us"
+              class="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-gray-900 text-sm sm:text-base font-bold rounded-lg sm:rounded-xl hover:bg-gray-100 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1">
               Contact Sales Team
               <svg class="w-4 h-4 sm:w-5 sm:h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>
             </a>
           </div>
@@ -639,30 +582,26 @@
       </div>
     </section>
 
-    <section id="id_monitoring" class="py-10 sm:py-16 md:py-20 px-4 sm:px-6 md:px-8 w-full max-w-full" style="background-color: #121212;">
+    <section id="id_monitoring" class="py-10 sm:py-16 md:py-20 px-4 sm:px-6 md:px-8 w-full max-w-full"
+      style="background-color: #121212;">
       <div class="max-w-6xl mx-auto">
         <!-- Tab Navigation - Dynamically generated from monitoringEndpoints -->
         <div class="mb-6 flex gap-1 bg-white/5 rounded-lg p-1 backdrop-blur-sm border border-white/10 shadow-lg">
-          <button
-            v-for="endpoint in monitoringEndpoints"
-            :key="endpoint.id"
-            @click="switchMonitoringTab(endpoint.id)"
+          <button v-for="endpoint in monitoringEndpoints" :key="endpoint.id" @click="switchMonitoringTab(endpoint.id)"
             class="flex-1 px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-300 relative overflow-hidden group"
-            :class="monitoringTab === endpoint.id 
-              ? 'bg-white text-gray-900 shadow-lg transform scale-[1.02]' 
-              : 'text-gray-300 hover:text-white hover:bg-white/10'"
-          >
+            :class="monitoringTab === endpoint.id
+              ? 'bg-white text-gray-900 shadow-lg transform scale-[1.02]'
+              : 'text-gray-300 hover:text-white hover:bg-white/10'">
             <span class="relative z-10">{{ endpoint.label }}</span>
-            <span 
-              v-if="monitoringTab === endpoint.id"
-              class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-green-600 rounded-t-lg"
-            ></span>
+            <span v-if="monitoringTab === endpoint.id"
+              class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-green-600 rounded-t-lg"></span>
           </button>
         </div>
 
         <!-- Loading State - Only show on initial load or when not connected -->
         <div v-if="monitoringLoading && (!monitoringConnected || !monitoringData)" class="text-center py-12">
-          <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-700 border-t-current" :style="{ borderTopColor: '#10b981' }"></div>
+          <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-700 border-t-current"
+            :style="{ borderTopColor: '#10b981' }"></div>
           <p class="mt-4 text-gray-300">Loading monitoring data...</p>
         </div>
 
@@ -672,11 +611,8 @@
             <i class="fas fa-exclamation-circle text-red-400 text-3xl mb-3"></i>
             <p class="text-red-300 font-semibold mb-2">Failed to load monitoring data</p>
             <p class="text-red-400 text-sm mb-4">{{ monitoringError }}</p>
-            <button
-              @click="fetchMonitoringData"
-              :style="{ backgroundColor: themeColor }"
-              class="px-4 py-2 text-white text-sm rounded hover:opacity-90 transition-all"
-            >
+            <button @click="fetchMonitoringData" :style="{ backgroundColor: themeColor }"
+              class="px-4 py-2 text-white text-sm rounded hover:opacity-90 transition-all">
               Retry
             </button>
           </div>
@@ -687,165 +623,143 @@
           <div v-if="monitoringData && monitoringData.publicGroupList" key="monitoring-data" class="space-y-6">
             <!-- Main Status Card -->
             <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-            <!-- Header Section -->
-            <div class="bg-gradient-to-r" style="background: linear-gradient(135deg, #166534 0%, #15803d 100%);">
-              <div class="px-6 sm:px-8 py-4">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                      <i class="fas fa-server text-white text-xl"></i>
-                    </div>
-                    <div>
-                      <h2 class="text-xl sm:text-2xl font-bold text-white">{{ monitoringData.config?.title || 'System Status' }}</h2>
-                      <p class="text-green-100 text-sm mt-1">
-                        Real-time monitoring of services and infrastructure
-                        <span v-if="lastUpdateTime" class="ml-2 text-green-200">
-                          • Last updated: {{ getLastUpdateText() }}
-                        </span>
-                      </p>
-                      <div class="flex items-center gap-2 mt-1">
-                        <div class="flex items-center gap-1.5">
-                          <div 
-                            class="w-2 h-2 rounded-full"
-                            :class="monitoringConnected ? 'bg-green-400 animate-pulse' : 'bg-gray-400'"
-                            :title="monitoringConnected ? 'Connected (real-time)' : 'Disconnected'"
-                          ></div>
-                          <span class="text-green-200 text-xs">
-                            {{ monitoringConnected ? 'Live' : 'Offline' }}
-                          </span>
-                        </div>
+              <!-- Header Section -->
+              <div class="bg-gradient-to-r" style="background: linear-gradient(135deg, #166534 0%, #15803d 100%);">
+                <div class="px-6 sm:px-8 py-4">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                      <div class="w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                        <i class="fas fa-server text-white text-xl"></i>
                       </div>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span v-if="lastUpdateTime" class="text-green-100 text-xs hidden sm:block">
-                      Updates: 5s
-                    </span>
-                    <button
-                      @click="fetchMonitoringData"
-                      class="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm"
-                      title="Refresh now"
-                    >
-                      <i class="fas fa-sync-alt text-white" :class="{ 'animate-spin': monitoringLoading }"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- System Status Banner -->
-            <div class="px-6 sm:px-8 py-6 border-b border-gray-100">
-              <div class="bg-white border-2 border-green-100 rounded-xl p-6 flex items-center gap-4">
-                <div class="flex-shrink-0">
-                  <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-check-circle text-green-600 text-3xl"></i>
-                  </div>
-                </div>
-                <div class="flex-1">
-                  <h3 class="text-2xl font-bold text-gray-900 mb-1">Semua Sistem Berfungsi</h3>
-                  <p class="text-gray-600 text-sm">{{ getOverallStatusText() }}</p>
-                </div>
-                <div class="hidden sm:block text-right">
-                  <div class="text-3xl font-bold text-green-600">{{ getOverallUptime() }}%</div>
-                  <div class="text-xs text-gray-500 mt-1">Uptime (24h)</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Monitoring Groups -->
-            <div class="p-6 sm:p-8">
-              <div
-                v-for="group in sortedMonitoringGroups"
-                :key="group.id"
-                class="mb-8 last:mb-0"
-              >
-                <h3 class="text-lg sm:text-xl font-bold text-black mb-4">
-                  {{ group.name || 'Untitled Group' }}
-                </h3>
-                
-                <div class="space-y-3">
-                  <div
-                    v-for="monitor in group.monitorList"
-                    :key="monitor.id"
-                    class="bg-gray-800 rounded-xl p-4 sm:p-5 hover:bg-gray-700 transition-all duration-300 border border-gray-700 shadow-lg"
-                    :class="{ 'ring-2 ring-green-500/50': monitoringConnected && !monitoringLoading }"
-                  >
-                    <div class="flex items-start gap-4">
-                      <!-- Uptime Badge -->
-                      <div class="flex-shrink-0">
-                        <div 
-                          class="rounded-lg px-3 py-2 min-w-[70px] text-center"
-                          :style="{ backgroundColor: getUptimeBadgeColor(getMonitorUptime(monitor)) }"
-                        >
-                          <div class="text-white font-bold text-sm sm:text-base">{{ getMonitorUptime(monitor) }}%</div>
-                        </div>
-                      </div>
-                      
-                      <!-- Service Info -->
-                      <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2 mb-2">
-                          <h4 class="font-semibold text-white text-base sm:text-lg">{{ monitor.name }}</h4>
-                          <span
-                            v-if="monitor.type"
-                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                            :style="{ backgroundColor: getMonitorTypeColor(monitor.type) + '20', color: getMonitorTypeColor(monitor.type) }"
-                          >
-                            {{ typeof monitor.type === 'string' ? monitor.type.toUpperCase() : 'UNKNOWN' }}
+                      <div>
+                        <h2 class="text-xl sm:text-2xl font-bold text-white">{{ monitoringData.config?.title || 'SystemStatus' }}</h2>
+                        <p class="text-green-100 text-sm mt-1">
+                          Real-time monitoring of services and infrastructure
+                          <span v-if="lastUpdateTime" class="ml-2 text-green-200">
+                            • Last updated: {{ getLastUpdateText() }}
                           </span>
-                        </div>
-                        
-                        <!-- Uptime Graph -->
-                        <div class="flex items-center gap-1 mb-2">
-                          <div class="flex items-end gap-0.5 h-8 flex-1">
-                            <div
-                              v-for="(bar, index) in getUptimeBars(monitor)"
-                              :key="index"
-                              class="flex-1 rounded-sm transition-all hover:opacity-80"
-                              :style="{ 
-                                height: `${bar}%`, 
-                                minHeight: bar === 0 ? '2px' : '4px',
-                                backgroundColor: getUptimeBarColor(bar)
-                              }"
-                              :title="`Uptime: ${bar.toFixed(1)}%`"
-                            ></div>
+                        </p>
+                        <div class="flex items-center gap-2 mt-1">
+                          <div class="flex items-center gap-1.5">
+                            <div class="w-2 h-2 rounded-full"
+                              :class="monitoringConnected ? 'bg-green-400 animate-pulse' : 'bg-gray-400'"
+                              :title="monitoringConnected ? 'Connected (real-time)' : 'Disconnected'"></div>
+                            <span class="text-green-200 text-xs">
+                              {{ monitoringConnected ? 'Live' : 'Offline' }}
+                            </span>
                           </div>
                         </div>
-                        
-                        <!-- Timestamps -->
-                        <div class="flex items-center gap-4 text-xs text-gray-400">
-                          <span>
-                            <i class="fas fa-clock mr-1"></i>
-                            {{ getMonitorTimeRange(monitor) }}
-                          </span>
-                          <span>
-                            <i class="fas fa-sync-alt mr-1"></i>
-                            Last check: {{ lastUpdateTime ? getLastUpdateText() : 'Never' }}
-                          </span>
-                        </div>
                       </div>
-                      
-                      <!-- Status Indicator -->
-                      <div class="flex-shrink-0 flex flex-col items-center gap-2">
-                        <div
-                          class="w-3 h-3 rounded-full"
-                          :style="{ backgroundColor: getMonitorStatusColor(monitor) }"
-                          :class="{ 'animate-pulse': isMonitorActive(monitor) }"
-                          :title="getMonitorStatusText(monitor)"
-                        ></div>
-                        <span class="text-xs text-white hidden sm:inline">{{ getMonitorStatusText(monitor) }}</span>
-                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span v-if="lastUpdateTime" class="text-green-100 text-xs hidden sm:block">
+                        Updates: 5s
+                      </span>
+                      <button @click="fetchMonitoringData"
+                        class="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors backdrop-blur-sm"
+                        title="Refresh now">
+                        <i class="fas fa-sync-alt text-white" :class="{ 'animate-spin': monitoringLoading }"></i>
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Empty State -->
-              <div v-if="sortedMonitoringGroups.length === 0" class="text-center py-12">
-                <i class="fas fa-server text-gray-400 text-5xl mb-4"></i>
-                <p class="text-gray-300">No monitoring groups available</p>
+              <!-- System Status Banner -->
+              <div class="px-6 sm:px-8 py-6 border-b border-gray-100">
+                <div class="bg-white border-2 border-green-100 rounded-xl p-6 flex items-center gap-4">
+                  <div class="flex-shrink-0">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                      <i class="fas fa-check-circle text-green-600 text-3xl"></i>
+                    </div>
+                  </div>
+                  <div class="flex-1">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-1">Semua Sistem Berfungsi</h3>
+                    <p class="text-gray-600 text-sm">{{ getOverallStatusText() }}</p>
+                  </div>
+                  <div class="hidden sm:block text-right">
+                    <div class="text-3xl font-bold text-green-600">{{ getOverallUptime() }}%</div>
+                    <div class="text-xs text-gray-500 mt-1">Uptime (24h)</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Monitoring Groups -->
+              <div class="p-6 sm:p-8">
+                <div v-for="group in sortedMonitoringGroups" :key="group.id" class="mb-8 last:mb-0">
+                  <h3 class="text-lg sm:text-xl font-bold text-black mb-4">
+                    {{ group.name || 'Untitled Group' }}
+                  </h3>
+
+                  <div class="space-y-3">
+                    <div v-for="monitor in group.monitorList" :key="monitor.id"
+                      class="bg-gray-800 rounded-xl p-4 sm:p-5 hover:bg-gray-700 transition-all duration-300 border border-gray-700 shadow-lg"
+                      :class="{ 'ring-2 ring-green-500/50': monitoringConnected && !monitoringLoading }">
+                      <div class="flex items-start gap-4">
+                        <!-- Uptime Badge -->
+                        <div class="flex-shrink-0">
+                          <div class="rounded-lg px-3 py-2 min-w-[70px] text-center"
+                            :style="{ backgroundColor: getUptimeBadgeColor(getMonitorUptime(monitor)) }">
+                            <div class="text-white font-bold text-sm sm:text-base">{{ getMonitorUptime(monitor) }}%
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Service Info -->
+                        <div class="flex-1 min-w-0">
+                          <div class="flex items-center gap-2 mb-2">
+                            <h4 class="font-semibold text-white text-base sm:text-lg">{{ monitor.name }}</h4>
+                            <span v-if="monitor.type"
+                              class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                              :style="{ backgroundColor: getMonitorTypeColor(monitor.type) + '20', color: getMonitorTypeColor(monitor.type) }">
+                              {{ typeof monitor.type === 'string' ? monitor.type.toUpperCase() : 'UNKNOWN' }}
+                            </span>
+                          </div>
+
+                          <!-- Uptime Graph -->
+                          <div class="flex items-center gap-1 mb-2">
+                            <div class="flex items-end gap-0.5 h-8 flex-1">
+                              <div v-for="(bar, index) in getUptimeBars(monitor)" :key="index"
+                                class="flex-1 rounded-sm transition-all hover:opacity-80" :style="{
+                                  height: `${bar}%`,
+                                  minHeight: bar === 0 ? '2px' : '4px',
+                                  backgroundColor: getUptimeBarColor(bar)
+                                }" :title="`Uptime: ${bar.toFixed(1)}%`"></div>
+                            </div>
+                          </div>
+
+                          <!-- Timestamps -->
+                          <div class="flex items-center gap-4 text-xs text-gray-400">
+                            <span>
+                              <i class="fas fa-clock mr-1"></i>
+                              {{ getMonitorTimeRange(monitor) }}
+                            </span>
+                            <span>
+                              <i class="fas fa-sync-alt mr-1"></i>
+                              Last check: {{ lastUpdateTime ? getLastUpdateText() : 'Never' }}
+                            </span>
+                          </div>
+                        </div>
+
+                        <!-- Status Indicator -->
+                        <div class="flex-shrink-0 flex flex-col items-center gap-2">
+                          <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: getMonitorStatusColor(monitor) }"
+                            :class="{ 'animate-pulse': isMonitorActive(monitor) }"
+                            :title="getMonitorStatusText(monitor)"></div>
+                          <span class="text-xs text-white hidden sm:inline">{{ getMonitorStatusText(monitor) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Empty State -->
+                <div v-if="sortedMonitoringGroups.length === 0" class="text-center py-12">
+                  <i class="fas fa-server text-gray-400 text-5xl mb-4"></i>
+                  <p class="text-gray-300">No monitoring groups available</p>
+                </div>
               </div>
             </div>
-          </div>
           </div>
         </Transition>
       </div>
@@ -856,38 +770,26 @@
       <div class="container mx-auto max-w-full">
         <div class="text-center mb-8 sm:mb-12 md:mb-16 px-4">
           <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Latest Updates</h2>
-          <p class="text-base sm:text-lg md:text-xl text-gray-600">Stay informed with our latest news and promotions.</p>
+          <p class="text-base sm:text-lg md:text-xl text-gray-600">Stay informed with our latest news and promotions.
+          </p>
         </div>
-        
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-          <div
-            v-for="(item, index) in newsItems"
-            :key="index"
-            @mouseenter="hoverNews(index)"
-            @mouseleave="unhoverNews(index)"
-            class="my-card box-shadow bg-white rounded-lg overflow-hidden w-full"
-          >
-            <img
-              :src="item.image"
-              :alt="item.title"
-              class="w-full h-48 sm:h-56 md:h-64 object-cover"
-              @error="handleImageError"
-            />
+          <div v-for="(item, index) in newsItems" :key="index" @mouseenter="hoverNews(index)"
+            @mouseleave="unhoverNews(index)" class="my-card box-shadow bg-white rounded-lg overflow-hidden w-full">
+            <img :src="item.image" :alt="item.title" class="w-full h-48 sm:h-56 md:h-64 object-cover"
+              @error="handleImageError" />
             <div class="p-4 sm:p-5 md:p-6">
-              <h3
-                class="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 transition-colors duration-300"
-                :style="{ color: item.hovered ? themeColor : '#424242' }"
-                :class="{ 'animate-bounce': item.hovered }"
-              >
+              <h3 class="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 transition-colors duration-300"
+                :style="{ color: item.hovered ? themeColor : '#424242' }" :class="{ 'animate-bounce': item.hovered }">
                 {{ item.title }}
               </h3>
               <p class="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
-                Find out about our latest network expansion, special offers, and service improvements for our valued customers.
+                Find out about our latest network expansion, special offers, and service improvements for our valued
+                customers.
               </p>
-              <button
-                :style="{ backgroundColor: themeColor }"
-                class="px-4 sm:px-6 py-2 text-white text-xs sm:text-sm rounded hover:opacity-90 transition-all"
-              >
+              <button :style="{ backgroundColor: themeColor }"
+                class="px-4 sm:px-6 py-2 text-white text-xs sm:text-sm rounded hover:opacity-90 transition-all">
                 READ MORE
               </button>
             </div>
@@ -899,68 +801,53 @@
     <!-- Contact Us Section -->
     <section id="id_contact_us" class="contact_us relative w-full">
       <div class="absolute inset-0 bg-black/75"></div>
-      
+
       <div class="relative z-10 py-10 sm:py-16 md:py-20">
         <div class="container mx-auto px-4 sm:px-6 md:px-8 max-w-full">
           <div class="text-center mb-8 sm:mb-10 md:mb-12 px-4">
             <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-white">Get in Touch</h2>
             <p class="text-base sm:text-lg text-gray-300">Have questions? We're here to help you 24/7.</p>
           </div>
-          
+
           <div class="max-w-5xl mx-auto">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
               <!-- Left Column - Contact Inputs -->
               <div class="space-y-4 sm:space-y-5">
                 <div class="relative">
-                  <input
-                    v-model="contactForm.name"
-                    type="text"
-                    placeholder="Your Name *"
-                    class="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 bg-white border-0 rounded-lg outline-none text-gray-700 placeholder-gray-400 text-sm sm:text-base"
-                  />
-                  <i class="fas fa-user absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-sm sm:text-base" :style="{ color: themeColor }"></i>
+                  <input v-model="contactForm.name" type="text" placeholder="Your Name *"
+                    class="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 bg-white border-0 rounded-lg outline-none text-gray-700 placeholder-gray-400 text-sm sm:text-base" />
+                  <i class="fas fa-user absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-sm sm:text-base"
+                    :style="{ color: themeColor }"></i>
                 </div>
-                
+
                 <div class="relative">
-                  <input
-                    v-model="contactForm.email"
-                    type="email"
-                    placeholder="Your Email *"
-                    class="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 bg-white border-0 rounded-lg outline-none text-gray-700 placeholder-gray-400 text-sm sm:text-base"
-                  />
-                  <i class="fas fa-envelope absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-sm sm:text-base" :style="{ color: themeColor }"></i>
+                  <input v-model="contactForm.email" type="email" placeholder="Your Email *"
+                    class="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 bg-white border-0 rounded-lg outline-none text-gray-700 placeholder-gray-400 text-sm sm:text-base" />
+                  <i class="fas fa-envelope absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-sm sm:text-base"
+                    :style="{ color: themeColor }"></i>
                 </div>
-                
+
                 <div class="relative">
-                  <input
-                    v-model="contactForm.phone"
-                    type="tel"
-                    placeholder="Your Phone *"
-                    class="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 bg-white border-0 rounded-lg outline-none text-gray-700 placeholder-gray-400 text-sm sm:text-base"
-                  />
-                  <i class="fas fa-phone absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-sm sm:text-base" :style="{ color: themeColor }"></i>
+                  <input v-model="contactForm.phone" type="tel" placeholder="Your Phone *"
+                    class="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 bg-white border-0 rounded-lg outline-none text-gray-700 placeholder-gray-400 text-sm sm:text-base" />
+                  <i class="fas fa-phone absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-sm sm:text-base"
+                    :style="{ color: themeColor }"></i>
                 </div>
               </div>
-              
+
               <!-- Right Column - Message -->
               <div class="relative">
-                <textarea
-                  v-model="contactForm.message"
-                  rows="8"
-                  placeholder="Your Message *"
-                  class="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 bg-white border-0 rounded-lg outline-none resize-none text-gray-700 placeholder-gray-400 text-sm sm:text-base"
-                ></textarea>
-                <i class="fas fa-comment-dots absolute right-3 sm:right-4 top-3 sm:top-4 text-sm sm:text-base" :style="{ color: themeColor }"></i>
+                <textarea v-model="contactForm.message" rows="8" placeholder="Your Message *"
+                  class="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 bg-white border-0 rounded-lg outline-none resize-none text-gray-700 placeholder-gray-400 text-sm sm:text-base"></textarea>
+                <i class="fas fa-comment-dots absolute right-3 sm:right-4 top-3 sm:top-4 text-sm sm:text-base"
+                  :style="{ color: themeColor }"></i>
               </div>
             </div>
-            
+
             <!-- Submit Button -->
             <div class="mt-6 sm:mt-8 text-center">
-              <button
-                @click="submitContactForm"
-                :style="{ backgroundColor: themeColor }"
-                class="px-8 sm:px-10 py-2.5 sm:py-3 text-white text-sm sm:text-base font-semibold rounded-lg hover:opacity-90 transition-all duration-300"
-              >
+              <button @click="submitContactForm" :style="{ backgroundColor: themeColor }"
+                class="px-8 sm:px-10 py-2.5 sm:py-3 text-white text-sm sm:text-base font-semibold rounded-lg hover:opacity-90 transition-all duration-300">
                 Send Message
               </button>
             </div>
@@ -970,29 +857,22 @@
     </section>
 
     <!-- Footer -->
-    <footer
-      class="py-6 sm:py-8 text-white"
-      style="background-color: #1c1b21"
-      :style="{ borderTopColor: themeColor, borderTopWidth: '2px', borderTopStyle: 'solid' }"
-    >
+    <footer class="py-6 sm:py-8 text-white" style="background-color: #1c1b21"
+      :style="{ borderTopColor: themeColor, borderTopWidth: '2px', borderTopStyle: 'solid' }">
       <div class="container mx-auto px-4 sm:px-6 md:px-8 max-w-full">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-4 sm:mb-6">
           <!-- Company Info -->
           <div class="text-center sm:text-left">
             <div class="mb-3 sm:mb-4">
-              <img 
-                src="/statics/images/logolilly.png" 
-                alt="Lilly ISP Logo" 
-                class="h-10 sm:h-12 w-auto mx-auto sm:mx-0" 
-                fetchpriority="high"
-                loading="eager"
-              />
+              <img src="/statics/images/logolilly.png" alt="Lilly ISP Logo" class="h-10 sm:h-12 w-auto mx-auto sm:mx-0"
+                fetchpriority="high" loading="eager" />
             </div>
             <p class="text-gray-400 text-xs sm:text-sm">
-              Your trusted internet service provider. Connecting Indonesia with fast, reliable, and affordable internet solutions.
+              Your trusted internet service provider. Connecting Indonesia with fast, reliable, and affordable internet
+              solutions.
             </p>
           </div>
-          
+
           <!-- Quick Links -->
           <div class="text-center sm:text-left">
             <h4 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Quick Links</h4>
@@ -1003,7 +883,7 @@
               <li><a href="#id_contact_us" class="text-gray-400 hover:text-white transition-colors">Contact</a></li>
             </ul>
           </div>
-          
+
           <!-- Contact Info -->
           <div class="text-center sm:text-left">
             <h4 class="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Contact Us</h4>
@@ -1023,7 +903,7 @@
             </ul>
           </div>
         </div>
-        
+
         <!-- Social Media & Copyright -->
         <div class="border-t border-gray-700 pt-4 sm:pt-6">
           <div class="flex flex-col md:flex-row justify-between items-center gap-3 sm:gap-4">
@@ -1031,39 +911,24 @@
               &copy; 2025 Lilly ISP. All rights reserved.
             </p>
             <div class="flex justify-center gap-2.5 sm:gap-3 order-1 md:order-2">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                :style="{ backgroundColor: themeColor }"
+              <a href="https://facebook.com" target="_blank" :style="{ backgroundColor: themeColor }"
                 class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-all"
-                title="Facebook"
-              >
+                title="Facebook">
                 <i class="fab fa-facebook-f text-sm sm:text-base"></i>
               </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                :style="{ backgroundColor: themeColor }"
+              <a href="https://instagram.com" target="_blank" :style="{ backgroundColor: themeColor }"
                 class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-all"
-                title="Instagram"
-              >
+                title="Instagram">
                 <i class="fab fa-instagram text-sm sm:text-base"></i>
               </a>
-              <a
-                href="https://wa.me/6281234567890"
-                target="_blank"
-                :style="{ backgroundColor: themeColor }"
+              <a href="https://wa.me/6281234567890" target="_blank" :style="{ backgroundColor: themeColor }"
                 class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-all"
-                title="WhatsApp"
-              >
+                title="WhatsApp">
                 <i class="fab fa-whatsapp text-sm sm:text-base"></i>
               </a>
-              <a
-                href="mailto:support@lillyisp.id"
-                :style="{ backgroundColor: themeColor }"
+              <a href="mailto:support@lillyisp.id" :style="{ backgroundColor: themeColor }"
                 class="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-all"
-                title="Email"
-              >
+                title="Email">
                 <i class="fas fa-envelope text-sm sm:text-base"></i>
               </a>
             </div>
@@ -1178,10 +1043,10 @@ const currentTeamSlide = ref(0)
 
 // Pricing plans
 const pricingPlans = [
-  { 
-    name: 'BASIC', 
-    description: 'Perfect for personal use', 
-    price: 150000, 
+  {
+    name: 'BASIC',
+    description: 'Perfect for personal use',
+    price: 150000,
     color: '#ec982f',
     speed: '10',
     devices: '1-2',
@@ -1189,10 +1054,10 @@ const pricingPlans = [
     ipType: 'Dynamic IP',
     popular: false
   },
-  { 
-    name: 'FAMILY', 
-    description: 'Great for small families', 
-    price: 250000, 
+  {
+    name: 'FAMILY',
+    description: 'Great for small families',
+    price: 250000,
     color: '#f4655f',
     speed: '20',
     devices: '3-5',
@@ -1201,10 +1066,10 @@ const pricingPlans = [
     popular: true,
     bonus: 'Free Installation'
   },
-  { 
-    name: 'PREMIUM', 
-    description: 'Ideal for home office', 
-    price: 400000, 
+  {
+    name: 'PREMIUM',
+    description: 'Ideal for home office',
+    price: 400000,
     color: '#8b3bbd',
     speed: '50',
     devices: '5-8',
@@ -1213,10 +1078,10 @@ const pricingPlans = [
     bonus: 'Free Router',
     popular: false
   },
-  { 
-    name: 'BUSINESS', 
-    description: 'Best for businesses', 
-    price: 750000, 
+  {
+    name: 'BUSINESS',
+    description: 'Best for businesses',
+    price: 750000,
     color: '#3b97d1',
     speed: '100',
     devices: 'Unlimited',
@@ -1347,10 +1212,67 @@ const sortedMonitoringGroups = computed(() => {
 // TEST OVERRIDE: Manually mark certain monitors as DOWN for testing
 const testDownMonitorIds = [7] // Monitor 7 (Test Down) - for testing UI
 
+// Ganti dengan URL Halaman Status PUBLIK Anda (bukan /api/)
+// Contoh: https://rndpolije.lilly.net.id/status/layanan
+const STATUS_PAGE_URL = "https://rndpolije.lilly.net.id/status/layanan";
+
+async function fetchKumaStatus() {
+  try {
+    // 1. Fetch Halaman HTML (bukan JSON)
+    const response = await fetch(STATUS_PAGE_URL);
+    const htmlText = await response.text();
+
+    // 2. Gunakan Regex untuk mencari data tersembunyi "window.preloadData"
+    // Kuma menyimpan data JSON di dalam script tag di HTML
+    const regex = /window\.preloadData = JSON\.parse\('(.+?)'\);/;
+    const match = htmlText.match(regex);
+
+    if (!match || !match[1]) {
+      throw new Error("Tidak dapat menemukan data preload Kuma. Cek URL Anda.");
+    }
+
+    // 3. Bersihkan dan Parse JSON-nya
+    // Kuma sering melakukan escape pada quote, kita perlu unescape dulu
+    const rawJson = match[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    const data = JSON.parse(rawJson);
+
+    console.log("Data Lengkap Ditemukan!", data);
+
+    // 4. Sekarang Anda punya heartbeatList!
+    const heartbeats = data.heartbeatList;
+    const groups = data.publicGroupList;
+
+    // Loop untuk menampilkan status
+    groups.forEach(group => {
+      console.log(`📂 Grup: ${group.name}`);
+      group.monitorList.forEach(monitor => {
+        const monitorStatus = heartbeats[monitor.id];
+
+        // Ambil status terakhir (array index terakhir adalah data terbaru)
+        // Format heartbeat: [status, ping, time]
+        // Status 1 = UP, 0 = DOWN
+        const latestHeartbeat = monitorStatus ? monitorStatus.at(-1) : null;
+
+        let statusText = "Pending";
+        if (latestHeartbeat) {
+          statusText = latestHeartbeat.status === 1 ? "ONLINE 🟢" : "OFFLINE 🔴";
+        }
+
+        console.log(`   - ${monitor.name}: ${statusText}`);
+      });
+    });
+
+  } catch (error) {
+    console.error("Error fetching Kuma:", error);
+  }
+}
+
+fetchKumaStatus();
+
 const getRealStatusData = (monitor) => {
   // Metrics cache - fetched via /api/metrics endpoint
   const metricsData = metricsCache.value[monitor.name]
-  
+
   if (metricsData) {
     console.log(`Monitor ${monitor.id} (${monitor.name}) - Metrics status: ${metricsData.status}`)
     return {
@@ -1359,7 +1281,7 @@ const getRealStatusData = (monitor) => {
       ping: metricsData.responseTime || 0
     }
   }
-  
+
   // Fallback to heartbeatList from API response
   if (!monitoringData.value?.heartbeatList) {
     console.log(`Monitor ${monitor.id} - No metrics or heartbeatList available`)
@@ -1369,7 +1291,7 @@ const getRealStatusData = (monitor) => {
   // Get history for this monitor
   const monitorId = String(monitor.id)
   const history = monitoringData.value.heartbeatList[monitorId]
-  
+
   if (!history || history.length === 0) {
     console.log(`Monitor ${monitor.id} - No history available`)
     return null
@@ -1383,118 +1305,118 @@ const getRealStatusData = (monitor) => {
 
 const getMonitorStatusText = (monitor) => {
   const data = getRealStatusData(monitor)
-  
+
   // If no data, show pending
   if (!data) {
     console.log(`Monitor ${monitor.id} - No data, showing Pending`)
     return 'Pending'
   }
-  
+
   // Determine status from multiple indicators
   let status = data.status
   console.log(`Monitor ${monitor.id} - Initial status: ${status}, Message: ${data.msg}, Ping: ${data.ping}`)
-  
+
   // Check if message or other fields indicate failure/down
   const msgLower = (data.msg || '').toLowerCase()
-  if (msgLower.includes('timeout') || 
-      msgLower.includes('down') || 
-      msgLower.includes('error') ||
-      msgLower.includes('failed') ||
-      msgLower.includes('unreachable') ||
-      msgLower.includes('refused') ||
-      msgLower.includes('test')) {
+  if (msgLower.includes('timeout') ||
+    msgLower.includes('down') ||
+    msgLower.includes('error') ||
+    msgLower.includes('failed') ||
+    msgLower.includes('unreachable') ||
+    msgLower.includes('refused') ||
+    msgLower.includes('test')) {
     console.log(`Monitor ${monitor.id} - Message indicates DOWN: ${data.msg}`)
     return 'Down'
   }
-  
+
   if (status === 1) return 'Operational'
   if (status === 0) return 'Down'
   if (status === 2) return 'Pending'
   if (status === 3) return 'Maintenance'
-  
+
   return 'Unknown'
 }
 
 const getMonitorStatusColor = (monitor) => {
   const data = getRealStatusData(monitor)
-  
+
   // If no data, show gray (pending)
   if (!data) return '#9ca3af'
-  
+
   const msgLower = (data.msg || '').toLowerCase()
-  
+
   // Check message for down/error indicators
-  if (msgLower.includes('timeout') || 
-      msgLower.includes('down') || 
-      msgLower.includes('error') ||
-      msgLower.includes('failed') ||
-      msgLower.includes('unreachable') ||
-      msgLower.includes('refused') ||
-      msgLower.includes('test')) {
+  if (msgLower.includes('timeout') ||
+    msgLower.includes('down') ||
+    msgLower.includes('error') ||
+    msgLower.includes('failed') ||
+    msgLower.includes('unreachable') ||
+    msgLower.includes('refused') ||
+    msgLower.includes('test')) {
     return '#ef4444' // Red - DOWN
   }
-  
+
   const status = data.status
-  
+
   if (status === 1) return '#10b981' // Green - UP
   if (status === 0) return '#ef4444' // Red - DOWN
   if (status === 2) return '#eab308' // Yellow - PENDING
   if (status === 3) return '#3b82f6' // Blue - MAINTENANCE
-  
+
   return '#9ca3af' // Gray - Unknown
 }
 
 const isMonitorActive = (monitor) => {
   const data = getRealStatusData(monitor)
   if (!data) return false
-  
+
   const msgLower = (data.msg || '').toLowerCase()
-  
+
   // Check if it's marked as down in message
-  if (msgLower.includes('timeout') || 
-      msgLower.includes('down') || 
-      msgLower.includes('error') ||
-      msgLower.includes('failed') ||
-      msgLower.includes('unreachable') ||
-      msgLower.includes('refused') ||
-      msgLower.includes('test')) {
+  if (msgLower.includes('timeout') ||
+    msgLower.includes('down') ||
+    msgLower.includes('error') ||
+    msgLower.includes('failed') ||
+    msgLower.includes('unreachable') ||
+    msgLower.includes('refused') ||
+    msgLower.includes('test')) {
     return false
   }
-  
+
   // Only pulse when UP (status === 1)
   return data.status === 1
 }
 
 const getMonitorUptime = (monitor) => {
   const data = getRealStatusData(monitor)
-  
+
   if (!data) return '---'
-  
+
   const msgLower = (data.msg || '').toLowerCase()
-  
+
   // Check if down in message
-  if (msgLower.includes('timeout') || 
-      msgLower.includes('down') || 
-      msgLower.includes('error') ||
-      msgLower.includes('failed') ||
-      msgLower.includes('unreachable') ||
-      msgLower.includes('refused') ||
-      msgLower.includes('test')) {
+  if (msgLower.includes('timeout') ||
+    msgLower.includes('down') ||
+    msgLower.includes('error') ||
+    msgLower.includes('failed') ||
+    msgLower.includes('unreachable') ||
+    msgLower.includes('refused') ||
+    msgLower.includes('test')) {
     return '0.00'
   }
-  
+
   // Handle specific statuses
   if (data.status === 1) return '100.00' // UP
   if (data.status === 0) return '0.00'   // DOWN
   if (data.status === 2) return '---'    // PENDING
-  
+
   return '---'
 }
 
 const getUptimeBars = (monitor) => {
   const bars = []
   const data = getRealStatusData(monitor)
-  
+
   if (!data) {
     // No data - fill with gray (50%)
     for (let i = 0; i < 40; i++) {
@@ -1504,15 +1426,15 @@ const getUptimeBars = (monitor) => {
   }
 
   const msgLower = (data.msg || '').toLowerCase()
-  
+
   // Check if down in message
-  if (msgLower.includes('timeout') || 
-      msgLower.includes('down') || 
-      msgLower.includes('error') ||
-      msgLower.includes('failed') ||
-      msgLower.includes('unreachable') ||
-      msgLower.includes('refused') ||
-      msgLower.includes('test')) {
+  if (msgLower.includes('timeout') ||
+    msgLower.includes('down') ||
+    msgLower.includes('error') ||
+    msgLower.includes('failed') ||
+    msgLower.includes('unreachable') ||
+    msgLower.includes('refused') ||
+    msgLower.includes('test')) {
     // All red
     for (let i = 0; i < 40; i++) {
       bars.push(0)
@@ -1522,16 +1444,16 @@ const getUptimeBars = (monitor) => {
 
   // Define the value based on status
   let barValue = 100 // Default Green
-  
+
   if (data.status === 0) barValue = 0    // Red (Empty/Down)
   if (data.status === 2) barValue = 50   // Yellow/Grey (Middle/Pending)
   if (data.status === 3) barValue = 75   // Blue (Maintenance - partial)
 
   // Fill the array with 40 bars
   for (let i = 0; i < 40; i++) {
-    bars.push(barValue) 
+    bars.push(barValue)
   }
-  
+
   return bars
 }
 
@@ -1547,10 +1469,10 @@ const getTimeAgo = (minutes) => {
 
 const getLastUpdateText = () => {
   if (!lastUpdateTime.value) return 'Never'
-  
+
   const now = new Date()
   const diff = Math.floor((now - lastUpdateTime.value) / 1000) // Difference in seconds
-  
+
   if (diff < 60) {
     return 'Just now'
   } else if (diff < 3600) {
@@ -1574,19 +1496,19 @@ const getOverallUptime = () => {
   if (!monitoringData.value || !monitoringData.value.publicGroupList) {
     return '99.99'
   }
-  
+
   let totalUptime = 0
   let monitorCount = 0
-  
+
   monitoringData.value.publicGroupList.forEach(group => {
     group.monitorList.forEach(monitor => {
       totalUptime += parseFloat(getMonitorUptime(monitor))
       monitorCount++
     })
   })
-  
+
   if (monitorCount === 0) return '100.00'
-  
+
   return (totalUptime / monitorCount).toFixed(2)
 }
 
@@ -1595,11 +1517,11 @@ const getOverallStatusText = () => {
   const totalMonitors = sortedMonitoringGroups.value.reduce((sum, group) => {
     return sum + (group.monitorList?.length || 0)
   }, 0)
-  
+
   if (totalMonitors === 0) {
     return 'No monitors configured'
   }
-  
+
   return `All ${totalMonitors} services are operational`
 }
 
@@ -1608,7 +1530,7 @@ const getMonitorTypeColor = (type) => {
   if (!type || typeof type !== 'string') {
     return '#6b7280' // Gray as default
   }
-  
+
   const typeColors = {
     'http': '#3b82f6',  // Blue
     'https': '#3b82f6',
@@ -1647,21 +1569,21 @@ onMounted(() => {
   carouselInterval = setInterval(() => {
     nextSlide()
   }, 5000)
-  
+
   testimonialInterval = setInterval(() => {
     currentTestimonial.value = (currentTestimonial.value + 1) % testimonials.length
   }, 5000)
-  
+
   teamInterval = setInterval(() => {
     currentTeamSlide.value = (currentTeamSlide.value + 1) % 3
   }, 5000)
-  
+
   // Add scroll event listener
   window.addEventListener('scroll', handleScroll)
-  
+
   // Connect to real-time monitoring (WebSocket-like updates every 5 seconds)
   connectMonitoring()
-  
+
   // Fetch metrics immediately and then every 5 seconds
   fetchMetrics()
   metricsInterval = setInterval(() => {
@@ -1673,7 +1595,7 @@ onUnmounted(() => {
   if (carouselInterval) clearInterval(carouselInterval)
   if (testimonialInterval) clearInterval(testimonialInterval)
   if (teamInterval) clearInterval(teamInterval)
-    if (metricsInterval) clearInterval(metricsInterval)
+  if (metricsInterval) clearInterval(metricsInterval)
   disconnectMonitoring()
   window.removeEventListener('scroll', handleScroll)
 })
@@ -1705,16 +1627,16 @@ const scrollToSection = (id) => {
 const handleScroll = () => {
   // Track scroll position for navbar styling
   isScrolled.value = window.scrollY > 50
-  
+
   const scrollPosition = window.scrollY + 100
-  
+
   // Check which section is in viewport
   tabs.forEach((tab, index) => {
     const element = document.getElementById(tab.id)
     if (element) {
       const offsetTop = element.offsetTop
       const offsetBottom = offsetTop + element.offsetHeight
-      
+
       if (scrollPosition >= offsetTop && scrollPosition < offsetBottom) {
         selectedTab.value = index
       }
@@ -1761,11 +1683,11 @@ const submitContactForm = () => {
     alert('Please fill in all required fields')
     return
   }
-  
+
   // Here you can add your form submission logic
   console.log('Form submitted:', contactForm.value)
   alert('Thank you for contacting us! We will get back to you soon.')
-  
+
   // Reset form
   contactForm.value = {
     name: '',

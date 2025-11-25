@@ -39,15 +39,15 @@ export default defineNuxtConfig({
   plugins: [
     "~/plugins/notification-init.client.ts",
     "~/plugins/auth-init.client.ts",
-    "~/plugins/auth-persistence.client.ts", 
+    "~/plugins/auth-persistence.client.ts",
     "~/plugins/echarts.ts"
   ],
   // SSR mode - no prerendering needed
   echarts: {
     charts: ["BarChart", "LineChart", "PieChart"],
     components: [
-      "DatasetComponent", 
-      "GridComponent", 
+      "DatasetComponent",
+      "GridComponent",
       "TooltipComponent",
       "ToolboxComponent",
       "DataZoomComponent",
@@ -63,7 +63,7 @@ export default defineNuxtConfig({
   },
   // Remove automatic middleware assignment to prevent race conditions
   // Middleware will be applied manually in each page that needs it
-  
+
   // Add debugging configuration
   debug: true,
   devtools: { enabled: true },
@@ -137,10 +137,10 @@ export default defineNuxtConfig({
     },
     // Ensure proper MIME types
     routeRules: {
-      '/_nuxt/**': { 
-        headers: { 
-          'Cache-Control': 'public, max-age=31536000, immutable' 
-        } 
+      '/_nuxt/**': {
+        headers: {
+          'Cache-Control': 'public, max-age=31536000, immutable'
+        }
       }
     }
   },
@@ -185,6 +185,10 @@ export default defineNuxtConfig({
   },
   // Add runtime config to handle SSR serialization
   runtimeConfig: {
+    // Keys defined here are ONLY available on the server
+    kumaUsername: process.env.KUMA_USERNAME,
+    kumaPassword: process.env.KUMA_PASSWORD,
+    kumaApiUrl: process.env.KUMA_API_URL,
     public: {
       API_HOST: process.env.NUXT_PUBLIC_API_HOST || 'http://rndpolije.lilly.net.id',
       WA_HOST: process.env.NUXT_PUBLIC_WA_HOST || 'http://rndpolije.lilly.net.id',

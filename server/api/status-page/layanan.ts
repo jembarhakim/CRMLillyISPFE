@@ -2,109 +2,116 @@ import { defineEventHandler, createError } from 'h3'
 
 export default defineEventHandler(async (event) => {
   try {
-    // 1. Use Internal Docker URL (Fastest & Most Reliable) - OR fallback to external URL
-    const KUMA_INTERNAL_API = 'http://uptime-kuma:3001'
-    const KUMA_EXTERNAL_API = 'http://rndpolije.lilly.net.id:3002'
+    const KUMA_API_URL = 'http://rndpolije.lilly.net.id:3002'
+    const ENDPOINT_NAME = 'layanan'
 
-    console.log('🌐 [Server] Testing Kuma connectivity...')
+    // Load credentials from runtime config
+    const config = useRuntimeConfig()
 
-    // Test which URL works
-    let workingUrl: string | null = null
-    try {
-      console.log('🌐 [Server] Testing internal URL:', KUMA_INTERNAL_API)
-      await $fetch(`${KUMA_INTERNAL_API}/api/status-page/layanan`)
-      workingUrl = KUMA_INTERNAL_API
-    } catch (internalError) {
-      console.log('❌ [Server] Internal URL failed, trying external:', KUMA_EXTERNAL_API)
-      try {
-        await $fetch(`${KUMA_EXTERNAL_API}/api/status-page/layanan`)
-        workingUrl = KUMA_EXTERNAL_API
-      } catch (externalError) {
-        console.log('❌ [Server] Both URLs failed')
-        throw new Error('Cannot connect to Uptime Kuma')
-      }
+    if (!config.kumaUsername || !config.kumaPassword) {
+      throw new Error('KUMA credentials are missing in .env file')
     }
 
-    console.log('✅ [Server] Using URL:', workingUrl)
+    const username = config.kumaUsername.trim()
+    const password = config.kumaPassword.trim()
+    const basicAuth = Buffer.from(`${username}:${password}`).toString('base64')
+    const authHeader = `Basic ${basicAuth}`
 
-    // 2. Fetch JUST the status page (simpler approach - basic status page without metrics)
-    console.log('📊 [Server] Fetching status page...')
-    const pageResponse = await $fetch(`${workingUrl}/api/status-page/layanan` as string)
-    console.log('📊 [Server] Got status page response')
+    // Fetch status page JSON
+    const pageResponse = await $fetch(`${KUMA_API_URL}/api/status-page/${ENDPOINT_NAME}`, {
+      headers: { Authorization: authHeader },
+    })
 
-    // For DEBUGGING - show what we got
-    console.log('📊 [Server] Full response keys:', Object.keys(pageResponse as any))
-
-    // 3. Fetch metrics to get REAL status data
-    console.log('📊 [Server] Fetching metrics for real status...')
-    let metricsText: string
+    // Fetch metrics as plain text
+    let metricsText = ''
     try {
-      metricsText = await $fetch(`${workingUrl}/metrics` as string) as string
-      console.log('📊 [Server] Got metrics response')
-    } catch (metricsError) {
-      console.log('⚠️ [Server] Metrics endpoint not available, using mock data')
-      metricsText = ''
+      metricsText = await $fetch<string>(`${KUMA_API_URL}/metrics`, {
+        headers: { Authorization: authHeader },
+        responseType: 'text',
+      })
+    } catch (metricsError: any) {
+      console.warn(`[${ENDPOINT_NAME}] Metrics fetch failed, using status-page fallback`)
     }
 
-    // 4. Parse metrics to get real monitor status (BY NAME)
-    const statusMap: Record<string, number> = {} // Changed key to string (Name)
-    
+    // Parse metrics to extract monitor status
+    const statusMap: Record<string, number> = {}
+    const normalizedStatusMap: Record<string, number> = {}
+
     if (metricsText) {
       const lines = metricsText.split('\n')
-
-      lines.forEach(line => {
-        // MATCH BY NAME INSTEAD OF ID
-        // Look for: monitor_status{monitor_name="Test Down",...} 0
+      lines.forEach((line) => {
         if (line.startsWith('monitor_status')) {
-          const nameMatch = line.match(/monitor_name="([^"]+)"/)
+          const nameMatch = line.match(/monitor_name=\"([^\"]+)\"/)
           const valueMatch = line.match(/\} (.+)$/)
 
           if (nameMatch && valueMatch) {
             const name = nameMatch[1]
-            const status = parseInt(valueMatch[1]) // 1 = Up, 0 = Down
+            const status = parseInt(valueMatch[1])
             statusMap[name] = status
+            normalizedStatusMap[name.toLowerCase().trim()] = status
           }
         }
       })
-      console.log('📊 [Server] Parsed real status map:', statusMap)
     }
 
-    // 5. Initialize heartbeatList with REAL status data
-    const responseData = pageResponse as any
+    // Build final response with real-time status
+    const responseData = JSON.parse(JSON.stringify(pageResponse))
+    const originalHeartbeats = responseData.heartbeatList || {}
     responseData.heartbeatList = {}
 
     if (responseData.publicGroupList) {
       responseData.publicGroupList.forEach((group: any) => {
         group.monitorList.forEach((monitor: any) => {
-          
-          // LOOKUP BY NAME (monitor.name) instead of ID
-          // If name exists in map, use it. If not, default to 1.
-          const realStatus = statusMap[monitor.name] !== undefined ? statusMap[monitor.name] : 1
-          
-          const statusMessage = statusMap[monitor.name] !== undefined ? 
-            `Real status: ${realStatus === 1 ? 'UP' : 'DOWN'}` : 
-            'Default UP (Metric name mismatch)'
+          if (!monitor.id) return
+
+          const normalizedMonitorName = (monitor.name || '').toLowerCase().trim()
+          let realStatus: number
+          let statusMessage: string
+          let pingValue: number
+
+          // Try exact name match from metrics
+          if (statusMap[monitor.name] !== undefined) {
+            realStatus = statusMap[monitor.name]
+            statusMessage = 'Real-time'
+            pingValue = realStatus === 1 ? Math.floor(Math.random() * 50) + 5 : 0
+          }
+          // Try normalized name match from metrics
+          else if (normalizedStatusMap[normalizedMonitorName] !== undefined) {
+            realStatus = normalizedStatusMap[normalizedMonitorName]
+            statusMessage = 'Real-time'
+            pingValue = realStatus === 1 ? Math.floor(Math.random() * 50) + 5 : 0
+          }
+          // Fallback to original heartbeat data
+          else if (originalHeartbeats[monitor.id]) {
+            const history = originalHeartbeats[monitor.id]
+            const lastEntry = history[history.length - 1] || { status: 0, msg: 'No Data' }
+            realStatus = lastEntry.status
+            statusMessage = lastEntry.msg || 'Cached'
+            pingValue = lastEntry.ping || 0
+          }
+          // Default to UP if no data available
+          else {
+            realStatus = 1
+            statusMessage = 'Unknown'
+            pingValue = 0
+          }
 
           responseData.heartbeatList[String(monitor.id)] = [{
             status: realStatus,
             time: new Date().toISOString(),
             msg: statusMessage,
-            ping: realStatus === 1 ? Math.floor(Math.random() * 50) + 5 : 0
+            ping: pingValue,
           }]
-
-          console.log(`📊 [Server] Monitor ${monitor.name} -> Status: ${realStatus}`)
         })
       })
     }
 
-    console.log('📊 [Server] Final response has', Object.keys(responseData.heartbeatList).length, 'heartbeat entries')
     return responseData
-
   } catch (error: any) {
-    console.error('❌ [Server] Error:', error.message)
+    console.error('[layanan] Error:', error.message)
     throw createError({
       statusCode: 500,
-      statusMessage: error.message || 'Failed to fetch monitoring data'
+      statusMessage: error.message || 'Failed to fetch monitoring data',
     })
   }
 })
