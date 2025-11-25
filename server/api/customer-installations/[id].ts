@@ -27,15 +27,23 @@ export default defineEventHandler(async (event) => {
         }
     }
 
+    let apiHost = config.public.API_HOST;
+
+    // Fallback for local development if API_HOST points to production
+    if (process.env.NODE_ENV === 'development' && apiHost.includes('rndpolije.lilly.net.id')) {
+        console.log('⚠️ Detected production API host in development, falling back to localhost:3001');
+        apiHost = 'http://localhost:3001';
+    }
+
     try {
         let backendUrl = '';
 
         if (method === 'GET') {
             // Use the complete report endpoint for GET requests
-            backendUrl = `${config.public.API_HOST}/api/admin/customer-installation/report/complete/${id}`;
+            backendUrl = `${apiHost}/api/admin/customer-installation/report/complete/${id}`;
         } else if (method === 'DELETE') {
             // Use the delete endpoint for DELETE requests
-            backendUrl = `${config.public.API_HOST}/api/admin/customer-installation/report/delete/${id}`;
+            backendUrl = `${apiHost}/api/admin/customer-installation/report/delete/${id}`;
         } else {
             throw createError({
                 statusCode: 405,

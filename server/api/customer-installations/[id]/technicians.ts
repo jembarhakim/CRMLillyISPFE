@@ -25,6 +25,13 @@ export default defineEventHandler(async (event) => {
         }
     }
 
+    let apiHost = config.public.API_HOST;
+
+    // Fallback for local development if API_HOST points to production
+    if (process.env.NODE_ENV === 'development' && apiHost.includes('rndpolije.lilly.net.id')) {
+        apiHost = 'http://localhost:3001';
+    }
+
     try {
         // Prepare headers for backend request
         const headers: Record<string, string> = {
@@ -37,7 +44,7 @@ export default defineEventHandler(async (event) => {
         }
 
         // Fetch from backend API - use the correct endpoint
-        const response = await $fetch(`${config.public.API_HOST}/api/admin/customer-installation/report/technician-team/${id}`, {
+        const response = await $fetch(`${apiHost}/api/admin/customer-installation/report/technician-team/${id}`, {
             method: 'GET',
             headers: headers
         });
