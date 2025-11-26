@@ -179,6 +179,11 @@ watch(() => props.isOpen, (newValue) => {
 })
 
 function closeModal() {
+  // Add this line to trigger the computed setter
+  isOpenModel.value = false
+  
+  // You can keep this if you need a specific hook for cleanup, 
+  // otherwise it's optional
   emit('close')
 }
 

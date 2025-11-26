@@ -1247,9 +1247,6 @@ function getDocumentPhotoUrl(photoPath: string | undefined) {
   if (!photoPath) return PLACEHOLDER_IMAGE;
   if (photoPath.startsWith('http')) return photoPath;
 
-  const config = useRuntimeConfig();
-  const apiHost = config.public.API_HOST;
-
   // Replace backslashes with forward slashes for URL compatibility
   let normalizedPath = photoPath.replace(/\\/g, '/');
 
@@ -1263,21 +1260,20 @@ function getDocumentPhotoUrl(photoPath: string | undefined) {
 
   const cleanPath = normalizedPath.startsWith('/') ? normalizedPath.substring(1) : normalizedPath;
 
-  return `${apiHost}/${cleanPath}`;
+  // Use the proxy endpoint to avoid CORS/ORB blocking
+  return `/api/proxy-image?path=${encodeURIComponent(cleanPath)}`;
 }
 
 function getTechnicianPhotoUrl(photoPath: string | undefined) {
   if (!photoPath) return PLACEHOLDER_IMAGE;
   if (photoPath.startsWith('http')) return photoPath;
 
-  const config = useRuntimeConfig();
-  const apiHost = config.public.API_HOST;
-
   // Replace backslashes with forward slashes for URL compatibility
   const normalizedPath = photoPath.replace(/\\/g, '/');
   const cleanPath = normalizedPath.startsWith('/') ? normalizedPath.substring(1) : normalizedPath;
 
-  return `${apiHost}/${cleanPath}`;
+  // Use the proxy endpoint to avoid CORS/ORB blocking
+  return `/api/proxy-image?path=${encodeURIComponent(cleanPath)}`;
 }
 
 function openDocumentPhotoModal() {
