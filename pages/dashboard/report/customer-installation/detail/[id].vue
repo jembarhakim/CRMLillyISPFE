@@ -1203,10 +1203,35 @@ function getUserStatusColor(status: string | undefined) {
   }
 }
 
-function getDeviceConnectionStatus(rep: Report | null) {
-  if (!rep) return 'unknown';
-  // Implement based on your business logic
-  return 'up';
+// Real-time device status cache
+const deviceStatusCache = ref<Map<string, { status: DeviceConnectionStatus; timestamp: number }>>(new Map())
+
+
+const getDeviceConnectionStatus = (device: any): DeviceConnectionStatus => {
+  if (!device) return 'off'
+
+  // Check if device has IP address for Mikrotik lookup
+  if (!device.ip_static) {
+    return 'off'
+  }
+
+  // Check cache first (cache for 30 seconds)
+  const cacheKey = device.ip_static
+  const cached = deviceStatusCache.value.get(cacheKey)
+  const now = Date.now()
+  
+  if (cached && (now - cached.timestamp) < 30000) {
+    return cached.status
+  }
+
+  // For now, use the same mock logic as fetchRealTimeDeviceStatus
+  // TODO: Implement actual Mikrotik API call here
+  const status: 'up' | 'down' = device.ip_static.includes('10.10.20') ? 'up' : 'down'
+  
+  // Cache the result
+  deviceStatusCache.value.set(cacheKey, { status, timestamp: now })
+  
+  return status
 }
 
 function getDeviceConnectionStatusColor(status: string) {
@@ -1300,7 +1325,7 @@ function handleDocumentImageLoad(e: Event) {
   // Implement image load logic if needed
   console.log('Document image loaded');
 }
-
+type DeviceConnectionStatus = 'off' | 'up' | 'down' | 'unknown'
 function openRemoteRouter() {
   if (!report.value?.ip_static) return;
   const url = `http://${report.value.ip_static}:8080`;

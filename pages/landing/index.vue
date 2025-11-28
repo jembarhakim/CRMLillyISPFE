@@ -108,14 +108,40 @@
       <div class="container mx-auto max-w-full">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
           <div v-for="(service, index) in services" :key="index"
-            class="box-shadow bg-white p-4 sm:p-6 rounded-lg text-center w-full">
-            <div :style="{ color: themeColor }" class="text-4xl sm:text-5xl md:text-6xl mb-3 sm:mb-4">
-              <i :class="service.icon"></i>
+            class="group relative bg-white p-6 sm:p-8 rounded-2xl text-center w-full overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 border border-gray-100 hover:border-transparent">
+            <!-- Gradient background overlay on hover -->
+            <div class="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            
+            <!-- Content wrapper -->
+            <div class="relative z-10">
+              <!-- Icon container with gradient background -->
+              <div class="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 mb-5 sm:mb-6 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+                <i :class="service.icon" class="text-3xl sm:text-4xl md:text-5xl text-white"></i>
+              </div>
+              
+              <!-- Title with better typography -->
+              <h3 class="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 text-gray-800 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-purple-600 transition-all duration-300">
+                {{ service.title }}
+              </h3>
+              
+              <!-- Description with improved readability -->
+              <p class="text-sm sm:text-base text-gray-600 leading-relaxed group-hover:text-gray-700 transition-colors duration-300">
+                Fast and reliable internet connection for your home and office needs. Enjoy seamless browsing experience.
+              </p>
+              
+              <!-- Decorative bottom accent -->
+              <div class="mt-6 pt-4 border-t border-gray-100 group-hover:border-blue-200 transition-colors duration-300">
+                <span class="inline-flex items-center text-sm font-semibold text-blue-600 group-hover:text-purple-600 transition-colors duration-300">
+                  Learn more
+                  <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                  </svg>
+                </span>
+              </div>
             </div>
-            <h3 class="text-base sm:text-lg md:text-xl font-semibold mb-2 sm:mb-3">{{ service.title }}</h3>
-            <p class="text-sm sm:text-base text-gray-600">
-              Fast and reliable internet connection for your home and office needs. Enjoy seamless browsing experience.
-            </p>
+            
+            <!-- Decorative corner element -->
+            <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </div>
         </div>
       </div>

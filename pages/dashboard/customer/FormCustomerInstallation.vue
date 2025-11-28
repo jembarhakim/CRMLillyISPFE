@@ -184,6 +184,84 @@ watch(() => state.asset_item_id, (newAssetItemId: any) => {
   }
 });
 
+// Helper to normalize the selected asset item ID (USelect can return value or full object)
+function getSelectedAssetItemId(): string {
+  if (!state.asset_item_id) return "";
+
+  if (typeof state.asset_item_id === "string") {
+    return state.asset_item_id;
+  }
+
+  if (typeof state.asset_item_id === "object") {
+    return (state.asset_item_id as any).id || (state.asset_item_id as any).value || "";
+  }
+
+  return "";
+}
+
+// Persist the shifted MAC address back to the asset item so records stay accurate
+async function updateAssetItemMacToShifted(shiftedMac: string, stickerMac: string) {
+  const assetItemId = getSelectedAssetItemId();
+  if (!assetItemId) {
+    console.warn("No asset item selected; skipping MAC update to shifted value");
+    return;
+  }
+
+  try {
+    const detail = await assetItemAdminApi().getAssetItem(assetItemId);
+    if (!detail.success || !detail.data) {
+      console.warn("Failed to fetch asset item details for MAC update", detail);
+      return;
+    }
+
+    const assetItem = detail.data;
+    const payload: any = {
+      asset_id: assetItem.asset_id || state.assets_id,
+      mac_address: shiftedMac,
+      mac_sticker: stickerMac || assetItem.mac_sticker || assetItem.mac_address,
+      serial_number: assetItem.serial_number ?? null,
+      status: assetItem.status || "in_stock",
+      company_id: assetItem.company_id ?? null,
+      site: assetItem.site ?? "",
+    };
+
+    const updateResult = await assetItemAdminApi().editAssetItem(assetItemId, payload);
+    if (!updateResult.success) {
+      console.warn("Asset item MAC update did not succeed", updateResult);
+      return;
+    }
+
+    // Update local state/display to use the shifted MAC
+    state.mac_address = shiftedMac;
+
+    // Refresh the option in the select so the UI shows the new MAC
+    const options = availableAssetItems.value[state.assets_id] || [];
+    const optionIndex = options.findIndex((opt: any) => (opt.id || opt.value) === assetItemId);
+    if (optionIndex !== -1) {
+      const currentOption = options[optionIndex];
+      const updatedOption = {
+        ...currentOption,
+        mac_address: shiftedMac,
+        label: `${shiftedMac} (${currentOption.status})`
+      };
+      const updatedOptions = [...options];
+      updatedOptions[optionIndex] = updatedOption;
+      availableAssetItems.value = {
+        ...availableAssetItems.value,
+        [state.assets_id]: updatedOptions
+      };
+
+      // Preserve the current selection type (string or object)
+      state.asset_item_id = typeof state.asset_item_id === "object" ? updatedOption : assetItemId;
+    }
+
+    notification.success("MAC Address Updated", "Device MAC updated to shifted MAC from DHCP lookup");
+  } catch (err) {
+    console.error("Failed to update asset item MAC to shifted value:", err);
+    notification.error("Asset MAC Update Failed", "Could not save shifted MAC address to the device record");
+  }
+}
+
 // Watch for props changes
 watch(() => props.isEdit, (newValue, oldValue) => {
   console.log('[FormCustomerInstallation] isEdit prop changed:', { oldValue, newValue });
@@ -274,10 +352,10 @@ watch(() => state.product_id, (newProductId: string) => {
   }
 });
 
-// Watch for is_terminal checkbox - clear terminal installation selection when unchecked
+// Watch for is_terminal checkbox - clear terminal installation selection when this record IS the terminal
 watch(() => state.is_terminal, (isTerminal: string) => {
-  if (isTerminal !== 'yes') {
-    // Clear terminal installation selection when unchecked (but keep dropdown available)
+  if (isTerminal === 'yes') {
+    // Terminal installations cannot point to another terminal
     state.terminal_customer_installation_id = "";
   }
 });
@@ -416,6 +494,19 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       notification.error('Validation Error', 'Please select a package/product');
       return;
     }
+
+    // Terminal linkage validation:
+    // 1. If this is a regular customer (NOT a terminal), we enforce that they must connect to a parent Terminal.
+    if (state.is_terminal === 'no') {
+      const terminalId = typeof state.terminal_customer_installation_id === 'string'
+        ? state.terminal_customer_installation_id.trim()
+        : state.terminal_customer_installation_id;
+
+      if (!terminalId) {
+        notification.error('Validation Error', 'Please select a terminal installation (HTB) this customer connects to');
+        return;
+      }
+    } 
 
     // Validate at least one senior technician
     const hasSenior = state.technicians.some((t: any) => t.role === 'senior');
@@ -1166,8 +1257,37 @@ async function loadTerminalCustomers() {
     console.log('[FormCustomerInstallation] Extracted installations:', installations.length, installations);
 
     if (installations && installations.length > 0) {
+      // First drop any soft-deleted installations
+      const activeInstallations = installations.filter((inst: any) => {
+        const deletedAtRaw = inst.deleted_at ?? inst.deletedAt;
+
+        // Consider it deleted if deleted_at is present and not explicitly null/invalid
+        let isDeleted = false;
+        if (deletedAtRaw !== undefined) {
+          if (deletedAtRaw === null) {
+            isDeleted = false;
+          } else if (typeof deletedAtRaw === 'string') {
+            const trimmed = deletedAtRaw.trim().toLowerCase();
+            isDeleted = trimmed !== '' && trimmed !== 'null';
+          } else if (typeof deletedAtRaw === 'object') {
+            // GORM DeletedAt struct: { Time: "...", Valid: true }
+            const validFlag = (deletedAtRaw as any).Valid ?? (deletedAtRaw as any).valid;
+            const timeVal = (deletedAtRaw as any).Time ?? (deletedAtRaw as any).time;
+            isDeleted = validFlag === true || !!timeVal;
+          } else {
+            // Any other truthy value means deleted
+            isDeleted = !!deletedAtRaw;
+          }
+        }
+
+        if (isDeleted) {
+          console.log('[FormCustomerInstallation] Skipping soft-deleted installation:', inst.id, deletedAtRaw);
+        }
+        return !isDeleted;
+      });
+
       // Backend should already filter by is_terminal=yes, but double-check for safety
-      const terminalInstallations = installations.filter((inst: any) => {
+      const terminalInstallations = activeInstallations.filter((inst: any) => {
         const isTerminal = inst.is_terminal === 'yes' || inst.is_terminal === 'Yes' || inst.is_terminal === true;
         console.log('[FormCustomerInstallation] Installation:', inst.id, 'is_terminal:', inst.is_terminal, 'matches:', isTerminal);
         return isTerminal;
@@ -1328,6 +1448,14 @@ async function fetchDHCPLease() {
     const result = await mikrotikAdminApi().getDHCPLease(state.mac_address);
 
     if (result.success) {
+      const shiftedMac = result.data?.shifted_mac || result.data?.mac_address;
+      const stickerMac = result.data?.sticker_mac || result.data?.mac_sticker || state.mac_address;
+
+      // Persist the shifted MAC back to the asset item (so asset records match the actual router MAC)
+      if (shiftedMac) {
+        await updateAssetItemMacToShifted(shiftedMac, stickerMac);
+      }
+
       state.ip_static = result.data.found_ip;
       state.dhcpStatus = {
         success: true,
@@ -2500,26 +2628,25 @@ onMounted(async () => {
             <UFormGroup name="terminal_customer_installation_id" class="sm:col-span-2">
               <template #label>
                 <div class="flex items-center gap-2">
-                  <LucideIcon name="server" :size="16" class="text-gray-600" />
-                  <span>Select Terminal Installation</span>
-                </div>
-              </template>
-              <USelectMenu v-model="state.terminal_customer_installation_id" :options="state.terminalInstallations"
-                placeholder="Select terminal installation (HTB)" searchable
-                searchable-placeholder="Search by customer name or installation ID" option-attribute="display"
-                value-attribute="id" :search-attributes="['customer_name', 'installation_id']"
-                :loading="state.loading" />
-              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                <LucideIcon name="info" :size="14" class="inline mr-1" />
-                Select the terminal installation (HTB) that this installation is connected to. Only installations with
-                is_terminal =
-                'yes' are shown.
-              </p>
-              <p v-if="state.terminalInstallations.length === 0 && !state.loading"
-                class="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                <LucideIcon name="alert-triangle" :size="14" class="inline mr-1" />
-                No terminal installations found. Please create a terminal installation first.
-              </p>
+              <LucideIcon name="server" :size="16" class="text-gray-600" />
+              <span>Select Terminal Installation</span>
+            </div>
+          </template>
+          <USelectMenu v-model="state.terminal_customer_installation_id" :options="state.terminalInstallations"
+            placeholder="Select terminal installation (HTB)" searchable
+            searchable-placeholder="Search by customer name or installation ID" option-attribute="display"
+            value-attribute="id" :search-attributes="['customer_name', 'installation_id']"
+            :loading="state.loading" :disabled="state.is_terminal === 'yes'" />
+          <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+            <LucideIcon name="info" :size="14" class="inline mr-1" />
+            If this is a non-terminal installation (is_terminal = no), you must select which terminal installation (HTB)
+            it connects to. Leave it empty only when this installation itself is the terminal (is_terminal = yes).
+          </p>
+          <p v-if="state.terminalInstallations.length === 0 && !state.loading"
+            class="text-xs text-orange-600 dark:text-orange-400 mt-1">
+            <LucideIcon name="alert-triangle" :size="14" class="inline mr-1" />
+            No terminal installations found. Please create a terminal installation first.
+          </p>
             </UFormGroup>
           </div>
 
