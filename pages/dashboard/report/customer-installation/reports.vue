@@ -471,6 +471,7 @@ import { customerAdminApi } from "@/api/admin/customer";
 import type { InstallationReportCompleteResponse } from "@/types/requests/installation-report";
 import { useNavigationContext } from "@/composables/useNavigationContext";
 import LucideIcon from "@/components/LucideIcon.vue";
+import { useCustomToast } from '@/composables/useCustomToast';
 
 type DropdownItem = {
   label: string
@@ -483,6 +484,9 @@ type DropdownItem = {
 definePageMeta({
   middleware: 'auth'
 })
+
+// Initialize route at top level
+const route = useRoute()
 
 // Simplified table columns definition - only core information
 const columns = [
@@ -575,7 +579,6 @@ onMounted(async () => {
   await loadReports();
   
   // Check for customer_id in URL parameters
-  const route = useRoute();
   const customerId = route.query.customer_id as string;
   if (customerId) {
     // Filter by customer ID
@@ -767,7 +770,7 @@ async function confirmDelete() {
     await customerAdminApi().deleteInstallationReport(installationId);
     
     // Show success notification
-    useToast().add({
+    useCustomToast().add({
       title: "Success!",
       description: `Installation report for "${customerName}" deleted successfully. MAC address status updated to "in_stock".`,
       color: "green",
@@ -781,7 +784,7 @@ async function confirmDelete() {
     console.error("Error deleting installation report:", error);
     
     // Show error notification
-    useToast().add({
+    useCustomToast().add({
       title: "Error",
       description: error instanceof Error ? error.message : "Failed to delete installation report",
       color: "red",

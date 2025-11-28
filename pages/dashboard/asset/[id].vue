@@ -21,7 +21,7 @@ async function getAssetDetails() {
     asset.value = response.data
   } catch (error) {
     console.error('Failed to fetch asset:', error)
-    useToast().add({
+    useCustomToast().add({
       title: 'Failed to fetch asset details',
       color: 'red'
     })

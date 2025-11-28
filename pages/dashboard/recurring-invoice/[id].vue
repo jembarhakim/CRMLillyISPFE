@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { recurringInvoiceAdminApi, type RecurringInvoice, type RecurringInvoiceHistory } from '@/api/admin/recurring-invoice'
+import { useCustomToast } from '@/composables/useCustomToast'
 
 const route = useRoute()
 const router = useRouter()
-const toast = useToast()
+const toast = useCustomToast()
 
 const id = computed(() => String(route.params.id || ''))
 const loading = ref(false)

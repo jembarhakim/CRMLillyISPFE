@@ -73,21 +73,21 @@ async function onSubmit(event: FormSubmitEvent<AssetSchema>) {
   console.log(state)
   if (props.isEdit) {
     await assetAdminApi().editAsset(props.data.id, state).then((response) => {
-      useToast().add({ title: response.message })
+      useCustomToast().add({ title: response.message })
       onSuccess()
     }
     ).catch((err) => {
-      useToast().add({ title: err, color: "red" })
+      useCustomToast().add({ title: err, color: "red" })
       onSuccess()
     }
     )
   } else {
     await assetAdminApi().createAsset(state).then((response) => {
-      useToast().add({ title: response.message })
+      useCustomToast().add({ title: response.message })
       onSuccess()
     }
     ).catch((err) => {
-      useToast().add({ title: err, color: "red" })
+      useCustomToast().add({ title: err, color: "red" })
       onSuccess()
     }
     )

@@ -2,6 +2,7 @@
 import { userManagementAdminApi } from "@/api/admin/user-management";
 import AddUserForm from "./AddUserForm.vue";
 import LucideIcon from "@/components/LucideIcon.vue";
+import { useCustomToast } from "@/composables/useCustomToast";
 // Set page title
 useHead({
     title: "User Management - CRM System",
@@ -72,7 +73,7 @@ function handleClick(row: { id: number }) {
     alert("clicked" + row);
 }
 
-const toast = useToast();
+const toast = useCustomToast();
 const modal = useModal();
 const count = ref(0);
 

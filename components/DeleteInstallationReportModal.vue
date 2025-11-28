@@ -1,5 +1,5 @@
 <template>
-  <UModal :model-value="isOpen" @update:model-value="$emit('update:isOpen', $event)" :ui="{ width: 'w-full sm:max-w-lg' }">
+  <UModal v-model="isOpenModel" :ui="{ width: 'w-full sm:max-w-lg' }">
     <UCard>
       <template #header>
         <div class="flex items-center justify-between">
@@ -33,7 +33,7 @@
             </div>
             <div>
               <h4 class="text-lg font-semibold text-gray-900">{{ customerName }}</h4>
-              <p class="text-sm text-gray-600">Installation Report ID: {{ installationId }}</p>
+              <p class="text-sm text-gray-100">Installation Report ID: {{ installationId }}</p>
             </div>
           </div>
         </div>
@@ -45,13 +45,15 @@
             <div>
               <h5 class="text-red-800 font-semibold mb-2">⚠️ Warning: This action cannot be undone!</h5>
               <p class="text-red-900 text-sm leading-relaxed mb-3">
-                You are about to permanently delete this installation report and all associated data.
+                You are about to archive this installation report. The installation data will be soft deleted but can be reviewed.
               </p>
               <div class="bg-red-100 border border-red-300 rounded-lg p-3">
                 <p class="text-red-900 text-sm font-semibold mb-2">This action will:</p>
                 <ul class="text-red-900 text-sm list-disc list-inside space-y-1">
                   <li><strong>Delete the installation report permanently</strong></li>
-                  <li><strong>Update the MAC address status back to "in_stock"</strong></li>
+                  <li><strong>Update asset: Clear MAC address field back to original sticker value</strong></li>
+                  <li><strong>Set asset status back to "in_stock"</strong></li>
+                  <li><strong>Disable MikroTik configurations instead of deleting them</strong></li>
                   <li><strong>Remove all related technician assignments and asset transactions</strong></li>
                   <li><strong>Delete all associated network devices, cables, and images</strong></li>
                 </ul>
@@ -73,7 +75,7 @@
             </div>
             <div class="flex items-center justify-between">
               <span class="text-gray-600">Report ID:</span>
-              <span class="font-mono text-xs bg-gray-200 px-2 py-1 rounded">{{ installationId }}</span>
+              <span class="font-mono text-xs text-gray-600 bg-gray-200 px-2 py-1 rounded">{{ installationId }}</span>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-gray-600">Status:</span>
@@ -97,7 +99,7 @@
               :disabled="deleting"
               color="red"
             />
-            <span class="ml-3 text-sm text-gray-700 leading-relaxed">
+            <span class="ml-3 text-sm text-gray-100 leading-relaxed">
               I understand that this action will <strong class="text-red-600">permanently delete</strong> the installation report for 
               <strong>"{{ customerName }}"</strong> and all associated data. This action <strong class="text-red-600">cannot be undone</strong>.
             </span>
@@ -114,7 +116,7 @@
             :disabled="deleting"
             class="w-full sm:w-auto"
           >
-            <UIcon name="x" class="mr-2" />
+          <LucideIcon name="x" :size="16" class="text-gray-100" />
             Cancel
           </UButton>
           <UButton
@@ -123,10 +125,9 @@
             variant="solid"
             size="lg"
             :loading="deleting"
-            :disabled="!confirmationChecked"
             class="w-full sm:w-auto bg-red-600 hover:bg-red-700"
           >
-            <UIcon name="trash-2" class="mr-2" />
+          <LucideIcon name="trash-2" :size="16" class="text-gray-100" />
             {{ deleting ? 'Deleting...' : 'Delete Installation Report' }}
           </UButton>
         </div>
@@ -136,8 +137,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { customerAdminApi } from '@/api/admin/customer'
+import { assetItemAdminApi } from '@/api/admin/asset-item'
+import { mikrotikAdminApi } from '@/api/admin/mikrotik'
+import { useCustomToast } from '@/composables/useCustomToast'
 
 interface Props {
   isOpen: boolean
@@ -160,6 +164,11 @@ const loading = ref(false)
 const deleting = ref(false)
 const confirmationChecked = ref(false)
 
+const isOpenModel = computed({
+  get: () => props.isOpen,
+  set: (value) => emit('update:isOpen', value)
+})
+
 // Watch for modal open to reset state
 watch(() => props.isOpen, (newValue) => {
   if (newValue) {
@@ -170,19 +179,34 @@ watch(() => props.isOpen, (newValue) => {
 })
 
 function closeModal() {
+  // Add this line to trigger the computed setter
+  isOpenModel.value = false
+  
+  // You can keep this if you need a specific hook for cleanup, 
+  // otherwise it's optional
   emit('close')
 }
 
 async function confirmDelete() {
-  if (!props.installationId || !confirmationChecked.value || deleting.value) return
-  
+  if (!props.installationId || deleting.value) return
+
+  if (!confirmationChecked.value) {
+    // Show warning notification if confirmation is not checked
+    useCustomToast().add({
+      title: 'Warning!',
+      description: 'Please check the confirmation checkbox before deleting the installation report.',
+      color: 'orange',
+    })
+    return
+  }
+
   deleting.value = true
   
   try {
     await customerAdminApi().deleteInstallationReport(props.installationId)
     
     // Show success notification
-    useToast().add({
+    useCustomToast().add({
       title: 'Success!',
       description: `Installation report for "${props.customerName}" deleted successfully. MAC address status updated to "in_stock".`,
       color: 'green',
@@ -194,7 +218,7 @@ async function confirmDelete() {
     console.error("Error deleting installation report:", err)
     
     // Show error notification
-    useToast().add({
+    useCustomToast().add({
       title: 'Error',
       description: err.message || 'Failed to delete installation report',
       color: 'red',

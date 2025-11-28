@@ -207,7 +207,7 @@ const stats = ref({
   totalInstallations: 0,
   completed: 0,
   pending: 0,
-  inProgress: 0
+  dismantle: 0
 });
 
 const recentInstallations = ref<CompleteInstallationReportWithTechnicianPhotosResponse[]>([]);
@@ -222,11 +222,21 @@ async function loadStats() {
     const response = await customerAdminApi().getInstallationSummaryPerCustomer();
     const summaries = response.data || [];
 
+    // 1. Separate Active Customers (deleted_at is empty)
+    const activeSummaries = summaries.filter((item: any) => !item.deleted_at);
+
+    // 2. Separate Dismantled Customers (deleted_at has value)
+    const dismantledSummaries = summaries.filter((item: any) => item.deleted_at);
+
     stats.value = {
-      totalInstallations: summaries.reduce((sum: number, item: any) => sum + (item.total_installations || 0), 0),
-      completed: summaries.reduce((sum: number, item: any) => sum + (item.completed_installations || 0), 0),
-      pending: summaries.reduce((sum: number, item: any) => sum + (item.pending_installations || 0), 0),
-      inProgress: summaries.reduce((sum: number, item: any) => sum + (item.in_progress_installations || 0), 0)
+      // Use 'activeSummaries' for the standard stats
+      totalInstallations: activeSummaries.reduce((sum: number, item: any) => sum + (item.total_installations || 0), 0),
+      completed: activeSummaries.reduce((sum: number, item: any) => sum + (item.completed_installations || 0), 0),
+      pending: activeSummaries.reduce((sum: number, item: any) => sum + (item.pending_installations || 0), 0),
+
+      // Use 'dismantledSummaries' for the dismantle stat
+      // This sums up the installations belonging to deleted customers
+      dismantle: dismantledSummaries.reduce((sum: number, item: any) => sum + (item.total_installations || 0), 0)
     };
   } catch (error) {
     console.error("Failed to load stats:", error);
@@ -235,14 +245,14 @@ async function loadStats() {
       totalInstallations: 0,
       completed: 0,
       pending: 0,
-      inProgress: 0
+      dismantle: 0
     };
   }
 }
 
 async function loadRecentInstallations() {
   try {
-    const response = await archiveInstallationAdminApi().getAllArchiveInstallation();
+    const response = await archiveInstallationAdminApi().getAllArchiveInstallationActiveOnly();
     const installations = response.data || [];
 
     // Sort by created_at date (most recent first) and take only the first 5
@@ -284,8 +294,8 @@ function getStatusColor(status: string | undefined) {
     case 'pending':
     case 'waiting':
       return 'bg-yellow-100 text-yellow-800';
-    case 'in_progress':
-    case 'in progress':
+    case 'dismantled':
+    case 'dismantle':
     case 'processing':
       return 'bg-blue-100 text-blue-800';
     case 'cancelled':

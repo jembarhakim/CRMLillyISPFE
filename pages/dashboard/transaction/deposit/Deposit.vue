@@ -3,6 +3,7 @@ import { transactionAdminApi } from "@/api/admin/transaction";
 import FormDeposit from "./FormDeposit.vue";
 import FormRole from "./FormDeposit.vue";
 import { formatIDR } from "@/helper/currency";
+import { useCustomToast } from "@/composables/useCustomToast";
 const props = defineProps<{
     data: any[];
     refresh?: () => Promise<void>;
@@ -61,7 +62,7 @@ function handleClick(row: { id: number }) {
     alert("clicked" + row);
 }
 
-const toast = useToast();
+const toast = useCustomToast();
 const modal = useModal();
 const count = ref(0);
 

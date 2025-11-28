@@ -5,6 +5,7 @@ import { transactionAdminApi } from "@/api/admin/transaction";
 import { formatIDR } from "@/helper/currency";
 import { formatDateToYMD } from "@/helper/date";
 import LucideIcon from '@/components/LucideIcon.vue';
+import { useCustomToast } from "@/composables/useCustomToast";
 
 const transaction = ref<any[]>([]);
 const isLoading = ref(false);
@@ -72,7 +73,7 @@ const columns = [
 ];
 const isOpen = ref(false);
 
-const toast = useToast();
+const toast = useCustomToast();
 const modal = useModal();
 function openModal() {
   isOpen.value = true;
@@ -108,7 +109,7 @@ async function fetchAllAccount() {
     
     transaction.value = [...response.data];
   } catch (err) {
-    useToast().add({
+    useCustomToast().add({
       title: "Error fetching transactions",
       description: err instanceof Error ? err.message : "Unknown error",
       color: "red",
@@ -145,12 +146,12 @@ const deleteTransaction = async (row: any) => {
       // Add your delete API call here
       console.log('Delete transaction:', row);
       await fetchAllAccount(); // Refresh data
-      useToast().add({
+      useCustomToast().add({
         title: "Transaction deleted successfully",
         color: "green",
       });
     } catch (err) {
-      useToast().add({
+      useCustomToast().add({
         title: "Error deleting transaction",
         color: "red",
       });

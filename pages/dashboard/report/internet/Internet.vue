@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reportAdminApi } from '@/api/admin/report';
 import FormInternet from './FormInternet.vue';
+import { useCustomToast } from '@/composables/useCustomToast';
 
 
 // Set page title
@@ -22,7 +23,7 @@ const columns = [
   // }
 ];
 
-const toast = useToast()
+const toast = useCustomToast()
 const modal = useModal()
 
 

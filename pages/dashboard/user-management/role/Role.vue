@@ -2,6 +2,7 @@
 import { userManagementAdminApi } from "@/api/admin/user-management";
 import AddRoleForm from "./AddRoleForm.vue";
 import LucideIcon from "@/components/LucideIcon.vue";
+import { useCustomToast } from "@/composables/useCustomToast";
 // Set page title
 useHead({
     title: "Role Management - CRM System",
@@ -61,7 +62,7 @@ const items = (row: Role) => [
     ],
 ];
 
-const toast = useToast();
+const toast = useCustomToast();
 const modal = useModal();
 const count = ref(0);
 

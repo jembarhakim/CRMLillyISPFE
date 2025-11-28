@@ -444,8 +444,8 @@ function updatePacketInternetInfo() {
             name: report.product_name,
             description: report.product_description,
             price: report.product_price,
-            downloadSpeed: report.product_download_speed_mbps,
-            uploadSpeed: report.product_upload_speed_mbps,
+            downloadSpeed: report.download_speed_mbps,
+            uploadSpeed: report.upload_speed_mbps,
           });
         }
       });

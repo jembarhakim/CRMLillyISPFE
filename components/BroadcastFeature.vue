@@ -8,6 +8,7 @@ import { WhatsappApi } from '@/api/admin/wa'
 import { userManagementAdminApi } from '@/api/admin/user-management'
 import { broadcastAdminApi } from '@/api/admin/broadcast'
 import LucideIcon from '@/components/LucideIcon.vue'
+import { useCustomToast } from '@/composables/useCustomToast'
 
 // Props: relatedCustomers must be passed from parent component
 const props = defineProps<{
@@ -18,7 +19,7 @@ const props = defineProps<{
 const isModalOpen = ref(false)
 
 // Toast notification system
-const toast = useToast()
+const toast = useCustomToast()
 
 // Broadcast history data
 const broadcastHistory = ref<any[]>([])
@@ -113,7 +114,11 @@ function selectAllCustomers() {
 // Customer options for multi-select (format: { label: "Name - Phone", value: "phone" })
 // Filter based on selected customer type filter and area
 const customerOptions = computed(() => {
-  return props.relatedCustomers
+  // Use allCustomers as source of truth since it's fetched from API
+  // Fall back to props.relatedCustomers if allCustomers is empty
+  const customersToFilter = allCustomers.value.length > 0 ? allCustomers.value : props.relatedCustomers
+  
+  return customersToFilter
     .filter((customer) => {
       // Filter by customer type (internet/collaborator)
       let passesTypeFilter = false
@@ -130,14 +135,10 @@ const customerOptions = computed(() => {
       
       // Filter by area if selected
       if (state.value.selectedArea) {
-        // Find customer in allCustomers by phone to get area info
-        const fullCustomer = allCustomers.value.find((c: any) => c.phone === customer.phone)
-        if (!fullCustomer) return false
-        
         // Check if customer's area matches selected area
-        const customerAreaId = fullCustomer.area_id || 
-                               (fullCustomer.area as any)?.id || 
-                               (fullCustomer as any).areaId
+        const customerAreaId = customer.area_id || 
+                               (customer.area as any)?.id || 
+                               (customer as any).areaId
         
         if (customerAreaId !== state.value.selectedArea) return false
       }
@@ -146,9 +147,8 @@ const customerOptions = computed(() => {
     })
     .map((customer) => {
       // Get area info for display
-      const fullCustomer = allCustomers.value.find((c: any) => c.phone === customer.phone)
-      const areaInfo = fullCustomer?.area 
-        ? `${fullCustomer.area.name_city} - ${fullCustomer.area.name_subdistrict}`
+      const areaInfo = customer.area 
+        ? `${customer.area.name_city} - ${customer.area.name_subdistrict}`
         : ''
       
       return {
@@ -318,7 +318,25 @@ function getFieldOptions(field: any) {
       value: t.name
     }))
   } else if (field.type === 'invoice') {
-    return allInvoices.value.map((inv: any) => ({
+    // Filter invoices based on selected customers
+    let invoicesToShow = allInvoices.value
+    
+    if (state.value.target === 'customers' && state.value.selectedCustomers && state.value.selectedCustomers.length > 0) {
+      // Get the selected customer objects
+      const selectedCustomerObjects = allCustomers.value.filter((c: any) => 
+        state.value.selectedCustomers.includes(c.phone)
+      )
+      
+      // Filter invoices that belong to selected customers
+      invoicesToShow = allInvoices.value.filter((inv: any) => {
+        // Check if invoice customer_id matches any selected customer's id
+        return selectedCustomerObjects.some((customer: any) => 
+          customer.id === inv.customer_id || customer.phone === inv.phone
+        )
+      })
+    }
+    
+    return invoicesToShow.map((inv: any) => ({
       label: `Invoice ${inv.number || inv.id}`,
       value: inv.number || inv.id,
       invoice: inv
@@ -1234,6 +1252,24 @@ async function resendToCustomers(historyItem: any) {
                   />
                 </UFormGroup>
 
+                <!-- Message Template Type -->
+                <UFormGroup name="template">
+                  <template #label>
+                    <div class="flex items-center gap-2">
+                      <LucideIcon name="file-text" :size="16" class="text-gray-600" />
+                      <span class="text-black font-medium">Template Type</span>
+                    </div>
+                  </template>
+                  <USelectMenu
+                    v-model="state.template"
+                    :options="templateOptions"
+                    value-attribute="value"
+                    option-attribute="label"
+                    placeholder="Choose template or custom message..."
+                    class="w-full broadcast-select"
+                  />
+                </UFormGroup>
+
                 <!-- Customer Selection (only shown when target is customers) -->
                 <template v-if="state.target === 'customers'">
                   <!-- Area Filter -->
@@ -1333,24 +1369,6 @@ async function resendToCustomers(historyItem: any) {
               </h3>
 
               <UForm :state="state" @submit="onSubmit" class="space-y-4">
-                <!-- Message Template Type -->
-                <UFormGroup name="template">
-                  <template #label>
-                    <div class="flex items-center gap-2">
-                      <LucideIcon name="file-text" :size="16" class="text-gray-600" />
-                      <span class="text-black font-medium">Template Type</span>
-                    </div>
-                  </template>
-                  <USelectMenu
-                    v-model="state.template"
-                    :options="templateOptions"
-                    value-attribute="value"
-                    option-attribute="label"
-                    placeholder="Choose template or custom message..."
-                    class="w-full broadcast-select"
-                  />
-                </UFormGroup>
-
                 <!-- Custom Message Editor (when template is 'custom') -->
                 <UFormGroup v-if="state.template === 'custom'" name="customMessage" required>
                   <template #label>
@@ -1394,7 +1412,7 @@ async function resendToCustomers(historyItem: any) {
                     <UFormGroup :label="field.label"
                                 :name="`placeholder-${field.number}`"
                                 required
-                                class="font-medium">
+                                class="text-black font-medium">
                       <!-- Customer Select -->
                       <USelectMenu
                         v-if="field.type === 'customer'"
@@ -1404,7 +1422,7 @@ async function resendToCustomers(historyItem: any) {
                         option-attribute="label"
                         :placeholder="`Select ${field.label}`"
                         searchable
-                        class="w-full broadcast-select"
+                        class="text-black w-full broadcast-select"
                       />
 
                       <!-- Area Select -->
@@ -1416,7 +1434,7 @@ async function resendToCustomers(historyItem: any) {
                         option-attribute="label"
                         :placeholder="`Select ${field.label}`"
                         searchable
-                        class="w-full broadcast-select"
+                        class="text-black w-full broadcast-select"
                       />
 
                       <!-- Trouble Type Select -->
@@ -1428,7 +1446,7 @@ async function resendToCustomers(historyItem: any) {
                         option-attribute="label"
                         :placeholder="`Select ${field.label}`"
                         searchable
-                        class="w-full broadcast-select"
+                        class="text-black w-full broadcast-select"
                       />
 
                       <!-- Invoice Select -->
@@ -1440,7 +1458,7 @@ async function resendToCustomers(historyItem: any) {
                         option-attribute="label"
                         :placeholder="`Select ${field.label}`"
                         searchable
-                        class="w-full broadcast-select"
+                        class="text-black w-full broadcast-select"
                       />
 
                       <!-- Invoice Date (auto-filled, read-only) -->
@@ -1954,12 +1972,70 @@ select:focus {
   color: #000000 !important;
 }
 
+/* AGGRESSIVE: Force all text to be black with multiple selectors */
+:deep(.broadcast-select button span),
+:deep(.broadcast-select [role="combobox"] span),
+:deep(.broadcast-select button div),
+:deep(.broadcast-select [role="combobox"] div),
+:deep(.broadcast-select button *),
+:deep(.broadcast-select [role="combobox"] *) {
+  color: #000000 !important;
+  fill: #000000 !important;
+}
+
+/* Override Tailwind's text-gray classes inside buttons */
+:deep(.broadcast-select button [class*="text-gray"]),
+:deep(.broadcast-select [role="combobox"] [class*="text-gray"]) {
+  color: #000000 !important;
+}
+
+/* Target the actual text nodes */
+:deep(.broadcast-select button span:not([class*="icon"])),
+:deep(.broadcast-select [role="combobox"] span:not([class*="icon"])) {
+  color: #000000 !important;
+}
+
 :deep(.broadcast-select button:focus),
 :deep(.broadcast-select [role="combobox"]:focus),
 :deep(.broadcast-select:focus-within button) {
   border-color: #2563EB !important;
   outline: none !important;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+/* Force black text - override ANY text color that might be applied */
+:deep(.broadcast-select button .text-gray-500),
+:deep(.broadcast-select button .text-gray-400),
+:deep(.broadcast-select button .text-gray-300),
+:deep(.broadcast-select [role="combobox"] .text-gray-500),
+:deep(.broadcast-select [role="combobox"] .text-gray-400),
+:deep(.broadcast-select [role="combobox"] .text-gray-300) {
+  color: #000000 !important;
+}
+
+/* Catch all text-color classes and override */
+:deep(.broadcast-select) [class*="text-gray"] {
+  color: #000000 !important;
+}
+:deep(.broadcast-select) [class*="text-opacity"] {
+  color: #000000 !important;
+}
+
+/* Force black text on ALL labels in broadcast form */
+:deep(label[class*="text-gray"]),
+:deep(label.text-gray-700),
+:deep(label.dark\:text-gray-200) {
+  color: #000000 !important;
+}
+
+/* Override dark mode text colors for labels */
+:deep(.broadcast-form-content label[class*="dark"]) {
+  color: #000000 !important;
+}
+
+/* Force black on form group labels */
+:deep(.broadcast-form-content) label {
+  color: #000000 !important;
 }
 
 /* Select menu dropdown container/popover - white background */

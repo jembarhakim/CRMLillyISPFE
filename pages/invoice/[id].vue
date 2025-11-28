@@ -4,6 +4,7 @@ import html2canvas from "html2canvas";
 import { invoiceAdminApi } from "@/api/admin/invoice";
 import { formatDateToYMD } from "@/helper/date";
 import { formatIDR } from "@/helper/currency";
+import { useCustomToast } from "@/composables/useCustomToast";
 // Set page title
 useHead({
   title: 'Invoice Details - CRM System'
@@ -60,7 +61,7 @@ async function getData() {
     })
     .catch((err) => {
       console.error('Error fetching invoice:', err);
-      useToast().add({
+      useCustomToast().add({
         title: "Error",
         description: "Gagal memuat data invoice. Silakan coba lagi.",
         color: "red",

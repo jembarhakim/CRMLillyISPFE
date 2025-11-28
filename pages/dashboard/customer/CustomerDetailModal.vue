@@ -360,11 +360,18 @@
 
             <!-- Network Devices (Only show if customer has installation reports) -->
             <div
-              v-if="customerDetail.installations && customerDetail.installations.length > 0 && customerDetail.network_devices && customerDetail.network_devices.length > 0"
-              class="bg-purple-50 rounded-lg p-4">
-              <h3 class="text-lg font-medium text-gray-900 mb-4">Network Devices</h3>
-              <div class="space-y-3">
-                <div v-for="device in customerDetail.network_devices" :key="device.id"
+v-if="
+  activeInstallations &&
+  activeInstallations.length > 0 &&
+  customerDetail.value?.network_devices &&
+  customerDetail.value.network_devices.length > 0
+"
+class="bg-white border border-gray-200 rounded-lg p-6"
+>
+  <h3 class="text-lg font-semibold text-gray-900 mb-4">Network Devices Status</h3>
+  <div class="space-y-4">
+    <div v-for="device in activeNetworkDevices" :key="device.id">
+
                   class="bg-white rounded-lg p-4 border">
                   <div class="flex items-center justify-between mb-3">
                     <h4 class="text-sm font-semibold text-gray-900">Device {{ device.id }}</h4>
@@ -514,18 +521,22 @@
             </div>
 
             <!-- Installation History (Multiple Reports Supported) -->
-            <div v-if="customerDetail.installations && customerDetail.installations.length > 0"
+            <div v-if="activeInstallations
+ && activeInstallations
+.length > 0"
               class="bg-yellow-50 rounded-lg p-4">
               <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-medium text-gray-900">Installation Reports ({{
-                  customerDetail.installations.length }})</h3>
+                  activeInstallations
+.length }})</h3>
                 <UButton color="green" size="sm" @click="addNewInstallationReport">
                   <UIcon name="plus" class="w-4 h-4 mr-1" />
                   Add Report
                 </UButton>
               </div>
               <div class="space-y-3">
-                <div v-for="(installation, index) in customerDetail.installations" :key="installation.id"
+                <div v-for="(installation, index) in activeInstallations
+" :key="installation.id"
                   class="bg-white rounded-lg p-3 border">
                   <div class="flex justify-between items-start mb-3">
                     <h4 class="text-sm font-semibold text-gray-900">
@@ -753,11 +764,18 @@
 
             <!-- Network Devices Status (Only show if customer has installation reports) -->
             <div
-              v-if="customerDetail.installations && customerDetail.installations.length > 0 && customerDetail.network_devices && customerDetail.network_devices.length > 0"
-              class="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">Network Devices Status</h3>
-              <div class="space-y-4">
-                <div v-for="device in customerDetail.network_devices" :key="device.id"
+v-if="
+  activeInstallations &&
+  activeInstallations.length > 0 &&
+  customerDetail.value?.network_devices &&
+  customerDetail.value.network_devices.length > 0
+"
+class="bg-white border border-gray-200 rounded-lg p-6"
+>
+  <h3 class="text-lg font-semibold text-gray-900 mb-4">Network Devices Status</h3>
+  <div class="space-y-4">
+    <div v-for="device in activeNetworkDevices" :key="device.id">
+
                   class="border border-gray-200 rounded-lg p-4">
                   <div class="flex items-center justify-between mb-3">
                     <h4 class="text-sm font-semibold text-gray-900">Device {{ device.id }}</h4>
@@ -856,7 +874,9 @@
             </div>
 
             <!-- No Installation Report Message -->
-            <div v-else-if="!customerDetail.installations || customerDetail.installations.length === 0"
+            <div v-else-if="!activeInstallations
+ || activeInstallations
+.length === 0"
               class="bg-white border border-gray-200 rounded-lg p-6">
               <div class="text-center">
                 <UIcon name="file-plus" class="w-12 h-12 text-blue-400 mx-auto mb-4" />
@@ -1096,13 +1116,7 @@ import { customerAdminApi } from '@/api/admin/customer'
 import { mikrotikAdminApi } from '@/api/admin/mikrotik'
 import { formatIDR } from '@/helper/currency'
 import LoadingComponent from '@/components/LoadingComponent.vue'
-
-interface Props {
-  customerId: string
-}
-
-// Type for device connection status
-type DeviceConnectionStatus = 'off' | 'up' | 'down' | 'unknown'
+import { useCustomToast } from '@/composables/useCustomToast'
 
 const props = defineProps<Props>()
 const emit = defineEmits(['close'])
@@ -1116,6 +1130,57 @@ const activeTab = ref('summary')
 
 // Connection control state
 const isConnecting = ref(false)
+
+
+interface Props {
+  customerId: string
+}
+
+
+// Normalize the list and remove soft-deleted installations.
+const activeInstallations = computed(() => {
+  const installs = customerDetail.value?.installations || []
+
+  return installs.filter((inst: any) => {
+    if (!inst) return false
+    if ('deleted_at' in inst) return !inst.deleted_at
+    if ('is_deleted' in inst) return !inst.is_deleted
+    if ('trashed' in inst) return !inst.trashed
+    return true
+  })
+})
+
+// Latest installation based on created timestamp but from activeInstallations
+const latestActiveInstallation = computed(() => {
+  const acts = (activeInstallations.value || []).slice()
+  if (!acts.length) return {}
+
+  acts.sort((a: any, b: any) => {
+    const aTime = new Date(a.installation_created_at || a.created_at || 0).getTime()
+    const bTime = new Date(b.installation_created_at || b.created_at || 0).getTime()
+    return bTime - aTime
+  })
+
+  return acts[0] || {}
+})
+
+// Filter network devices to those linked to active installations (if linkage exists)
+const activeNetworkDevices = computed(() => {
+  const devices = customerDetail.value?.network_devices || []
+  const activeIds = new Set((activeInstallations.value || []).map((i: any) => i.id))
+
+  if (!devices.length) return []
+  if ('installation_id' in devices[0]) {
+    return devices.filter((d: any) => activeIds.has(d.installation_id))
+  }
+  return devices
+})
+
+
+// Type for device connection status
+type DeviceConnectionStatus = 'off' | 'up' | 'down' | 'unknown'
+
+
 
 // Get customer product information from network devices (single product - for backward compatibility)
 const getCustomerProductInfo = () => {
@@ -1138,14 +1203,12 @@ const getCustomerProductInfo = () => {
 
 // NEW: Get all customer product information from installation reports
 const getCustomerProductsInfo = () => {
-  if (!customerDetail.value?.installations || customerDetail.value.installations.length === 0) {
-    return []
-  }
+  const installations = activeInstallations.value || []
+  if (!installations.length) return []
 
-  // Get unique products from installation reports
   const uniqueProducts = new Map()
 
-  customerDetail.value.installations.forEach((installation: any) => {
+  installations.forEach((installation: any) => {
     if (installation.product_id && installation.product_name) {
       if (!uniqueProducts.has(installation.product_id)) {
         uniqueProducts.set(installation.product_id, {
@@ -1153,8 +1216,8 @@ const getCustomerProductsInfo = () => {
           name: installation.product_name,
           description: installation.product_description || '',
           price: installation.product_price || 0,
-          downloadSpeed: installation.product_download_speed_mbps,
-          uploadSpeed: installation.product_upload_speed_mbps
+          downloadSpeed: installation.download_speed_mbps,
+          uploadSpeed: installation.upload_speed_mbps
         })
       }
     }
@@ -1163,14 +1226,13 @@ const getCustomerProductsInfo = () => {
   return Array.from(uniqueProducts.values())
 }
 
+
 // NEW: Get product information for a specific device from installation reports
 const getDeviceProductInfo = (device: any) => {
-  if (!customerDetail.value?.installations || customerDetail.value.installations.length === 0) {
-    return null
-  }
+  const installations = activeInstallations.value || []
+  if (!installations.length) return null
 
-  // Find installation report that matches this device
-  const matchingInstallation = customerDetail.value.installations.find((installation: any) =>
+  const matchingInstallation = installations.find((installation: any) =>
     installation.network_device_id === device.id
   )
 
@@ -1180,13 +1242,14 @@ const getDeviceProductInfo = (device: any) => {
       name: matchingInstallation.product_name,
       description: matchingInstallation.product_description || '',
       price: matchingInstallation.product_price || 0,
-      downloadSpeed: matchingInstallation.product_download_speed_mbps,
-      uploadSpeed: matchingInstallation.product_upload_speed_mbps
+      downloadSpeed: matchingInstallation.download_speed_mbps,
+      uploadSpeed: matchingInstallation.upload_speed_mbps
     }
   }
 
   return null
 }
+
 
 // NEW: Helper function to get primary technician name
 const getPrimaryTechnicianName = (installation: any) => {
@@ -1233,6 +1296,8 @@ const recentActivity = ref([
   { id: 2, description: 'Trouble ticket resolved', date: new Date(Date.now() - 86400000) },
   { id: 3, description: 'Invoice paid', date: new Date(Date.now() - 172800000) }
 ])
+
+  
 
 // Edit form data
 const editForm = ref<{
@@ -1295,20 +1360,12 @@ const getInstallationStatusClass = (status: string) => {
 }
 
 // NEW: Helper function to get latest installation data
+
 const getLatestInstallationData = () => {
-  // Return empty object if no customer detail or installations
-  if (!customerDetail.value?.installations || customerDetail.value.installations.length === 0) {
-    return {}
-  }
-
-  // Return the first installation (latest, since they're ordered by created_at DESC)
-  const latestInstallation = customerDetail.value.installations[0] || {}
-
-  // Debug: Log the installation data to see what fields are available
-  console.log('Latest Installation Data:', latestInstallation)
-
-  return latestInstallation
+  return latestActiveInstallation.value || {}
+  
 }
+
 
 // NEW: Helper function to get proposed package name by ID
 const getProposedPackageName = (packageId: string) => {
@@ -1472,7 +1529,7 @@ const loginAsCustomer = () => {
 }
 
 const revokeAutoLogin = () => {
-  useToast().add({
+  useCustomToast().add({
     title: 'Auto login revoked',
     color: 'green'
   })
@@ -1480,7 +1537,7 @@ const revokeAutoLogin = () => {
 
 const regenerateUrl = () => {
   // Force regeneration of the URL
-  useToast().add({
+  useCustomToast().add({
     title: 'Auto login URL regenerated',
     color: 'green'
   })
@@ -1491,14 +1548,14 @@ const copyAutoLoginUrlToClipboard = async () => {
 
   try {
     await navigator.clipboard.writeText(autoLoginUrl.value)
-    useToast().add({
+    useCustomToast().add({
       title: 'URL Copied',
       description: 'Auto login URL copied to clipboard',
       color: 'green'
     })
   } catch (error) {
     console.error('Failed to copy URL:', error)
-    useToast().add({
+    useCustomToast().add({
       title: 'Error',
       description: 'Failed to copy URL to clipboard',
       color: 'red'
@@ -1510,14 +1567,14 @@ const copyAutoLoginUrlToClipboard = async () => {
 const saveCustomer = async () => {
   try {
     await customerAdminApi().editCustomer(props.customerId, editForm.value)
-    useToast().add({
+    useCustomToast().add({
       title: 'Customer updated successfully',
       color: 'green'
     })
     // Refresh customer data
     await fetchCustomerDetail()
   } catch (error: any) {
-    useToast().add({
+    useCustomToast().add({
       title: 'Failed to update customer',
       description: error.message,
       color: 'red'
@@ -1653,7 +1710,7 @@ const getNetworkDevicesWithMac = () => {
 const isolateCustomer = async () => {
   const macAddresses = getCustomerMacAddresses()
   if (macAddresses.length === 0) {
-    useToast().add({
+    useCustomToast().add({
       title: 'Error',
       description: 'Customer network devices with MAC addresses are required for isolation',
       color: 'red'
@@ -1671,7 +1728,7 @@ const isolateCustomer = async () => {
 
     await Promise.all(promises)
 
-    useToast().add({
+    useCustomToast().add({
       title: 'Success',
       description: `Customer has been isolated - hotspot access restricted for ${macAddresses.length} device(s)`,
       color: 'green'
@@ -1682,7 +1739,7 @@ const isolateCustomer = async () => {
 
   } catch (error: any) {
     console.error('Failed to isolate customer:', error)
-    useToast().add({
+    useCustomToast().add({
       title: 'Error',
       description: error.message || 'Failed to isolate customer',
       color: 'red'
@@ -1695,7 +1752,7 @@ const isolateCustomer = async () => {
 const restoreCustomer = async () => {
   const macAddresses = getCustomerMacAddresses()
   if (macAddresses.length === 0) {
-    useToast().add({
+    useCustomToast().add({
       title: 'Error',
       description: 'Customer network devices with MAC addresses are required for restoration',
       color: 'red'
@@ -1713,7 +1770,7 @@ const restoreCustomer = async () => {
 
     await Promise.all(promises)
 
-    useToast().add({
+    useCustomToast().add({
       title: 'Success',
       description: `Customer access has been restored - hotspot access enabled for ${macAddresses.length} device(s)`,
       color: 'green'
@@ -1724,7 +1781,7 @@ const restoreCustomer = async () => {
 
   } catch (error: any) {
     console.error('Failed to restore customer:', error)
-    useToast().add({
+    useCustomToast().add({
       title: 'Error',
       description: error.message || 'Failed to restore customer access',
       color: 'red'
@@ -1739,14 +1796,14 @@ const copyMacAddress = async (macAddress: string) => {
 
   try {
     await navigator.clipboard.writeText(macAddress)
-    useToast().add({
+    useCustomToast().add({
       title: 'Copied',
       description: 'MAC address copied to clipboard',
       color: 'green'
     })
   } catch (error) {
     console.error('Failed to copy MAC address:', error)
-    useToast().add({
+    useCustomToast().add({
       title: 'Error',
       description: 'Failed to copy MAC address',
       color: 'red'
@@ -1758,7 +1815,7 @@ const copyMacAddress = async (macAddress: string) => {
 const addNewInstallationReport = () => {
   // Navigate to installation report form or open modal
   // For now, show a toast message indicating the feature
-  useToast().add({
+  useCustomToast().add({
     title: 'Add Installation Report',
     description: 'Multiple installation reports are now supported! You can add a new report for this customer.',
     color: 'blue'
@@ -1854,22 +1911,32 @@ const fetchCustomerDetail = async () => {
       // Merge installation data with customer detail
       if (customerDetail.value) {
         // Store all installation reports
-        customerDetail.value.installations = customerInstallations
+        // Apply client-side soft-delete filter (also prefer to filter server-side)
+        const filteredCustomerInstallations = customerInstallations.filter((inst: any) => {
+          if (!inst) return false
+          if ('deleted_at' in inst) return !inst.deleted_at
+          if ('is_deleted' in inst) return !inst.is_deleted
+          if ('trashed' in inst) return !inst.trashed
+          return true
+        })
 
-        // If there are installation reports, use the latest one for customer summary data
-        if (customerInstallations.length > 0) {
-          const latestInstallation = customerInstallations[0]
-          customerDetail.value.customer = {
-            ...customerDetail.value.customer,
-            installation_type: latestInstallation.installation_type,
-            installation_status: latestInstallation.installation_status,
-            on_air_date: latestInstallation.on_air_date,
-            service_ready_date: latestInstallation.service_ready_date,
-            installation_completed_at: latestInstallation.installation_completed_at,
-            installation_team_name: getPrimaryTechnicianName(latestInstallation),
-            installation_team_phone: latestInstallation.technician_phone
-          }
-        }
+        customerDetail.value.installations = filteredCustomerInstallations
+
+
+        if (filteredCustomerInstallations.length > 0) {
+  const latestInstallation = filteredCustomerInstallations[0]
+  customerDetail.value.customer = {
+    ...customerDetail.value.customer,
+    installation_type: latestInstallation.installation_type,
+    installation_status: latestInstallation.installation_status,
+    on_air_date: latestInstallation.on_air_date,
+    service_ready_date: latestInstallation.service_ready_date,
+    installation_completed_at: latestInstallation.installation_completed_at,
+    installation_team_name: getPrimaryTechnicianName(latestInstallation),
+    installation_team_phone: latestInstallation.technician_phone
+  }
+}
+
       }
     } else {
       console.warn('Failed to fetch installation reports:', installationResponse.reason)
@@ -1877,7 +1944,7 @@ const fetchCustomerDetail = async () => {
 
   } catch (err: any) {
     error.value = err.message || 'Failed to fetch customer details'
-    useToast().add({
+    useCustomToast().add({
       title: 'Error',
       description: error.value || 'An error occurred',
       color: 'red'

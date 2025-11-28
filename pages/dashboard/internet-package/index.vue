@@ -3,6 +3,7 @@ import FormAddComponent from "./FormAddComponent.vue";
 import LucideIcon from "@/components/LucideIcon.vue";
 import { internetPackageAdminApi } from "@/api/admin/internet-package";
 import { formatIDR } from "@/helper/currency";
+import { useCustomToast } from "@/composables/useCustomToast";
 // Set page title
 useHead({
     title: "Internet Package Management - CRM System",
@@ -69,14 +70,14 @@ async function deletePacket(id: string) {
     await internetPackageAdminApi()
         .deleteInternetPacket(id)
         .then((response) => {
-            useToast().add({
+            useCustomToast().add({
                 title: "Success Delete Product",
             });
 
             fetchData();
         })
         .catch((error) => {
-            useToast().add({
+            useCustomToast().add({
                 title: "Failed Delete Product",
                 color: "red",
             });

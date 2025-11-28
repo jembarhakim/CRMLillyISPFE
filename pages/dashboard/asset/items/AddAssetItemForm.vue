@@ -63,6 +63,10 @@ const props = defineProps({
         type: String,
         default: ""
       },
+      mac_sticker: {
+        type: String,
+        default: ""
+      },
     })
   },
   assets: {
@@ -79,6 +83,7 @@ watch(
       state.asset_id = props.data.asset_id
       state.mac_address = props.data.mac_address
       state.serial_number = props.data.serial_number || ""
+      state.mac_sticker = props.data.mac_sticker || ""
       state.status = props.data.status
       state.company_id = props.data.company_id || undefined
       state.site = props.data.site || ""
@@ -99,6 +104,7 @@ function clearState() {
   state.asset_id = ""
   state.mac_address = ""
   state.serial_number = ""
+  state.mac_sticker = ""
   state.status = "in_stock"
   state.company_id = undefined
   state.site = ""
@@ -131,8 +137,23 @@ function formatMacAddress(value: string) {
 // Handle MAC address input
 function onMacAddressInput(event: Event) {
   const target = event.target as HTMLInputElement;
-  const formatted = formatMacAddress(target.value);
-  state.mac_address = formatted;
+  // Use nextTick to avoid conflicts with v-model
+  nextTick(() => {
+    const formatted = formatMacAddress(target.value);
+    state.mac_address = formatted;
+    // Auto-copy to MAC sticker field
+    state.mac_sticker = formatted;
+  });
+}
+
+// Handle MAC sticker input
+function onMacStickerInput(event: Event) {
+  const target = event.target as HTMLInputElement;
+  // Use nextTick to avoid conflicts with v-model
+  nextTick(() => {
+    const formatted = formatMacAddress(target.value);
+    state.mac_sticker = formatted;
+  });
 }
 
 async function onSubmit(event: FormSubmitEvent<AssetItemSchema>) {
@@ -140,7 +161,7 @@ async function onSubmit(event: FormSubmitEvent<AssetItemSchema>) {
   
   // Validate MAC address format
   if (!validateMacAddress(state.mac_address)) {
-    useToast().add({
+    useCustomToast().add({
       title: "Invalid MAC address format. Please use format like: 00:11:22:33:44:55 or 00-11-22-33-44-55",
       color: "red"
     })
@@ -152,25 +173,26 @@ async function onSubmit(event: FormSubmitEvent<AssetItemSchema>) {
     ...state,
     company_id: state.company_id && state.company_id.trim() !== '' ? state.company_id : undefined,
     site: state.site && state.site.trim() !== '' ? state.site : undefined,
+    mac_sticker: state.mac_sticker && state.mac_sticker.trim() !== '' ? state.mac_sticker : state.mac_address,
   }
 
   if (props.isEdit) {
     await assetItemAdminApi().editAssetItem(props.data.id, submitData).then((response: any) => {
-      useToast().add({ title: response.message })
+      useCustomToast().add({ title: response.message })
       onSuccess()
     }
     ).catch((err: any) => {
-      useToast().add({ title: err, color: "red" })
+      useCustomToast().add({ title: err, color: "red" })
       onSuccess()
     }
     )
   } else {
     await assetItemAdminApi().createAssetItem(submitData).then((response: any) => {
-      useToast().add({ title: response.message })
+      useCustomToast().add({ title: response.message })
       onSuccess()
     }
     ).catch((err: any) => {
-      useToast().add({ title: err, color: "red" })
+      useCustomToast().add({ title: err, color: "red" })
       onSuccess()
     }
     )
@@ -206,6 +228,15 @@ async function onSubmit(event: FormSubmitEvent<AssetItemSchema>) {
           <UInput v-model="state.serial_number" placeholder="Optional serial number" />
         </UFormGroup>
 
+        <UFormGroup label="MAC Sticker" name="mac_sticker">
+          <UInput
+            v-model="state.mac_sticker"
+            @input="onMacStickerInput"
+            placeholder="40EE152CF2F8 or 40:EE:15:2C:F2:F8"
+            help="Enter MAC sticker (colons will be added automatically)"
+          />
+        </UFormGroup>
+
         <UFormGroup label="Status" name="status">
           <USelect v-model="state.status" :options="assetItemStatus"></USelect>
         </UFormGroup>
@@ -239,4 +270,3 @@ async function onSubmit(event: FormSubmitEvent<AssetItemSchema>) {
     </div>
   </UModal>
 </template>
-

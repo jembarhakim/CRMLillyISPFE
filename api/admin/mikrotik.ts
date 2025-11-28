@@ -115,15 +115,15 @@ export const mikrotikAdminApi = () => {
       return response.json();
     },
 
-    // Get DHCP lease for MAC address
-    getDHCPLease: async (macAddress: string) => {
+    // Get DHCP lease for sticker MAC address
+    getDHCPLease: async (stickerMac: string) => {
       const response = await fetch(`${api}/api/admin/mikrotik/dhcp-lease`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${useCookie("token").value}`,
         },
-        body: JSON.stringify({ mac_address: macAddress }),
+        body: JSON.stringify({ sticker_mac: stickerMac }),
       });
       if (!response.ok) {
         const errorData = await response.json();

@@ -7,6 +7,7 @@ import type {
   UpdateRecurringInvoiceStatusRequest,
 } from "@/api/admin/recurring-invoice";
 import LucideIcon from "@/components/LucideIcon.vue";
+import { useCustomToast } from "@/composables/useCustomToast";
 
 // Set page title
 useHead({
@@ -14,7 +15,7 @@ useHead({
 });
 
 const router = useRouter();
-const toast = useToast();
+const toast = useCustomToast();
 const modal = useModal();
 
 // Data

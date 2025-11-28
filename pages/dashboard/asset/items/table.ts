@@ -16,6 +16,10 @@ export const tableColumns = [
     label: "Serial Number",
   },
   {
+    key: "mac_sticker",
+    label: "MAC Sticker",
+  },
+  {
     key: "status",
     label: "Status",
   },
@@ -36,4 +40,3 @@ export const tableColumns = [
     label: "Action",
   },
 ];
-

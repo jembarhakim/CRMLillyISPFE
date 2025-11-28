@@ -121,22 +121,22 @@ const filterDataByDateRange = (data: any[], dateAccessor: (item: any) => string)
     switch (filterType.value) {
       case 'all-time':
         return true;
-      
+
       case 'monthly':
         if (selectedYear.value === null || selectedMonth.value === null) return false;
-        return itemDate.getFullYear() === selectedYear.value && 
-               itemDate.getMonth() + 1 === selectedMonth.value;
-      
+        return itemDate.getFullYear() === selectedYear.value &&
+          itemDate.getMonth() + 1 === selectedMonth.value;
+
       case 'yearly':
         if (selectedYear.value === null) return false;
         return itemDate.getFullYear() === selectedYear.value;
-      
+
       case 'custom':
         if (!customDateFrom.value || !customDateTo.value) return false;
         const fromDate = new Date(customDateFrom.value);
         const toDate = new Date(customDateTo.value);
         return itemDate >= fromDate && itemDate <= toDate;
-      
+
       case 'range':
         // Legacy day-based range
         const days = Number(selectedDateRange.value || 0);
@@ -144,7 +144,7 @@ const filterDataByDateRange = (data: any[], dateAccessor: (item: any) => string)
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - days);
         return itemDate >= cutoffDate;
-      
+
       default:
         return true;
     }
@@ -200,11 +200,11 @@ const filteredExpensesChart = computed(() => {
 
 const filteredUnpaidCustomersChart = computed(() => {
   if (!unpaidCustomersChart.value.unpaid_customers_chart) return { unpaid: [], pending: [] };
-  
+
   const chartData = unpaidCustomersChart.value.unpaid_customers_chart;
   const unpaidData = chartData.unpaid || [];
   const pendingData = chartData.pending || [];
-  
+
   const filterData = (data: any[]) => {
     if (useYearRange.value && yearStart.value !== null && yearEnd.value !== null) {
       const start = Math.min(yearStart.value, yearEnd.value);
@@ -216,7 +216,7 @@ const filteredUnpaidCustomersChart = computed(() => {
     }
     return filterDataByDateRange(data, (item: any) => item.date);
   };
-  
+
   return {
     unpaid: filterData(unpaidData),
     pending: filterData(pendingData)
@@ -228,159 +228,160 @@ const customerGrowthChartOption = computed(() => {
   if (!filteredCustomerGrowth.value || filteredCustomerGrowth.value.length === 0) {
     return undefined;
   }
-  
+
   return {
-  animation: true,
-  animationDuration: 750,
-  animationEasing: 'cubicOut' as const,
-  title: { 
-    text: 'Customer Growth', 
-    textStyle: { fontSize: 12 },
-    left: 'center'
-  },
-  axisPointer: { 
-    type: 'cross',
-    crossStyle: {
-      color: '#999',
-      width: 1,
-      type: 'dashed'
+    animation: true,
+    animationDuration: 750,
+    animationEasing: 'cubicOut' as const,
+    title: {
+      text: 'Customer Growth',
+      textStyle: { fontSize: 12 },
+      left: 'center'
     },
-    lineStyle: {
-      color: '#999',
-      width: 1,
-      type: 'dashed'
+    axisPointer: {
+      type: 'cross',
+      crossStyle: {
+        color: '#999',
+        width: 1,
+        type: 'dashed'
+      },
+      lineStyle: {
+        color: '#999',
+        width: 1,
+        type: 'dashed'
+      },
+      label: {
+        backgroundColor: '#777',
+        color: '#fff',
+        fontSize: 10
+      }
     },
-    label: {
-      backgroundColor: '#777',
-      color: '#fff',
-      fontSize: 10
-    }
-  },
-  tooltip: { 
-    trigger: 'axis',
-    formatter: '{b}: {c} new customers'
-  },
-  toolbox: {
-    show: true,
-    orient: 'vertical',
-    right: 10,
-    top: 10,
-    feature: {
-      dataZoom: { 
+    tooltip: {
+      trigger: 'axis',
+      formatter: '{b}: {c} new customers'
+    },
+    toolbox: {
+      show: true,
+      orient: 'vertical',
+      right: 10,
+      top: 10,
+      feature: {
+        dataZoom: {
+          yAxisIndex: 'none',
+          show: true,
+          title: {
+            zoom: 'Area Zoom',
+            back: 'Restore Zoom'
+          }
+        },
+        restore: {
+          show: true,
+          title: 'Reset Zoom'
+        },
+        saveAsImage: {
+          show: true,
+          title: 'Save as Image',
+          type: 'png',
+          pixelRatio: 2
+        },
+        brush: {
+          show: true,
+          type: ['lineX', 'clear'],
+          title: {
+            lineX: 'Brush Selection',
+            clear: 'Clear Selection'
+          }
+        }
+      }
+    },
+    xAxis: {
+      data: filteredCustomerGrowth.value.map((item: any) => item.date),
+      type: 'category',
+      axisLabel: {
+        rotate: 45,
+        fontSize: 8,
+        interval: 'auto'
+      }
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { fontSize: 8 }
+    },
+    series: [{
+      name: 'New Customers',
+      type: 'line',
+      data: filteredCustomerGrowth.value.map((item: any) => item.count),
+      smooth: true,
+      sampling: 'lttb',
+      itemStyle: { color: '#3B82F6' },
+      lineStyle: { color: '#3B82F6', width: 2 },
+      emphasis: {
+        focus: 'series',
+        blurScope: 'coordinateSystem'
+      }
+    }],
+    dataZoom: [
+      {
+        type: 'inside',
+        xAxisIndex: [0],
         yAxisIndex: 'none',
-        show: true,
-        title: {
-          zoom: 'Area Zoom',
-          back: 'Restore Zoom'
-        }
+        throttle: 100,
+        zoomOnMouseWheel: true,
+        moveOnMouseMove: true,
+        moveOnMouseWheel: false,
+        preventDefaultMouseMove: false
       },
-      restore: {
-        show: true,
-        title: 'Reset Zoom'
-      },
-      saveAsImage: {
-        show: true,
-        title: 'Save as Image',
-        type: 'png',
-        pixelRatio: 2
-      },
-      brush: {
-        show: true,
-        type: ['lineX', 'clear'],
-        title: {
-          lineX: 'Brush Selection',
-          clear: 'Clear Selection'
+      {
+        type: 'slider',
+        xAxisIndex: [0],
+        height: 25,
+        bottom: 10,
+        showDetail: true,
+        showDataShadow: true,
+        realtime: true,
+        filterMode: 'filter',
+        handleStyle: {
+          color: '#3B82F6'
+        },
+        dataBackground: {
+          lineStyle: {
+            color: '#3B82F6',
+            opacity: 0.3
+          },
+          areaStyle: {
+            color: '#3B82F6',
+            opacity: 0.1
+          }
+        },
+        selectedDataBackground: {
+          lineStyle: {
+            color: '#3B82F6',
+            opacity: 0.8
+          },
+          areaStyle: {
+            color: '#3B82F6',
+            opacity: 0.3
+          }
         }
       }
+    ],
+    grid: {
+      left: '15%',
+      right: '10%',
+      bottom: '25%',
+      top: '20%',
+      containLabel: true
     }
-  },
-  xAxis: { 
-    data: filteredCustomerGrowth.value.map((item: any) => item.date),
-    type: 'category',
-    axisLabel: { 
-      rotate: 45, 
-      fontSize: 8,
-      interval: 'auto'
-    }
-  },
-  yAxis: { 
-    type: 'value',
-    axisLabel: { fontSize: 8 }
-  },
-  series: [{
-    name: 'New Customers',
-    type: 'line',
-    data: filteredCustomerGrowth.value.map((item: any) => item.count),
-    smooth: true,
-    sampling: 'lttb',
-    itemStyle: { color: '#3B82F6' },
-    lineStyle: { color: '#3B82F6', width: 2 },
-    emphasis: {
-      focus: 'series',
-      blurScope: 'coordinateSystem'
-    }
-  }],
-  dataZoom: [
-    { 
-      type: 'inside',
-      xAxisIndex: [0],
-      yAxisIndex: 'none',
-      throttle: 100,
-      zoomOnMouseWheel: true,
-      moveOnMouseMove: true,
-      moveOnMouseWheel: false,
-      preventDefaultMouseMove: false
-    },
-    { 
-      type: 'slider', 
-      xAxisIndex: [0],
-      height: 25, 
-      bottom: 10,
-      showDetail: true,
-      showDataShadow: true,
-      realtime: true,
-      filterMode: 'filter',
-      handleStyle: {
-        color: '#3B82F6'
-      },
-      dataBackground: {
-        lineStyle: {
-          color: '#3B82F6',
-          opacity: 0.3
-        },
-        areaStyle: {
-          color: '#3B82F6',
-          opacity: 0.1
-        }
-      },
-      selectedDataBackground: {
-        lineStyle: {
-          color: '#3B82F6',
-          opacity: 0.8
-        },
-        areaStyle: {
-          color: '#3B82F6',
-          opacity: 0.3
-        }
-      }
-    }
-  ],
-  grid: { 
-    left: '15%', 
-    right: '10%', 
-    bottom: '25%', 
-    top: '20%',
-    containLabel: true
   }
-}});
+});
 
 const expensesChartOption = computed(() => ({
-  title: { 
-    text: 'Daily Expenses', 
+  title: {
+    text: 'Daily Expenses',
     textStyle: { fontSize: 12 },
     left: 'center'
   },
-  axisPointer: { 
+  axisPointer: {
     type: 'cross',
     crossStyle: {
       color: '#999',
@@ -398,7 +399,7 @@ const expensesChartOption = computed(() => ({
       fontSize: 10
     }
   },
-  tooltip: { 
+  tooltip: {
     trigger: 'axis',
     formatter: (params: any) => {
       const p = Array.isArray(params) ? params[0] : params;
@@ -411,7 +412,7 @@ const expensesChartOption = computed(() => ({
     right: 10,
     top: 10,
     feature: {
-      dataZoom: { 
+      dataZoom: {
         yAxisIndex: 'none',
         show: true,
         title: {
@@ -439,18 +440,18 @@ const expensesChartOption = computed(() => ({
       }
     }
   },
-  xAxis: { 
+  xAxis: {
     data: filteredExpensesChart.value.map((item: any) => item.date),
     type: 'category',
-    axisLabel: { 
-      rotate: 45, 
+    axisLabel: {
+      rotate: 45,
       fontSize: 8,
       interval: 'auto'
     }
   },
-  yAxis: { 
+  yAxis: {
     type: 'value',
-    axisLabel: { 
+    axisLabel: {
       fontSize: 8,
       formatter: (value: number) => formatIDR(Number(value) || 0)
     }
@@ -469,7 +470,7 @@ const expensesChartOption = computed(() => ({
     }
   }],
   dataZoom: [
-    { 
+    {
       type: 'inside',
       xAxisIndex: [0],
       yAxisIndex: 'none',
@@ -479,10 +480,10 @@ const expensesChartOption = computed(() => ({
       moveOnMouseWheel: false,
       preventDefaultMouseMove: false
     },
-    { 
-      type: 'slider', 
+    {
+      type: 'slider',
       xAxisIndex: [0],
-      height: 25, 
+      height: 25,
       bottom: 10,
       showDetail: true,
       showDataShadow: true,
@@ -513,22 +514,22 @@ const expensesChartOption = computed(() => ({
       }
     }
   ],
-  grid: { 
-    left: '15%', 
-    right: '10%', 
-    bottom: '25%', 
+  grid: {
+    left: '15%',
+    right: '10%',
+    bottom: '25%',
     top: '20%',
     containLabel: true
   }
 }));
 
 const revenueChartOption = computed(() => ({
-  title: { 
-    text: 'Daily Revenue', 
+  title: {
+    text: 'Daily Revenue',
     textStyle: { fontSize: 12 },
     left: 'center'
   },
-  axisPointer: { 
+  axisPointer: {
     type: 'cross',
     crossStyle: {
       color: '#999',
@@ -546,7 +547,7 @@ const revenueChartOption = computed(() => ({
       fontSize: 10
     }
   },
-  tooltip: { 
+  tooltip: {
     trigger: 'axis',
     formatter: (params: any) => {
       const p = Array.isArray(params) ? params[0] : params;
@@ -559,7 +560,7 @@ const revenueChartOption = computed(() => ({
     right: 10,
     top: 10,
     feature: {
-      dataZoom: { 
+      dataZoom: {
         yAxisIndex: 'none',
         show: true,
         title: {
@@ -587,18 +588,18 @@ const revenueChartOption = computed(() => ({
       }
     }
   },
-  xAxis: { 
+  xAxis: {
     data: filteredRevenueChart.value.map((item: any) => item.date),
     type: 'category',
-    axisLabel: { 
-      rotate: 45, 
+    axisLabel: {
+      rotate: 45,
       fontSize: 8,
       interval: 'auto'
     }
   },
-  yAxis: { 
+  yAxis: {
     type: 'value',
-    axisLabel: { 
+    axisLabel: {
       fontSize: 8,
       formatter: (value: number) => formatIDR(Number(value) || 0)
     }
@@ -617,7 +618,7 @@ const revenueChartOption = computed(() => ({
     }
   }],
   dataZoom: [
-    { 
+    {
       type: 'inside',
       xAxisIndex: [0],
       yAxisIndex: 'none',
@@ -627,10 +628,10 @@ const revenueChartOption = computed(() => ({
       moveOnMouseWheel: false,
       preventDefaultMouseMove: false
     },
-    { 
-      type: 'slider', 
+    {
+      type: 'slider',
       xAxisIndex: [0],
-      height: 25, 
+      height: 25,
       bottom: 10,
       showDetail: true,
       showDataShadow: true,
@@ -661,10 +662,10 @@ const revenueChartOption = computed(() => ({
       }
     }
   ],
-  grid: { 
-    left: '15%', 
-    right: '10%', 
-    bottom: '25%', 
+  grid: {
+    left: '15%',
+    right: '10%',
+    bottom: '25%',
     top: '20%',
     containLabel: true
   }
@@ -673,55 +674,55 @@ const revenueChartOption = computed(() => ({
 const unpaidCustomersChartOption = computed(() => {
   const unpaidData = filteredUnpaidCustomersChart.value.unpaid || [];
   const pendingData = filteredUnpaidCustomersChart.value.pending || [];
-  
+
   // Get all unique dates from both series
   const allDates = new Set([...unpaidData.map((item: any) => item.date), ...pendingData.map((item: any) => item.date)]);
   const sortedDates = Array.from(allDates).sort();
-  
+
   // Create maps for quick lookup
   const unpaidMap = new Map(unpaidData.map((item: any) => [item.date, item.count]));
   const pendingMap = new Map(pendingData.map((item: any) => [item.date, item.count]));
-  
+
   // Determine if we have sparse data (few data points)
   const hasSparseData = sortedDates.length <= 3;
   // Disable smooth and sampling for sparse data to avoid weird curves
   const useSmooth = !hasSparseData && sortedDates.length > 5;
-  
+
   return {
-    title: { 
+    title: {
       text: 'Unpaid & Pending Customers',
       subtext: hasSparseData ? `Showing ${sortedDates.length} data point${sortedDates.length > 1 ? 's' : ''} in selected period` : undefined,
       textStyle: { fontSize: 12 },
       subtextStyle: { fontSize: 10, color: '#666' },
       left: 'center'
     },
-    axisPointer: { 
-    type: 'cross',
-    crossStyle: {
-      color: '#999',
-      width: 1,
-      type: 'dashed'
+    axisPointer: {
+      type: 'cross',
+      crossStyle: {
+        color: '#999',
+        width: 1,
+        type: 'dashed'
+      },
+      lineStyle: {
+        color: '#999',
+        width: 1,
+        type: 'dashed'
+      },
+      label: {
+        backgroundColor: '#777',
+        color: '#fff',
+        fontSize: 10
+      }
     },
-    lineStyle: {
-      color: '#999',
-      width: 1,
-      type: 'dashed'
-    },
-    label: {
-      backgroundColor: '#777',
-      color: '#fff',
-      fontSize: 10
-    }
-  },
-    tooltip: { 
+    tooltip: {
       trigger: 'axis',
-      formatter: function(params: any) {
+      formatter: function (params: any) {
         const date = new Date(params[0].name);
-        const formattedDate = date.toLocaleDateString('en-US', { 
+        const formattedDate = date.toLocaleDateString('en-US', {
           weekday: 'short',
-          month: 'short', 
-          day: 'numeric', 
-          year: 'numeric' 
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
         });
         let result = `<strong>${formattedDate}</strong><br/>`;
         params.forEach((param: any) => {
@@ -741,7 +742,7 @@ const unpaidCustomersChartOption = computed(() => {
     },
     toolbox: {
       feature: {
-        dataZoom: { 
+        dataZoom: {
           yAxisIndex: 'none',
           title: {
             zoom: 'Area Zoom',
@@ -769,11 +770,11 @@ const unpaidCustomersChartOption = computed(() => {
       toolbox: ['lineX', 'clear'],
       xAxisIndex: 0
     },
-    xAxis: { 
+    xAxis: {
       data: sortedDates,
       type: 'category',
-      axisLabel: { 
-        rotate: 45, 
+      axisLabel: {
+        rotate: 45,
         fontSize: 8,
         interval: hasSparseData ? 0 : 'auto', // Show all labels if sparse data
         formatter: (value: string) => {
@@ -784,9 +785,9 @@ const unpaidCustomersChartOption = computed(() => {
       },
       boundaryGap: false // Better for line charts
     },
-    yAxis: { 
+    yAxis: {
       type: 'value',
-      axisLabel: { 
+      axisLabel: {
         fontSize: 8,
         formatter: (value: number) => {
           // Format numbers properly
@@ -830,17 +831,17 @@ const unpaidCustomersChartOption = computed(() => {
       }
     ],
     dataZoom: [
-      { 
-        type: 'inside', 
+      {
+        type: 'inside',
         throttle: 30,
         zoomOnMouseWheel: true,
         moveOnMouseMove: true,
         moveOnMouseWheel: false,
         preventDefaultMouseMove: true
       },
-      { 
-        type: 'slider', 
-        height: 20, 
+      {
+        type: 'slider',
+        height: 20,
         bottom: 0,
         showDetail: true,
         showDataShadow: true,
@@ -848,10 +849,10 @@ const unpaidCustomersChartOption = computed(() => {
         filterMode: 'filter'
       }
     ],
-    grid: { 
-      left: '15%', 
-      right: '10%', 
-      bottom: '22%', 
+    grid: {
+      left: '15%',
+      right: '10%',
+      bottom: '22%',
       top: '20%',
       containLabel: true
     }
@@ -1236,7 +1237,7 @@ const getRecentTickets = async (filterParams: any = {}) => {
       const map: Record<string, string> = {};
       for (const t of arr) if (t?.id) map[t.id] = t.name || t.id;
       troubleTypeMap.value = map;
-    } catch {}
+    } catch { }
 
     const response = await ticketsApi().list();
     recentTickets.value = (response as any)?.data || response || [];
@@ -1273,7 +1274,7 @@ function editTicketAccumulation(ticket: any) {
 // Handle modal save
 async function saveAccumulation() {
   if (!selectedTicket.value) return
-  
+
   const accumulation = parseInt(newAccumulationValue.value)
   if (isNaN(accumulation) || accumulation < 1) {
     notification.error('Invalid Input', 'Please enter a valid number greater than 0', 3000)
@@ -1309,7 +1310,7 @@ function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && showAccumulationModal.value) {
     closeAccumulationModal()
   }
-  
+
   // Chart zoom shortcuts (similar to TradingView)
   if (event.ctrlKey || event.metaKey) {
     switch (event.key) {
@@ -1359,16 +1360,16 @@ async function applyDateFilter() {
     yearStart.value = null;
     yearEnd.value = null;
   }
-  
+
   // Build params based on filter type
   let params: any = {};
-  
+
   switch (filterType.value) {
     case 'monthly':
       if (selectedYear.value && selectedMonth.value) {
-        params = { 
-          year: selectedYear.value, 
-          month: selectedMonth.value 
+        params = {
+          year: selectedYear.value,
+          month: selectedMonth.value
         };
       }
       break;
@@ -1379,9 +1380,9 @@ async function applyDateFilter() {
       break;
     case 'custom':
       if (customDateFrom.value && customDateTo.value) {
-        params = { 
-          date_from: customDateFrom.value, 
-          date_to: customDateTo.value 
+        params = {
+          date_from: customDateFrom.value,
+          date_to: customDateTo.value
         };
       }
       break;
@@ -1393,22 +1394,22 @@ async function applyDateFilter() {
       params = { days: 0 }; // All time
       break;
   }
-  
+
   // Override with year range if active
   if (useYearRange.value && yearStart.value !== null && yearEnd.value !== null) {
-    params = { 
-      year_start: Math.min(yearStart.value, yearEnd.value), 
-      year_end: Math.max(yearStart.value, yearEnd.value) 
+    params = {
+      year_start: Math.min(yearStart.value, yearEnd.value),
+      year_end: Math.max(yearStart.value, yearEnd.value)
     };
   }
-  
+
   try {
     // Refresh dashboard cards with filter parameters
     await getNewDashboardData(params)
-    
+
     // Refresh recent tickets with filter parameters
     await getRecentTickets(params)
-    
+
     // Refresh charts with filter parameters
     const growthResponse = await dashboardAdminApi().getCustomerGrowth(params)
     customerGrowth.value = growthResponse.data
@@ -1445,7 +1446,7 @@ function resetFilters() {
   useYearRange.value = false
   yearStart.value = null
   yearEnd.value = null
-  
+
   // Refresh data with default settings
   getNewDashboardData()
   getRecentTickets()
@@ -1464,7 +1465,7 @@ onMounted(async () => {
   await getNewDashboardData()
   await getRecentTickets()
   hide()
-  
+
   // Add keyboard event listener
   document.addEventListener('keydown', handleKeydown)
 })
@@ -1511,7 +1512,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
           Filters apply to all dashboard cards and charts
         </div>
       </div>
-      
+
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <!-- Filter Type Selection -->
         <div class="flex flex-col gap-2">
@@ -1532,7 +1533,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
           <select v-model.number="selectedYear" @change="applyDateFilter"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">Select Year</option>
-            <option v-for="y in availableYears" :key="'my'+y" :value="y">{{ y }}</option>
+            <option v-for="y in availableYears" :key="'my' + y" :value="y">{{ y }}</option>
           </select>
         </div>
 
@@ -1541,7 +1542,8 @@ watch([useYearRange, yearStart, yearEnd], async () => {
           <select v-model.number="selectedMonth" @change="applyDateFilter"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">Select Month</option>
-            <option v-for="month in availableMonths" :key="'mm'+month.value" :value="month.value">{{ month.label }}</option>
+            <option v-for="month in availableMonths" :key="'mm' + month.value" :value="month.value">{{ month.label }}
+            </option>
           </select>
         </div>
 
@@ -1551,7 +1553,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
           <select v-model.number="selectedYear" @change="applyDateFilter"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">Select Year</option>
-            <option v-for="y in availableYears" :key="'yy'+y" :value="y">{{ y }}</option>
+            <option v-for="y in availableYears" :key="'yy' + y" :value="y">{{ y }}</option>
           </select>
         </div>
 
@@ -1587,7 +1589,8 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       <!-- Advanced Year Range Toggle -->
       <div class="flex items-center gap-3 pt-2 border-t border-gray-200">
         <label class="text-sm font-medium text-gray-700">Advanced Year Range:</label>
-        <input type="checkbox" v-model="useYearRange" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" title="Filter by start/end year" />
+        <input type="checkbox" v-model="useYearRange"
+          class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" title="Filter by start/end year" />
         <span class="text-sm text-gray-500">Override other filters with year range</span>
       </div>
 
@@ -1595,18 +1598,18 @@ watch([useYearRange, yearStart, yearEnd], async () => {
       <div v-if="useYearRange" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-200">
         <div class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">From Year</label>
-          <select v-model.number="yearStart" @change="applyDateFilter" 
+          <select v-model.number="yearStart" @change="applyDateFilter"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">-</option>
-            <option v-for="y in availableYears" :key="'ys'+y" :value="y">{{ y }}</option>
+            <option v-for="y in availableYears" :key="'ys' + y" :value="y">{{ y }}</option>
           </select>
         </div>
         <div class="flex flex-col gap-2">
           <label class="text-sm font-medium text-gray-700">To Year</label>
-          <select v-model.number="yearEnd" @change="applyDateFilter" 
+          <select v-model.number="yearEnd" @change="applyDateFilter"
             class="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option :value="null">-</option>
-            <option v-for="y in availableYears" :key="'ye'+y" :value="y">{{ y }}</option>
+            <option v-for="y in availableYears" :key="'ye' + y" :value="y">{{ y }}</option>
           </select>
         </div>
       </div>
@@ -1616,7 +1619,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
         <div class="text-sm text-gray-600">
           <span class="font-medium">Active Filter:</span>
           <span v-if="filterType === 'monthly' && selectedYear && selectedMonth" class="text-blue-600">
-            {{ availableMonths.find(m => m.value === selectedMonth)?.label }} {{ selectedYear }}
+            {{availableMonths.find(m => m.value === selectedMonth)?.label}} {{ selectedYear }}
           </span>
           <span v-else-if="filterType === 'yearly' && selectedYear" class="text-blue-600">
             {{ selectedYear }}
@@ -1634,7 +1637,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
             All Time
           </span>
         </div>
-        <UButton label="Refresh"  color="blue" variant="soft" size="sm" @click="refreshWithCurrentFilters"
+        <UButton label="Refresh" color="blue" variant="soft" size="sm" @click="refreshWithCurrentFilters"
           title="Refresh data with current filter settings">
           <template #leading>
             <LucideIcon name="refresh-cw" :size="16" />
@@ -1820,8 +1823,8 @@ watch([useYearRange, yearStart, yearEnd], async () => {
   <div class="p-6 bg-white border border-slate-200 rounded-2xl shadow-lg mb-10">
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-xl font-semibold text-slate-800">Recent Trouble Tickets</h1>
-        <UButton icon="refresh-cw" color="gray" variant="soft" size="sm" @click="refreshWithCurrentFilters"
-          title="Refresh Dashboard Data" />
+      <UButton icon="refresh-cw" color="gray" variant="soft" size="sm" @click="refreshWithCurrentFilters"
+        title="Refresh Dashboard Data" />
     </div>
     <div v-if="recentTickets.length > 0" class="overflow-x-auto">
       <table class="min-w-full text-sm">
@@ -1839,7 +1842,8 @@ watch([useYearRange, yearStart, yearEnd], async () => {
           <tr v-for="ticket in recentTickets.slice(0, 10)" :key="ticket.id" class="hover:bg-gray-50">
             <td class="px-4 py-3 font-medium text-gray-900">{{ ticket.id }}</td>
             <td class="px-4 py-3 text-gray-900 max-w-xs truncate">{{ ticket.title }}</td>
-            <td class="px-4 py-3 text-gray-700 capitalize">{{ troubleTypeMap[ticket.type] || ticket.type || 'Other' }}</td>
+            <td class="px-4 py-3 text-gray-700 capitalize">{{ troubleTypeMap[ticket.type] || ticket.type || 'Other' }}
+            </td>
             <td class="px-4 py-3">
               <span :class="{
                 'px-2 py-1 rounded-full text-xs font-medium': true,
@@ -1888,13 +1892,14 @@ watch([useYearRange, yearStart, yearEnd], async () => {
         Charts automatically update based on dashboard filters above
       </div>
     </div>
-    
+
     <!-- Chart Zoom Instructions -->
     <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
       <div class="flex items-start gap-3">
         <div class="flex-shrink-0">
           <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
         <div class="flex-1">
@@ -1921,7 +1926,8 @@ watch([useYearRange, yearStart, yearEnd], async () => {
             Customer Growth
           </h2>
         </div>
-        <div v-if="filteredCustomerGrowth && filteredCustomerGrowth.length > 0" class="h-80 w-full relative" style="overflow: visible; padding-right: 60px;">
+        <div v-if="filteredCustomerGrowth && filteredCustomerGrowth.length > 0" class="h-80 w-full relative"
+          style="overflow: visible; padding-right: 60px;">
           <VChart :option="customerGrowthChartOption" autoresize style="height: 100%; width: 100%;" />
           <div class="absolute top-2 left-2 text-xs text-gray-500 bg-white bg-opacity-75 px-2 py-1 rounded z-10">
             Hover to zoom • Drag to pan • Wheel to zoom
@@ -1939,7 +1945,8 @@ watch([useYearRange, yearStart, yearEnd], async () => {
             Revenue Chart
           </h2>
         </div>
-        <div v-if="filteredRevenueChart && filteredRevenueChart.length > 0" class="h-80 w-full relative" style="overflow: visible; padding-right: 60px;">
+        <div v-if="filteredRevenueChart && filteredRevenueChart.length > 0" class="h-80 w-full relative"
+          style="overflow: visible; padding-right: 60px;">
           <VChart :option="revenueChartOption" autoresize style="height: 100%; width: 100%;" />
           <div class="absolute top-2 left-2 text-xs text-gray-500 bg-white bg-opacity-75 px-2 py-1 rounded z-10">
             Hover to zoom • Drag to pan • Wheel to zoom
@@ -1957,7 +1964,8 @@ watch([useYearRange, yearStart, yearEnd], async () => {
             Expenses Chart
           </h2>
         </div>
-        <div v-if="filteredExpensesChart && filteredExpensesChart.length > 0" class="h-80 w-full relative" style="overflow: visible; padding-right: 60px;">
+        <div v-if="filteredExpensesChart && filteredExpensesChart.length > 0" class="h-80 w-full relative"
+          style="overflow: visible; padding-right: 60px;">
           <VChart :option="expensesChartOption" autoresize style="height: 100%; width: 100%;" />
           <div class="absolute top-2 left-2 text-xs text-gray-500 bg-white bg-opacity-75 px-2 py-1 rounded z-10">
             Hover to zoom • Drag to pan • Wheel to zoom
@@ -1975,7 +1983,9 @@ watch([useYearRange, yearStart, yearEnd], async () => {
             Unpaid & Pending Customers
           </h2>
         </div>
-        <div v-if="(filteredUnpaidCustomersChart.unpaid?.length > 0) || (filteredUnpaidCustomersChart.pending?.length > 0)" class="h-80 w-full relative" style="overflow: visible; padding-right: 60px;">
+        <div
+          v-if="(filteredUnpaidCustomersChart.unpaid?.length > 0) || (filteredUnpaidCustomersChart.pending?.length > 0)"
+          class="h-80 w-full relative" style="overflow: visible; padding-right: 60px;">
           <VChart :option="unpaidCustomersChartOption" autoresize style="height: 100%; width: 100%;" />
           <div class="absolute top-2 left-2 text-xs text-gray-500 bg-white bg-opacity-75 px-2 py-1 rounded z-10">
             Hover to zoom • Drag to pan • Wheel to zoom
@@ -2001,10 +2011,12 @@ watch([useYearRange, yearStart, yearEnd], async () => {
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
                 <p class="font-medium text-gray-900">{{ customer.customer_name || 'Unknown Customer' }}</p>
-                <span v-if="Number(customer.total_paid) <= 0" class="px-2 py-1 text-xs rounded-full font-medium bg-red-100 text-red-800">
+                <span v-if="customer.status === 'unpaid'"
+                  class="px-2 py-1 text-xs rounded-full font-medium bg-red-100 text-red-800">
                   UNPAID
                 </span>
-                <span v-else class="px-2 py-1 text-xs rounded-full font-medium bg-orange-100 text-orange-800">
+                <span v-else-if="customer.status === 'pending'"
+                  class="px-2 py-1 text-xs rounded-full font-medium bg-orange-100 text-orange-800">
                   PENDING
                 </span>
               </div>
@@ -2028,7 +2040,8 @@ watch([useYearRange, yearStart, yearEnd], async () => {
   </div>
 
   <!-- Accumulation Edit Modal -->
-  <div v-if="showAccumulationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click="closeAccumulationModal">
+  <div v-if="showAccumulationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    @click="closeAccumulationModal">
     <div class="bg-white rounded-lg p-6 w-96 max-w-md mx-4" @click.stop>
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-lg font-semibold text-gray-800">Edit Accumulation</h3>
@@ -2038,7 +2051,7 @@ watch([useYearRange, yearStart, yearEnd], async () => {
           </svg>
         </button>
       </div>
-      
+
       <div v-if="selectedTicket" class="mb-4">
         <p class="text-sm text-gray-600 mb-2">
           <strong>Ticket #{{ selectedTicket.id }}:</strong> {{ selectedTicket.title }}
@@ -2046,31 +2059,22 @@ watch([useYearRange, yearStart, yearEnd], async () => {
         <p class="text-sm text-gray-500 mb-4">
           Current: {{ formatAccumulation(selectedTicket.accumulation || 1) }}
         </p>
-        
+
         <label class="block text-sm font-medium text-gray-700 mb-2">
           Enter new accumulation:
         </label>
-        <input 
-          v-model="newAccumulationValue" 
-          type="number" 
-          min="1"
+        <input v-model="newAccumulationValue" type="number" min="1"
           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Enter number of customers"
-          @keyup.enter="saveAccumulation"
-        />
+          placeholder="Enter number of customers" @keyup.enter="saveAccumulation" />
       </div>
-      
+
       <div class="flex justify-end space-x-3">
-        <button 
-          @click="closeAccumulationModal"
-          class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-        >
+        <button @click="closeAccumulationModal"
+          class="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors">
           Cancel
         </button>
-        <button 
-          @click="saveAccumulation"
-          class="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
-        >
+        <button @click="saveAccumulation"
+          class="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors">
           Save
         </button>
       </div>

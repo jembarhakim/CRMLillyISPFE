@@ -301,6 +301,7 @@ import type {
   InstallationAssetReportResponse 
 } from "@/types/requests/installation-report";
 import { useNavigationContext } from "@/composables/useNavigationContext";
+import { useCustomToast } from "@/composables/useCustomToast";
 
 // Apply auth middleware
 definePageMeta({
@@ -364,7 +365,7 @@ async function loadCustomerSummaries() {
     customerSummaries.value = response.data || [];
   } catch (error) {
     console.error("Failed to load customer summaries:", error);
-    useToast().add({
+    useCustomToast().add({
       title: "Error",
       description: "Failed to load customer summaries",
       color: "red",
@@ -378,7 +379,7 @@ async function loadTechnicianReports() {
     technicianReports.value = response.data || [];
   } catch (error) {
     console.error("Failed to load technician reports:", error);
-    useToast().add({
+    useCustomToast().add({
       title: "Error",
       description: "Failed to load technician reports",
       color: "red",
@@ -394,7 +395,7 @@ async function loadCompleteInstallationReports() {
     console.log("Complete installation reports loaded:", completeInstallationReports.value.length);
   } catch (error) {
     console.error("Failed to load complete installation reports:", error);
-    useToast().add({
+    useCustomToast().add({
       title: "Error",
       description: "Failed to load complete installation reports",
       color: "red",
@@ -406,7 +407,7 @@ async function loadCompleteInstallationReports() {
 
 async function loadAssetReport() {
   if (!searchInstallationId.value.trim()) {
-    useToast().add({
+    useCustomToast().add({
       title: "Error",
       description: "Please enter an installation ID",
       color: "red",
@@ -420,7 +421,7 @@ async function loadAssetReport() {
     assetReport.value = response.data;
   } catch (error) {
     console.error("Failed to load asset report:", error);
-    useToast().add({
+    useCustomToast().add({
       title: "Error",
       description: "Failed to load asset report",
       color: "red",
