@@ -8,6 +8,7 @@ import { WhatsappApi } from '@/api/admin/wa'
 import { userManagementAdminApi } from '@/api/admin/user-management'
 import { broadcastAdminApi } from '@/api/admin/broadcast'
 import LucideIcon from '@/components/LucideIcon.vue'
+import { useCustomToast } from '@/composables/useCustomToast'
 
 // Props: relatedCustomers must be passed from parent component
 const props = defineProps<{
