@@ -9,16 +9,25 @@ import { mikrotikAdminApi } from "@/api/admin/mikrotik";
 import { uploadFileAdminApi } from "@/api/admin/file-upload";
 import { useNotificationStore } from "@/stores/notification";
 import { useAuthStore } from "@/stores/auth";
-import { computed, nextTick, watch, reactive, ref, onMounted, onUnmounted } from "vue";
+import {
+  computed,
+  nextTick,
+  watch,
+  reactive,
+  ref,
+  onMounted,
+  onUnmounted,
+} from "vue";
 import { useApiHost } from "@/composables/useApiHost";
-import LucideIcon from '@/components/LucideIcon.vue';
+import LucideIcon from "@/components/LucideIcon.vue";
 import { useCustomToast } from "@/composables/useCustomToast";
+import { recurringInvoiceAdminApi } from "@/api/admin/recurring-invoice";
 
 const notification = useNotificationStore();
 const authStore = useAuthStore();
 
 // Add debugging for component initialization
-console.log('[FormCustomerInstallation] Component initializing...');
+console.log("[FormCustomerInstallation] Component initializing...");
 
 const props = defineProps({
   isEdit: {
@@ -46,17 +55,15 @@ const emit = defineEmits([
   "success",
   "close",
   "update:modelValue",
-  "afterLeave"
+  "afterLeave",
 ]);
 
 // Add debugging for props
-console.log('[FormCustomerInstallation] Props received:', {
+console.log("[FormCustomerInstallation] Props received:", {
   isEdit: props.isEdit,
   data: props.data,
-  modelValue: props.modelValue
+  modelValue: props.modelValue,
 });
-
-
 
 const schema = object({
   customer_id: string().required("Customer is required"),
@@ -65,8 +72,8 @@ const schema = object({
   cable_type: string().required("Cable type is required"),
   cable_length: string()
     .required("Cable length is required")
-    .test('is-positive', 'Cable length must be greater than 0', (value) => {
-      const num = parseFloat(value || '0');
+    .test("is-positive", "Cable length must be greater than 0", (value) => {
+      const num = parseFloat(value || "0");
       return num > 0;
     }),
 });
@@ -92,13 +99,14 @@ const state = reactive({
   // Multiple Technicians with Roles
   technicians: [] as Array<{
     technician_id: string;
-    role: 'senior' | 'junior' | 'helper';
+    role: "senior" | "junior" | "helper";
     is_primary: boolean;
     notes: string;
   }>,
 
   // MikroTik Provisioning Fields
   mac_address: "",
+  mac_sticker: "",
   max_limit: "", // e.g., "10M/10M"
   auto_provision: false,
   dry_run: false,
@@ -147,6 +155,11 @@ const state = reactive({
   showTechnicianModal: false,
   // Local storage for files before upload
   technician_photo_files: [] as File[], // Stores local files before upload
+
+  // DHCP MAC handling
+  pendingMacUpdate: null as
+    | { mac: string; shifted_mac?: string; sticker_mac?: string | null }
+    | null,
 });
 
 // Create a ref for the file input
@@ -162,27 +175,42 @@ const isCompressing = ref(false);
 const availableAssetItems = ref<{ [assetId: string]: any[] }>({});
 
 // Watch for asset changes to clear MAC address selection
-watch(() => state.assets_id, (newAssetId: string, oldAssetId: string) => {
-  if (newAssetId !== oldAssetId) {
-    // Clear MAC address selection when asset changes (affects both Network Device and MikroTik sections)
-    state.mac_address = "";
-    state.asset_item_id = "";
+watch(
+  () => state.assets_id,
+  (newAssetId: string, oldAssetId: string) => {
+    if (newAssetId !== oldAssetId) {
+      // Clear MAC address selection when asset changes (affects both Network Device and MikroTik sections)
+      state.mac_address = "";
+      state.asset_item_id = "";
+    }
   }
-});
+);
 
 // Watch for asset item ID changes to update MAC address
-watch(() => state.asset_item_id, (newAssetItemId: any) => {
-  if (!newAssetItemId) {
-    state.mac_address = ""; // Clear MAC address
-    return;
-  }
+watch(
+  () => state.asset_item_id,
+  (newAssetItemId: any) => {
+    if (!newAssetItemId) {
+      state.mac_address = ""; // Clear MAC address
+      state.mac_sticker = "";
+      return;
+    }
 
-  // USelectMenu returns the entire object, so we can directly access the mac_address
-  if (newAssetItemId && typeof newAssetItemId === 'object' && (newAssetItemId as any).mac_address) {
-    state.mac_address = (newAssetItemId as any).mac_address;
-    console.log('Updated MAC address to:', state.mac_address);
+    // USelectMenu returns the entire object, so we can directly access the mac_address
+    if (
+      newAssetItemId &&
+      typeof newAssetItemId === "object" &&
+      (newAssetItemId as any).mac_address
+    ) {
+      state.mac_address = (newAssetItemId as any).mac_address;
+      state.mac_sticker =
+        (newAssetItemId as any).mac_sticker ||
+        (newAssetItemId as any).mac_address ||
+        "";
+      console.log("Updated MAC address to:", state.mac_address);
+    }
   }
-});
+);
 
 // Helper to normalize the selected asset item ID (USelect can return value or full object)
 function getSelectedAssetItemId(): string {
@@ -193,17 +221,26 @@ function getSelectedAssetItemId(): string {
   }
 
   if (typeof state.asset_item_id === "object") {
-    return (state.asset_item_id as any).id || (state.asset_item_id as any).value || "";
+    return (
+      (state.asset_item_id as any).id ||
+      (state.asset_item_id as any).value ||
+      ""
+    );
   }
 
   return "";
 }
 
 // Persist the shifted MAC address back to the asset item so records stay accurate
-async function updateAssetItemMacToShifted(shiftedMac: string, stickerMac: string) {
+async function updateAssetItemMacToShifted(
+  shiftedMac: string,
+  stickerMac: string
+) {
   const assetItemId = getSelectedAssetItemId();
   if (!assetItemId) {
-    console.warn("No asset item selected; skipping MAC update to shifted value");
+    console.warn(
+      "No asset item selected; skipping MAC update to shifted value"
+    );
     return;
   }
 
@@ -218,14 +255,18 @@ async function updateAssetItemMacToShifted(shiftedMac: string, stickerMac: strin
     const payload: any = {
       asset_id: assetItem.asset_id || state.assets_id,
       mac_address: shiftedMac,
-      mac_sticker: stickerMac || assetItem.mac_sticker || assetItem.mac_address,
+      // Preserve sticker MAC; do not overwrite it from DHCP data
+      mac_sticker: assetItem.mac_sticker || assetItem.mac_address || null,
       serial_number: assetItem.serial_number ?? null,
       status: assetItem.status || "in_stock",
       company_id: assetItem.company_id ?? null,
       site: assetItem.site ?? "",
     };
 
-    const updateResult = await assetItemAdminApi().editAssetItem(assetItemId, payload);
+    const updateResult = await assetItemAdminApi().editAssetItem(
+      assetItemId,
+      payload
+    );
     if (!updateResult.success) {
       console.warn("Asset item MAC update did not succeed", updateResult);
       return;
@@ -236,40 +277,63 @@ async function updateAssetItemMacToShifted(shiftedMac: string, stickerMac: strin
 
     // Refresh the option in the select so the UI shows the new MAC
     const options = availableAssetItems.value[state.assets_id] || [];
-    const optionIndex = options.findIndex((opt: any) => (opt.id || opt.value) === assetItemId);
+    const optionIndex = options.findIndex(
+      (opt: any) => (opt.id || opt.value) === assetItemId
+    );
     if (optionIndex !== -1) {
       const currentOption = options[optionIndex];
       const updatedOption = {
         ...currentOption,
         mac_address: shiftedMac,
-        label: `${shiftedMac} (${currentOption.status})`
+        label: `${shiftedMac} (${currentOption.status})`,
       };
       const updatedOptions = [...options];
       updatedOptions[optionIndex] = updatedOption;
       availableAssetItems.value = {
         ...availableAssetItems.value,
-        [state.assets_id]: updatedOptions
+        [state.assets_id]: updatedOptions,
       };
 
       // Preserve the current selection type (string or object)
-      state.asset_item_id = typeof state.asset_item_id === "object" ? updatedOption : assetItemId;
+      state.asset_item_id =
+        typeof state.asset_item_id === "object" ? updatedOption : assetItemId;
     }
 
-    notification.success("MAC Address Updated", "Device MAC updated to shifted MAC from DHCP lookup");
+    notification.success(
+      "MAC Address Updated",
+      "Device MAC updated to shifted MAC from DHCP lookup"
+    );
   } catch (err) {
     console.error("Failed to update asset item MAC to shifted value:", err);
-    notification.error("Asset MAC Update Failed", "Could not save shifted MAC address to the device record");
+    notification.error(
+      "Asset MAC Update Failed",
+      "Could not save shifted MAC address to the device record"
+    );
   }
 }
 
 // Watch for props changes
-watch(() => props.isEdit, (newValue, oldValue) => {
-  console.log('[FormCustomerInstallation] isEdit prop changed:', { oldValue, newValue });
-}, { immediate: true });
+watch(
+  () => props.isEdit,
+  (newValue, oldValue) => {
+    console.log("[FormCustomerInstallation] isEdit prop changed:", {
+      oldValue,
+      newValue,
+    });
+  },
+  { immediate: true }
+);
 
-watch(() => props.data, (newValue: any, oldValue: any) => {
-  console.log('[FormCustomerInstallation] data prop changed:', { oldValue, newValue });
-}, { immediate: true });
+watch(
+  () => props.data,
+  (newValue: any, oldValue: any) => {
+    console.log("[FormCustomerInstallation] data prop changed:", {
+      oldValue,
+      newValue,
+    });
+  },
+  { immediate: true }
+);
 
 watch(
   () => props.isEdit,
@@ -283,7 +347,11 @@ watch(
       if (props.data.latitude && props.data.longitude) {
         state.latitude = parseFloat(props.data.latitude);
         state.longitude = parseFloat(props.data.longitude);
-        console.log('[Init] Location set directly from props:', state.latitude, state.longitude);
+        console.log(
+          "[Init] Location set directly from props:",
+          state.latitude,
+          state.longitude
+        );
       }
     }
   },
@@ -291,82 +359,119 @@ watch(
 );
 
 // Add this to ensure you always have the latest customers (including new ones like Tegar)
-watch(() => props.modelValue, (isOpen) => {
-  if (isOpen) {
-    console.log('[Form] Modal opened, refreshing customer list...');
-    loadCustomers();
+watch(
+  () => props.modelValue,
+  (isOpen) => {
+    if (isOpen) {
+      console.log("[Form] Modal opened, refreshing customer list...");
+      loadCustomers();
+    }
   }
-});
+);
 
 // Update your watcher to this safer version
-watch(() => state.customer_id, (newCustomerId) => {
-  console.log('[Watcher] Customer ID changed to:', newCustomerId);
+watch(
+  () => state.customer_id,
+  (newCustomerId) => {
+    console.log("[Watcher] Customer ID changed to:", newCustomerId);
 
-  if (!newCustomerId) {
-    state.latitude = null;
-    state.longitude = null;
-    return;
-  }
-
-  const selectedCustomer = state.customers.find(c => c.id === newCustomerId);
-  
-  if (selectedCustomer) {
-    console.log('[Watcher] Found customer:', selectedCustomer.name, selectedCustomer);
-    
-    // Check if not null/undefined (allows 0)
-    if (selectedCustomer.latitude != null && selectedCustomer.longitude != null) {
-      state.latitude = parseFloat(selectedCustomer.latitude);
-      state.longitude = parseFloat(selectedCustomer.longitude);
-      console.log('[Watcher] Location set to:', state.latitude, state.longitude);
-    } else {
-      console.warn('[Watcher] Customer exists but has NO location data');
+    if (!newCustomerId) {
       state.latitude = null;
       state.longitude = null;
+      return;
     }
-  } else {
-    // THIS IS LIKELY YOUR ISSUE: The ID exists, but the object is missing from the list
-    console.error('[Watcher] ❌ Customer ID selected but NOT found in customers list. List might be stale.');
-    // Optional: Trigger a reload here if needed
-    // loadCustomers(); 
+
+    const selectedCustomer = state.customers.find(
+      (c) => c.id === newCustomerId
+    );
+
+    if (selectedCustomer) {
+      console.log(
+        "[Watcher] Found customer:",
+        selectedCustomer.name,
+        selectedCustomer
+      );
+
+      // Check if not null/undefined (allows 0)
+      if (
+        selectedCustomer.latitude != null &&
+        selectedCustomer.longitude != null
+      ) {
+        state.latitude = parseFloat(selectedCustomer.latitude);
+        state.longitude = parseFloat(selectedCustomer.longitude);
+        console.log(
+          "[Watcher] Location set to:",
+          state.latitude,
+          state.longitude
+        );
+      } else {
+        console.warn("[Watcher] Customer exists but has NO location data");
+        state.latitude = null;
+        state.longitude = null;
+      }
+    } else {
+      // THIS IS LIKELY YOUR ISSUE: The ID exists, but the object is missing from the list
+      console.error(
+        "[Watcher] ❌ Customer ID selected but NOT found in customers list. List might be stale."
+      );
+      // Optional: Trigger a reload here if needed
+      // loadCustomers();
+    }
   }
-});
+);
 
 // Watch for product selection to update MikroTik bandwidth automatically
-watch(() => state.product_id, (newProductId: string) => {
-  if (!newProductId) {
-    state.max_limit = ""; // Clear bandwidth limit
-    return;
-  }
+watch(
+  () => state.product_id,
+  (newProductId: string) => {
+    if (!newProductId) {
+      state.max_limit = ""; // Clear bandwidth limit
+      return;
+    }
 
-  // Find the selected product and update bandwidth
-  const selectedProduct = state.products.find((p: any) => p.id === newProductId);
-  if (selectedProduct) {
-    console.log('Selected product:', selectedProduct);
-    console.log('Raw download_speed_mbps:', selectedProduct.download_speed_mbps);
-    console.log('Raw upload_speed_mbps:', selectedProduct.upload_speed_mbps);
+    // Find the selected product and update bandwidth
+    const selectedProduct = state.products.find(
+      (p: any) => p.id === newProductId
+    );
+    if (selectedProduct) {
+      console.log("Selected product:", selectedProduct);
+      console.log(
+        "Raw download_speed_mbps:",
+        selectedProduct.download_speed_mbps
+      );
+      console.log("Raw upload_speed_mbps:", selectedProduct.upload_speed_mbps);
 
-    const downloadMbps = selectedProduct.download_speed_mbps || 10;
-    const uploadMbps = selectedProduct.upload_speed_mbps || 10;
-    state.max_limit = `${downloadMbps}M/${uploadMbps}M`;
-    console.log('Updated MikroTik bandwidth to:', state.max_limit, 'for product:', selectedProduct.name);
+      const downloadMbps = selectedProduct.download_speed_mbps || 10;
+      const uploadMbps = selectedProduct.upload_speed_mbps || 10;
+      state.max_limit = `${downloadMbps}M/${uploadMbps}M`;
+      console.log(
+        "Updated MikroTik bandwidth to:",
+        state.max_limit,
+        "for product:",
+        selectedProduct.name
+      );
+    }
   }
-});
+);
 
 // Watch for is_terminal checkbox - clear terminal installation selection when this record IS the terminal
-watch(() => state.is_terminal, (isTerminal: string) => {
-  if (isTerminal === 'yes') {
-    // Terminal installations cannot point to another terminal
-    state.terminal_customer_installation_id = "";
+watch(
+  () => state.is_terminal,
+  (isTerminal: string) => {
+    if (isTerminal === "yes") {
+      // Terminal installations cannot point to another terminal
+      state.terminal_customer_installation_id = "";
+    }
   }
-});
+);
 
 // File input ref is now simplified - just used for the UInput component
 
 // Image compression function
 const compressImage = (file: File, maxSizeKB: number = 500): Promise<File> => {
   return new Promise((resolve, reject) => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
     const img = new Image();
 
     img.onload = () => {
@@ -387,57 +492,63 @@ const compressImage = (file: File, maxSizeKB: number = 500): Promise<File> => {
 
       // Try different quality levels to achieve target size
       const tryCompress = (quality: number) => {
-        canvas.toBlob((blob) => {
-          if (!blob) {
-            reject(new Error('Failed to compress image'));
-            return;
-          }
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Failed to compress image"));
+              return;
+            }
 
-          const sizeKB = blob.size / 1024;
-          console.log(`Compressed image: ${sizeKB.toFixed(1)}KB (quality: ${quality})`);
+            const sizeKB = blob.size / 1024;
+            console.log(
+              `Compressed image: ${sizeKB.toFixed(1)}KB (quality: ${quality})`
+            );
 
-          if (sizeKB <= maxSizeKB || quality <= 0.1) {
-            const compressedFile = new File([blob], file.name, {
-              type: 'image/jpeg',
-              lastModified: Date.now()
-            });
-            resolve(compressedFile);
-          } else {
-            // Try with lower quality
-            tryCompress(quality - 0.1);
-          }
-        }, 'image/jpeg', quality);
+            if (sizeKB <= maxSizeKB || quality <= 0.1) {
+              const compressedFile = new File([blob], file.name, {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              // Try with lower quality
+              tryCompress(quality - 0.1);
+            }
+          },
+          "image/jpeg",
+          quality
+        );
       };
 
       // Start with 0.8 quality
       tryCompress(0.8);
     };
 
-    img.onerror = () => reject(new Error('Failed to load image'));
+    img.onerror = () => reject(new Error("Failed to load image"));
     img.src = URL.createObjectURL(file);
   });
 };
 
 // Unified file processing function
 const processFile = async (file: File) => {
-  console.log('Processing file:', {
+  console.log("Processing file:", {
     name: file.name,
     size: file.size,
     type: file.type,
-    lastModified: file.lastModified
+    lastModified: file.lastModified,
   });
 
   // Validate file type
-  if (!file.type.startsWith('image/')) {
-    console.log('File type validation failed:', file.type);
-    alert('Please select an image file (JPG, PNG)');
+  if (!file.type.startsWith("image/")) {
+    console.log("File type validation failed:", file.type);
+    alert("Please select an image file (JPG, PNG)");
     return null;
   }
 
   // Validate file size (10MB max)
   if (file.size > 10 * 1024 * 1024) {
-    console.log('File size validation failed:', file.size);
-    alert('File size must be less than 10MB');
+    console.log("File size validation failed:", file.size);
+    alert("File size must be less than 10MB");
     return null;
   }
 
@@ -445,12 +556,14 @@ const processFile = async (file: File) => {
 
   // Compress if file is larger than 1MB
   if (file.size > 1 * 1024 * 1024) {
-    console.log('File is large, compressing...');
+    console.log("File is large, compressing...");
     try {
       processedFile = await compressImage(file, 500); // Compress to max 500KB
-      console.log(`✅ File compressed: ${file.size} bytes → ${processedFile.size} bytes`);
+      console.log(
+        `✅ File compressed: ${file.size} bytes → ${processedFile.size} bytes`
+      );
     } catch (error) {
-      console.error('Compression failed, using original file:', error);
+      console.error("Compression failed, using original file:", error);
       // Continue with original file if compression fails
     }
   }
@@ -462,9 +575,11 @@ const processFile = async (file: File) => {
 
 // Set default dates
 const today = new Date();
-state.on_air_date = today.toISOString().split('T')[0];
-state.trial_end_date = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-state.service_ready_date = today.toISOString().split('T')[0];
+state.on_air_date = today.toISOString().split("T")[0];
+state.trial_end_date = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
+  .toISOString()
+  .split("T")[0];
+state.service_ready_date = today.toISOString().split("T")[0];
 state.installation_completed_at = today.toISOString().slice(0, 16);
 
 watch(
@@ -480,38 +595,48 @@ watch(
 type Schema = InferType<typeof schema>;
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
-  console.log('[FormCustomerInstallation] onSubmit called with event:', event);
+  console.log("[FormCustomerInstallation] onSubmit called with event:", event);
   state.loading = true;
 
   try {
     // Validate required fields
     if (state.technicians.length === 0) {
-      notification.error('Validation Error', 'Please assign at least one technician');
+      notification.error(
+        "Validation Error",
+        "Please assign at least one technician"
+      );
       return;
     }
 
     if (!state.product_id) {
-      notification.error('Validation Error', 'Please select a package/product');
+      notification.error("Validation Error", "Please select a package/product");
       return;
     }
 
     // Terminal linkage validation:
     // 1. If this is a regular customer (NOT a terminal), we enforce that they must connect to a parent Terminal.
-    if (state.is_terminal === 'no') {
-      const terminalId = typeof state.terminal_customer_installation_id === 'string'
-        ? state.terminal_customer_installation_id.trim()
-        : state.terminal_customer_installation_id;
+    if (state.is_terminal === "no") {
+      const terminalId =
+        typeof state.terminal_customer_installation_id === "string"
+          ? state.terminal_customer_installation_id.trim()
+          : state.terminal_customer_installation_id;
 
       if (!terminalId) {
-        notification.error('Validation Error', 'Please select a terminal installation (HTB) this customer connects to');
+        notification.error(
+          "Validation Error",
+          "Please select a terminal installation (HTB) this customer connects to"
+        );
         return;
       }
-    } 
+    }
 
     // Validate at least one senior technician
-    const hasSenior = state.technicians.some((t: any) => t.role === 'senior');
+    const hasSenior = state.technicians.some((t: any) => t.role === "senior");
     if (!hasSenior) {
-      notification.error('Validation Error', 'At least one senior technician is required');
+      notification.error(
+        "Validation Error",
+        "At least one senior technician is required"
+      );
       return;
     }
 
@@ -522,12 +647,15 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     // Check for duplicate technician assignments
     const technicianIds = state.technicians
       .map((tech: any) => tech.technician_id)
-      .filter((id: string) => id && id.trim() !== '');
+      .filter((id: string) => id && id.trim() !== "");
 
     const uniqueTechnicianIds = [...new Set(technicianIds)];
 
     if (technicianIds.length !== uniqueTechnicianIds.length) {
-      notification.error('Validation Error', 'Cannot assign the same technician multiple times. Please remove duplicate assignments.');
+      notification.error(
+        "Validation Error",
+        "Cannot assign the same technician multiple times. Please remove duplicate assignments."
+      );
       return;
     }
 
@@ -535,195 +663,315 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     const formData = new FormData();
 
     // Append all form fields
-    formData.append('customer_id', state.customer_id);
-    formData.append('assets_id', state.assets_id);
-    formData.append('status', state.status);
-    formData.append('notes', state.notes);
-    formData.append('document_type', state.document_type);
-    formData.append('installation_type', state.installation_type);
-    formData.append('on_air_date', state.on_air_date);
-    formData.append('trial_end_date', state.trial_end_date);
-    formData.append('service_ready_date', state.service_ready_date);
-    formData.append('installation_completed_at', state.installation_completed_at);
-    formData.append('is_terminal', state.is_terminal);
+    formData.append("customer_id", state.customer_id);
+    formData.append("assets_id", state.assets_id);
+    formData.append("status", state.status);
+    formData.append("notes", state.notes);
+    formData.append("document_type", state.document_type);
+    formData.append("installation_type", state.installation_type);
+    formData.append("on_air_date", state.on_air_date);
+    formData.append("trial_end_date", state.trial_end_date);
+    formData.append("service_ready_date", state.service_ready_date);
+    formData.append(
+      "installation_completed_at",
+      state.installation_completed_at
+    );
+    formData.append("is_terminal", state.is_terminal);
     // Terminal installation ID can be set for any installation (not just terminal installations)
     if (state.terminal_customer_installation_id) {
-      formData.append('terminal_customer_installation_id', state.terminal_customer_installation_id);
+      formData.append(
+        "terminal_customer_installation_id",
+        state.terminal_customer_installation_id
+      );
     }
 
     // Append location data if available
     if (state.latitude !== null && state.longitude !== null) {
-      formData.append('latitude', state.latitude.toString());
-      formData.append('longitude', state.longitude.toString());
-      console.log('✅ Appending location to form data:', { lat: state.latitude, lng: state.longitude });
+      formData.append("latitude", state.latitude.toString());
+      formData.append("longitude", state.longitude.toString());
+      console.log("✅ Appending location to form data:", {
+        lat: state.latitude,
+        lng: state.longitude,
+      });
     } else {
-      console.log('⚠️ No location data to append');
+      console.log("⚠️ No location data to append");
     }
 
     // Multiple technicians (send as JSON)
-    formData.append('technicians', JSON.stringify(state.technicians));
+    formData.append("technicians", JSON.stringify(state.technicians));
 
     // MikroTik provisioning fields - use MAC address from Network Device section
-    const networkMacAddress = state.mac_address || '';
-    if (networkMacAddress) formData.append('mac_address', networkMacAddress);
-    if (state.max_limit) formData.append('max_limit', state.max_limit);
-    formData.append('auto_provision', state.auto_provision.toString());
-    formData.append('dry_run', state.dry_run.toString());
+    const networkMacAddress = state.mac_address || "";
+    if (networkMacAddress) formData.append("mac_address", networkMacAddress);
+    if (state.max_limit) formData.append("max_limit", state.max_limit);
+    formData.append("auto_provision", state.auto_provision.toString());
+    formData.append("dry_run", state.dry_run.toString());
 
     // Network device fields - extract ID from object if it's an object
-    let assetItemId = '';
+    let assetItemId = "";
     if (state.asset_item_id) {
-      if (typeof state.asset_item_id === 'object' && (state.asset_item_id as any).id) {
+      if (
+        typeof state.asset_item_id === "object" &&
+        (state.asset_item_id as any).id
+      ) {
         assetItemId = (state.asset_item_id as any).id;
-      } else if (typeof state.asset_item_id === 'string') {
+      } else if (typeof state.asset_item_id === "string") {
         assetItemId = state.asset_item_id;
       }
     }
-    formData.append('asset_item_id', assetItemId); // Include specific asset item ID
-    if (state.product_id) formData.append('product_id', state.product_id); // Include selected product/package
-    formData.append('switch_id', state.switch_id);
-    formData.append('port_number', state.port_number);
-    formData.append('remote_port', state.remote_port);
-    formData.append('eth_port', state.eth_port);
-    formData.append('ip_static', state.ip_static);
-    formData.append('kepemilikan_perangkat', state.kepemilikan_perangkat);
-    formData.append('status_perangkat', state.status_perangkat);
-    formData.append('last_ping_status', state.last_ping_status);
+    formData.append("asset_item_id", assetItemId); // Include specific asset item ID
+    if (state.product_id) formData.append("product_id", state.product_id); // Include selected product/package
+    formData.append("switch_id", state.switch_id);
+    formData.append("port_number", state.port_number);
+    formData.append("remote_port", state.remote_port);
+    formData.append("eth_port", state.eth_port);
+    formData.append("ip_static", state.ip_static);
+    formData.append("kepemilikan_perangkat", state.kepemilikan_perangkat);
+    formData.append("status_perangkat", state.status_perangkat);
+    formData.append("last_ping_status", state.last_ping_status);
 
     // Customer service fields
-    formData.append('cable_type', state.cable_type);
-    formData.append('cable_length', state.cable_length.toString());
-    formData.append('end_port_type', state.end_port_type);
-    formData.append('user_login', state.user_login);
-    formData.append('password', state.password);
-    formData.append('user_status', state.user_status);
-    formData.append('installation_notes', state.installation_notes);
+    formData.append("cable_type", state.cable_type);
+    formData.append("cable_length", state.cable_length.toString());
+    formData.append("end_port_type", state.end_port_type);
+    formData.append("user_login", state.user_login);
+    formData.append("password", state.password);
+    formData.append("user_status", state.user_status);
+    formData.append("installation_notes", state.installation_notes);
 
     // Append document photo if selected
     if (state.document_photo) {
-      console.log('✅ Appending document photo to form data:', {
+      console.log("✅ Appending document photo to form data:", {
         name: state.document_photo.name,
         size: state.document_photo.size,
-        type: state.document_photo.type
+        type: state.document_photo.type,
       });
 
       // Ensure we're appending the actual File object, not a string
       if (state.document_photo instanceof File) {
-        formData.append('document_photo', state.document_photo, state.document_photo.name);
-        console.log('✅ File object appended with name:', state.document_photo.name);
+        formData.append(
+          "document_photo",
+          state.document_photo,
+          state.document_photo.name
+        );
+        console.log(
+          "✅ File object appended with name:",
+          state.document_photo.name
+        );
       } else {
-        console.error('❌ document_photo is not a File object:', typeof state.document_photo);
+        console.error(
+          "❌ document_photo is not a File object:",
+          typeof state.document_photo
+        );
         return;
       }
 
       // Log FormData contents for debugging
-      console.log('FormData contents after appending document photo:');
+      console.log("FormData contents after appending document photo:");
       for (let [key, value] of formData.entries()) {
-        if (key === 'document_photo') {
-          console.log(`  ${key}: [File] ${(value as File).name} (${(value as File).size} bytes, ${(value as File).type})`);
+        if (key === "document_photo") {
+          console.log(
+            `  ${key}: [File] ${(value as File).name} (${
+              (value as File).size
+            } bytes, ${(value as File).type})`
+          );
         } else {
           console.log(`  ${key}: ${value}`);
         }
       }
     } else {
-      console.log('❌ No document photo selected - document_photo is null or undefined');
+      console.log(
+        "❌ No document photo selected - document_photo is null or undefined"
+      );
       // Try to get file from the native input as fallback
-      console.log('🔍 Attempting fallback: getting file from native input...');
-      const nativeInput = document.querySelector('input[name="document_photo"]') as HTMLInputElement;
+      console.log("🔍 Attempting fallback: getting file from native input...");
+      const nativeInput = document.querySelector(
+        'input[name="document_photo"]'
+      ) as HTMLInputElement;
       if (nativeInput && nativeInput.files && nativeInput.files[0]) {
         const file = nativeInput.files[0];
-        console.log('✅ Found file via fallback method:', {
+        console.log("✅ Found file via fallback method:", {
           name: file.name,
           size: file.size,
-          type: file.type
+          type: file.type,
         });
-        formData.append('document_photo', file, file.name);
-        console.log('✅ File appended via fallback method');
+        formData.append("document_photo", file, file.name);
+        console.log("✅ File appended via fallback method");
       } else {
-        console.log('❌ No file found via fallback method either');
+        console.log("❌ No file found via fallback method either");
       }
     }
 
     // Append technician photo files directly to form data (don't upload yet)
-    console.log('=== FRONTEND TECHNICIAN PHOTOS DEBUG ===');
-    console.log('state.technician_photo_files.length:', state.technician_photo_files.length);
+    console.log("=== FRONTEND TECHNICIAN PHOTOS DEBUG ===");
+    console.log(
+      "state.technician_photo_files.length:",
+      state.technician_photo_files.length
+    );
 
     if (state.technician_photo_files.length > 0) {
-      console.log('📤 Adding technician photo files to form data...');
+      console.log("📤 Adding technician photo files to form data...");
       for (let i = 0; i < state.technician_photo_files.length; i++) {
         const file = state.technician_photo_files[i];
         console.log(`Processing technician photo ${i + 1}:`, {
           name: file.name,
           size: file.size,
           type: file.type,
-          lastModified: file.lastModified
+          lastModified: file.lastModified,
         });
 
         formData.append(`technician_photo_${i}`, file, file.name);
-        console.log(`✅ Added technician photo ${i + 1}/${state.technician_photo_files.length} to form data: ${file.name}`);
+        console.log(
+          `✅ Added technician photo ${i + 1}/${
+            state.technician_photo_files.length
+          } to form data: ${file.name}`
+        );
       }
-      formData.append('technician_photos_count', state.technician_photo_files.length.toString());
-      console.log('✅ Added technician_photos_count:', state.technician_photo_files.length);
+      formData.append(
+        "technician_photos_count",
+        state.technician_photo_files.length.toString()
+      );
+      console.log(
+        "✅ Added technician_photos_count:",
+        state.technician_photo_files.length
+      );
     } else {
-      console.log('❌ No technician photo files to add');
+      console.log("❌ No technician photo files to add");
     }
-    console.log('=== END FRONTEND TECHNICIAN PHOTOS DEBUG ===');
+    console.log("=== END FRONTEND TECHNICIAN PHOTOS DEBUG ===");
 
     if (state.technician_photos_notes) {
-      formData.append('technician_photos_notes', state.technician_photos_notes);
-      console.log('✅ Appending technician photos notes to form data:', state.technician_photos_notes);
+      formData.append("technician_photos_notes", state.technician_photos_notes);
+      console.log(
+        "✅ Appending technician photos notes to form data:",
+        state.technician_photos_notes
+      );
     }
 
     // Validate IP address format before submitting
-    if (state.ip_static && state.ip_static.trim() !== '') {
-      const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    if (state.ip_static && state.ip_static.trim() !== "") {
+      const ipRegex =
+        /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
       if (!ipRegex.test(state.ip_static.trim())) {
-        notification.error('Invalid IP Address', 'Please enter a valid IP address format (e.g., 192.168.1.1)');
+        notification.error(
+          "Invalid IP Address",
+          "Please enter a valid IP address format (e.g., 192.168.1.1)"
+        );
         return;
       }
     }
 
     // Submit using the new API endpoint
-    console.log('🚀 Submitting installation report with FormData...');
-    console.log('FormData size:', formData.get('document_photo') ? 'File included' : 'No file');
+    console.log("🚀 Submitting installation report with FormData...");
+    console.log(
+      "FormData size:",
+      formData.get("document_photo") ? "File included" : "No file"
+    );
 
-    const response = await customerAdminApi().createReportInstallation(formData);
+    const response = await customerAdminApi().createReportInstallation(
+      formData
+    );
 
     console.log("✅ Success creating installation report", response);
+
+    // Auto-generate invoice if backend returns a recurring invoice reference
+    try {
+      const recurringId =
+        response?.data?.recurring_invoice_id || response?.data?.recurringInvoiceId;
+      const invoiceDate =
+        response?.data?.invoice_date || response?.data?.invoiceDate;
+      const dueDate = response?.data?.due_date || response?.data?.dueDate;
+      if (recurringId) {
+        await recurringInvoiceAdminApi().generateInvoiceFromRecurring({
+          id: recurringId,
+          invoice_date: invoiceDate || undefined,
+          due_date: dueDate || undefined,
+        });
+      }
+    } catch (invoiceErr) {
+      console.warn(
+        "Failed to auto-generate invoice after report creation:",
+        invoiceErr
+      );
+    }
+
+    // Persist DHCP-found MAC to asset item only after successful save
+    if (state.pendingMacUpdate?.mac) {
+      const selectedAssetItemId = getSelectedAssetItemId();
+      if (selectedAssetItemId) {
+        const macToWrite =
+          state.pendingMacUpdate.shifted_mac || state.pendingMacUpdate.mac;
+        try {
+          await updateAssetItemMacToShifted(
+            macToWrite,
+            state.pendingMacUpdate.sticker_mac || ""
+          );
+          state.pendingMacUpdate = null;
+        } catch (macUpdateErr) {
+          console.warn("MAC update after save failed:", macUpdateErr);
+          notification.warning(
+            "MAC Not Updated",
+            "Report saved, but failed to sync MAC to the device record."
+          );
+        }
+      } else {
+        console.warn(
+          "Pending MAC update skipped: no asset item selected to update."
+        );
+      }
+    }
 
     // Check if there's provisioning information in the response
     if (response.data?.provisioning) {
       const prov = response.data.provisioning;
-      if (prov.status === 'success') {
+      if (prov.status === "success") {
         if (prov.dry_run) {
-          notification.success('Installation Created & Provisioning Preview',
-            `Installation created. Dry-run completed with ${prov.commands?.length || 0} commands. Check console for details.`);
-          console.log('Provisioning commands (dry-run):', prov.commands);
+          notification.success(
+            "Installation Created & Provisioning Preview",
+            `Installation created. Dry-run completed with ${
+              prov.commands?.length || 0
+            } commands. Check console for details.`
+          );
+          console.log("Provisioning commands (dry-run):", prov.commands);
         } else {
-          notification.success('Installation Created & Provisioned',
-            `Installation created and customer provisioned successfully! Code: ${prov.code_name || 'N/A'}`);
+          notification.success(
+            "Installation Created & Provisioned",
+            `Installation created and customer provisioned successfully! Code: ${
+              prov.code_name || "N/A"
+            }`
+          );
         }
-      } else if (prov.status === 'failed') {
-        notification.warning('Installation Created (Provisioning Failed)',
-          `Installation created but provisioning failed: ${prov.error || 'Unknown error'}`);
+      } else if (prov.status === "failed") {
+        notification.warning(
+          "Installation Created (Provisioning Failed)",
+          `Installation created but provisioning failed: ${
+            prov.error || "Unknown error"
+          }`
+        );
       } else {
-        notification.success('Installation Created',
-          `Installation created. Provisioning ${prov.message || 'skipped'}.`);
+        notification.success(
+          "Installation Created",
+          `Installation created. Provisioning ${prov.message || "skipped"}.`
+        );
       }
     } else {
       // Show success notification
-      notification.success('Success', 'Installation report created successfully');
+      notification.success(
+        "Success",
+        "Installation report created successfully"
+      );
     }
 
     onSuccess();
-
   } catch (error: any) {
     console.error("❌ Error creating installation report:", error);
     console.error("Error details:", error);
 
     // Clean up any uploaded technician photos since form submission failed
     if (state.technician_photos.length > 0) {
-      console.log('🧹 Cleaning up uploaded technician photos due to form submission failure...');
+      console.log(
+        "🧹 Cleaning up uploaded technician photos due to form submission failure..."
+      );
       // Note: In a production environment, you might want to implement a cleanup API endpoint
       // For now, we'll just clear the local state
       state.technician_photos = [];
@@ -733,33 +981,45 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     }
 
     // Show user-friendly error notification
-    let errorMessage = error.message || 'Failed to create installation report';
+    let errorMessage = error.message || "Failed to create installation report";
 
     // Handle specific error types
-    if (errorMessage.includes('Duplicate entry') || errorMessage.includes('duplicate')) {
-      errorMessage = 'Cannot assign the same technician multiple times. Please check your technician assignments and remove any duplicates.';
-    } else if (errorMessage.includes('IP address format') || errorMessage.includes('Invalid IP')) {
-      notification.error('Invalid IP Address', 'Please enter a valid IP address format (e.g., 192.168.1.1)');
+    if (
+      errorMessage.includes("Duplicate entry") ||
+      errorMessage.includes("duplicate")
+    ) {
+      errorMessage =
+        "Cannot assign the same technician multiple times. Please check your technician assignments and remove any duplicates.";
+    } else if (
+      errorMessage.includes("IP address format") ||
+      errorMessage.includes("Invalid IP")
+    ) {
+      notification.error(
+        "Invalid IP Address",
+        "Please enter a valid IP address format (e.g., 192.168.1.1)"
+      );
       state.loading = false;
       return;
     }
 
-    notification.error('Error', errorMessage);
+    notification.error("Error", errorMessage);
   } finally {
     state.loading = false;
   }
 }
 
 function onSuccess() {
-  console.log('[FormCustomerInstallation] onSuccess called');
+  console.log("[FormCustomerInstallation] onSuccess called");
   emit("success");
   // Dispatch event to refresh installation list
-  window.dispatchEvent(new CustomEvent('installation-created'));
+  window.dispatchEvent(new CustomEvent("installation-created"));
 }
 
 // Helper function to submit form from outside
 function submitForm() {
-  const form = document.querySelector('.form-container')?.closest('form') as HTMLFormElement;
+  const form = document
+    .querySelector(".form-container")
+    ?.closest("form") as HTMLFormElement;
   if (form) {
     form.requestSubmit();
   }
@@ -769,9 +1029,11 @@ function submitForm() {
 const loadTestData = () => {
   // Get current date/time
   const now = new Date();
-  const today = now.toISOString().split('T')[0];
+  const today = now.toISOString().split("T")[0];
   const currentTime = now.toTimeString().slice(0, 5);
-  const nextMonth = new Date(now.setMonth(now.getMonth() + 1)).toISOString().split('T')[0];
+  const nextMonth = new Date(now.setMonth(now.getMonth() + 1))
+    .toISOString()
+    .split("T")[0];
 
   // Basic Installation Information
   state.status = "completed"; // Always completed since technician already finished
@@ -790,18 +1052,18 @@ const loadTestData = () => {
     if (state.availableTechnicians[0]) {
       state.technicians.push({
         technician_id: state.availableTechnicians[0].id,
-        role: 'senior',
+        role: "senior",
         is_primary: true,
-        notes: 'Lead technician - test'
+        notes: "Lead technician - test",
       });
     }
     // Add second available as junior if exists
     if (state.availableTechnicians.length > 1) {
       state.technicians.push({
         technician_id: state.availableTechnicians[1].id,
-        role: 'junior',
+        role: "junior",
         is_primary: false,
-        notes: 'Assistant technician - test'
+        notes: "Assistant technician - test",
       });
     }
   }
@@ -816,7 +1078,7 @@ const loadTestData = () => {
   // Select first available product for testing
   if (state.products.length > 0) {
     state.product_id = state.products[0].id;
-    console.log('Test data: Selected product:', state.products[0].name);
+    console.log("Test data: Selected product:", state.products[0].name);
   }
   state.switch_id = "SW-TEST-001";
   state.port_number = "10";
@@ -836,51 +1098,57 @@ const loadTestData = () => {
   state.user_status = "Active";
   state.installation_notes = "Test installation with all fields populated";
 
-  notification.success('Test Data Loaded', 'All fields have been filled with test data. Select a customer and asset to complete.');
+  notification.success(
+    "Test Data Loaded",
+    "All fields have been filled with test data. Select a customer and asset to complete."
+  );
 };
 
 // Handle document photo upload
 const handleDocumentPhotoUpload = async (event: Event) => {
-  console.log('File input change event triggered');
-  console.log('Event details:', {
+  console.log("File input change event triggered");
+  console.log("Event details:", {
     type: event.type,
     target: event.target,
-    currentTarget: event.currentTarget
+    currentTarget: event.currentTarget,
   });
 
   // Get the file from the event
   const input = event.target as HTMLInputElement;
-  console.log('Input element:', input);
-  console.log('Input files:', input?.files);
-  console.log('Input files length:', input?.files?.length);
+  console.log("Input element:", input);
+  console.log("Input files:", input?.files);
+  console.log("Input files length:", input?.files?.length);
 
   // Also try to get file from ref as backup
   if (fileInputRef.value) {
-    console.log('File input ref:', fileInputRef.value);
-    console.log('File input ref files:', fileInputRef.value.files);
-    console.log('File input ref files length:', fileInputRef.value.files?.length);
+    console.log("File input ref:", fileInputRef.value);
+    console.log("File input ref files:", fileInputRef.value.files);
+    console.log(
+      "File input ref files length:",
+      fileInputRef.value.files?.length
+    );
   }
 
   const file = input?.files?.[0] || fileInputRef.value?.files?.[0];
-  console.log('Selected file:', file);
+  console.log("Selected file:", file);
 
   if (!file) {
-    console.log('❌ No file selected');
+    console.log("❌ No file selected");
     state.document_photo = null;
-    state.documentPreview = '';
+    state.documentPreview = "";
     // Don't clear the input value - this might be causing the issue
     return;
   }
 
   // Prevent the input from being cleared
   if (input && file) {
-    console.log('Preserving file input value');
+    console.log("Preserving file input value");
   }
 
-  console.log('✅ File selected:', {
+  console.log("✅ File selected:", {
     name: file.name,
     size: file.size,
-    type: file.type
+    type: file.type,
   });
 
   // First, create preview directly from the file to test
@@ -888,15 +1156,15 @@ const handleDocumentPhotoUpload = async (event: Event) => {
   reader.onload = (e) => {
     const result = e.target?.result as string;
     state.documentPreview = result;
-    console.log('✅ Document preview created successfully (direct):', {
+    console.log("✅ Document preview created successfully (direct):", {
       previewLength: result?.length || 0,
       previewType: typeof result,
-      previewStart: result?.substring(0, 50) + '...'
+      previewStart: result?.substring(0, 50) + "...",
     });
   };
   reader.onerror = (e) => {
-    console.error('❌ FileReader error:', e);
-    state.documentPreview = '';
+    console.error("❌ FileReader error:", e);
+    state.documentPreview = "";
   };
   reader.readAsDataURL(file);
 
@@ -906,17 +1174,17 @@ const handleDocumentPhotoUpload = async (event: Event) => {
 
     if (processedFile) {
       state.document_photo = processedFile;
-      console.log('✅ Document photo file processed successfully:', {
+      console.log("✅ Document photo file processed successfully:", {
         name: processedFile.name,
         size: processedFile.size,
-        type: processedFile.type
+        type: processedFile.type,
       });
     } else {
-      console.log('❌ File processing failed, but keeping original file');
+      console.log("❌ File processing failed, but keeping original file");
       state.document_photo = file; // Keep the original file if processing fails
     }
   } catch (error) {
-    console.error('❌ Error processing file:', error);
+    console.error("❌ Error processing file:", error);
     state.document_photo = file; // Keep the original file if processing fails
   }
 };
@@ -927,7 +1195,10 @@ function triggerTechnicianPhotoUpload() {
 }
 
 // Helper function to add click outside handler for toast
-function addToastClickOutsideHandler(toastId: string, toast: ReturnType<typeof useCustomToast>) {
+function addToastClickOutsideHandler(
+  toastId: string,
+  toast: ReturnType<typeof useCustomToast>
+) {
   // Use multiple ticks to ensure DOM is ready
   nextTick(() => {
     nextTick(() => {
@@ -935,7 +1206,9 @@ function addToastClickOutsideHandler(toastId: string, toast: ReturnType<typeof u
       let toastElement: HTMLElement | null = null;
 
       // Try finding by data attribute first
-      toastElement = document.querySelector(`[data-toast-id="${toastId}"]`) as HTMLElement;
+      toastElement = document.querySelector(
+        `[data-toast-id="${toastId}"]`
+      ) as HTMLElement;
 
       // If not found, try finding by ID
       if (!toastElement) {
@@ -944,7 +1217,9 @@ function addToastClickOutsideHandler(toastId: string, toast: ReturnType<typeof u
 
       // If still not found, try finding the last toast notification
       if (!toastElement) {
-        const allToasts = document.querySelectorAll('[role="alert"], .ui-notification, [class*="notification"]');
+        const allToasts = document.querySelectorAll(
+          '[role="alert"], .ui-notification, [class*="notification"]'
+        );
         if (allToasts.length > 0) {
           toastElement = allToasts[allToasts.length - 1] as HTMLElement;
         }
@@ -952,7 +1227,7 @@ function addToastClickOutsideHandler(toastId: string, toast: ReturnType<typeof u
 
       if (toastElement) {
         // Set data attribute for easier selection
-        toastElement.setAttribute('data-toast-id', toastId);
+        toastElement.setAttribute("data-toast-id", toastId);
 
         // Add click outside handler
         const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -961,19 +1236,29 @@ function addToastClickOutsideHandler(toastId: string, toast: ReturnType<typeof u
           // Check if click is outside the toast element
           if (toastElement && !toastElement.contains(target)) {
             // Don't close if clicking on another toast
-            const clickedToast = target.closest('[role="alert"], .ui-notification, [class*="notification"]');
+            const clickedToast = target.closest(
+              '[role="alert"], .ui-notification, [class*="notification"]'
+            );
             if (!clickedToast || clickedToast === toastElement) {
               toast.remove(toastId);
-              document.removeEventListener('click', handleClickOutside);
-              document.removeEventListener('touchstart', handleClickOutside);
+              document.removeEventListener("click", handleClickOutside);
+              document.removeEventListener("touchstart", handleClickOutside);
             }
           }
         };
 
         // Add event listeners after a short delay to avoid immediate trigger
         setTimeout(() => {
-          document.addEventListener('click', handleClickOutside as EventListener, true);
-          document.addEventListener('touchstart', handleClickOutside as EventListener, true);
+          document.addEventListener(
+            "click",
+            handleClickOutside as EventListener,
+            true
+          );
+          document.addEventListener(
+            "touchstart",
+            handleClickOutside as EventListener,
+            true
+          );
         }, 150);
       }
     });
@@ -997,13 +1282,15 @@ async function handleTechnicianPhotoUpload(event: Event) {
       title: "Error",
       description: `Maximum 10 photos allowed. You currently have ${currentCount} photos and are trying to add ${newFilesCount} more.`,
       color: "red",
-      actions: [{
-        label: '✕',
-        click: () => {
-          toast.remove(toastId);
+      actions: [
+        {
+          label: "✕",
+          click: () => {
+            toast.remove(toastId);
+          },
+          variant: "ghost",
         },
-        variant: 'ghost'
-      }]
+      ],
     });
     addToastClickOutsideHandler(toastId, toast);
     return;
@@ -1022,13 +1309,15 @@ async function handleTechnicianPhotoUpload(event: Event) {
         title: "Error",
         description: validation.message,
         color: "red",
-        actions: [{
-          label: '✕',
-          click: () => {
-            toast.remove(toastId);
+        actions: [
+          {
+            label: "✕",
+            click: () => {
+              toast.remove(toastId);
+            },
+            variant: "ghost",
           },
-          variant: 'ghost'
-        }]
+        ],
       });
       addToastClickOutsideHandler(toastId, toast);
       continue;
@@ -1038,7 +1327,8 @@ async function handleTechnicianPhotoUpload(event: Event) {
     const originalSize = file.size;
     const compressedFile = await compressImageFile(file, 2 * 1024 * 1024);
     const compressedSize = compressedFile.size;
-    const compressionRatio = ((originalSize - compressedSize) / originalSize) * 100;
+    const compressionRatio =
+      ((originalSize - compressedSize) / originalSize) * 100;
 
     // Store compressed file locally (don't upload yet)
     state.technician_photo_files.push(compressedFile);
@@ -1058,20 +1348,26 @@ async function handleTechnicianPhotoUpload(event: Event) {
     toast.add({
       id: toastId,
       title: "Success",
-      description: `Photo added successfully. Compressed from ${formatFileSize(originalSize)} to ${formatFileSize(compressedSize)} (${compressionRatio.toFixed(1)}% reduction). Will be uploaded when form is submitted.`,
+      description: `Photo added successfully. Compressed from ${formatFileSize(
+        originalSize
+      )} to ${formatFileSize(compressedSize)} (${compressionRatio.toFixed(
+        1
+      )}% reduction). Will be uploaded when form is submitted.`,
       color: "green",
-      actions: [{
-        label: '✕',
-        click: () => {
-          toast.remove(toastId);
+      actions: [
+        {
+          label: "✕",
+          click: () => {
+            toast.remove(toastId);
+          },
+          variant: "ghost",
         },
-        variant: 'ghost'
-      }]
+      ],
     });
     addToastClickOutsideHandler(toastId, toast);
   }
 
-  input.value = ''; // Clear input
+  input.value = ""; // Clear input
 }
 
 function removeTechnicianPhoto(index: number) {
@@ -1083,99 +1379,136 @@ function removeTechnicianPhoto(index: number) {
 
 // Computed property for total size
 const totalTechnicianPhotoSize = computed(() => {
-  return technicianPhotoSizes.value.reduce((total: number, size: number) => total + size, 0);
+  return technicianPhotoSizes.value.reduce(
+    (total: number, size: number) => total + size,
+    0
+  );
 });
 
 // File size formatting utility
 function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) return "0 Bytes";
 
   const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const sizes = ["Bytes", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
 // Use the existing compression function from tickets page
 async function compressImageFile(file: File, maxBytes: number): Promise<File> {
   try {
     // Skip compression for non-images
-    if (!file.type.startsWith('image/')) return file
+    if (!file.type.startsWith("image/")) return file;
     // Already small enough
-    if (file.size <= maxBytes) return file
+    if (file.size <= maxBytes) return file;
 
-    const bitmap = await createImageBitmap(file)
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')!
+    const bitmap = await createImageBitmap(file);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d")!;
 
     // Scale down if image is huge; keep aspect ratio
-    const maxDim = 2000 // cap the longest side to limit memory
-    let { width, height } = bitmap
-    const ratio = Math.min(1, maxDim / Math.max(width, height))
-    width = Math.round(width * ratio)
-    height = Math.round(height * ratio)
-    canvas.width = width
-    canvas.height = height
-    ctx.drawImage(bitmap, 0, 0, width, height)
+    const maxDim = 2000; // cap the longest side to limit memory
+    let { width, height } = bitmap;
+    const ratio = Math.min(1, maxDim / Math.max(width, height));
+    width = Math.round(width * ratio);
+    height = Math.round(height * ratio);
+    canvas.width = width;
+    canvas.height = height;
+    ctx.drawImage(bitmap, 0, 0, width, height);
 
     // Binary search quality to fit under maxBytes
-    let low = 0.5, high = 0.92, bestBlob: Blob | null = null
+    let low = 0.5,
+      high = 0.92,
+      bestBlob: Blob | null = null;
     for (let i = 0; i < 6; i++) {
-      const q = (low + high) / 2
-      const blob = await new Promise<Blob>(res => canvas.toBlob(b => res(b || new Blob()), 'image/jpeg', q))
-      if (blob.size > 0 && blob.size <= maxBytes) { bestBlob = blob; high = q } else { low = q }
+      const q = (low + high) / 2;
+      const blob = await new Promise<Blob>((res) =>
+        canvas.toBlob((b) => res(b || new Blob()), "image/jpeg", q)
+      );
+      if (blob.size > 0 && blob.size <= maxBytes) {
+        bestBlob = blob;
+        high = q;
+      } else {
+        low = q;
+      }
     }
-    const out = bestBlob || await new Promise<Blob>(res => canvas.toBlob(b => res(b || new Blob()), 'image/jpeg', 0.85))
+    const out =
+      bestBlob ||
+      (await new Promise<Blob>((res) =>
+        canvas.toBlob((b) => res(b || new Blob()), "image/jpeg", 0.85)
+      ));
     // If still larger, accept and let backend reject
-    if (out.size >= file.size) return file
-    return new File([out], file.name.replace(/\.(png|jpeg|jpg|webp)$/i, '.jpg'), { type: 'image/jpeg' })
+    if (out.size >= file.size) return file;
+    return new File(
+      [out],
+      file.name.replace(/\.(png|jpeg|jpg|webp)$/i, ".jpg"),
+      { type: "image/jpeg" }
+    );
   } catch {
-    return file
+    return file;
   }
 }
 
 // File validation function (reused from tickets)
 function validateFile(file: File): { isValid: boolean; message: string } {
   const maxSize = 10 * 1024 * 1024; // 10MB
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+  const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
 
   if (file.size > maxSize) {
-    return { isValid: false, message: 'File size exceeds 10MB limit' };
+    return { isValid: false, message: "File size exceeds 10MB limit" };
   }
 
   if (!allowedTypes.includes(file.type)) {
-    return { isValid: false, message: 'File type not supported. Please use JPG, PNG, or GIF' };
+    return {
+      isValid: false,
+      message: "File type not supported. Please use JPG, PNG, or GIF",
+    };
   }
 
-  return { isValid: true, message: 'File is valid' };
+  return { isValid: true, message: "File is valid" };
 }
 
 // Load data functions
 async function loadCustomers() {
-  console.log('[FormCustomerInstallation] Loading customers...');
+  console.log("[FormCustomerInstallation] Loading customers...");
   try {
     const response = await customerAdminApi().getAllCustomers();
     state.customers = response.data || [];
-    console.log('[FormCustomerInstallation] Customers loaded:', state.customers.length);
+    console.log(
+      "[FormCustomerInstallation] Customers loaded:",
+      state.customers.length
+    );
   } catch (error) {
-    console.error('[FormCustomerInstallation] Failed to load customers:', error);
+    console.error(
+      "[FormCustomerInstallation] Failed to load customers:",
+      error
+    );
   }
 }
 
 async function loadTechnicians() {
-  console.log('[FormCustomerInstallation] Loading technicians...');
+  console.log("[FormCustomerInstallation] Loading technicians...");
   try {
-    const response = await userManagementAdminApi().getAllUsers({ query: { role: "TECHNICIAN" } });
+    const response = await userManagementAdminApi().getAllUsers({
+      query: { role: "TECHNICIAN" },
+    });
     state.availableTechnicians = response.data || [];
-    console.log('[FormCustomerInstallation] Technicians loaded:', state.availableTechnicians.length);
+    console.log(
+      "[FormCustomerInstallation] Technicians loaded:",
+      state.availableTechnicians.length
+    );
   } catch (error) {
-    console.error('[FormCustomerInstallation] Failed to load technicians:', error);
+    console.error(
+      "[FormCustomerInstallation] Failed to load technicians:",
+      error
+    );
   }
 }
 
 async function loadAssets() {
-  console.log('[FormCustomerInstallation] Loading assets...');
+  console.log("[FormCustomerInstallation] Loading assets...");
   try {
     const response = await assetAdminApi().getAllAssets();
     if (response.success) {
@@ -1185,53 +1518,74 @@ async function loadAssets() {
         brand: asset.brand,
         model: asset.model,
         serial_number: asset.serial_number,
-        display: `${asset.brand} ${asset.model} (${asset.serial_number})`
+        display: `${asset.brand} ${asset.model} (${asset.serial_number})`,
       }));
-      console.log('[FormCustomerInstallation] Assets loaded:', state.assets.length);
+      console.log(
+        "[FormCustomerInstallation] Assets loaded:",
+        state.assets.length
+      );
     } else {
-      console.warn('[FormCustomerInstallation] Assets response not successful:', response);
+      console.warn(
+        "[FormCustomerInstallation] Assets response not successful:",
+        response
+      );
     }
   } catch (error) {
-    console.error('[FormCustomerInstallation] Failed to load assets:', error);
+    console.error("[FormCustomerInstallation] Failed to load assets:", error);
   }
 }
 
 async function loadProducts() {
-  console.log('[FormCustomerInstallation] Loading products...');
+  console.log("[FormCustomerInstallation] Loading products...");
   try {
     const response = await customerAdminApi().getAllProducts();
     if (response.success) {
       state.products = response.data.map((product: any) => ({
         id: product.id,
         name: product.name,
-        description: product.description || '',
+        description: product.description || "",
         download_speed_mbps: product.download_speed_mbps,
         upload_speed_mbps: product.upload_speed_mbps,
         price: product.price,
-        display: `${product.name} (${product.download_speed_mbps || 'N/A'}M/${product.upload_speed_mbps || 'N/A'}M) - ${product.description || 'No description'}`
+        display: `${product.name} (${product.download_speed_mbps || "N/A"}M/${
+          product.upload_speed_mbps || "N/A"
+        }M) - ${product.description || "No description"}`,
       }));
-      console.log('[FormCustomerInstallation] Products loaded:', state.products.length);
+      console.log(
+        "[FormCustomerInstallation] Products loaded:",
+        state.products.length
+      );
       // Debug: Log the first product to see its structure
       if (state.products.length > 0) {
-        console.log('[FormCustomerInstallation] First product structure:', state.products[0]);
-        console.log('[FormCustomerInstallation] Download speed:', state.products[0].download_speed_mbps);
-        console.log('[FormCustomerInstallation] Upload speed:', state.products[0].upload_speed_mbps);
+        console.log(
+          "[FormCustomerInstallation] First product structure:",
+          state.products[0]
+        );
+        console.log(
+          "[FormCustomerInstallation] Download speed:",
+          state.products[0].download_speed_mbps
+        );
+        console.log(
+          "[FormCustomerInstallation] Upload speed:",
+          state.products[0].upload_speed_mbps
+        );
       }
     } else {
-      console.warn('[FormCustomerInstallation] Products response not successful:', response);
+      console.warn(
+        "[FormCustomerInstallation] Products response not successful:",
+        response
+      );
     }
   } catch (error) {
-    console.error('[FormCustomerInstallation] Failed to load products:', error);
+    console.error("[FormCustomerInstallation] Failed to load products:", error);
   }
 }
 
 async function loadTerminalCustomers() {
-  console.log('[FormCustomerInstallation] Loading terminal installations...');
+  console.log("[FormCustomerInstallation] Loading terminal installations...");
   try {
-    // Use the API endpoint to get terminal installations
     const api = useApiHost();
     const url = `${api}/api/admin/customer-installation?is_terminal=yes`;
-    console.log('[FormCustomerInstallation] Fetching from URL:', url);
 
     const response = await fetch(url, {
       method: "GET",
@@ -1241,104 +1595,94 @@ async function loadTerminalCustomers() {
       },
     });
 
-    console.log('[FormCustomerInstallation] Response status:', response.status, response.statusText);
-
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[FormCustomerInstallation] Response error:', errorText);
-      throw new Error(`Failed to fetch terminal installations: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch terminal installations: ${response.status}`
+      );
     }
 
     const data = await response.json();
-    console.log('[FormCustomerInstallation] Raw API response:', data);
-
-    // Handle both response formats: {success: true, data: [...]} or direct array
-    const installations = data.success ? (data.data || []) : (data.data || data || []);
-    console.log('[FormCustomerInstallation] Extracted installations:', installations.length, installations);
+    const installations = data.success
+      ? data.data || []
+      : data.data || data || [];
 
     if (installations && installations.length > 0) {
-      // First drop any soft-deleted installations
-      const activeInstallations = installations.filter((inst: any) => {
-        const deletedAtRaw = inst.deleted_at ?? inst.deletedAt;
-
-        // Consider it deleted if deleted_at is present and not explicitly null/invalid
+      // Filter: Must be Terminal AND Not Deleted
+      const terminalInstallations = installations.filter((inst: any) => {
+        // 1. Soft Delete Check
+        const deletedAt = inst.deleted_at ?? inst.deletedAt;
         let isDeleted = false;
-        if (deletedAtRaw !== undefined) {
-          if (deletedAtRaw === null) {
-            isDeleted = false;
-          } else if (typeof deletedAtRaw === 'string') {
-            const trimmed = deletedAtRaw.trim().toLowerCase();
-            isDeleted = trimmed !== '' && trimmed !== 'null';
-          } else if (typeof deletedAtRaw === 'object') {
-            // GORM DeletedAt struct: { Time: "...", Valid: true }
-            const validFlag = (deletedAtRaw as any).Valid ?? (deletedAtRaw as any).valid;
-            const timeVal = (deletedAtRaw as any).Time ?? (deletedAtRaw as any).time;
-            isDeleted = validFlag === true || !!timeVal;
+
+        if (deletedAt) {
+          if (typeof deletedAt === "string") {
+            // Check for valid date string, ignoring "null" string or empty
+            const lower = deletedAt.trim().toLowerCase();
+            isDeleted =
+              lower !== "" &&
+              lower !== "null" &&
+              lower !== "0000-00-00 00:00:00";
+          } else if (typeof deletedAt === "object") {
+            // Handle GORM DeletedAt struct: { Time: "...", Valid: true }
+            isDeleted = deletedAt.Valid === true;
           } else {
-            // Any other truthy value means deleted
-            isDeleted = !!deletedAtRaw;
+            // Any other truthy value (Date object, etc) means it is deleted
+            isDeleted = true;
           }
         }
 
         if (isDeleted) {
-          console.log('[FormCustomerInstallation] Skipping soft-deleted installation:', inst.id, deletedAtRaw);
+          // Skip this record
+          return false;
         }
-        return !isDeleted;
-      });
 
-      // Backend should already filter by is_terminal=yes, but double-check for safety
-      const terminalInstallations = activeInstallations.filter((inst: any) => {
-        const isTerminal = inst.is_terminal === 'yes' || inst.is_terminal === 'Yes' || inst.is_terminal === true;
-        console.log('[FormCustomerInstallation] Installation:', inst.id, 'is_terminal:', inst.is_terminal, 'matches:', isTerminal);
+        // 2. Terminal Type Check
+        const isTerminal =
+          String(inst.is_terminal).toLowerCase() === "yes" ||
+          inst.is_terminal === true;
         return isTerminal;
       });
 
-      console.log('[FormCustomerInstallation] Terminal installations after filter:', terminalInstallations.length);
+      console.log(
+        `[FormCustomerInstallation] Filtered active terminals: ${terminalInstallations.length}`
+      );
 
-      // Map installations to options with installation ID as value and customer info as display
+      // Map to Dropdown Options
       state.terminalInstallations = terminalInstallations.map((inst: any) => {
-        // Get customer name from relationship or customer_id
-        let customerName = 'Unknown Customer';
-        let customerPhone = '';
-
-        if (inst.customer && inst.customer.name) {
+        // Get customer name safely
+        let customerName = "Unknown Customer";
+        if (inst.customer && inst.customer.name)
           customerName = inst.customer.name;
-          customerPhone = inst.customer.phone || '';
-        } else if (inst.Customer && inst.Customer.name) {
+        else if (inst.Customer && inst.Customer.name)
           customerName = inst.Customer.name;
-          customerPhone = inst.Customer.phone || '';
-        }
 
-        // Format installation date if available
-        const installDate = inst.installation_completed_at || inst.createdAt || '';
-        const dateStr = installDate ? new Date(installDate).toLocaleDateString() : '';
+        // Format Date
+        const installDate =
+          inst.installation_completed_at || inst.createdAt || "";
+        const dateStr = installDate
+          ? new Date(installDate).toLocaleDateString()
+          : "";
 
-        // Create display string: "Customer Name - Installation ID (Date)"
-        const display = `${customerName} - ${inst.id.substring(0, 8)}${dateStr ? ` (${dateStr})` : ''}`;
-
-        console.log('[FormCustomerInstallation] Mapped installation:', {
-          id: inst.id,
-          customer_name: customerName,
-          display: display
-        });
+        // Display Format
+        const display = `${customerName} - ${inst.id.substring(0, 8)}${
+          dateStr ? ` (${dateStr})` : ""
+        }`;
 
         return {
-          id: inst.id, // Installation ID as value
+          id: inst.id,
           installation_id: inst.id,
           customer_name: customerName,
-          customer_phone: customerPhone,
           customer_id: inst.customer_id || inst.CustomerID,
-          display: display
+          display: display,
         };
       });
-
-      console.log('[FormCustomerInstallation] Terminal installations loaded:', state.terminalInstallations.length, state.terminalInstallations);
     } else {
-      console.warn('[FormCustomerInstallation] No installations returned from API');
       state.terminalInstallations = [];
     }
   } catch (error) {
-    console.error('[FormCustomerInstallation] Failed to load terminal installations:', error);
+    console.error(
+      "[FormCustomerInstallation] Failed to load terminal installations:",
+      error
+    );
     state.terminalInstallations = [];
   }
 }
@@ -1362,7 +1706,8 @@ async function onAssetChange(assetId: string) {
         label: `${item.mac_address} (${item.status})`,
         id: item.id,
         mac_address: item.mac_address,
-        status: item.status
+        mac_sticker: item.mac_sticker || item.mac_address,
+        status: item.status,
       }));
     } else {
       availableAssetItems.value[assetId] = [];
@@ -1370,18 +1715,17 @@ async function onAssetChange(assetId: string) {
   } catch (error) {
     console.error("Failed to load available asset items:", error);
     availableAssetItems.value[assetId] = [];
-    notification.error('Error', 'Failed to load available MAC addresses');
+    notification.error("Error", "Failed to load available MAC addresses");
   }
 }
 
-
 // Close modal function
 function closeModal() {
-  console.log('[FormCustomerInstallation] closeModal called');
+  console.log("[FormCustomerInstallation] closeModal called");
 
   // Clear any pending technician photo files when closing modal
   if (state.technician_photo_files.length > 0) {
-    console.log('🧹 Clearing pending technician photo files on modal close');
+    console.log("🧹 Clearing pending technician photo files on modal close");
     state.technician_photo_files = [];
     state.technician_photo_previews = [];
     technicianPhotoSizes.value = [];
@@ -1403,11 +1747,13 @@ function addTechnician() {
 // Get available technicians (excluding already assigned ones)
 function getAvailableTechniciansForIndex(currentIndex: number) {
   const assignedTechnicianIds = state.technicians
-    .map((tech: any, index: number) => index !== currentIndex ? tech.technician_id : null)
-    .filter((id: string | null) => id && id.trim() !== '');
+    .map((tech: any, index: number) =>
+      index !== currentIndex ? tech.technician_id : null
+    )
+    .filter((id: string | null) => id && id.trim() !== "");
 
-  return state.availableTechnicians.filter((tech: any) =>
-    !assignedTechnicianIds.includes(tech.id)
+  return state.availableTechnicians.filter(
+    (tech: any) => !assignedTechnicianIds.includes(tech.id)
   );
 }
 
@@ -1417,7 +1763,7 @@ function removeTechnician(index: number) {
 
   // If we removed the primary, make the first senior primary
   if (removedTech.is_primary && state.technicians.length > 0) {
-    const firstSenior = state.technicians.find((t: any) => t.role === 'senior');
+    const firstSenior = state.technicians.find((t: any) => t.role === "senior");
     if (firstSenior) {
       firstSenior.is_primary = true;
     } else if (state.technicians.length > 0) {
@@ -1434,8 +1780,8 @@ function setPrimaryTechnician(index: number) {
 
 // Fetch DHCP lease for the selected MAC address
 async function fetchDHCPLease() {
-  if (!state.mac_address) {
-    notification.error('Error', 'Please select a MAC address first');
+  if (!state.mac_sticker && !state.mac_address) {
+    notification.error("Error", "Please select a MAC address first");
     return;
   }
 
@@ -1443,57 +1789,78 @@ async function fetchDHCPLease() {
   state.dhcpStatus = null;
 
   try {
-    console.log('Fetching DHCP lease for MAC:', state.mac_address);
+    const stickerMac = state.mac_sticker || state.mac_address;
+    console.log("Fetching DHCP lease for sticker MAC:", stickerMac);
 
-    const result = await mikrotikAdminApi().getDHCPLease(state.mac_address);
+    const result = await mikrotikAdminApi().getDHCPLease(stickerMac);
 
     if (result.success) {
-      const shiftedMac = result.data?.shifted_mac || result.data?.mac_address;
-      const stickerMac = result.data?.sticker_mac || result.data?.mac_sticker || state.mac_address;
+      const foundMac = result.data?.mac_address || state.mac_address;
+      const shiftedMac = result.data?.shifted_mac;
+      const stickerMac =
+        result.data?.sticker_mac ||
+        result.data?.mac_sticker ||
+        state.mac_address ||
+        null;
 
-      // Persist the shifted MAC back to the asset item (so asset records match the actual router MAC)
-      if (shiftedMac) {
-        await updateAssetItemMacToShifted(shiftedMac, stickerMac);
-      }
+      // Keep form in sync with real MAC, but defer persistence until user saves
+      state.mac_address = foundMac;
+      state.mac_sticker = stickerMac || state.mac_sticker;
+      state.pendingMacUpdate = {
+        mac: foundMac,
+        shifted_mac: shiftedMac,
+        sticker_mac: stickerMac,
+      };
 
       state.ip_static = result.data.found_ip;
       state.dhcpStatus = {
         success: true,
-        message: `DHCP lease found: MAC ${result.data.mac_address}, IP ${result.data.found_ip}`
+        message: `DHCP lease found: MAC ${foundMac}, IP ${result.data.found_ip}. Will apply on Save.`,
       };
-      notification.success('DHCP Lease Found', `MAC ${result.data.mac_address}, IP address ${result.data.found_ip} fetched successfully`);
-      console.log('DHCP lease response:', result);
+      notification.success(
+        "DHCP Lease Found",
+        `MAC ${foundMac}, IP ${result.data.found_ip} fetched. Click \"Save\" to apply to the device record.`
+      );
+      console.log("DHCP lease response:", result);
     } else {
-      const errorMessage = result.message || 'Failed to fetch DHCP lease';
+      const errorMessage = result.message || "Failed to fetch DHCP lease";
       state.dhcpStatus = {
         success: false,
-        message: errorMessage
+        message: errorMessage,
       };
-      notification.error('DHCP Error', errorMessage);
-      console.error('DHCP lease error:', result);
+      notification.error("DHCP Error", errorMessage);
+      console.error("DHCP lease error:", result);
     }
   } catch (error: any) {
-    console.error('DHCP fetch error:', error);
+    console.error("DHCP fetch error:", error);
 
-    let errorMessage = 'Network error while fetching DHCP lease';
+    let errorMessage = "Network error while fetching DHCP lease";
     if (error.message) {
       errorMessage = error.message;
-      if (error.message.includes('Authentication') || error.message.includes('401')) {
-        errorMessage = 'Authentication required. Please login again.';
-      } else if (error.message.includes('404')) {
-        errorMessage = 'DHCP API endpoint not found. Please check server configuration.';
-      } else if (error.message.includes('MikroTik service not initialized') || error.message.includes('MikroTik service not connected')) {
-        errorMessage = 'MikroTik router is not connected. Please connect to MikroTik first in the MikroTik management section.';
-      } else if (error.message.includes('500')) {
-        errorMessage = 'Server error. Please try again later.';
+      if (
+        error.message.includes("Authentication") ||
+        error.message.includes("401")
+      ) {
+        errorMessage = "Authentication required. Please login again.";
+      } else if (error.message.includes("404")) {
+        errorMessage =
+          "DHCP API endpoint not found. Please check server configuration.";
+      } else if (
+        error.message.includes("MikroTik service not initialized") ||
+        error.message.includes("MikroTik service not connected")
+      ) {
+        errorMessage =
+          "MikroTik router is not connected. Please connect to MikroTik first in the MikroTik management section.";
+      } else if (error.message.includes("500")) {
+        errorMessage = "Server error. Please try again later.";
       }
     }
 
     state.dhcpStatus = {
       success: false,
-      message: errorMessage
+      message: errorMessage,
     };
-    notification.error('DHCP Error', errorMessage);
+    notification.error("DHCP Error", errorMessage);
   } finally {
     state.fetchingDHCP = false;
   }
@@ -1501,13 +1868,17 @@ async function fetchDHCPLease() {
 
 // Load data on component mount
 onMounted(async () => {
-  console.log('[FormCustomerInstallation] Component mounted, loading data...');
-  console.log('[FormCustomerInstallation] Component should now be rendered inside modal');
+  console.log("[FormCustomerInstallation] Component mounted, loading data...");
+  console.log(
+    "[FormCustomerInstallation] Component should now be rendered inside modal"
+  );
 
   // Setup date input click handler to open calendar picker
   nextTick(() => {
     const setupDateInput = () => {
-      const dateInputs = document.querySelectorAll('.date-input-clickable input[type="date"], .date-input-clickable input[type="datetime-local"]');
+      const dateInputs = document.querySelectorAll(
+        '.date-input-clickable input[type="date"], .date-input-clickable input[type="datetime-local"]'
+      );
       dateInputs.forEach((dateInput) => {
         const input = dateInput as HTMLInputElement;
         // Check if listener already added
@@ -1515,9 +1886,9 @@ onMounted(async () => {
           (input as any).__datePickerSetup = true;
 
           // Add click handler to open date picker
-          input.addEventListener('click', function (e) {
+          input.addEventListener("click", function (e) {
             // Use showPicker() if available (modern browsers)
-            if (this.showPicker && typeof this.showPicker === 'function') {
+            if (this.showPicker && typeof this.showPicker === "function") {
               try {
                 const pickerResult = (this.showPicker as () => Promise<void>)();
                 pickerResult?.catch(() => {
@@ -1532,12 +1903,14 @@ onMounted(async () => {
           });
 
           // Also handle focus event
-          input.addEventListener('focus', function () {
+          input.addEventListener("focus", function () {
             // Small delay to ensure input is fully focused
             setTimeout(() => {
-              if (this.showPicker && typeof this.showPicker === 'function') {
+              if (this.showPicker && typeof this.showPicker === "function") {
                 try {
-                  const pickerResult = (this.showPicker as () => Promise<void>)();
+                  const pickerResult = (
+                    this.showPicker as () => Promise<void>
+                  )();
                   pickerResult?.catch(() => {
                     // Silently fail if showPicker is not available
                   });
@@ -1561,7 +1934,7 @@ onMounted(async () => {
 
     dateInputObserver.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
     });
 
     // Cleanup observer when component unmounts
@@ -1572,13 +1945,18 @@ onMounted(async () => {
 
   // Debug: Check if component is visible
   setTimeout(() => {
-    const componentElement = document.querySelector('.bg-gradient-to-br.from-gray-50');
-    console.log('[FormCustomerInstallation] Component element found:', !!componentElement);
+    const componentElement = document.querySelector(
+      ".bg-gradient-to-br.from-gray-50"
+    );
+    console.log(
+      "[FormCustomerInstallation] Component element found:",
+      !!componentElement
+    );
     if (componentElement) {
-      console.log('[FormCustomerInstallation] Component styles:', {
+      console.log("[FormCustomerInstallation] Component styles:", {
         display: getComputedStyle(componentElement).display,
         visibility: getComputedStyle(componentElement).visibility,
-        opacity: getComputedStyle(componentElement).opacity
+        opacity: getComputedStyle(componentElement).opacity,
       });
     }
   }, 100);
@@ -1588,7 +1966,7 @@ onMounted(async () => {
       loadCustomers(),
       loadTechnicians(),
       loadAssets(),
-      loadProducts()
+      loadProducts(),
     ]);
 
     // Always load terminal installations (available for all installations)
@@ -1596,26 +1974,30 @@ onMounted(async () => {
 
     // Load edit mode data if applicable
     if (props.isEdit && props.data) {
-      state.is_terminal = props.data.is_terminal || 'no';
-      state.terminal_customer_installation_id = props.data.terminal_customer_installation_id || "";
+      state.is_terminal = props.data.is_terminal || "no";
+      state.terminal_customer_installation_id =
+        props.data.terminal_customer_installation_id || "";
     }
 
-    console.log('[FormCustomerInstallation] Data loaded successfully:', {
+    console.log("[FormCustomerInstallation] Data loaded successfully:", {
       customers: state.customers.length,
       technicians: state.availableTechnicians.length,
       assets: state.assets.length,
-      products: state.products.length
+      products: state.products.length,
     });
 
     // Add one technician by default
     if (state.technicians.length === 0) {
-      console.log('[FormCustomerInstallation] Adding default technician...');
+      console.log("[FormCustomerInstallation] Adding default technician...");
       addTechnician();
     }
 
-    console.log('[FormCustomerInstallation] Component fully initialized');
+    console.log("[FormCustomerInstallation] Component fully initialized");
   } catch (error) {
-    console.error('[FormCustomerInstallation] Error during component initialization:', error);
+    console.error(
+      "[FormCustomerInstallation] Error during component initialization:",
+      error
+    );
   }
 });
 </script>
@@ -1746,7 +2128,7 @@ onMounted(async () => {
 }
 
 /* Prevent any layout shifts during scroll */
-.form-container>div {
+.form-container > div {
   contain: layout style;
   transform: translateZ(0);
   backface-visibility: hidden;
@@ -1830,7 +2212,7 @@ onMounted(async () => {
 }
 
 /* Ensure footer content doesn't overflow */
-.overflow-hidden.max-w-full>div {
+.overflow-hidden.max-w-full > div {
   max-width: 100% !important;
   box-sizing: border-box !important;
 }
@@ -1855,15 +2237,15 @@ onMounted(async () => {
 :deep(.add-technician-button),
 .add-technician-button {
   font-weight: 600 !important;
-  border: 2px solid #6366F1 !important;
+  border: 2px solid #6366f1 !important;
   box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2) !important;
   transition: all 0.2s ease-in-out !important;
 }
 
 :deep(.add-technician-button:hover:not(:disabled)),
 .add-technician-button:hover:not(:disabled) {
-  background-color: #4F46E5 !important;
-  border-color: #4F46E5 !important;
+  background-color: #4f46e5 !important;
+  border-color: #4f46e5 !important;
   box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3) !important;
   transform: translateY(-1px) !important;
 }
@@ -1896,17 +2278,17 @@ onMounted(async () => {
 /* Primary button when not primary (gray outline) - hover effect */
 :deep(.primary-button[class*="bg-gray"]:not(:disabled):hover),
 :deep(.primary-button[class*="border-gray"]:not(:disabled):hover) {
-  background-color: #F3F4F6 !important;
-  border-color: #9CA3AF !important;
-  color: #1F2937 !important;
+  background-color: #f3f4f6 !important;
+  border-color: #9ca3af !important;
+  color: #1f2937 !important;
 }
 
 /* Primary button when is primary (green solid) */
 :deep(.primary-button[class*="bg-green"]),
 :deep(.primary-button.bg-green) {
-  background-color: #10B981 !important;
-  border-color: #10B981 !important;
-  color: #FFFFFF !important;
+  background-color: #10b981 !important;
+  border-color: #10b981 !important;
+  color: #ffffff !important;
   box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2) !important;
 }
 
@@ -1975,26 +2357,29 @@ onMounted(async () => {
 /* Custom input styling - white background, clean borders - same as Add Customer form */
 :deep(.customer-input input),
 :deep(.customer-input) {
-  background-color: #F9FAFB !important;
-  border-color: #D1D5DB !important;
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
   color: #000000 !important;
 }
 
 :deep(.customer-input input:focus),
 :deep(.customer-input:focus-within) {
-  border-color: #2563EB !important;
+  border-color: #2563eb !important;
   outline: none !important;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
 }
 
 :deep(.customer-input input::placeholder) {
-  color: #6B7280 !important;
+  color: #6b7280 !important;
 }
 
 /* Date input calendar icon styling - make it black and visible */
 /* For Chrome, Safari, Edge (WebKit browsers) */
 :deep(.customer-input input[type="date"]::-webkit-calendar-picker-indicator),
-:deep(.customer-input input[type="datetime-local"]::-webkit-calendar-picker-indicator) {
+:deep(
+    .customer-input
+      input[type="datetime-local"]::-webkit-calendar-picker-indicator
+  ) {
   filter: brightness(0) !important;
   opacity: 1 !important;
   cursor: pointer !important;
@@ -2005,8 +2390,13 @@ onMounted(async () => {
   margin-right: 5px !important;
 }
 
-:deep(.customer-input input[type="date"]::-webkit-calendar-picker-indicator:hover),
-:deep(.customer-input input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover) {
+:deep(
+    .customer-input input[type="date"]::-webkit-calendar-picker-indicator:hover
+  ),
+:deep(
+    .customer-input
+      input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover
+  ) {
   opacity: 0.8 !important;
   filter: brightness(0) opacity(0.8) !important;
 }
@@ -2018,7 +2408,9 @@ onMounted(async () => {
 }
 
 :deep(.customer-input input[type="date"]::-moz-calendar-picker-indicator),
-:deep(.customer-input input[type="datetime-local"]::-moz-calendar-picker-indicator) {
+:deep(
+    .customer-input input[type="datetime-local"]::-moz-calendar-picker-indicator
+  ) {
   filter: brightness(0) saturate(100%) !important;
   opacity: 1 !important;
   cursor: pointer !important;
@@ -2052,8 +2444,8 @@ onMounted(async () => {
 :deep(.customer-select [role="combobox"]),
 :deep(.customer-select button[type="button"]),
 :deep(.customer-select [type="button"]) {
-  background-color: #FFFFFF !important;
-  border-color: #D1D5DB !important;
+  background-color: #ffffff !important;
+  border-color: #d1d5db !important;
   color: #000000 !important;
 }
 
@@ -2061,10 +2453,10 @@ onMounted(async () => {
 :deep(.customer-select [role="combobox"]:focus),
 :deep(.customer-select:focus-within button),
 :deep(.customer-select button:not(:disabled):hover) {
-  border-color: #2563EB !important;
+  border-color: #2563eb !important;
   outline: none !important;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
-  background-color: #FFFFFF !important;
+  background-color: #ffffff !important;
   color: #000000 !important;
 }
 
@@ -2080,12 +2472,12 @@ onMounted(async () => {
 :deep(.customer-select [role="option"]),
 :deep(.customer-select [role="listbox"] [role="option"]) {
   color: #000000 !important;
-  background-color: #FFFFFF !important;
+  background-color: #ffffff !important;
 }
 
 :deep(.customer-select [role="option"]:hover),
 :deep(.customer-select [role="listbox"] [role="option"]:hover) {
-  background-color: #F9FAFB !important;
+  background-color: #f9fafb !important;
   color: #000000 !important;
 }
 
@@ -2097,9 +2489,9 @@ onMounted(async () => {
 :deep(.form-container [class*="ui-select-menu"] [role="combobox"]),
 :deep(.form-container [class*="SelectMenu"] button),
 :deep(.form-container [class*="SelectMenu"] [role="combobox"]) {
-  background-color: #FFFFFF !important;
-  background: #FFFFFF !important;
-  border-color: #D1D5DB !important;
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  border-color: #d1d5db !important;
   color: #000000 !important;
 }
 
@@ -2117,8 +2509,8 @@ onMounted(async () => {
 :deep(.form-container button[role="combobox"].dark\:bg-gray-800),
 :deep(.form-container [class*="USelectMenu"] button.dark\:text-gray-200),
 :deep(.form-container button[role="combobox"].dark\:text-gray-200) {
-  background-color: #FFFFFF !important;
-  background: #FFFFFF !important;
+  background-color: #ffffff !important;
+  background: #ffffff !important;
   color: #000000 !important;
 }
 
@@ -2126,22 +2518,34 @@ onMounted(async () => {
 :deep(.form-container [role="listbox"]),
 :deep(.form-container [class*="ui-select-menu"] [role="listbox"]),
 :deep(.form-container [class*="USelectMenu"] [role="listbox"]) {
-  background-color: #FFFFFF !important;
-  border-color: #D1D5DB !important;
+  background-color: #ffffff !important;
+  border-color: #d1d5db !important;
 }
 
 /* Dropdown menu items */
 :deep(.form-container [role="listbox"] [role="option"]),
-:deep(.form-container [class*="ui-select-menu"] [role="listbox"] [role="option"]),
+:deep(
+    .form-container [class*="ui-select-menu"] [role="listbox"] [role="option"]
+  ),
 :deep(.form-container [class*="USelectMenu"] [role="listbox"] [role="option"]) {
-  background-color: #FFFFFF !important;
+  background-color: #ffffff !important;
   color: #000000 !important;
 }
 
 :deep(.form-container [role="listbox"] [role="option"]:hover),
-:deep(.form-container [class*="ui-select-menu"] [role="listbox"] [role="option"]:hover),
-:deep(.form-container [class*="USelectMenu"] [role="listbox"] [role="option"]:hover) {
-  background-color: #F9FAFB !important;
+:deep(
+    .form-container
+      [class*="ui-select-menu"]
+      [role="listbox"]
+      [role="option"]:hover
+  ),
+:deep(
+    .form-container
+      [class*="USelectMenu"]
+      [role="listbox"]
+      [role="option"]:hover
+  ) {
+  background-color: #f9fafb !important;
   color: #000000 !important;
 }
 
@@ -2153,8 +2557,8 @@ onMounted(async () => {
 :deep(.form-container input[type="password"]),
 :deep(.form-container input[type="tel"]),
 :deep(.form-container textarea) {
-  background-color: #F9FAFB !important;
-  border-color: #D1D5DB !important;
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
   color: #000000 !important;
 }
 
@@ -2162,21 +2566,21 @@ onMounted(async () => {
 :deep(.form-container textarea:focus),
 :deep(.form-container input:focus-within),
 :deep(.form-container textarea:focus-within) {
-  border-color: #2563EB !important;
+  border-color: #2563eb !important;
   outline: none !important;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
 }
 
 :deep(.form-container input::placeholder),
 :deep(.form-container textarea::placeholder) {
-  color: #6B7280 !important;
+  color: #6b7280 !important;
 }
 
 :deep(.form-container button[role="combobox"]),
 :deep(.form-container [role="combobox"]),
 :deep(.form-container select) {
-  background-color: #FFFFFF !important;
-  border-color: #D1D5DB !important;
+  background-color: #ffffff !important;
+  border-color: #d1d5db !important;
   color: #000000 !important;
 }
 
@@ -2184,7 +2588,7 @@ onMounted(async () => {
 :deep(.form-container [role="combobox"]:focus),
 :deep(.form-container select:focus),
 :deep(.form-container:focus-within button[role="combobox"]) {
-  border-color: #2563EB !important;
+  border-color: #2563eb !important;
   outline: none !important;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
 }
@@ -2205,50 +2609,56 @@ onMounted(async () => {
 }
 
 /* Ensure all span labels in form groups are black */
-:deep(.form-container .flex.items-center span:not(.text-red-500):not(.text-gray-500):not(.text-green-600):not(.text-orange-600)) {
+:deep(
+    .form-container
+      .flex.items-center
+      span:not(.text-red-500):not(.text-gray-500):not(.text-green-600):not(
+        .text-orange-600
+      )
+  ) {
   color: #000000 !important;
 }
 
 /* Upload area styling */
 :deep(.form-container input[type="file"]) {
-  border: 2px dashed #D1D5DB !important;
+  border: 2px dashed #d1d5db !important;
   border-radius: 0.5rem !important;
   padding: 1rem !important;
-  background-color: #F9FAFB !important;
+  background-color: #f9fafb !important;
 }
 
 :deep(.form-container input[type="file"]:hover) {
-  border-color: #2563EB !important;
-  background-color: #F0F4FF !important;
+  border-color: #2563eb !important;
+  background-color: #f0f4ff !important;
 }
 
 /* Checkbox styling - white background and black text */
 :deep(.form-container input[type="checkbox"]),
 :deep(input[type="checkbox"]) {
-  border-color: #D1D5DB !important;
-  background-color: #FFFFFF !important;
-  accent-color: #2563EB !important;
+  border-color: #d1d5db !important;
+  background-color: #ffffff !important;
+  accent-color: #2563eb !important;
 }
 
 :deep(.form-container input[type="checkbox"]:checked),
 :deep(input[type="checkbox"]:checked) {
-  background-color: #2563EB !important;
-  border-color: #2563EB !important;
-  accent-color: #2563EB !important;
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
+  accent-color: #2563eb !important;
 }
 
 :deep(.form-container input[type="checkbox"]:focus),
 :deep(input[type="checkbox"]:focus) {
   ring: 2px !important;
-  ring-color: #2563EB !important;
+  ring-color: #2563eb !important;
   outline: none !important;
-  border-color: #2563EB !important;
+  border-color: #2563eb !important;
 }
 
 /* Checkbox container styling */
 :deep(.form-container .toggle-switch),
 :deep(.toggle-switch) {
-  background-color: #FFFFFF !important;
+  background-color: #ffffff !important;
 }
 
 :deep(.form-container .toggle-switch label),
@@ -2269,8 +2679,8 @@ onMounted(async () => {
 /* MAC Address display field */
 :deep(.form-container .bg-gray-50),
 :deep(.form-container .p-3.bg-gray-50) {
-  background-color: #F9FAFB !important;
-  border-color: #D1D5DB !important;
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
 }
 
 :deep(.form-container .bg-gray-50 span),
@@ -2280,7 +2690,7 @@ onMounted(async () => {
 
 /* Ensure all div containers with bg-gray-50 have light background */
 :deep(.form-container div.bg-gray-50) {
-  background-color: #F9FAFB !important;
+  background-color: #f9fafb !important;
 }
 
 /* Override any remaining dark backgrounds */
@@ -2294,49 +2704,49 @@ onMounted(async () => {
 :deep(.form-container button[aria-expanded]),
 :deep(.form-container button[aria-haspopup="listbox"]),
 :deep(.form-container [data-headlessui-state]) {
-  background-color: #FFFFFF !important;
+  background-color: #ffffff !important;
   color: #000000 !important;
 }
 
 /* Ensure all select menu buttons have white background regardless of state */
 :deep(.form-container button[role="combobox"][aria-expanded="true"]),
 :deep(.form-container button[role="combobox"][aria-expanded="false"]) {
-  background-color: #FFFFFF !important;
-  background: #FFFFFF !important;
+  background-color: #ffffff !important;
+  background: #ffffff !important;
   color: #000000 !important;
 }
 
 /* Override Nuxt UI select menu default styles */
 :deep(.form-container .ui-select-menu),
 :deep(.form-container [class*="ui-select-menu"]) {
-  background-color: #FFFFFF !important;
+  background-color: #ffffff !important;
 }
 
 :deep(.form-container .ui-select-menu button),
 :deep(.form-container [class*="ui-select-menu"] button) {
-  background-color: #FFFFFF !important;
-  background: #FFFFFF !important;
+  background-color: #ffffff !important;
+  background: #ffffff !important;
   color: #000000 !important;
 }
 
 /* Ensure placeholder text is visible */
 :deep(.form-container button[role="combobox"]:empty::before),
 :deep(.form-container button[role="combobox"]::placeholder) {
-  color: #6B7280 !important;
+  color: #6b7280 !important;
 }
 
 /* Global override for all select menus and dropdowns in form */
 :deep(.form-container button[type="button"]),
 :deep(.form-container [role="combobox"]) {
-  background-color: #FFFFFF !important;
-  background: #FFFFFF !important;
+  background-color: #ffffff !important;
+  background: #ffffff !important;
   color: #000000 !important;
 }
 
 :deep(.form-container button[type="button"]:hover),
 :deep(.form-container [role="combobox"]:hover) {
-  background-color: #FFFFFF !important;
-  background: #FFFFFF !important;
+  background-color: #ffffff !important;
+  background: #ffffff !important;
   color: #000000 !important;
 }
 
@@ -2348,15 +2758,15 @@ onMounted(async () => {
   appearance: checkbox !important;
   width: 1.5rem !important;
   height: 1.5rem !important;
-  border: 2px solid #D1D5DB !important;
-  background-color: #FFFFFF !important;
+  border: 2px solid #d1d5db !important;
+  background-color: #ffffff !important;
   border-radius: 0.25rem !important;
 }
 
 :deep(.form-container input[type="checkbox"]:checked),
 :deep(input[type="checkbox"]:checked) {
-  background-color: #2563EB !important;
-  border-color: #2563EB !important;
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
   background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-3.5-3.5a1 1 0 011.414-1.414L4.5 11.086l6.293-6.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
   background-size: 100% 100% !important;
   background-position: center !important;
@@ -2365,15 +2775,15 @@ onMounted(async () => {
 
 /* Force all buttons in form to have proper styling */
 :deep(.form-container button:not(.close-button):not([type="submit"])) {
-  background-color: #FFFFFF !important;
+  background-color: #ffffff !important;
   color: #000000 !important;
-  border-color: #D1D5DB !important;
+  border-color: #d1d5db !important;
 }
 
 /* Ensure all disabled/readonly inputs have light background */
 :deep(.form-container input[readonly]),
 :deep(.form-container input[disabled]) {
-  background-color: #F9FAFB !important;
+  background-color: #f9fafb !important;
   color: #000000 !important;
 }
 
@@ -2382,8 +2792,8 @@ onMounted(async () => {
 :deep(.form-container .bg-orange-50),
 :deep(.form-container .bg-green-50),
 :deep(.form-container .bg-gray-50) {
-  background-color: #F9FAFB !important;
-  border-color: #D1D5DB !important;
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
 }
 
 :deep(.form-container .text-indigo-900),
@@ -2400,8 +2810,8 @@ onMounted(async () => {
 
 /* Card styling inside sections */
 :deep(.form-container .technician-card) {
-  background-color: #FFFFFF !important;
-  border-color: #D1D5DB !important;
+  background-color: #ffffff !important;
+  border-color: #d1d5db !important;
 }
 
 /* Remove dark mode specific styles */
@@ -2417,8 +2827,8 @@ onMounted(async () => {
 :deep(.form-container [role="combobox"]),
 :deep(.form-container .customer-select button),
 :deep(.form-container .customer-select [role="combobox"]) {
-  background-color: #FFFFFF !important;
-  background: #FFFFFF !important;
+  background-color: #ffffff !important;
+  background: #ffffff !important;
   color: #000000 !important;
 }
 
@@ -2432,7 +2842,7 @@ onMounted(async () => {
 /* All dropdown menu items - SPECIFIC targeting */
 :deep(.form-container [role="listbox"] [role="option"]),
 :deep(.form-container [role="option"]) {
-  background-color: #FFFFFF !important;
+  background-color: #ffffff !important;
   color: #000000 !important;
 }
 
@@ -2443,7 +2853,7 @@ onMounted(async () => {
 
 :deep(.form-container [role="listbox"] [role="option"]:hover),
 :deep(.form-container [role="option"]:hover) {
-  background-color: #F9FAFB !important;
+  background-color: #f9fafb !important;
   color: #000000 !important;
 }
 
@@ -2455,8 +2865,8 @@ onMounted(async () => {
 /* All checkboxes - SPECIFIC targeting */
 :deep(.form-container input[type="checkbox"]),
 :deep(.form-container .toggle-switch input[type="checkbox"]) {
-  background-color: #FFFFFF !important;
-  border: 2px solid #D1D5DB !important;
+  background-color: #ffffff !important;
+  border: 2px solid #d1d5db !important;
   color: #000000 !important;
   appearance: checkbox !important;
   -webkit-appearance: checkbox !important;
@@ -2465,8 +2875,8 @@ onMounted(async () => {
 
 :deep(.form-container input[type="checkbox"]:checked),
 :deep(.form-container .toggle-switch input[type="checkbox"]:checked) {
-  background-color: #2563EB !important;
-  border-color: #2563EB !important;
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
 }
 
 /* Override any inline dark styles */
@@ -2474,8 +2884,8 @@ onMounted(async () => {
 :deep(.form-container *[style*="background-color: rgb(17, 24, 39)"]),
 :deep(.form-container *[style*="background-color: #1F2937"]),
 :deep(.form-container *[style*="background-color: #111827"]) {
-  background-color: #FFFFFF !important;
-  background: #FFFFFF !important;
+  background-color: #ffffff !important;
+  background: #ffffff !important;
 }
 
 :deep(.form-container *[style*="color: rgb(229, 231, 235)"]),
@@ -2489,33 +2899,46 @@ onMounted(async () => {
 <template>
   <div class="flex flex-col h-full bg-white overflow-hidden">
     <div class="flex-1 overflow-y-auto scroll-smooth p-6 min-h-0">
-
       <!-- Header -->
       <div class="mb-6 text-center pb-6 border-b border-gray-200">
-        <div class="inline-flex items-center justify-center bg-blue-600 p-3 rounded-xl mb-4 shadow-sm">
+        <div
+          class="inline-flex items-center justify-center bg-blue-600 p-3 rounded-xl mb-4 shadow-sm"
+        >
           <LucideIcon name="file-plus" :size="40" class="text-white" />
         </div>
         <h1 class="text-2xl font-bold text-black mb-2">
           Add Installation Report
         </h1>
         <p class="text-base text-gray-600 max-w-2xl mx-auto">
-          Document completed new installation with team assignment and optional MikroTik auto-provisioning
+          Document completed new installation with team assignment and optional
+          MikroTik auto-provisioning
         </p>
 
         <!-- Load Test Data Button for Debugging -->
         <div class="mt-4">
-          <button type="button" @click="loadTestData"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
+          <button
+            type="button"
+            @click="loadTestData"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
+          >
             <LucideIcon name="refresh-cw" :size="20" />
             Load Test Data (Debug)
           </button>
         </div>
       </div>
 
-      <UForm ref="formRef" :schema="schema" :state="state" class="form-container space-y-6" @submit="onSubmit">
+      <UForm
+        ref="formRef"
+        :schema="schema"
+        :state="state"
+        class="form-container space-y-6"
+        @submit="onSubmit"
+      >
         <!-- Basic Installation Information -->
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h3 class="text-lg font-semibold text-black mb-3 flex items-center gap-2">
+          <h3
+            class="text-lg font-semibold text-black mb-3 flex items-center gap-2"
+          >
             <LucideIcon name="info" :size="20" class="text-blue-600" />
             Customer Information
           </h3>
@@ -2524,25 +2947,45 @@ onMounted(async () => {
               <template #label>
                 <div class="flex items-center gap-2">
                   <LucideIcon name="user" :size="16" class="text-gray-600" />
-                  <span class="text-black font-medium">Customer <span class="text-red-500">*</span></span>
+                  <span class="text-black font-medium"
+                    >Customer <span class="text-red-500">*</span></span
+                  >
                 </div>
               </template>
-              <USelectMenu v-model="state.customer_id" :options="state.customers" placeholder="Select customer"
-                searchable searchable-placeholder="Search by customer name" option-attribute="name" value-attribute="id"
-                :search-attributes="['name', 'phone']" class="w-full customer-select" />
+              <USelectMenu
+                v-model="state.customer_id"
+                :options="state.customers"
+                placeholder="Select customer"
+                searchable
+                searchable-placeholder="Search by customer name"
+                option-attribute="name"
+                value-attribute="id"
+                :search-attributes="['name', 'phone']"
+                class="w-full customer-select"
+              />
             </UFormGroup>
 
             <UFormGroup name="status">
               <template #label>
                 <div class="flex items-center gap-2">
-                  <LucideIcon name="check-circle" :size="16" class="text-gray-600" />
+                  <LucideIcon
+                    name="check-circle"
+                    :size="16"
+                    class="text-gray-600"
+                  />
                   <span class="text-black font-medium">Status</span>
                 </div>
               </template>
-              <UInput v-model="state.status" readonly disabled class="bg-gray-100 customer-input" />
+              <UInput
+                v-model="state.status"
+                readonly
+                disabled
+                class="bg-gray-100 customer-input"
+              />
               <p class="text-xs text-gray-600 mt-1">
                 <LucideIcon name="info" :size="14" class="inline mr-1" />
-                Installation reports are always "completed" since technicians document after finishing the work
+                Installation reports are always "completed" since technicians
+                document after finishing the work
               </p>
             </UFormGroup>
 
@@ -2553,127 +2996,245 @@ onMounted(async () => {
                   <span class="text-black font-medium">Installation Type</span>
                 </div>
               </template>
-              <UInput v-model="state.installation_type" readonly disabled class="bg-gray-100 customer-input" />
+              <UInput
+                v-model="state.installation_type"
+                readonly
+                disabled
+                class="bg-gray-100 customer-input"
+              />
               <p class="text-xs text-gray-600 mt-1">
                 <LucideIcon name="info" :size="14" class="inline mr-1" />
-                This form is for new installations only. Use separate forms for maintenance (from trouble tickets) or
-                upgrades
+                This form is for new installations only. Use separate forms for
+                maintenance (from trouble tickets) or upgrades
               </p>
             </UFormGroup>
 
             <UFormGroup name="on_air_date">
               <template #label>
                 <div class="flex items-center gap-2">
-                  <LucideIcon name="calendar" :size="16" class="text-gray-600" />
+                  <LucideIcon
+                    name="calendar"
+                    :size="16"
+                    class="text-gray-600"
+                  />
                   <span>On Air Date</span>
                 </div>
               </template>
-              <UInput v-model="state.on_air_date" type="date" class="w-full customer-input date-input-clickable" />
+              <UInput
+                v-model="state.on_air_date"
+                type="date"
+                class="w-full customer-input date-input-clickable"
+              />
             </UFormGroup>
 
             <UFormGroup name="trial_end_date">
               <template #label>
                 <div class="flex items-center gap-2">
-                  <LucideIcon name="calendar" :size="16" class="text-gray-600" />
+                  <LucideIcon
+                    name="calendar"
+                    :size="16"
+                    class="text-gray-600"
+                  />
                   <span>Trial End Date</span>
                 </div>
               </template>
-              <UInput v-model="state.trial_end_date" type="date" class="w-full customer-input date-input-clickable" />
+              <UInput
+                v-model="state.trial_end_date"
+                type="date"
+                class="w-full customer-input date-input-clickable"
+              />
             </UFormGroup>
 
             <UFormGroup name="service_ready_date">
               <template #label>
                 <div class="flex items-center gap-2">
-                  <LucideIcon name="calendar" :size="16" class="text-gray-600" />
+                  <LucideIcon
+                    name="calendar"
+                    :size="16"
+                    class="text-gray-600"
+                  />
                   <span>Service Ready Date</span>
                 </div>
               </template>
-              <UInput v-model="state.service_ready_date" type="date"
-                class="w-full customer-input date-input-clickable" />
+              <UInput
+                v-model="state.service_ready_date"
+                type="date"
+                class="w-full customer-input date-input-clickable"
+              />
             </UFormGroup>
 
             <UFormGroup name="installation_completed_at">
               <template #label>
                 <div class="flex items-center gap-2">
-                  <LucideIcon name="check-circle" :size="16" class="text-gray-600" />
+                  <LucideIcon
+                    name="check-circle"
+                    :size="16"
+                    class="text-gray-600"
+                  />
                   <span>Installation Completed At</span>
                 </div>
               </template>
-              <UInput v-model="state.installation_completed_at" type="datetime-local"
-                class="w-full customer-input date-input-clickable" />
+              <UInput
+                v-model="state.installation_completed_at"
+                type="datetime-local"
+                class="w-full customer-input date-input-clickable"
+              />
             </UFormGroup>
 
             <!-- Terminal Installation Checkbox -->
             <div class="sm:col-span-2">
               <div
-                class="flex items-center p-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-blue-200 dark:border-blue-700">
-                <input type="checkbox" :checked="state.is_terminal === 'yes'"
-                  @change="state.is_terminal = ($event.target as HTMLInputElement).checked ? 'yes' : 'no'"
+                class="flex items-center p-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-blue-200 dark:border-blue-700"
+              >
+                <input
+                  type="checkbox"
+                  :checked="state.is_terminal === 'yes'"
+                  @change="
+                    state.is_terminal = ($event.target as HTMLInputElement)
+                      .checked
+                      ? 'yes'
+                      : 'no'
+                  "
                   id="is_terminal"
-                  class="w-5 h-5 text-blue-600 bg-gray-100 border-2 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer" />
-                <label for="is_terminal"
-                  class="ml-3 text-sm font-semibold text-gray-900 dark:text-gray-100 cursor-pointer">
+                  class="w-5 h-5 text-blue-600 bg-gray-100 border-2 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                />
+                <label
+                  for="is_terminal"
+                  class="ml-3 text-sm font-semibold text-gray-900 dark:text-gray-100 cursor-pointer"
+                >
                   <div class="flex items-center gap-2">
-                    <LucideIcon name="server" :size="18" class="text-blue-600" />
+                    <LucideIcon
+                      name="server"
+                      :size="18"
+                      class="text-blue-600"
+                    />
                     <span>Terminal Installation</span>
                   </div>
-                  <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 font-normal">
-                    Check this if this installation is for a terminal (HTB) that will serve multiple customers
+                  <p
+                    class="text-xs text-gray-600 dark:text-gray-400 mt-1 font-normal"
+                  >
+                    Check this if this installation is for a terminal (HTB) that
+                    will serve multiple customers
                   </p>
                 </label>
               </div>
             </div>
 
             <!-- Terminal Installation Selection (always available) -->
-            <UFormGroup name="terminal_customer_installation_id" class="sm:col-span-2">
+            <UFormGroup
+              name="terminal_customer_installation_id"
+              class="sm:col-span-2"
+            >
               <template #label>
                 <div class="flex items-center gap-2">
-              <LucideIcon name="server" :size="16" class="text-gray-600" />
-              <span>Select Terminal Installation</span>
-            </div>
-          </template>
-          <USelectMenu v-model="state.terminal_customer_installation_id" :options="state.terminalInstallations"
-            placeholder="Select terminal installation (HTB)" searchable
-            searchable-placeholder="Search by customer name or installation ID" option-attribute="display"
-            value-attribute="id" :search-attributes="['customer_name', 'installation_id']"
-            :loading="state.loading" :disabled="state.is_terminal === 'yes'" />
-          <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-            <LucideIcon name="info" :size="14" class="inline mr-1" />
-            If this is a non-terminal installation (is_terminal = no), you must select which terminal installation (HTB)
-            it connects to. Leave it empty only when this installation itself is the terminal (is_terminal = yes).
-          </p>
-          <p v-if="state.terminalInstallations.length === 0 && !state.loading"
-            class="text-xs text-orange-600 dark:text-orange-400 mt-1">
-            <LucideIcon name="alert-triangle" :size="14" class="inline mr-1" />
-            No terminal installations found. Please create a terminal installation first.
-          </p>
+                  <LucideIcon name="server" :size="16" class="text-gray-600" />
+                  <span>Select Terminal Installation</span>
+                </div>
+              </template>
+              <USelectMenu
+                v-model="state.terminal_customer_installation_id"
+                :options="state.terminalInstallations"
+                placeholder="Select terminal installation (HTB)"
+                searchable
+                searchable-placeholder="Search by customer name or installation ID"
+                option-attribute="display"
+                value-attribute="id"
+                :search-attributes="['customer_name', 'installation_id']"
+                :loading="state.loading"
+                :disabled="state.is_terminal === 'yes'"
+              />
+              <div
+                class="mt-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-900 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100 flex items-start gap-2"
+              >
+                <LucideIcon
+                  name="info"
+                  :size="16"
+                  class="mt-0.5 flex-shrink-0 text-blue-600 dark:text-slate-200"
+                />
+                <div class="text-xs leading-relaxed">
+                  <div
+                    class="font-semibold uppercase tracking-wide text-[11px]"
+                  >
+                    PANDUAN
+                  </div>
+                  <p>
+                    Jika ini adalah
+                    <span class="font-semibold">instalasi non-terminal,</span>
+                    Anda harus memilih instalasi terminal
+                    (HTB) mana yang terhubung.
+                  </p>
+                  <p
+                    class="mt-1 text-[11px] text-blue-800/80 dark:text-slate-300"
+                  >
+                    Biarkan kosong hanya jika instalasi ini sendiri adalah
+                    terminalnya.
+                  </p>
+                </div>
+              </div>
+              <p
+                v-if="
+                  state.terminalInstallations.length === 0 && !state.loading
+                "
+                class="font-semibold text-orange-600 break-words mt-1"
+              >
+                <LucideIcon
+                  name="alert-triangle"
+                  :size="14"
+                  class="inline mr-1"
+                />
+                Tidak ada instalasi terminal ditemukan. Silakan buat instalasi
+                terminal terlebih dahulu.
+              </p>
             </UFormGroup>
           </div>
 
           <UFormGroup name="notes" class="mt-4">
             <template #label>
               <div class="flex items-center gap-2">
-                <LucideIcon name="document-text" :size="16" class="text-gray-600" />
+                <LucideIcon
+                  name="document-text"
+                  :size="16"
+                  class="text-gray-600"
+                />
                 <span>Notes</span>
               </div>
             </template>
-            <UTextarea v-model="state.notes" placeholder="Additional notes about the installation" :rows="3"
-              class="w-full customer-input" />
+            <UTextarea
+              v-model="state.notes"
+              placeholder="Additional notes about the installation"
+              :rows="3"
+              class="w-full customer-input"
+            />
           </UFormGroup>
         </div>
 
         <!-- Technician Team Section -->
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
+          <div
+            class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5"
+          >
             <div>
-              <h3 class="text-lg font-semibold text-black mb-3 flex items-center gap-2">
-                <LucideIcon name="user-group" :size="20" class="text-blue-600" />
+              <h3
+                class="text-lg font-semibold text-black mb-3 flex items-center gap-2"
+              >
+                <LucideIcon
+                  name="user-group"
+                  :size="20"
+                  class="text-blue-600"
+                />
                 Installation Details
                 <span class="text-red-500">*</span>
               </h3>
-              <p class="text-sm text-gray-600 mt-1">Assign technicians with their roles and responsibilities</p>
+              <p class="text-sm text-gray-600 mt-1">
+                Assign technicians with their roles and responsibilities
+              </p>
             </div>
-            <UButton @click="addTechnician" size="lg" color="indigo" class="add-technician-button">
+            <UButton
+              @click="addTechnician"
+              size="lg"
+              color="indigo"
+              class="add-technician-button"
+            >
               <template #leading>
                 <LucideIcon name="plus-circle" :size="20" />
               </template>
@@ -2681,28 +3242,43 @@ onMounted(async () => {
             </UButton>
           </div>
 
-          <div v-if="state.technicians.length === 0"
-            class="text-center py-8 px-4 bg-white rounded-lg border-2 border-dashed border-gray-300">
-            <LucideIcon name="user-group" :size="64" class="text-gray-400 mx-auto mb-3" />
+          <div
+            v-if="state.technicians.length === 0"
+            class="text-center py-8 px-4 bg-white rounded-lg border-2 border-dashed border-gray-300"
+          >
+            <LucideIcon
+              name="user-group"
+              :size="64"
+              class="text-gray-400 mx-auto mb-3"
+            />
             <p class="text-gray-600 font-medium">No technicians assigned yet</p>
-            <p class="text-sm text-gray-500 mt-1">Click "Add Technician" to assign your installation team</p>
+            <p class="text-sm text-gray-500 mt-1">
+              Click "Add Technician" to assign your installation team
+            </p>
           </div>
 
           <div v-else class="space-y-4 overflow-hidden">
-            <div v-for="(tech, index) in state.technicians" :key="index"
-              class="technician-card bg-white rounded-xl border-2 border-gray-200 p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-200">
-
+            <div
+              v-for="(tech, index) in state.technicians"
+              :key="index"
+              class="technician-card bg-white rounded-xl border-2 border-gray-200 p-4 sm:p-6 shadow-sm hover:shadow-md transition-all duration-200"
+            >
               <!-- Header Section -->
               <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-3">
                   <div
-                    class="bg-indigo-500 text-white font-bold rounded-full w-8 h-8 flex items-center justify-center text-sm flex-shrink-0">
+                    class="bg-indigo-500 text-white font-bold rounded-full w-8 h-8 flex items-center justify-center text-sm flex-shrink-0"
+                  >
                     {{ index + 1 }}
                   </div>
-                  <span class="text-base font-semibold text-gray-700">Technician {{ index + 1 }}</span>
+                  <span class="text-base font-semibold text-gray-700"
+                    >Technician {{ index + 1 }}</span
+                  >
                 </div>
-                <div v-if="tech.is_primary"
-                  class="flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">
+                <div
+                  v-if="tech.is_primary"
+                  class="flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold"
+                >
                   <LucideIcon name="star" :size="16" />
                   PRIMARY
                 </div>
@@ -2715,12 +3291,24 @@ onMounted(async () => {
                   <label class="block text-sm font-semibold text-black mb-2">
                     Select Technician <span class="text-red-500">*</span>
                   </label>
-                  <USelectMenu v-model="tech.technician_id" :options="getAvailableTechniciansForIndex(index)"
-                    placeholder="Choose a technician" searchable searchable-placeholder="Search by name"
-                    option-attribute="name" value-attribute="id" :search-attributes="['name']" size="lg"
-                    class="w-full customer-select" />
-                  <p v-if="getAvailableTechniciansForIndex(index).length === 0" class="text-xs text-orange-600 mt-1">
-                    ⚠️ All available technicians have been assigned. Remove other assignments to see more options.
+                  <USelectMenu
+                    v-model="tech.technician_id"
+                    :options="getAvailableTechniciansForIndex(index)"
+                    placeholder="Choose a technician"
+                    searchable
+                    searchable-placeholder="Search by name"
+                    option-attribute="name"
+                    value-attribute="id"
+                    :search-attributes="['name']"
+                    size="lg"
+                    class="w-full customer-select"
+                  />
+                  <p
+                    v-if="getAvailableTechniciansForIndex(index).length === 0"
+                    class="text-xs text-orange-600 mt-1"
+                  >
+                    ⚠️ All available technicians have been assigned. Remove
+                    other assignments to see more options.
                   </p>
                 </div>
 
@@ -2731,26 +3319,60 @@ onMounted(async () => {
                     <label class="block text-sm font-semibold text-black mb-2">
                       Role <span class="text-red-500">*</span>
                     </label>
-                    <USelectMenu v-model="tech.role" :options="[
-                      { value: 'senior', label: '👨‍🔧 Senior', description: 'Lead technician' },
-                      { value: 'junior', label: '👷 Junior', description: 'Supporting role' },
-                      { value: 'helper', label: '🔧 Helper', description: 'Assistant' }
-                    ]" value-attribute="value" option-attribute="label" size="lg" class="w-full customer-select" />
+                    <USelectMenu
+                      v-model="tech.role"
+                      :options="[
+                        {
+                          value: 'senior',
+                          label: '👨‍🔧 Senior',
+                          description: 'Lead technician',
+                        },
+                        {
+                          value: 'junior',
+                          label: '👷 Junior',
+                          description: 'Supporting role',
+                        },
+                        {
+                          value: 'helper',
+                          label: '🔧 Helper',
+                          description: 'Assistant',
+                        },
+                      ]"
+                      value-attribute="value"
+                      option-attribute="label"
+                      size="lg"
+                      class="w-full customer-select"
+                    />
                   </div>
 
                   <!-- Action Buttons -->
                   <div class="w-full">
-                    <label class="block text-sm font-semibold text-black mb-2">Actions</label>
+                    <label class="block text-sm font-semibold text-black mb-2"
+                      >Actions</label
+                    >
                     <div class="flex gap-2 w-full">
-                      <UButton @click="setPrimaryTechnician(index)" :color="tech.is_primary ? 'green' : 'gray'"
-                        :variant="tech.is_primary ? 'solid' : 'outline'" size="lg" class="flex-1 min-w-0 primary-button"
-                        :disabled="tech.is_primary">
+                      <UButton
+                        @click="setPrimaryTechnician(index)"
+                        :color="tech.is_primary ? 'green' : 'gray'"
+                        :variant="tech.is_primary ? 'solid' : 'outline'"
+                        size="lg"
+                        class="flex-1 min-w-0 primary-button"
+                        :disabled="tech.is_primary"
+                      >
                         <LucideIcon name="star" :size="16" />
-                        <span class="hidden xs:inline">{{ tech.is_primary ? 'Primary' : 'Set Primary' }}</span>
+                        <span class="hidden xs:inline">{{
+                          tech.is_primary ? "Primary" : "Set Primary"
+                        }}</span>
                         <span class="xs:hidden">Primary</span>
                       </UButton>
-                      <UButton @click="removeTechnician(index)" color="red" variant="outline" size="lg"
-                        class="flex-shrink-0" :disabled="state.technicians.length === 1">
+                      <UButton
+                        @click="removeTechnician(index)"
+                        color="red"
+                        variant="outline"
+                        size="lg"
+                        class="flex-shrink-0"
+                        :disabled="state.technicians.length === 1"
+                      >
                         <LucideIcon name="trash-2" :size="16" />
                       </UButton>
                     </div>
@@ -2760,11 +3382,17 @@ onMounted(async () => {
                 <!-- Notes Section -->
                 <div class="w-full">
                   <label class="block text-sm font-semibold text-black mb-2">
-                    Notes <span class="text-gray-500 text-xs font-normal">(optional)</span>
+                    Notes
+                    <span class="text-gray-500 text-xs font-normal"
+                      >(optional)</span
+                    >
                   </label>
-                  <UInput v-model="tech.notes"
-                    placeholder="e.g., Responsible for fiber splicing, familiar with this area, etc." size="lg"
-                    class="w-full customer-input" />
+                  <UInput
+                    v-model="tech.notes"
+                    placeholder="e.g., Responsible for fiber splicing, familiar with this area, etc."
+                    size="lg"
+                    class="w-full customer-input"
+                  />
                 </div>
               </div>
             </div>
@@ -2772,13 +3400,22 @@ onMounted(async () => {
 
           <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <div class="flex items-start gap-2">
-              <LucideIcon name="info" :size="20" class="text-blue-600 flex-shrink-0 mt-0.5" />
+              <LucideIcon
+                name="info"
+                :size="20"
+                class="text-blue-600 flex-shrink-0 mt-0.5"
+              />
               <div class="text-sm text-black">
                 <p class="font-semibold mb-1">Team Requirements:</p>
                 <ul class="list-disc list-inside space-y-1 text-gray-700">
-                  <li>At least one <strong>Senior</strong> technician is required</li>
+                  <li>
+                    At least one <strong>Senior</strong> technician is required
+                  </li>
                   <li>Primary technician will be the main point of contact</li>
-                  <li>You can assign multiple technicians for complex installations</li>
+                  <li>
+                    You can assign multiple technicians for complex
+                    installations
+                  </li>
                 </ul>
               </div>
             </div>
@@ -2787,7 +3424,9 @@ onMounted(async () => {
 
         <!-- Network Device Information -->
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h3 class="text-lg font-semibold text-black mb-3 flex items-center gap-2">
+          <h3
+            class="text-lg font-semibold text-black mb-3 flex items-center gap-2"
+          >
             <LucideIcon name="cpu-chip" :size="20" class="text-blue-600" />
             Network Device Information
           </h3>
@@ -2799,25 +3438,44 @@ onMounted(async () => {
                   <span>Asset <span class="text-red-500">*</span></span>
                 </div>
               </template>
-              <USelectMenu v-model="state.assets_id" :options="state.assets" placeholder="Select asset" searchable
-                searchable-placeholder="Search by brand/model" option-attribute="display" value-attribute="id"
-                :search-attributes="['brand', 'type', 'model']" @change="onAssetChange(state.assets_id)"
-                class="w-full customer-select" />
+              <USelectMenu
+                v-model="state.assets_id"
+                :options="state.assets"
+                placeholder="Select asset"
+                searchable
+                searchable-placeholder="Search by brand/model"
+                option-attribute="display"
+                value-attribute="id"
+                :search-attributes="['brand', 'type', 'model']"
+                @change="onAssetChange(state.assets_id)"
+                class="w-full customer-select"
+              />
             </UFormGroup>
 
             <UFormGroup name="product_id">
               <template #label>
                 <div class="flex items-center gap-2">
                   <LucideIcon name="wifi" :size="16" class="text-gray-600" />
-                  <span>Package/Product <span class="text-red-500">*</span></span>
+                  <span
+                    >Package/Product <span class="text-red-500">*</span></span
+                  >
                 </div>
               </template>
-              <USelectMenu v-model="state.product_id" :options="state.products" placeholder="Select internet package"
-                searchable searchable-placeholder="Search by package name or speed" option-attribute="display"
-                value-attribute="id" :search-attributes="['name', 'description']" class="w-full customer-select" />
+              <USelectMenu
+                v-model="state.product_id"
+                :options="state.products"
+                placeholder="Select internet package"
+                searchable
+                searchable-placeholder="Search by package name or speed"
+                option-attribute="display"
+                value-attribute="id"
+                :search-attributes="['name', 'description']"
+                class="w-full customer-select"
+              />
               <p class="text-xs text-gray-600 mt-1">
                 <LucideIcon name="info" :size="14" class="inline mr-1" />
-                Package selection will automatically set the bandwidth limit for MikroTik provisioning
+                Package selection will automatically set the bandwidth limit for
+                MikroTik provisioning
               </p>
             </UFormGroup>
 
@@ -2828,27 +3486,47 @@ onMounted(async () => {
                   <span>Switch ID</span>
                 </div>
               </template>
-              <UInput v-model="state.switch_id" placeholder="Enter switch ID" class="w-full customer-input" />
+              <UInput
+                v-model="state.switch_id"
+                placeholder="Enter switch ID"
+                class="w-full customer-input"
+              />
             </UFormGroup>
 
             <UFormGroup name="port_number">
               <template #label>
                 <div class="flex items-center gap-2">
-                  <LucideIcon name="activity" :size="16" class="text-gray-600" />
+                  <LucideIcon
+                    name="activity"
+                    :size="16"
+                    class="text-gray-600"
+                  />
                   <span>Port Number</span>
                 </div>
               </template>
-              <UInput v-model="state.port_number" placeholder="Enter port number" class="w-full customer-input" />
+              <UInput
+                v-model="state.port_number"
+                placeholder="Enter port number"
+                class="w-full customer-input"
+              />
             </UFormGroup>
 
             <UFormGroup name="remote_port">
               <template #label>
                 <div class="flex items-center gap-2">
-                  <LucideIcon name="activity" :size="16" class="text-gray-600" />
+                  <LucideIcon
+                    name="activity"
+                    :size="16"
+                    class="text-gray-600"
+                  />
                   <span>Remote Port</span>
                 </div>
               </template>
-              <UInput v-model="state.remote_port" placeholder="Enter remote port" class="w-full customer-input" />
+              <UInput
+                v-model="state.remote_port"
+                placeholder="Enter remote port"
+                class="w-full customer-input"
+              />
             </UFormGroup>
 
             <UFormGroup name="eth_port">
@@ -2858,7 +3536,11 @@ onMounted(async () => {
                   <span>ETH Port</span>
                 </div>
               </template>
-              <UInput v-model="state.eth_port" placeholder="Enter ETH port" class="w-full customer-input" />
+              <UInput
+                v-model="state.eth_port"
+                placeholder="Enter ETH port"
+                class="w-full customer-input"
+              />
             </UFormGroup>
 
             <UFormGroup name="mac_address">
@@ -2869,20 +3551,42 @@ onMounted(async () => {
                 </div>
               </template>
               <div>
-                <USelectMenu v-model="state.asset_item_id" :options="availableAssetItems[state.assets_id] || []"
-                  :placeholder="!state.assets_id ? 'Select an asset first' : 'Select MAC Address'"
-                  :disabled="!state.assets_id || (availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length === 0)"
-                  class="w-full customer-select" />
+                <USelectMenu
+                  v-model="state.asset_item_id"
+                  :options="availableAssetItems[state.assets_id] || []"
+                  :placeholder="
+                    !state.assets_id
+                      ? 'Select an asset first'
+                      : 'Select MAC Address'
+                  "
+                  :disabled="
+                    !state.assets_id ||
+                    (availableAssetItems[state.assets_id] &&
+                      availableAssetItems[state.assets_id].length === 0)
+                  "
+                  class="w-full customer-select"
+                />
                 <div
-                  v-if="state.assets_id && availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length === 0"
-                  class="text-xs text-red-500 mt-1 flex items-center">
+                  v-if="
+                    state.assets_id &&
+                    availableAssetItems[state.assets_id] &&
+                    availableAssetItems[state.assets_id].length === 0
+                  "
+                  class="text-xs text-red-500 mt-1 flex items-center"
+                >
                   <LucideIcon name="alert-triangle" :size="12" class="mr-1" />
                   No available devices for this asset
                 </div>
                 <div
-                  v-else-if="state.assets_id && availableAssetItems[state.assets_id] && availableAssetItems[state.assets_id].length > 0"
-                  class="text-xs text-green-600 mt-1">
-                  {{ availableAssetItems[state.assets_id].length }} device(s) available
+                  v-else-if="
+                    state.assets_id &&
+                    availableAssetItems[state.assets_id] &&
+                    availableAssetItems[state.assets_id].length > 0
+                  "
+                  class="text-xs text-green-600 mt-1"
+                >
+                  {{ availableAssetItems[state.assets_id].length }} device(s)
+                  available
                 </div>
               </div>
             </UFormGroup>
@@ -2895,22 +3599,39 @@ onMounted(async () => {
                 </div>
               </template>
               <div class="flex gap-2">
-                <UInput v-model="state.ip_static" placeholder="192.168.1.100" class="flex-1 customer-input" />
-                <UButton @click="fetchDHCPLease" color="blue" variant="outline" size="sm" :loading="state.fetchingDHCP"
-                  :disabled="!state.mac_address" title="Fetch actual IP address from MikroTik DHCP lease">
+                <UInput
+                  v-model="state.ip_static"
+                  placeholder="192.168.1.100"
+                  class="flex-1 customer-input"
+                />
+                <UButton
+                  @click="fetchDHCPLease"
+                  color="blue"
+                  variant="outline"
+                  size="sm"
+                  :loading="state.fetchingDHCP"
+                  :disabled="!state.mac_address"
+                  title="Fetch actual IP address from MikroTik DHCP lease"
+                >
                   <template #leading>
                     <LucideIcon name="refresh-cw" :size="16" />
                   </template>
                   Fetch DHCP
                 </UButton>
               </div>
-              <p v-if="state.dhcpStatus" class="text-xs mt-1"
-                :class="state.dhcpStatus.success ? 'text-green-600' : 'text-red-600'">
+              <p
+                v-if="state.dhcpStatus"
+                class="text-xs mt-1"
+                :class="
+                  state.dhcpStatus.success ? 'text-green-600' : 'text-red-600'
+                "
+              >
                 {{ state.dhcpStatus.message }}
               </p>
               <p v-else class="text-xs text-gray-500 mt-1">
                 <LucideIcon name="info" :size="14" class="inline mr-1" />
-                This button will fetch the actual IP address assigned by your MikroTik router's DHCP server
+                This button will fetch the actual IP address assigned by your
+                MikroTik router's DHCP server
               </p>
             </UFormGroup>
 
@@ -2921,28 +3642,44 @@ onMounted(async () => {
                   <span>Device Ownership</span>
                 </div>
               </template>
-              <USelectMenu v-model="state.kepemilikan_perangkat" :options="[
-                { value: 'owned', label: 'Owned' },
-                { value: 'leased', label: 'Leased' },
-                { value: 'customer', label: 'Customer' }
-              ]" value-attribute="value" option-attribute="label" placeholder="Select ownership"
-                class="w-full customer-select" />
+              <USelectMenu
+                v-model="state.kepemilikan_perangkat"
+                :options="[
+                  { value: 'owned', label: 'Owned' },
+                  { value: 'leased', label: 'Leased' },
+                  { value: 'customer', label: 'Customer' },
+                ]"
+                value-attribute="value"
+                option-attribute="label"
+                placeholder="Select ownership"
+                class="w-full customer-select"
+              />
             </UFormGroup>
 
             <UFormGroup name="status_perangkat">
               <template #label>
                 <div class="flex items-center gap-2">
-                  <LucideIcon name="activity" :size="16" class="text-gray-600" />
+                  <LucideIcon
+                    name="activity"
+                    :size="16"
+                    class="text-gray-600"
+                  />
                   <span>Device Status</span>
                 </div>
               </template>
-              <USelectMenu v-model="state.status_perangkat" :options="[
-                { value: 'active', label: 'Active' },
-                { value: 'inactive', label: 'Inactive' },
-                { value: 'maintenance', label: 'Maintenance' },
-                { value: 'faulty', label: 'Faulty' }
-              ]" value-attribute="value" option-attribute="label" placeholder="Select device status"
-                class="w-full customer-select" />
+              <USelectMenu
+                v-model="state.status_perangkat"
+                :options="[
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                  { value: 'maintenance', label: 'Maintenance' },
+                  { value: 'faulty', label: 'Faulty' },
+                ]"
+                value-attribute="value"
+                option-attribute="label"
+                placeholder="Select device status"
+                class="w-full customer-select"
+              />
             </UFormGroup>
 
             <UFormGroup name="last_ping_status">
@@ -2952,35 +3689,58 @@ onMounted(async () => {
                   <span>Last Ping Status</span>
                 </div>
               </template>
-              <USelectMenu v-model="state.last_ping_status" :options="[
-                { value: 'up', label: 'Up' },
-                { value: 'down', label: 'Down' },
-                { value: 'unknown', label: 'Unknown' }
-              ]" value-attribute="value" option-attribute="label" placeholder="Select ping status"
-                class="w-full customer-select" />
+              <USelectMenu
+                v-model="state.last_ping_status"
+                :options="[
+                  { value: 'up', label: 'Up' },
+                  { value: 'down', label: 'Down' },
+                  { value: 'unknown', label: 'Unknown' },
+                ]"
+                value-attribute="value"
+                option-attribute="label"
+                placeholder="Select ping status"
+                class="w-full customer-select"
+              />
             </UFormGroup>
           </div>
         </div>
 
         <!-- MikroTik Provisioning Section -->
-        <div class="mikrotik-section bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div
+          class="mikrotik-section bg-white p-6 rounded-xl shadow-sm border border-gray-200"
+        >
           <div class="mb-5">
-            <h3 class="text-lg font-semibold text-black mb-3 flex items-center gap-2">
-              <LucideIcon name="server-stack" :size="20" class="text-blue-600" />
+            <h3
+              class="text-lg font-semibold text-black mb-3 flex items-center gap-2"
+            >
+              <LucideIcon
+                name="server-stack"
+                :size="20"
+                class="text-blue-600"
+              />
               MikroTik Auto-Provisioning
-              <span class="text-xs font-normal text-gray-500 ml-2">(Optional)</span>
+              <span class="text-xs font-normal text-gray-500 ml-2"
+                >(Optional)</span
+              >
             </h3>
-            <p class="text-sm text-gray-600 mt-1">Automatically configure customer on RouterOS/Winbox</p>
+            <p class="text-sm text-gray-600 mt-1">
+              Automatically configure customer on RouterOS/Winbox
+            </p>
           </div>
 
           <!-- MAC Address Preview -->
           <div class="mb-4">
             <label class="block text-sm font-bold text-black mb-2">
               MAC Address
-              <span class="text-xs text-gray-500 ml-2">(from Network Device)</span>
+              <span class="text-xs text-gray-500 ml-2"
+                >(from Network Device)</span
+              >
             </label>
             <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <span v-if="state.mac_address" class="font-mono text-black text-sm">
+              <span
+                v-if="state.mac_address"
+                class="font-mono text-black text-sm"
+              >
                 {{ state.mac_address }}
               </span>
               <span v-else class="text-gray-500 text-sm italic">
@@ -2993,90 +3753,163 @@ onMounted(async () => {
             <div class="mikrotik-field">
               <label class="block text-sm font-bold text-black mb-2">
                 Max Bandwidth Limit
-                <span v-if="state.product_id" class="text-green-600 text-xs font-normal ml-2">(Auto-set from
-                  package)</span>
+                <span
+                  v-if="state.product_id"
+                  class="text-green-600 text-xs font-normal ml-2"
+                  >(Auto-set from package)</span
+                >
               </label>
               <div class="relative">
-                <UInput v-model="state.max_limit" placeholder="10M/10M" size="lg" icon="arrow-trending-up"
+                <UInput
+                  v-model="state.max_limit"
+                  placeholder="10M/10M"
+                  size="lg"
+                  icon="arrow-trending-up"
                   :readonly="!!state.product_id"
-                  :class="state.product_id ? 'bg-green-50 border-green-300 customer-input' : 'customer-input'" />
-                <div v-if="state.product_id" class="absolute inset-y-0 right-0 flex items-center pr-3">
-                  <LucideIcon name="check-circle" :size="20" class="text-green-500" />
+                  :class="
+                    state.product_id
+                      ? 'bg-green-50 border-green-300 customer-input'
+                      : 'customer-input'
+                  "
+                />
+                <div
+                  v-if="state.product_id"
+                  class="absolute inset-y-0 right-0 flex items-center pr-3"
+                >
+                  <LucideIcon
+                    name="check-circle"
+                    :size="20"
+                    class="text-green-500"
+                  />
                 </div>
               </div>
               <p class="text-xs text-gray-600 mt-1">
                 <span v-if="state.product_id" class="text-green-600">
                   <LucideIcon name="info" :size="14" class="inline mr-1" />
-                  Bandwidth automatically set from selected package. Select a package above to override.
+                  Bandwidth automatically set from selected package. Select a
+                  package above to override.
                 </span>
-                <span v-else>Format: Download/Upload (e.g., 10M/10M, 50M/50M). Select a package above for automatic
-                  configuration.</span>
+                <span v-else
+                  >Format: Download/Upload (e.g., 10M/10M, 50M/50M). Select a
+                  package above for automatic configuration.</span
+                >
               </p>
             </div>
-
-
 
             <!-- Provisioning Toggle Switches -->
             <div class="sm:col-span-2 space-y-3 mt-4">
               <div
-                class="toggle-switch flex items-center justify-between p-4 bg-white rounded-lg border-2 border-gray-200">
+                class="toggle-switch flex items-center justify-between p-4 bg-white rounded-lg border-2 border-gray-200"
+              >
                 <div class="flex items-center gap-3">
                   <div class="bg-blue-100 p-2 rounded-lg">
                     <LucideIcon name="bolt" :size="20" class="text-blue-600" />
                   </div>
                   <div>
-                    <label for="auto_provision" class="text-sm font-bold text-black cursor-pointer">
+                    <label
+                      for="auto_provision"
+                      class="text-sm font-bold text-black cursor-pointer"
+                    >
                       Enable Auto-Provisioning
                     </label>
-                    <p class="text-xs text-gray-600">Automatically configure customer on MikroTik after creation</p>
+                    <p class="text-xs text-gray-600">
+                      Automatically configure customer on MikroTik after
+                      creation
+                    </p>
                   </div>
                 </div>
-                <input type="checkbox" v-model="state.auto_provision" id="auto_provision"
-                  class="w-6 h-6 text-cyan-600 bg-gray-100 border-2 border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 cursor-pointer" />
+                <input
+                  type="checkbox"
+                  v-model="state.auto_provision"
+                  id="auto_provision"
+                  class="w-6 h-6 text-cyan-600 bg-gray-100 border-2 border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 cursor-pointer"
+                />
               </div>
 
               <div
                 class="toggle-switch flex items-center justify-between p-4 bg-white rounded-lg border-2 transition-all"
-                :class="state.auto_provision ? 'border-orange-200' : 'border-gray-200 opacity-50'">
+                :class="
+                  state.auto_provision
+                    ? 'border-orange-200'
+                    : 'border-gray-200 opacity-50'
+                "
+              >
                 <div class="flex items-center gap-3">
                   <div class="bg-orange-100 p-2 rounded-lg">
                     <LucideIcon name="eye" :size="20" class="text-orange-600" />
                   </div>
                   <div>
-                    <label for="dry_run" class="text-sm font-bold text-black cursor-pointer"
-                      :class="!state.auto_provision && 'opacity-50'">
+                    <label
+                      for="dry_run"
+                      class="text-sm font-bold text-black cursor-pointer"
+                      :class="!state.auto_provision && 'opacity-50'"
+                    >
                       Dry Run Mode
                     </label>
-                    <p class="text-xs text-gray-600" :class="!state.auto_provision && 'opacity-50'">
+                    <p
+                      class="text-xs text-gray-600"
+                      :class="!state.auto_provision && 'opacity-50'"
+                    >
                       Preview commands without executing (test mode)
                     </p>
                   </div>
                 </div>
-                <input type="checkbox" v-model="state.dry_run" id="dry_run"
+                <input
+                  type="checkbox"
+                  v-model="state.dry_run"
+                  id="dry_run"
                   class="w-6 h-6 text-orange-600 bg-gray-100 border-2 border-gray-300 rounded focus:ring-2 focus:ring-orange-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                  :disabled="!state.auto_provision" />
+                  :disabled="!state.auto_provision"
+                />
               </div>
             </div>
 
             <!-- Status Alert -->
             <div v-if="state.auto_provision" class="md:col-span-2 mt-2">
-              <div class="p-4 rounded-lg border-2 flex items-start gap-3" :class="state.dry_run
-                ? 'bg-orange-50 border-orange-300'
-                : 'bg-green-50 border-green-300'">
-                <LucideIcon :name="state.dry_run ? 'eye' : 'check-circle'" :size="24" class="flex-shrink-0"
-                  :class="state.dry_run ? 'text-orange-600' : 'text-green-600'" />
+              <div
+                class="p-4 rounded-lg border-2 flex items-start gap-3"
+                :class="
+                  state.dry_run
+                    ? 'bg-orange-50 border-orange-300'
+                    : 'bg-green-50 border-green-300'
+                "
+              >
+                <LucideIcon
+                  :name="state.dry_run ? 'eye' : 'check-circle'"
+                  :size="24"
+                  class="flex-shrink-0"
+                  :class="state.dry_run ? 'text-orange-600' : 'text-green-600'"
+                />
                 <div>
-                  <p class="font-bold text-sm" :class="state.dry_run ? 'text-orange-900' : 'text-green-900'">
-                    {{ state.dry_run ? '🔍 Dry Run Mode Active' : '⚡ Live Provisioning Mode' }}
+                  <p
+                    class="font-bold text-sm"
+                    :class="
+                      state.dry_run ? 'text-orange-900' : 'text-green-900'
+                    "
+                  >
+                    {{
+                      state.dry_run
+                        ? "🔍 Dry Run Mode Active"
+                        : "⚡ Live Provisioning Mode"
+                    }}
                   </p>
-                  <p class="text-sm mt-1" :class="state.dry_run ? 'text-orange-800' : 'text-green-800'">
+                  <p
+                    class="text-sm mt-1"
+                    :class="
+                      state.dry_run ? 'text-orange-800' : 'text-green-800'
+                    "
+                  >
                     <span v-if="state.dry_run">
-                      Commands will be <strong>generated and displayed</strong> in the browser console but <strong>not
-                        executed</strong> on MikroTik. Use this to preview what will happen.
+                      Commands will be
+                      <strong>generated and displayed</strong> in the browser
+                      console but <strong>not executed</strong> on MikroTik. Use
+                      this to preview what will happen.
                     </span>
                     <span v-else>
-                      Customer will be <strong>automatically provisioned</strong> on MikroTik RouterOS immediately after
-                      installation creation. Queue rules and IP bindings will be created.
+                      Customer will be
+                      <strong>automatically provisioned</strong> on MikroTik
+                      RouterOS immediately after installation creation. Queue
+                      rules and IP bindings will be created.
                     </span>
                   </p>
                 </div>
@@ -3084,16 +3917,22 @@ onMounted(async () => {
             </div>
 
             <div v-else class="md:col-span-2 mt-2">
-              <div class="p-4 bg-gray-50 rounded-lg border-2 border-gray-200 flex items-start gap-3">
-                <LucideIcon name="power" :size="24" class="text-gray-400 flex-shrink-0" />
+              <div
+                class="p-4 bg-gray-50 rounded-lg border-2 border-gray-200 flex items-start gap-3"
+              >
+                <LucideIcon
+                  name="power"
+                  :size="24"
+                  class="text-gray-400 flex-shrink-0"
+                />
                 <div>
                   <p class="font-bold text-sm text-black">
                     Auto-Provisioning Disabled
                   </p>
                   <p class="text-sm text-gray-600 mt-1">
-                    Enable auto-provisioning to automatically configure this customer on MikroTik RouterOS. Manual
-                    provisioning
-                    will be required otherwise.
+                    Enable auto-provisioning to automatically configure this
+                    customer on MikroTik RouterOS. Manual provisioning will be
+                    required otherwise.
                   </p>
                 </div>
               </div>
@@ -3102,8 +3941,12 @@ onMounted(async () => {
         </div>
 
         <!-- Document Information -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 document-info-section">
-          <h3 class="text-lg font-semibold text-black mb-3 flex items-center gap-2">
+        <div
+          class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 document-info-section"
+        >
+          <h3
+            class="text-lg font-semibold text-black mb-3 flex items-center gap-2"
+          >
             <LucideIcon name="file-text" :size="20" class="text-blue-600" />
             Document Information
           </h3>
@@ -3111,20 +3954,32 @@ onMounted(async () => {
             <UFormGroup name="document_type">
               <template #label>
                 <div class="flex items-center gap-2">
-                  <LucideIcon name="file-text" :size="16" class="text-gray-600" />
+                  <LucideIcon
+                    name="file-text"
+                    :size="16"
+                    class="text-gray-600"
+                  />
                   <span>Document Type</span>
                 </div>
               </template>
-              <USelectMenu v-model="state.document_type" :options="[
-                { value: 'KTP', label: 'KTP' },
-                { value: 'SIM', label: 'SIM' },
-                { value: 'Paspor', label: 'Paspor' }
-              ]" value-attribute="value" option-attribute="label" placeholder="Select document type"
-                class="w-full customer-select" :ui="{
-                  container: 'relative z-50'
-                }" :popper="{
-                  placement: 'bottom-start'
-                }" />
+              <USelectMenu
+                v-model="state.document_type"
+                :options="[
+                  { value: 'KTP', label: 'KTP' },
+                  { value: 'SIM', label: 'SIM' },
+                  { value: 'Paspor', label: 'Paspor' },
+                ]"
+                value-attribute="value"
+                option-attribute="label"
+                placeholder="Select document type"
+                class="w-full customer-select"
+                :ui="{
+                  container: 'relative z-50',
+                }"
+                :popper="{
+                  placement: 'bottom-start',
+                }"
+              />
             </UFormGroup>
 
             <UFormGroup name="document_photo">
@@ -3134,21 +3989,33 @@ onMounted(async () => {
                   <span>Document Photo</span>
                 </div>
               </template>
-              <input ref="fileInputRef" type="file" accept="image/*" @change="handleDocumentPhotoUpload"
+              <input
+                ref="fileInputRef"
+                type="file"
+                accept="image/*"
+                @change="handleDocumentPhotoUpload"
                 class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-300 dark:hover:file:bg-blue-800"
-                placeholder="Upload document photo" />
+                placeholder="Upload document photo"
+              />
               <div v-if="state.documentPreview" class="mt-2">
-                <img :src="state.documentPreview" alt="Document Preview"
-                  class="w-32 h-20 object-cover rounded border" />
+                <img
+                  :src="state.documentPreview"
+                  alt="Document Preview"
+                  class="w-32 h-20 object-cover rounded border"
+                />
               </div>
             </UFormGroup>
           </div>
         </div>
 
         <!-- Technician Photo Documentation -->
-        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 technician-photo-section">
+        <div
+          class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 technician-photo-section"
+        >
           <div class="flex items-center mb-6">
-            <h3 class="text-lg font-semibold text-black flex items-center gap-2">
+            <h3
+              class="text-lg font-semibold text-black flex items-center gap-2"
+            >
               <LucideIcon name="camera" :size="20" class="text-blue-600" />
               Technician Notes
             </h3>
@@ -3156,61 +4023,104 @@ onMounted(async () => {
 
           <div class="mb-4">
             <p class="text-sm text-gray-600 mb-4">
-              Document your PSB progress with photos (maximum 10 images). Images will be automatically compressed to
-              reduce file
-              size.
+              Document your PSB progress with photos (maximum 10 images). Images
+              will be automatically compressed to reduce file size.
             </p>
-
-
           </div>
 
           <UFormGroup label="Upload Progress Photos" name="technician_photos">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div v-for="(preview, index) in state.technician_photo_previews" :key="index"
+              <div
+                v-for="(preview, index) in state.technician_photo_previews"
+                :key="index"
                 class="relative group cursor-pointer bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
-                @click="state.selectedTechnicianImage = preview; state.showTechnicianModal = true">
-                <img :src="preview" :alt="`Technician Photo ${index + 1}`" class="w-full h-32 object-cover" />
+                @click="
+                  state.selectedTechnicianImage = preview;
+                  state.showTechnicianModal = true;
+                "
+              >
+                <img
+                  :src="preview"
+                  :alt="`Technician Photo ${index + 1}`"
+                  class="w-full h-32 object-cover"
+                />
                 <div
-                  class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
-                  <LucideIcon name="eye" :size="24"
-                    class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                  class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center"
+                >
+                  <LucideIcon
+                    name="eye"
+                    :size="24"
+                    class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  />
                 </div>
-                <UButton @click.stop="removeTechnicianPhoto(index)" size="xs" color="red" variant="solid"
-                  class="absolute -top-2 -right-2 shadow-lg">
+                <UButton
+                  @click.stop="removeTechnicianPhoto(index)"
+                  size="xs"
+                  color="red"
+                  variant="solid"
+                  class="absolute -top-2 -right-2 shadow-lg"
+                >
                   <LucideIcon name="x" :size="16" />
                 </UButton>
-                <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-2">
+                <div
+                  class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-2"
+                >
                   <div class="flex justify-between items-center">
                     <span>Photo {{ index + 1 }}</span>
-                    <span v-if="technicianPhotoSizes[index]" class="text-xs opacity-75">
+                    <span
+                      v-if="technicianPhotoSizes[index]"
+                      class="text-xs opacity-75"
+                    >
                       {{ formatFileSize(technicianPhotoSizes[index]) }}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div v-if="state.technician_photo_previews.length < 10"
+              <div
+                v-if="state.technician_photo_previews.length < 10"
                 class="w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl flex items-center justify-center cursor-pointer hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all duration-200 bg-white dark:bg-gray-800"
-                @click="triggerTechnicianPhotoUpload">
+                @click="triggerTechnicianPhotoUpload"
+              >
                 <div class="text-center">
-                  <LucideIcon name="plus" :size="32" class="text-gray-400 dark:text-gray-500 mb-2 mx-auto" />
-                  <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Add Photo</p>
-                  <p class="text-xs text-gray-400 dark:text-gray-500">{{ state.technician_photo_previews.length }}/10
+                  <LucideIcon
+                    name="plus"
+                    :size="32"
+                    class="text-gray-400 dark:text-gray-500 mb-2 mx-auto"
+                  />
+                  <p
+                    class="text-sm text-gray-500 dark:text-gray-400 font-medium"
+                  >
+                    Add Photo
+                  </p>
+                  <p class="text-xs text-gray-400 dark:text-gray-500">
+                    {{ state.technician_photo_previews.length }}/10
                   </p>
                 </div>
               </div>
             </div>
 
-            <input ref="technicianPhotoInput" type="file" accept="image/*" multiple class="hidden"
-              @change="handleTechnicianPhotoUpload" />
+            <input
+              ref="technicianPhotoInput"
+              type="file"
+              accept="image/*"
+              multiple
+              class="hidden"
+              @change="handleTechnicianPhotoUpload"
+            />
 
-            <div v-if="state.technician_photo_previews.length > 0"
-              class="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
-              <div class="flex items-center text-sm text-amber-800 dark:text-amber-200">
+            <div
+              v-if="state.technician_photo_previews.length > 0"
+              class="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg"
+            >
+              <div
+                class="flex items-center text-sm text-amber-800 dark:text-amber-200"
+              >
                 <LucideIcon name="info" :size="16" class="mr-2" />
                 <span>
-                  {{ state.technician_photo_previews.length }} photo(s) uploaded.
-                  Total size: {{ formatFileSize(totalTechnicianPhotoSize) }}
+                  {{ state.technician_photo_previews.length }} photo(s)
+                  uploaded. Total size:
+                  {{ formatFileSize(totalTechnicianPhotoSize) }}
                 </span>
               </div>
             </div>
@@ -3219,7 +4129,9 @@ onMounted(async () => {
 
         <!-- Customer Service Information -->
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h3 class="text-lg font-semibold text-black mb-3 flex items-center gap-2">
+          <h3
+            class="text-lg font-semibold text-black mb-3 flex items-center gap-2"
+          >
             <LucideIcon name="wrench" :size="20" class="text-blue-600" />
             Customer Service Information
           </h3>
@@ -3231,24 +4143,39 @@ onMounted(async () => {
                   <span>Cable Type <span class="text-red-500">*</span></span>
                 </div>
               </template>
-              <USelectMenu v-model="state.cable_type" :options="[
-                { value: 'UTP Cat5e', label: 'UTP Cat5e' },
-                { value: 'UTP Cat6', label: 'UTP Cat6' },
-                { value: 'Single Mode Fiber', label: 'Single Mode Fiber' },
-                { value: 'Multi Mode Fiber', label: 'Multi Mode Fiber' }
-              ]" value-attribute="value" option-attribute="label" placeholder="Select cable type"
-                class="w-full customer-select" />
+              <USelectMenu
+                v-model="state.cable_type"
+                :options="[
+                  { value: 'UTP Cat5e', label: 'UTP Cat5e' },
+                  { value: 'UTP Cat6', label: 'UTP Cat6' },
+                  { value: 'Single Mode Fiber', label: 'Single Mode Fiber' },
+                  { value: 'Multi Mode Fiber', label: 'Multi Mode Fiber' },
+                ]"
+                value-attribute="value"
+                option-attribute="label"
+                placeholder="Select cable type"
+                class="w-full customer-select"
+              />
             </UFormGroup>
 
             <UFormGroup name="cable_length">
               <template #label>
                 <div class="flex items-center gap-2">
                   <LucideIcon name="cable" :size="16" class="text-gray-600" />
-                  <span>Cable Length (meters) <span class="text-red-500">*</span></span>
+                  <span
+                    >Cable Length (meters)
+                    <span class="text-red-500">*</span></span
+                  >
                 </div>
               </template>
-              <UInput v-model="state.cable_length" type="number" min="1" step="1" placeholder="Enter cable length"
-                class="w-full customer-input" />
+              <UInput
+                v-model="state.cable_length"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="Enter cable length"
+                class="w-full customer-input"
+              />
               <p class="text-xs text-gray-500 mt-1">
                 <LucideIcon name="info" :size="14" class="inline mr-1" />
                 Minimum cable length is 1 meter
@@ -3258,17 +4185,27 @@ onMounted(async () => {
             <UFormGroup name="end_port_type">
               <template #label>
                 <div class="flex items-center gap-2">
-                  <LucideIcon name="activity" :size="16" class="text-gray-600" />
+                  <LucideIcon
+                    name="activity"
+                    :size="16"
+                    class="text-gray-600"
+                  />
                   <span>End Port Type</span>
                 </div>
               </template>
-              <USelectMenu v-model="state.end_port_type" :options="[
-                { value: 'RJ45', label: 'RJ45' },
-                { value: 'Fiber', label: 'Fiber' },
-                { value: 'SC', label: 'SC' },
-                { value: 'LC', label: 'LC' }
-              ]" value-attribute="value" option-attribute="label" placeholder="Select end port type"
-                class="w-full customer-select" />
+              <USelectMenu
+                v-model="state.end_port_type"
+                :options="[
+                  { value: 'RJ45', label: 'RJ45' },
+                  { value: 'Fiber', label: 'Fiber' },
+                  { value: 'SC', label: 'SC' },
+                  { value: 'LC', label: 'LC' },
+                ]"
+                value-attribute="value"
+                option-attribute="label"
+                placeholder="Select end port type"
+                class="w-full customer-select"
+              />
             </UFormGroup>
 
             <UFormGroup name="user_login">
@@ -3278,7 +4215,11 @@ onMounted(async () => {
                   <span>User Login</span>
                 </div>
               </template>
-              <UInput v-model="state.user_login" placeholder="Enter user login" class="w-full customer-input" />
+              <UInput
+                v-model="state.user_login"
+                placeholder="Enter user login"
+                class="w-full customer-input"
+              />
             </UFormGroup>
 
             <UFormGroup name="password">
@@ -3288,57 +4229,101 @@ onMounted(async () => {
                   <span>Password</span>
                 </div>
               </template>
-              <UInput v-model="state.password" type="password" placeholder="Enter password"
-                class="w-full customer-input" />
+              <UInput
+                v-model="state.password"
+                type="password"
+                placeholder="Enter password"
+                class="w-full customer-input"
+              />
             </UFormGroup>
 
             <UFormGroup name="user_status">
               <template #label>
                 <div class="flex items-center gap-2">
-                  <LucideIcon name="check-circle" :size="16" class="text-gray-600" />
+                  <LucideIcon
+                    name="check-circle"
+                    :size="16"
+                    class="text-gray-600"
+                  />
                   <span>User Status</span>
                 </div>
               </template>
-              <USelectMenu v-model="state.user_status" :options="[
-                { value: 'Active', label: 'Active' },
-                { value: 'Inactive', label: 'Inactive' },
-                { value: 'Suspended', label: 'Suspended' },
-                { value: 'Pending', label: 'Pending' }
-              ]" value-attribute="value" option-attribute="label" placeholder="Select user status"
-                class="w-full customer-select" />
+              <USelectMenu
+                v-model="state.user_status"
+                :options="[
+                  { value: 'Active', label: 'Active' },
+                  { value: 'Inactive', label: 'Inactive' },
+                  { value: 'Suspended', label: 'Suspended' },
+                  { value: 'Pending', label: 'Pending' },
+                ]"
+                value-attribute="value"
+                option-attribute="label"
+                placeholder="Select user status"
+                class="w-full customer-select"
+              />
             </UFormGroup>
           </div>
 
           <UFormGroup name="installation_notes" class="mt-4">
             <template #label>
               <div class="flex items-center gap-2">
-                <LucideIcon name="document-text" :size="16" class="text-gray-600" />
+                <LucideIcon
+                  name="document-text"
+                  :size="16"
+                  class="text-gray-600"
+                />
                 <span>Installation Notes</span>
               </div>
             </template>
-            <UTextarea v-model="state.installation_notes" placeholder="Additional notes about the installation process"
-              :rows="3" class="w-full customer-input" />
+            <UTextarea
+              v-model="state.installation_notes"
+              placeholder="Additional notes about the installation process"
+              :rows="3"
+              class="w-full customer-input"
+            />
           </UFormGroup>
         </div>
-
-
       </UForm>
     </div>
 
     <!-- Fixed Footer Bar - Always visible at bottom -->
     <div
-      class="flex-shrink-0 p-4 sm:p-6 bg-white border-t border-gray-200 shadow-lg mt-auto overflow-hidden max-w-full">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 max-w-full">
+      class="flex-shrink-0 p-4 sm:p-6 bg-white border-t border-gray-200 shadow-lg mt-auto overflow-hidden max-w-full"
+    >
+      <div
+        class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 max-w-full"
+      >
         <!-- Requirements Check -->
         <div class="text-sm text-gray-700 flex-1 min-w-0 w-full sm:w-auto">
           <div class="flex items-start sm:items-center gap-2">
             <LucideIcon
-              v-if="!state.customer_id || state.technicians.length === 0 || !state.assets_id || !state.product_id"
-              name="alert-triangle" :size="20" class="flex-shrink-0 text-orange-600 mt-0.5 sm:mt-0" />
-            <LucideIcon v-else name="check-circle" :size="20" class="flex-shrink-0 text-green-600 mt-0.5 sm:mt-0" />
-            <span v-if="!state.customer_id || state.technicians.length === 0 || !state.assets_id || !state.product_id"
-              class="font-semibold text-orange-600 break-words">
-              Please complete required fields (Customer, Technicians, Asset, Package)
+              v-if="
+                !state.customer_id ||
+                state.technicians.length === 0 ||
+                !state.assets_id ||
+                !state.product_id
+              "
+              name="alert-triangle"
+              :size="20"
+              class="flex-shrink-0 text-orange-600 mt-0.5 sm:mt-0"
+            />
+            <LucideIcon
+              v-else
+              name="check-circle"
+              :size="20"
+              class="flex-shrink-0 text-green-600 mt-0.5 sm:mt-0"
+            />
+            <span
+              v-if="
+                !state.customer_id ||
+                state.technicians.length === 0 ||
+                !state.assets_id ||
+                !state.product_id
+              "
+              class="font-semibold text-orange-600 break-words"
+            >
+              Please complete required fields (Customer, Technicians, Asset,
+              Package)
             </span>
             <span v-else class="font-semibold text-green-600">
               Ready to submit
@@ -3348,17 +4333,33 @@ onMounted(async () => {
 
         <!-- Action Buttons -->
         <div class="flex gap-3 w-full sm:w-auto flex-shrink-0">
-          <UButton type="button" color="gray" variant="outline" size="lg" @click="closeModal"
-            class="flex-1 sm:flex-initial bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300 whitespace-nowrap">
+          <UButton
+            type="button"
+            color="gray"
+            variant="outline"
+            size="lg"
+            @click="closeModal"
+            class="flex-1 sm:flex-initial bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300 whitespace-nowrap"
+          >
             <template #leading>
               <LucideIcon name="x-circle" :size="20" />
             </template>
             Cancel
           </UButton>
-          <UButton type="button" color="blue" size="lg" :loading="state.loading"
-            :disabled="!state.customer_id || state.technicians.length === 0 || !state.assets_id || !state.product_id"
+          <UButton
+            type="button"
+            color="blue"
+            size="lg"
+            :loading="state.loading"
+            :disabled="
+              !state.customer_id ||
+              state.technicians.length === 0 ||
+              !state.assets_id ||
+              !state.product_id
+            "
             class="flex-1 sm:flex-initial bg-blue-600 text-white hover:bg-blue-700 whitespace-nowrap"
-            @click="submitForm">
+            @click="submitForm"
+          >
             <template #leading>
               <LucideIcon name="file-check" :size="20" />
             </template>
@@ -3375,16 +4376,24 @@ onMounted(async () => {
       <template #header>
         <div class="flex justify-between items-center">
           <h3 class="text-lg font-semibold">Technician Photo Preview</h3>
-          <UButton @click="state.showTechnicianModal = false" variant="ghost" size="sm">
+          <UButton
+            @click="state.showTechnicianModal = false"
+            variant="ghost"
+            size="sm"
+          >
             <LucideIcon name="x" :size="16" />
           </UButton>
         </div>
       </template>
 
       <div class="text-center">
-        <img :src="state.selectedTechnicianImage" alt="Technician photo preview"
-          class="max-w-full max-h-96 mx-auto rounded-lg" />
+        <img
+          :src="state.selectedTechnicianImage"
+          alt="Technician photo preview"
+          class="max-w-full max-h-96 mx-auto rounded-lg"
+        />
       </div>
     </UCard>
   </UModal>
 </template>
+
