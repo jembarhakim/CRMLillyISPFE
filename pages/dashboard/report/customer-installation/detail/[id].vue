@@ -694,30 +694,35 @@
                   </div>
                 </div>
 
-                <!-- Cable Information -->
-                <div class="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-xl border border-red-200">
-                  <div class="flex items-center mb-4">
-                    <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center mr-3">
-                      <LucideIcon name="cable" :size="18" class="text-white" />
-                    </div>
-                    <h4 class="text-lg font-semibold text-red-800">Cable Information</h4>
+              <!-- Cable Information -->
+              <div class="bg-gradient-to-br from-red-50 to-red-100 p-6 rounded-xl border border-red-200">
+                <div class="flex items-center mb-4">
+                  <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center mr-3">
+                    <LucideIcon name="cable" :size="18" class="text-white" />
                   </div>
-                  <div class="space-y-3">
-                    <div>
-                      <label class="text-sm font-medium text-red-600">Cable Type</label>
-                      <p class="text-lg font-semibold text-gray-800">{{ report.cable_type || '-' }}</p>
-                    </div>
-                    <div>
-                      <label class="text-sm font-medium text-red-600">Length</label>
-                      <p class="text-lg text-gray-700">{{ report.cable_length ? `${report.cable_length} meters` : '-' }}
-                      </p>
-                    </div>
-                    <div>
-                      <label class="text-sm font-medium text-red-600">End Port Type</label>
-                      <p class="text-lg text-gray-700">{{ report.end_port_type || '-' }}</p>
-                    </div>
+                  <h4 class="text-lg font-semibold text-red-800">Cable Information</h4>
+                </div>
+                <div class="space-y-3">
+                  <div>
+                    <label class="text-sm font-medium text-red-600">Cable Type</label>
+                    <p class="text-lg font-semibold text-gray-800">{{ report.cable_type || '-' }}</p>
+                  </div>
+                  <div>
+                    <label class="text-sm font-medium text-red-600">Length</label>
+                    <p class="text-lg text-gray-700">{{ report.cable_length ? `${report.cable_length} meters` : '-' }}</p>
+                  </div>
+                  <div>
+                    <label class="text-sm font-medium text-red-600">End Port Type</label>
+                    <p class="text-lg text-gray-700">{{ report.end_port_type || '-' }}</p>
+                  </div>
+                  <div>
+                    <label class="text-sm font-medium text-red-600">Status</label>
+                    <span :class="getCableStatusColor(report.cable_status)" class="px-3 py-1 rounded-full text-sm font-medium">
+                      {{ report.cable_status || 'Unknown' }}
+                    </span>
                   </div>
                 </div>
+              </div>
 
                 <!-- Service Notes -->
                 <div v-if="report.service_notes"
