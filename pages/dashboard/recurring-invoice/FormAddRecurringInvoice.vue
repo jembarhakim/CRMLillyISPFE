@@ -423,7 +423,25 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         ).toISOString(),
         due_date: new Date(formData.due_date + "T00:00:00.000Z").toISOString(),
       };
-      await recurringInvoiceAdminApi().createRecurringInvoice(submitData);
+      const created = await recurringInvoiceAdminApi().createRecurringInvoice(
+        submitData
+      );
+
+      // Automatically generate the first invoice immediately after creating the recurring template
+      if (created?.data?.id) {
+        try {
+          await recurringInvoiceAdminApi().generateInvoiceFromRecurring({
+            id: created.data.id,
+            invoice_date: submitData.invoice_date,
+            due_date: submitData.due_date,
+          });
+        } catch (genErr) {
+          console.warn(
+            "Recurring invoice created but failed to auto-generate first invoice:",
+            genErr
+          );
+        }
+      }
     }
 
     emit("success");
