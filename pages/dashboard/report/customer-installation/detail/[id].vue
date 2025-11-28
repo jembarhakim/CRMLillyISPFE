@@ -677,7 +677,7 @@
                     <label class="text-sm font-medium text-orange-600">Password</label>
                     <p class="text-lg font-mono text-gray-800 bg-gray-100 px-3 py-1 rounded">{{ report.password || '-' }}</p>
                   </div>
-                  <div>
+                  <div class="flex flex-col items-start gap-2">
                     <label class="text-sm font-medium text-orange-600">Status</label>
                     <span :class="getUserStatusColor(report.user_status)" class="px-3 py-1 rounded-full text-sm font-medium">
                       {{ report.user_status || 'Unknown' }}
@@ -727,7 +727,7 @@
                     <label class="text-sm font-medium text-red-600">End Port Type</label>
                     <p class="text-lg text-gray-700">{{ report.end_port_type || '-' }}</p>
                   </div>
-                  <div>
+                  <div class="flex flex-col items-start gap-2">
                     <label class="text-sm font-medium text-red-600">Status</label>
                     <span :class="getCableStatusColor(report.cable_status)" class="px-3 py-1 rounded-full text-sm font-medium">
                       {{ report.cable_status || 'Unknown' }}
