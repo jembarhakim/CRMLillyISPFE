@@ -23,6 +23,7 @@ const recurringInvoices = ref<RecurringInvoice[]>([]);
 const loading = ref(false);
 const deleting = ref(false);
 const updatingStatus = ref(false);
+const openDropdownId = ref<string | null>(null);
 
 // Filters
 const q = ref("");
@@ -216,6 +217,14 @@ const items = (row: RecurringInvoice) => [
     },
   ],
 ];
+
+function handleDropdownToggle(isOpen: boolean, id: string) {
+  openDropdownId.value = isOpen
+    ? id
+    : openDropdownId.value === id
+    ? null
+    : openDropdownId.value;
+}
 
 // Modal functions
 function openModalAddRecurringInvoice(isEdit: boolean, data: any = null) {
@@ -507,7 +516,11 @@ onMounted(() => {
         </template>
 
         <template #actions-data="{ row }">
-          <UDropdown :items="items(row)">
+          <UDropdown
+            :items="items(row)"
+            :open="openDropdownId === row.id"
+            @update:open="handleDropdownToggle($event, row.id)"
+          >
             <UButton color="gray">
               <template #leading>
                 <LucideIcon name="ellipsis-vertical" :size="16" />

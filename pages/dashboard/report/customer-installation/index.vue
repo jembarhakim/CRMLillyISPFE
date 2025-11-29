@@ -253,7 +253,14 @@ async function loadStats() {
 async function loadRecentInstallations() {
   try {
     const response = await archiveInstallationAdminApi().getAllArchiveInstallationActiveOnly();
-    const installations = response.data || [];
+    const installations = (response.data || []).filter((inst: any) => {
+      const deleted =
+        inst?.deleted_at ||
+        inst?.deletedAt ||
+        inst?.is_deleted ||
+        inst?.trashed;
+      return !deleted;
+    });
 
     // Sort by created_at date (most recent first) and take only the first 5
     const sortedInstallations = installations

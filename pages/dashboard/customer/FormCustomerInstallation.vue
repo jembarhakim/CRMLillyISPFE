@@ -9,6 +9,9 @@ import { mikrotikAdminApi } from "@/api/admin/mikrotik";
 import { uploadFileAdminApi } from "@/api/admin/file-upload";
 import { useNotificationStore } from "@/stores/notification";
 import { useAuthStore } from "@/stores/auth";
+import { useApiHost } from "@/composables/useApiHost";
+import { LMap, LTileLayer, LMarker, LControl } from "vue-leaflet";
+import { useCookie } from "#app";
 import {
   computed,
   nextTick,
@@ -95,6 +98,7 @@ const state = reactive({
   terminal_customer_installation_id: "", // Installation ID of the terminal installation (from customer_installations table)
   latitude: null as number | null,
   longitude: null as number | null,
+  address: "",
 
   // Multiple Technicians with Roles
   technicians: [] as Array<{
@@ -378,6 +382,7 @@ watch(
     if (!newCustomerId) {
       state.latitude = null;
       state.longitude = null;
+      state.address = "";
       return;
     }
 
@@ -587,6 +592,10 @@ watch(
   (newValue: boolean) => {
     if (newValue) {
       state.customer_id = props.data.id;
+      if (props.data.latitude && props.data.longitude) {
+        state.latitude = parseFloat(props.data.latitude);
+        state.longitude = parseFloat(props.data.longitude);
+      }
     }
   },
   { immediate: true }
@@ -685,15 +694,16 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       );
     }
 
-    // Append location data if available
-    if (state.latitude !== null && state.longitude !== null) {
-      formData.append("latitude", state.latitude.toString());
-      formData.append("longitude", state.longitude.toString());
-      console.log("✅ Appending location to form data:", {
-        lat: state.latitude,
-        lng: state.longitude,
-      });
-    } else {
+  // Append location data if available
+  if (state.latitude !== null && state.longitude !== null) {
+    formData.append("latitude", state.latitude.toString());
+    formData.append("longitude", state.longitude.toString());
+    if (state.address) formData.append("address", state.address);
+    console.log("✅ Appending location to form data:", {
+      lat: state.latitude,
+      lng: state.longitude,
+    });
+  } else {
       console.log("⚠️ No location data to append");
     }
 
@@ -1486,6 +1496,75 @@ async function loadCustomers() {
       error
     );
   }
+}
+
+// Reverse geocode helper (reuse from AddCustomer)
+async function reverseGeocode(lat: number, lng: number) {
+  try {
+    const api = useApiHost();
+    const token = useCookie("token").value;
+    const response = await fetch(
+      `${api}/api/admin/geocoding/reverse-geocode?lat=${lat}&lng=${lng}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    if (result.success && result.data) {
+      state.address = result.data.display_name || result.data.address || "";
+    }
+  } catch (error) {
+    console.error("Reverse geocoding failed:", error);
+  }
+}
+
+  // Geolocation helper (reuse from AddCustomer)
+  async function moveToMyLocation() {
+    if (!navigator.geolocation) {
+      console.error("Geolocation is not supported by this browser.");
+      return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const { latitude, longitude } = position.coords;
+      state.latitude = latitude;
+      state.longitude = longitude;
+      reverseGeocode(latitude, longitude);
+    },
+    (error) => {
+      console.error("Error getting location:", error);
+    }
+  );
+}
+
+const mapLat = computed(() => state.latitude ?? 0);
+const mapLng = computed(() => state.longitude ?? 0);
+
+function onMarkerDrag(e: any) {
+  const latlng = e.target.getLatLng();
+  state.latitude = latlng.lat;
+  state.longitude = latlng.lng;
+  reverseGeocode(latlng.lat, latlng.lng);
+}
+
+function onLatInput(val: string | number) {
+  const parsed = parseFloat(String(val));
+  if (!isNaN(parsed)) state.latitude = parsed;
+}
+
+function onLngInput(val: string | number) {
+  const parsed = parseFloat(String(val));
+  if (!isNaN(parsed)) state.longitude = parsed;
 }
 
 async function loadTechnicians() {
@@ -3375,9 +3454,96 @@ onMounted(async () => {
                       >
                         <LucideIcon name="trash-2" :size="16" />
                       </UButton>
-                    </div>
-                  </div>
-                </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Location & Address -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mt-6">
+      <h3 class="text-xl font-bold text-black mb-3 flex items-center gap-2">
+        <LucideIcon name="map-pin" :size="20" class="text-red-600" />
+        Location & Address
+      </h3>
+
+      <div class="mb-6">
+        <LMap
+          style="height: 360px; width: 100%;"
+          :zoom="6"
+          :center="[mapLat, mapLng]"
+          :use-global-leaflet="false"
+          class="rounded-lg overflow-hidden border border-gray-200 shadow-sm"
+        >
+          <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <LMarker
+            :lat-lng="[mapLat, mapLng]"
+            draggable
+            @dragend="onMarkerDrag"
+          />
+          <LControl position="bottomleft">
+            <UButton @click="moveToMyLocation" size="sm" color="blue" class="mb-2 shadow-sm">
+              <template #leading>
+                <LucideIcon name="navigation" :size="16" />
+              </template>
+              My Position
+            </UButton>
+          </LControl>
+        </LMap>
+      </div>
+
+      <UFormGroup name="address" class="mb-4">
+        <template #label>
+          <div class="flex items-center gap-2">
+            <LucideIcon name="map-pin" :size="16" class="text-gray-600" />
+            <span class="text-black font-medium">Address</span>
+          </div>
+        </template>
+        <UInput
+          v-model="state.address"
+          placeholder="Address will be auto-filled from map"
+          class="w-full customer-input"
+          readonly
+        />
+      </UFormGroup>
+
+      <UFormGroup name="coordinates">
+        <template #label>
+          <div class="flex items-center gap-2">
+            <LucideIcon name="navigation" :size="16" class="text-gray-600" />
+            <span class="text-black font-medium">Coordinates</span>
+          </div>
+        </template>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-black mb-1 flex items-center gap-2">
+              <LucideIcon name="map-pin" :size="14" class="text-gray-500" />
+              <span>Latitude</span>
+            </label>
+            <UInput
+              :model-value="state.latitude ?? 0"
+              @update:model-value="onLatInput"
+              placeholder="Latitude"
+              type="number"
+              step="any"
+              class="w-full customer-input"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-black mb-1 flex items-center gap-2">
+              <LucideIcon name="map-pin" :size="14" class="text-gray-500" />
+              <span>Longitude</span>
+            </label>
+            <UInput
+              :model-value="state.longitude ?? 0"
+              @update:model-value="onLngInput"
+              placeholder="Longitude"
+              type="number"
+              step="any"
+              class="w-full customer-input"
+            />
+          </div>
+        </div>
+      </UFormGroup>
+    </div>
 
                 <!-- Notes Section -->
                 <div class="w-full">

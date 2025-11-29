@@ -13,6 +13,7 @@ const page = ref(1);
 const pageCount = 5;
 
 const q = ref("");
+const openDropdownId = ref<string | null>(null);
 
 async function fetchAllRole() {
     await userManagementAdminApi()
@@ -61,6 +62,10 @@ const items = (row: Role) => [
         },
     ],
 ];
+
+function handleDropdownToggle(isOpen: boolean, id: number) {
+    openDropdownId.value = isOpen ? id.toString() : openDropdownId.value === id.toString() ? null : openDropdownId.value;
+}
 
 const toast = useCustomToast();
 const modal = useModal();
@@ -122,7 +127,11 @@ async function deleteRole(roleId: string) {
   ></div> -->
     <UTable :rows="role" :columns="columns">
         <template #actions-data="{ row }">
-            <UDropdown :items="items(row)">
+            <UDropdown
+                :items="items(row)"
+                :open="openDropdownId === row.id.toString()"
+                @update:open="handleDropdownToggle($event, row.id)"
+            >
                 <button
                     type="button"
                     class="bg-gray-700 text-white px-2 py-1 text-sm hover:bg-gray-600 rounded inline-flex items-center justify-center shadow-sm transition-colors duration-200 group"

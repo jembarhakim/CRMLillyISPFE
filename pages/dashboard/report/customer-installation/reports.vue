@@ -179,7 +179,11 @@
                   {{ report.customer_name || 'Unknown' }}
                 </button>
               </div>
-              <UDropdown :items="items(report)">
+              <UDropdown
+                :items="items(report)"
+                :open="isDropdownOpen(report.installation_id)"
+                @update:open="toggleDropdown(report.installation_id, $event)"
+              >
                 <UButton
                   color="gray"
                   variant="ghost"
@@ -271,7 +275,11 @@
               <template #actions-data="{ row }">
                 <div class="table-cell-content">
                   <div class="flex justify-center">
-                    <UDropdown :items="items(row)">
+                    <UDropdown
+                      :items="items(row)"
+                      :open="isDropdownOpen(row.installation_id)"
+                      @update:open="toggleDropdown(row.installation_id, $event)"
+                    >
                       <UButton color="gray" size="sm">
                         <LucideIcon name="ellipsis-vertical" :size="16" />
                       </UButton>
@@ -472,6 +480,7 @@ import type { InstallationReportCompleteResponse } from "@/types/requests/instal
 import { useNavigationContext } from "@/composables/useNavigationContext";
 import LucideIcon from "@/components/LucideIcon.vue";
 import { useCustomToast } from '@/composables/useCustomToast';
+import { useDropdownManager } from "@/composables/useDropdownManager";
 
 type DropdownItem = {
   label: string
@@ -487,6 +496,7 @@ definePageMeta({
 
 // Initialize route at top level
 const route = useRoute()
+const { isOpen: isDropdownOpen, toggle: toggleDropdown } = useDropdownManager()
 
 // Simplified table columns definition - only core information
 const columns = [
