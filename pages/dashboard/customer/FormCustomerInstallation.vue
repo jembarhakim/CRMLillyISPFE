@@ -21,7 +21,6 @@ import {
   onMounted,
   onUnmounted,
 } from "vue";
-import { useApiHost } from "@/composables/useApiHost";
 import LucideIcon from "@/components/LucideIcon.vue";
 import { useCustomToast } from "@/composables/useCustomToast";
 import { recurringInvoiceAdminApi } from "@/api/admin/recurring-invoice";
