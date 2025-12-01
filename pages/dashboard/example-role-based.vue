@@ -97,7 +97,7 @@
             @click="navigateTo(item.link)"
           >
             <div class="flex items-center gap-3">
-              <UIcon :name="item.icon" class="w-6 h-6 text-gray-600" />
+              <LucideIcon :name="item.icon" class="w-6 h-6 text-gray-600" />
               <div>
                 <h3 class="font-medium">{{ item.label }}</h3>
                 <p class="text-sm text-gray-500">{{ item.description }}</p>

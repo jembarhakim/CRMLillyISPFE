@@ -3,7 +3,7 @@
     <!-- Main Container with Enhanced Styling - Full screen on mobile -->
     <div class="bg-white rounded-xl md:rounded-xl shadow-xl border border-gray-100 overflow-hidden h-screen md:h-auto md:max-h-none flex flex-col">
       <!-- Header Section - Mobile optimized -->
-      <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 md:px-6 py-3 md:py-4 flex-shrink-0">
+      <div :class="['bg-gradient-to-r', headerGradientClass, 'px-4', 'md:px-6', 'py-3', 'md:py-4', 'flex-shrink-0']">
         <div class="flex items-center justify-between">
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
@@ -274,11 +274,7 @@
                 <span class="px-3 py-1.5 text-xs font-semibold rounded-lg shadow-sm" :class="getStatusClass(currentStep.status)">
                   {{ getStatusText(currentStep.status) }}
                 </span>
-                <button v-if="!readOnly && currentStep.status === 'needs_spare_parts' && currentStep.step_order !== 0" 
-                        @click="openStepModal(currentStep)"
-                        class="px-3 py-1.5 text-xs font-semibold bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors shadow-sm">
-                  Perbaiki
-                </button>
+                <span class="text-xs text-gray-500">Diperbarui pada {{ currentStep.completed_at }}</span>
               </div>
             </div>
           </div>
@@ -477,7 +473,7 @@
 
         <!-- Summary View -->
         <div v-if="showSummary && allStepsCompleted" class="bg-white border-2 border-blue-200 rounded-xl shadow-lg overflow-hidden">
-          <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4">
+        <div :class="['bg-gradient-to-r', headerGradientClass, 'px-6', 'py-4']">
             <div class="flex items-center justify-between">
               <h3 class="text-xl font-bold text-white">Ringkasan Checklist Teknisi</h3>
               <button @click="showSummary = false" 
@@ -741,7 +737,7 @@
     <div v-if="showStepModal" class="fixed inset-0 bg-black bg-opacity-50 md:bg-opacity-50 flex items-center justify-center z-50 p-0 md:p-4">
       <div class="bg-white rounded-none md:rounded-xl shadow-2xl w-full h-full md:h-auto md:w-full md:max-w-2xl md:max-h-[90vh] overflow-hidden flex flex-col">
         <!-- Modal Header - Mobile optimized -->
-        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-4 md:px-6 py-4 flex-shrink-0">
+        <div :class="['bg-gradient-to-r', headerGradientClass, 'px-4', 'md:px-6', 'py-4', 'flex-shrink-0']">
           <div class="flex items-center justify-between">
             <div class="flex-1 min-w-0 pr-3">
               <h3 class="text-base md:text-lg font-semibold text-white">Perbarui Langkah</h3>
@@ -761,9 +757,10 @@
           <div class="space-y-2">
             <label class="block text-sm font-medium text-gray-700">Status</label>
             <select v-model="stepUpdate.status" 
-                    class="w-full px-4 py-3 md:px-3 md:py-2.5 border-2 md:border border-gray-500 bg-white text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base md:text-sm touch-manipulation">
-              <option value="done" class="text-gray-900">✅ Pengecekan</option>
-              <option value="fix" class="text-gray-900">🔧 Penanganan Perbaikan</option>
+                    :disabled="isDismantleTicket"
+                    class="w-full px-4 py-3 md:px-3 md:py-2.5 border-2 md:border border-gray-500 bg-white text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base md:text-sm touch-manipulation disabled:bg-gray-100 disabled:cursor-not-allowed">
+              <option v-if="!isDismantleTicket" value="done" class="text-gray-900">✅ Pengecekan</option>
+              <option value="fix" class="text-gray-900">🔧 Penanganan</option>
             </select>
           </div>
 
@@ -780,7 +777,7 @@
           <div class="space-y-2">
             <label class="block text-sm font-medium text-gray-700">
               Gambar Progress 
-              <span class="text-gray-500 font-normal">(Perbaikan memerlukan 2 gambar)</span>
+              <span class="text-gray-500 font-normal">(Penanganan memerlukan 2 gambar)</span>
             </label>
             <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition-colors">
               <input type="file" 
@@ -879,6 +876,8 @@ interface SparePart {
   category: string
 }
 
+const DISMANTLE_STEP_ID = 12
+
 const props = defineProps<{
   ticketId: number
   technicianId: string
@@ -917,6 +916,48 @@ const selfiePhoto = ref<{ file: File; preview: string } | null>(null)
 const savingSelfie = ref(false)
 const showSummary = ref(false)
 const ticketData = ref<any>(null)
+const dismantleFlag = ref(false)
+const isGangguanTicket = computed(() => {
+  const data = ticketData.value
+  if (!data) return false
+  const classificationRaw =
+    data.classification_id ??
+    data.classification ??
+    data.type ??
+    data.type_id ??
+    data.ticket_type ??
+    data.ticket_type_id
+  return (classificationRaw ?? '').toString().toLowerCase() === 'gangguan'
+})
+const isDismantleTicket = computed(() => {
+  if (dismantleFlag.value) return true
+
+  const data = ticketData.value
+  if (!data) return false
+
+  const classificationRaw =
+    data.classification_id ??
+    data.classification ??
+    data.type ??
+    data.type_id ??
+    data.ticket_type ??
+    data.ticket_type_id
+  const classificationStr = (classificationRaw ?? '').toString().toLowerCase()
+  const classificationNum = Number(classificationRaw)
+  const statusVal = data.status_id ?? data.ticket_status_id ?? data.status ?? data.type_status
+  const statusId = statusVal != null ? String(statusVal) : ''
+  const statusText = typeof statusVal === 'string' ? statusVal.toLowerCase() : ''
+
+  if (classificationStr === 'dismantle' || statusText === 'dismantle') return true
+  if (!Number.isNaN(classificationNum) && classificationNum === 7) return true
+  return statusId === '7'
+})
+
+const headerGradientClass = computed(() => {
+  if (isDismantleTicket.value) return 'from-orange-500 to-orange-600'
+  if (isGangguanTicket.value) return 'from-red-600 to-rose-700'
+  return 'from-blue-600 to-indigo-700'
+})
 
 // Refs for step indicators auto-scroll
 const stepIndicatorsContainer = ref<HTMLElement | null>(null)
@@ -1045,6 +1086,21 @@ const currentStepImages = computed<string[]>(() => {
 })
 
 // Methods
+const filterChecklistForDismantle = () => {
+  if (!isDismantleTicket.value) return
+
+  // For dismantle tickets, show selfie step (step_order = 0) and dismantle photo step (step_id = 12)
+  const filteredSteps = checklist.value.filter(step => 
+    step.step_order === 0 || Number(step.step_id) === DISMANTLE_STEP_ID
+  )
+  checklist.value = filteredSteps
+  currentStepIndex.value = 0
+
+  if (!networkArchitecture.value) {
+    networkArchitecture.value = 'DISMANTLE'
+  }
+}
+
 const loadChecklist = async () => {
   try {
     // Keep current step so UI doesn't jump after refresh
@@ -1056,6 +1112,28 @@ const loadChecklist = async () => {
     } else {
       checklist.value = resp.data?.checklist || []
       networkArchitecture.value = resp.data?.network_architecture || ''
+
+      const meta =
+        resp.data?.ticket ||
+        resp.data ||
+        {}
+      const metaClassification =
+        meta.classification_id ??
+        meta.classification ??
+        meta.type ??
+        meta.type_id ??
+        meta.ticket_type ??
+        meta.ticket_type_id
+      const metaStatus = meta.status_id ?? meta.ticket_status_id ?? meta.status ?? meta.type_status
+      const metaClassificationStr = (metaClassification ?? '').toString().toLowerCase()
+      const metaClassificationNum = Number(metaClassification)
+      const metaStatusText = typeof metaStatus === 'string' ? metaStatus.toLowerCase() : ''
+      const metaStatusId = metaStatus != null ? String(metaStatus) : ''
+      dismantleFlag.value =
+        metaClassificationStr === 'dismantle' ||
+        metaStatusText === 'dismantle' ||
+        metaStatusId === '7' ||
+        (!Number.isNaN(metaClassificationNum) && metaClassificationNum === 7)
     }
 
     // Filter steps based on network architecture (additional frontend filter as safety)
@@ -1070,6 +1148,8 @@ const loadChecklist = async () => {
         )
       }
     }
+
+    filterChecklistForDismantle()
 
     if (prevStepId) {
       const idx = checklist.value.findIndex(s => s.step_id === prevStepId)
@@ -1162,7 +1242,7 @@ const openStepModal = (step: ChecklistStep) => {
   }
   selectedStep.value = step
   stepUpdate.value = {
-    status: step.status === 'needs_spare_parts' ? 'fix' : (step.status === 'done' ? 'done' : 'fix'),
+    status: isDismantleTicket.value ? 'fix' : (step.status === 'needs_spare_parts' ? 'fix' : (step.status === 'done' ? 'done' : 'fix')),
     notes: step.notes || '',
     sparePartsUsed: step.spare_parts_used || '',
     images: [] as { file: File; preview: string }[]
@@ -1260,7 +1340,7 @@ const getStatusClass = (status: string) => {
 const getStatusText = (status: string) => {
   switch (status) {
     case 'done': return 'Selesai'
-    case 'needs_spare_parts': return 'Perbaikan'
+    case 'needs_spare_parts': return 'Penanganan'
     case 'not_applicable': return 'Tidak Diterapkan'
     default: return 'Belum'
   }
@@ -1397,6 +1477,11 @@ const loadTicketData = async () => {
     if (response.ok) {
       const data = await response.json()
       ticketData.value = data.data || data
+
+      if (isDismantleTicket.value && !networkArchitecture.value) {
+        networkArchitecture.value = 'DISMANTLE'
+      }
+      filterChecklistForDismantle()
     }
   } catch (error: any) {
     console.log('Failed to load ticket data:', error)

@@ -22,12 +22,12 @@
       </template>
 
       <div v-if="loading" class="text-center py-8">
-        <UIcon name="refresh-cw" class="animate-spin text-2xl mx-auto mb-4 text-black" />
+        <LucideIcon name="refresh-cw" class="animate-spin text-2xl mx-auto mb-4 text-black" />
         <p class="text-black">Loading customer data...</p>
       </div>
 
       <div v-else-if="error" class="text-center py-8">
-        <UIcon name="alert-triangle" class="text-red-500 text-2xl mx-auto mb-4" />
+        <LucideIcon name="alert-triangle" class="text-red-500 text-2xl mx-auto mb-4" />
         <p class="text-red-600 mb-4">{{ error }}</p>
         <UButton @click="closeModal" color="gray">Close</UButton>
       </div>
@@ -49,13 +49,13 @@
         <!-- Warning Message -->
         <div class="warning-text bg-red-50 border border-red-200 rounded-lg p-5 mb-6">
           <div class="flex items-start">
-            <UIcon name="alert-triangle" class="text-red-500 text-xl mr-3 mt-0.5" />
+            <LucideIcon name="alert-triangle" class="text-red-500 text-xl mr-3 mt-0.5" />
             <div>
               <h5 class="warning-text font-semibold mb-2">Warning: This action cannot be undone!</h5>
               <p class="warning-text text-sm leading-relaxed">
                 You are about to permanently delete this customer and all associated data.
                 This action will remove all related records including installations, invoices, and other data.
-              </p>
+              </p>@
             </div>
           </div>
         </div>
@@ -64,7 +64,7 @@
         <div v-if="relatedRecords && relatedRecords.installations > 0" class="mb-6">
           <div class="bg-red-50 border border-red-200 rounded-lg p-4">
             <div class="flex items-start">
-              <UIcon name="x-circle" class="text-red-500 text-xl mr-3 mt-0.5" />
+              <LucideIcon name="x-circle" class="text-red-500 text-xl mr-3 mt-0.5" />
               <div>
                 <h5 class="warning-text font-semibold mb-2">🚫 Cannot Delete Customer</h5>
                 <p class="warning-text text-sm leading-relaxed mb-3">
@@ -90,7 +90,7 @@
           <div class="grid grid-cols-2 gap-3">
             <div v-if="relatedRecords.invoices > 0" class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
               <div class="flex items-center">
-                <UIcon name="file-text" class="text-red-500 mr-2" />
+                <LucideIcon name="file-text" class="text-red-500 mr-2" />
                 <span class="text-sm font-medium text-black">Invoices</span>
               </div>
               <span class="text-sm font-bold text-red-600">{{ relatedRecords.invoices }}</span>
@@ -98,7 +98,7 @@
             
             <div v-if="relatedRecords.installations > 0" class="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded-lg">
               <div class="flex items-center">
-                <UIcon name="wrench-screwdriver" class="text-orange-500 mr-2" />
+                <LucideIcon name="wrench-screwdriver" class="text-orange-500 mr-2" />
                 <span class="text-sm font-medium text-black">Installation Reports</span>
               </div>
               <span class="text-sm font-bold text-orange-600">{{ relatedRecords.installations }}</span>
@@ -106,7 +106,7 @@
             
             <div v-if="relatedRecords.network_devices > 0" class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
               <div class="flex items-center">
-                <UIcon name="cpu-chip" class="text-red-500 mr-2" />
+                <LucideIcon name="cpu-chip" class="text-red-500 mr-2" />
                 <span class="text-sm font-medium text-black">Network Devices</span>
               </div>
               <span class="text-sm font-bold text-red-600">{{ relatedRecords.network_devices }}</span>
@@ -114,7 +114,7 @@
             
             <div v-if="relatedRecords.customer_services > 0" class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
               <div class="flex items-center">
-                <UIcon name="settings-6-tooth" class="text-red-500 mr-2" />
+                <LucideIcon name="settings-6-tooth" class="text-red-500 mr-2" />
                 <span class="text-sm font-medium text-black">Services</span>
               </div>
               <span class="text-sm font-bold text-red-600">{{ relatedRecords.customer_services }}</span>
@@ -122,7 +122,7 @@
             
             <div v-if="relatedRecords.asset_transactions > 0" class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
               <div class="flex items-center">
-                <UIcon name="dollar-sign" class="text-red-500 mr-2" />
+                <LucideIcon name="dollar-sign" class="text-red-500 mr-2" />
                 <span class="text-sm font-medium text-black">Asset Transactions</span>
               </div>
               <span class="text-sm font-bold text-red-600">{{ relatedRecords.asset_transactions }}</span>
@@ -130,7 +130,7 @@
             
             <div v-if="relatedRecords.cables > 0" class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
               <div class="flex items-center">
-                <UIcon name="cable" class="text-red-500 mr-2" />
+                <LucideIcon name="cable" class="text-red-500 mr-2" />
                 <span class="text-sm font-medium text-black">Cables</span>
               </div>
               <span class="text-sm font-bold text-red-600">{{ relatedRecords.cables }}</span>
@@ -138,7 +138,7 @@
             
             <div v-if="relatedRecords.images > 0" class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
               <div class="flex items-center">
-                <UIcon name="photo" class="text-red-500 mr-2" />
+                <LucideIcon name="photo" class="text-red-500 mr-2" />
                 <span class="text-sm font-medium text-black">Images</span>
               </div>
               <span class="text-sm font-bold text-red-600">{{ relatedRecords.images }}</span>
@@ -192,6 +192,7 @@
 import { ref, watch } from 'vue'
 import { customerAdminApi } from '@/api/admin/customer'
 import { User, Trash } from 'lucide-vue-next'
+import LucideIcon from './LucideIcon.vue'
 
 interface Props {
   isOpen: boolean

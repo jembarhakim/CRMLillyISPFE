@@ -853,6 +853,8 @@
 </template>
 
 <script setup lang="ts">
+console.log('🔴 [CRITICAL] Script setup is executing!');
+
 import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';

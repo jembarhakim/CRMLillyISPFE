@@ -1277,7 +1277,7 @@ const relatedCustomers = computed(() => {
                 class="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-800 whitespace-nowrap"
                 :title="`${customer.unpaidInvoiceCount || 0} unpaid invoice(s)`"
               >
-                <UIcon name="alert-circle" class="w-3 h-3 mr-1.5" />
+                <LucideIcon name="alert-circle" class="w-3 h-3 mr-1.5" />
                 {{ customer.unpaidInvoiceCount || 0 }} Unpaid
               </span>
               <span
@@ -1287,7 +1287,7 @@ const relatedCustomers = computed(() => {
                   customer.pendingInvoiceCount || 0
                 } pending invoice(s)`"
               >
-                <UIcon name="clock" class="w-3 h-3 mr-1.5" />
+                <LucideIcon name="clock" class="w-3 h-3 mr-1.5" />
                 {{ customer.pendingInvoiceCount || 0 }} Pending
               </span>
               <!-- Device Status Indicator -->
@@ -1326,15 +1326,15 @@ const relatedCustomers = computed(() => {
         <!-- Customer Details -->
         <div class="space-y-2 text-sm">
           <div class="flex items-center gap-2">
-            <UIcon name="phone" class="w-4 h-4 text-gray-400" />
+            <LucideIcon name="phone" class="w-4 h-4 text-gray-400" />
             <span class="text-gray-600">{{ customer.phone }}</span>
           </div>
           <div class="flex items-center gap-2">
-            <UIcon name="map-pin" class="w-4 h-4 text-gray-400" />
+            <LucideIcon name="map-pin" class="w-4 h-4 text-gray-400" />
             <span class="text-gray-600">{{ customer.address }}</span>
           </div>
           <div v-if="customer.area" class="flex items-center gap-2">
-            <UIcon name="building" class="w-4 h-4 text-gray-400" />
+            <LucideIcon name="building" class="w-4 h-4 text-gray-400" />
             <span class="text-gray-600">{{ customer.area.name_city }}</span>
             <span
               v-if="customer.area.code_name"
@@ -1362,7 +1362,7 @@ const relatedCustomers = computed(() => {
                 v-if="customer.is_terminal"
                 class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-cyan-100 text-cyan-800"
               >
-                <UIcon name="server" class="w-3 h-3 mr-1" />
+                <LucideIcon name="server" class="w-3 h-3 mr-1" />
                 Terminal
               </span>
               <span

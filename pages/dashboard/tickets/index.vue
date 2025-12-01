@@ -150,48 +150,43 @@ const selectedLocation = ref<{
   lng?: number | null
 } | null>(null)
 
+const getInstallationLocation = (customer: any) => {
+  const installations =
+    customer?.installations ||
+    customer?.customer_installations ||
+    []
+  if (Array.isArray(installations) && installations.length > 0) {
+    const inst = installations[0]
+    const lat =
+      inst?.latitude ??
+      inst?.lat ??
+      inst?.gps_lat ??
+      null
+    const lng =
+      inst?.longitude ??
+      inst?.langitude ??
+      inst?.lng ??
+      inst?.gps_lng ??
+      null
+    return { lat, lng }
+  }
+  return { lat: null, lng: null }
+}
+
 // Customer detail modal state
 const showCustomerDetailModal = ref(false)
 const selectedCustomerId = ref<string | null>(null)
 
 async function openLocationDetail(ticket: any) {
-  selectedLocation.value = {
-    customer_name: ticket.customer_name,
-    customer_id: ticket.customer_id,
-    customer_address: ticket.customer_address ?? null,
-    customer_phone: ticket.customer_phone ?? null,
-    lat: ticket.gps_lat ?? null,
-    lng: ticket.gps_lng ?? null,
+  const customerId = ticket?.customer_id
+  if (!customerId) {
+    console.error('Cannot open customer detail: ticket.customer_id is missing.')
+    return
   }
-  showLocationModal.value = true
-
-  // Fallback: if any detail missing, fetch from customer API by id
-  const needsFetch = !selectedLocation.value.customer_address || !selectedLocation.value.customer_phone || selectedLocation.value.lat == null || selectedLocation.value.lng == null
-  if (needsFetch && ticket.customer_id) {
-    try {
-      const resp: any = await customerAdminApi().getCustomer(ticket.customer_id)
-      const data = resp?.data || resp
-      if (data) {
-        selectedLocation.value = {
-          customer_name: data.name ?? selectedLocation.value.customer_name,
-          customer_id: data.id ?? selectedLocation.value.customer_id,
-          customer_address: data.address ?? selectedLocation.value.customer_address,
-          customer_phone: data.phone ?? selectedLocation.value.customer_phone,
-          lat: (data.latitude ?? selectedLocation.value.lat) as any,
-          lng: (data.longitude ?? selectedLocation.value.lng) as any,
-        }
-      }
-    } catch (e) {
-      console.error('Failed to fetch customer details', e)
-    }
-  }
+  selectedCustomerId.value = customerId
+  showCustomerDetailModal.value = true
+  showLocationModal.value = false
 }
-
-const googleMapsUrl = computed(() => {
-  if (!selectedLocation.value?.lat || !selectedLocation.value?.lng) return ''
-  const q = `${selectedLocation.value.lat},${selectedLocation.value.lng}`
-  return `https://www.google.com/maps?q=${encodeURIComponent(q)}`
-})
 
 function openCustomerDetailModal(customerId: string) {
   selectedCustomerId.value = customerId
@@ -1083,12 +1078,15 @@ const getTicketActions = (ticket: any) => {
     tooltip?: string
   }> = []
 
+  const classificationId = (ticket.classification_id || ticket.classification || '').toString().toLowerCase()
+  const isPSBClassification = classificationId === 'psb'
+
   // Finished tickets: allow read-only progress view ONLY if it's a real trouble ticket.
   // If classification indicates Information (verified_by_cs true/1 or classification === 'info'),
   // then hide the View Progress button because no technician workflow exists.
   if (ticket.status === 'finished') {
     const isInformation = ticket.verified_by_cs === true || ticket.verified_by_cs === 1 || ticket.classification === 'info'
-    if (!isInformation) {
+    if (!isInformation && !isPSBClassification) {
       // Allow technician to view their completed checklist for finished tickets
       if (isTechnician.value && ticket.assigned_to) {
         let actualUserID = null
@@ -1132,14 +1130,14 @@ const getTicketActions = (ticket: any) => {
   // Enforce: NOC must act BEFORE assigning a technician
   const nocActionRecorded = !!(ticket.noc_note || ticket.img_noc)
   const isCSLikeAssignee = (ticket.current_assignee_name === 'CUSTOMER SERVICE' || ticket.current_assignee_name === 'CUSTOMER_SERVICE')
-  const classificationId = ticket.classification_id || ticket.classification || 'gangguan'
+  const classificationForNOC = classificationId || 'gangguan'
 
   if ((ticket.status === 'unfinished' || (ticket.status === 'ongoing' && isCSLikeAssignee && !nocActionRecorded)) &&
     isCSLikeAssignee) {
 
     if (isAdmin.value || isCustomerService.value) {
       // Only show NOC action if classification allows it
-      if (shouldShowNOCAction(classificationId)) {
+      if (shouldShowNOCAction(classificationForNOC)) {
         actions.push({
           label: 'Aksi Tiket',
           color: 'bg-blue-600',
@@ -1205,7 +1203,7 @@ const getTicketActions = (ticket: any) => {
       }
     }
 
-    if (isTechnician.value && ticket.assigned_to && (
+    if (!isPSBClassification && isTechnician.value && ticket.assigned_to && (
       ticket.assigned_to === authStore.user?.user_id ||
       ticket.assigned_to === authStore.user?.user_id ||
       ticket.assigned_to === actualUserID
@@ -1234,7 +1232,7 @@ const getTicketActions = (ticket: any) => {
         }
       }
     }
-    if ((isAdmin.value || isCustomerService.value) && ticket.assigned_to) {
+    if (!isPSBClassification && (isAdmin.value || isCustomerService.value) && ticket.assigned_to) {
       actions.push({
         label: 'Lihat Progress (Berlangsung)',
         color: 'bg-gray-700',
@@ -1262,7 +1260,7 @@ const getTicketActions = (ticket: any) => {
     ticket.technician_completed) {
 
     // Allow technician to view their completed checklist even when ticket is with CS
-    if (isTechnician.value && ticket.assigned_to) {
+    if (!isPSBClassification && isTechnician.value && ticket.assigned_to) {
       let actualUserID = null
       if (process.client && authStore.token) {
         try {
@@ -1651,15 +1649,20 @@ async function createTicket() {
 
     const created: any = await ticketsApi().create(ticketData)
 
-    // Immediately send to NOC with description as note and attached image file
-    try {
-      const newId = created?.data?.id || created?.id
-      if (newId && selectedCSFile) {
-        await ticketsApi().sendToNOC(Number(newId), form.value.description || form.value.title || '', selectedCSFile)
+    // Only send to NOC for GANGGUAN classification
+    // PSB, LAINNYA, and DISMANTLE are auto-assigned to technicians by the backend
+    const classification = form.value.classification?.toLowerCase()
+    if (classification === 'gangguan') {
+      try {
+        const newId = created?.data?.id || created?.id
+        if (newId && selectedCSFile) {
+          await ticketsApi().sendToNOC(Number(newId), form.value.description || form.value.title || '', selectedCSFile)
+        }
+      } catch (e) {
+        console.warn('sendToNOC after create failed:', e)
       }
-    } catch (e) {
-      console.warn('sendToNOC after create failed:', e)
     }
+    // For PSB, LAINNYA, and DISMANTLE: backend already auto-assigned to technician, no need to send to NOC
     showAdd.value = false
     form.value = { customer_id: customers.value[0]?.id || '', title: '', description: '', img_cs: '', classification: 'gangguan' }
     selectedCSFile = undefined // Clear the selected file
@@ -2075,7 +2078,14 @@ const visibleAndSortedTickets = computed(() => {
                     <tr v-if="r"
                       class="border-b border-gray-100 odd:bg-white even:bg-gray-50 hover:bg-gray-100/70 transition-colors">
                       <td class="p-2">{{ r.id }}</td>
-                      <td class="p-2 font-medium text-blue-600">{{ r.customer_name || 'Pelanggan Tidak Dikenal' }}</td>
+                      <td class="p-2">
+                        <button
+                          @click="openCustomerDetailModal(r.customer_id)"
+                          class="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          {{ r.customer_name || 'Pelanggan Tidak Dikenal' }}
+                        </button>
+                      </td>
                       <td class="p-2 text-xs text-gray-600 whitespace-nowrap">{{ formatDate(r.created_at) }}</td>
                       <td class="p-2">{{ r.title }}</td>
                       <td class="p-2 text-gray-700 max-w-xs truncate" :title="r.description || ''">{{ r.description ||
@@ -2110,7 +2120,7 @@ const visibleAndSortedTickets = computed(() => {
                     </td>
                       <td class="p-2 capitalize">{{ r.current_assignee_name || r.current_assignee_role || '-' }}</td>
                       <td class="p-2 text-sm">
-                        <span v-if="r.assignee_name" class="text-blue-600 font-medium">{{ r.assignee_name }}</span>
+                        <span v-if="r.assignee_name" class="text-gray-600 font-medium">{{ r.assignee_name }}</span>
                         <span v-else class="text-gray-400 italic">Belum Ditugaskan</span>
                       </td>
                       <td class="p-2 max-w-xs">
@@ -2247,7 +2257,12 @@ const visibleAndSortedTickets = computed(() => {
                     </span>
                   </div>
                   <h3 class="font-semibold text-gray-900 text-base leading-tight">{{ r.title }}</h3>
-                  <p class="text-sm text-blue-600 font-medium mt-1">{{ r.customer_name || 'Unknown Customer' }}</p>
+                  <button
+                    @click="openCustomerDetailModal(r.customer_id)"
+                    class="text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium mt-1"
+                  >
+                    {{ r.customer_name || 'Unknown Customer' }}
+                  </button>
                 </div>
               </div>
 
@@ -2266,7 +2281,7 @@ const visibleAndSortedTickets = computed(() => {
                   <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded">
                     Peran: {{ r.current_assignee_name || r.current_assignee_role || '-' }}
                   </span>
-                  <span class="bg-blue-100 text-gray-700 px-2 py-1 rounded">
+                  <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded">
                     Ditugaskan Ke: {{ r.assignee_name || 'Belum Ditugaskan' }}
                   </span>
                   <span v-if="r.network_architecture" class="bg-blue-100 text-blue-700 px-2 py-1 rounded">
@@ -2353,39 +2368,8 @@ const visibleAndSortedTickets = computed(() => {
         </div>
       </div>
 
-      <!-- Modal Detail Lokasi -->
-      <div v-if="showLocationModal" class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/60" @click="showLocationModal = false"></div>
-        <div class="relative w-full max-w-md mx-4 rounded-xl shadow-xl bg-white p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-semibold text-gray-900">Detail Lokasi</h2>
-            <button class="text-gray-400 hover:text-gray-600" @click="showLocationModal = false">✕</button>
-          </div>
-          <div class="space-y-2 text-gray-900">
-            <div class="text-sm"><span class="font-medium">Pelanggan:</span> {{ selectedLocation?.customer_name || '-' }}
-            </div>
-            <div class="text-sm"><span class="font-medium">ID Pelanggan:</span> {{ selectedLocation?.customer_id || '-'
-              }}</div>
-            <div class="text-sm"><span class="font-medium">Alamat:</span> {{ selectedLocation?.customer_address || '-'
-              }}</div>
-            <div class="text-sm"><span class="font-medium">Telepon:</span> {{ selectedLocation?.customer_phone || '-' }}
-            </div>
-            <div class="text-sm"><span class="font-medium">Lintang:</span> {{ selectedLocation?.lat ?? '-' }}</div>
-            <div class="text-sm"><span class="font-medium">Bujur:</span> {{ selectedLocation?.lng ?? '-' }}</div>
-          </div>
-          <div class="mt-4 flex justify-end gap-2">
-            <button v-if="selectedLocation?.customer_id" 
-              @click="openCustomerDetailModal(selectedLocation.customer_id); showLocationModal = false"
-              class="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700">
-              Detail Pelanggan
-            </button>
-            <a v-if="googleMapsUrl" :href="googleMapsUrl" target="_blank" rel="noopener"
-              class="px-4 py-2 rounded bg-sky-600 text-white hover:bg-sky-700">Buka di Google Maps</a>
-            <button class="px-4 py-2 rounded bg-gray-300 text-gray-700 hover:bg-gray-400"
-              @click="showLocationModal = false">Tutup</button>
-          </div>
-        </div>
-      </div>
+      
+
 
       <!-- Add New Ticket Modal -->
       <UModal v-model="showAdd" :prevent-close="false">
@@ -2394,7 +2378,7 @@ const visibleAndSortedTickets = computed(() => {
             <div class="flex justify-between items-center">
               <h3 class="text-xl font-semibold">Tambah Tiket Baru</h3>
               <UButton @click="closeAddModal" variant="ghost" size="sm">
-                <UIcon name="x" />
+                <LucideIcon name="x" />
               </UButton>
             </div>
           </template>
@@ -2840,10 +2824,12 @@ const visibleAndSortedTickets = computed(() => {
     </div>
 
     <!-- Customer Detail Modal -->
-    <CustomerDetailModal
-      v-if="showCustomerDetailModal && selectedCustomerId"
-      :customer-id="selectedCustomerId"
-      @close="closeCustomerDetailModal"
-    />
+    <ClientOnly>
+      <CustomerDetailModal
+        v-if="showCustomerDetailModal && selectedCustomerId"
+        :customer-id="selectedCustomerId"
+        @close="closeCustomerDetailModal"
+      />
+    </ClientOnly>
   </div>
 </template>

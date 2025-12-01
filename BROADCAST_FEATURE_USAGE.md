@@ -247,7 +247,7 @@ const historyColumns = [
       <div>
         <h3 class="text-lg font-semibold mb-4">Broadcast History</h3>
         <div v-if="historyLoading" class="flex justify-center py-8">
-          <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl" />
+          <LucideIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl" />
         </div>
         <UTable 
           v-else

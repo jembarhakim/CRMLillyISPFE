@@ -10,7 +10,7 @@ import { uploadFileAdminApi } from "@/api/admin/file-upload";
 import { useNotificationStore } from "@/stores/notification";
 import { useAuthStore } from "@/stores/auth";
 import { useApiHost } from "@/composables/useApiHost";
-import { LMap, LTileLayer, LMarker, LControl } from "vue-leaflet";
+import { LMap, LTileLayer, LMarker, LControl } from "@vue-leaflet/vue-leaflet";
 import { useCookie } from "#app";
 import {
   computed,
@@ -173,6 +173,19 @@ const formRef = ref<HTMLFormElement | null>(null);
 // Technician photo tracking
 const technicianPhotoSizes = ref<number[]>([]);
 const isCompressing = ref(false);
+
+// Track last coordinates that were reverse-geocoded to avoid redundant calls
+const lastGeocodedCoords = ref<{ lat: number; lng: number } | null>(null);
+
+// Trigger reverse geocoding when coordinates are present; can be forced to bypass cache
+function geocodeIfCoordinatesReady(force: boolean = false) {
+  if (state.latitude == null || state.longitude == null) return;
+  if (isNaN(Number(state.latitude)) || isNaN(Number(state.longitude))) return;
+  if (force) {
+    lastGeocodedCoords.value = null;
+  }
+  reverseGeocode(Number(state.latitude), Number(state.longitude));
+}
 
 // Available asset items for MAC address selection
 const availableAssetItems = ref<{ [assetId: string]: any[] }>({});
@@ -355,6 +368,7 @@ watch(
           state.latitude,
           state.longitude
         );
+        geocodeIfCoordinatesReady(true);
       }
     }
   },
@@ -408,6 +422,7 @@ watch(
           state.latitude,
           state.longitude
         );
+        geocodeIfCoordinatesReady(true);
       } else {
         console.warn("[Watcher] Customer exists but has NO location data");
         state.latitude = null;
@@ -454,17 +469,6 @@ watch(
         "for product:",
         selectedProduct.name
       );
-    }
-  }
-);
-
-// Watch for is_terminal checkbox - clear terminal installation selection when this record IS the terminal
-watch(
-  () => state.is_terminal,
-  (isTerminal: string) => {
-    if (isTerminal === "yes") {
-      // Terminal installations cannot point to another terminal
-      state.terminal_customer_installation_id = "";
     }
   }
 );
@@ -1500,6 +1504,14 @@ async function loadCustomers() {
 // Reverse geocode helper (reuse from AddCustomer)
 async function reverseGeocode(lat: number, lng: number) {
   try {
+    if (
+      lastGeocodedCoords.value &&
+      lastGeocodedCoords.value.lat === lat &&
+      lastGeocodedCoords.value.lng === lng
+    ) {
+      return;
+    }
+
     const api = useApiHost();
     const token = useCookie("token").value;
     const response = await fetch(
@@ -1520,6 +1532,7 @@ async function reverseGeocode(lat: number, lng: number) {
     const result = await response.json();
     if (result.success && result.data) {
       state.address = result.data.display_name || result.data.address || "";
+      lastGeocodedCoords.value = { lat, lng };
     }
   } catch (error) {
     console.error("Reverse geocoding failed:", error);
@@ -1549,6 +1562,16 @@ async function reverseGeocode(lat: number, lng: number) {
 const mapLat = computed(() => state.latitude ?? 0);
 const mapLng = computed(() => state.longitude ?? 0);
 
+// Keep address synced when either coordinate changes and both are present
+watch(
+  [() => state.latitude, () => state.longitude],
+  ([lat, lng]) => {
+    if (lat == null || lng == null) return;
+    if (isNaN(Number(lat)) || isNaN(Number(lng))) return;
+    reverseGeocode(Number(lat), Number(lng));
+  }
+);
+
 function onMarkerDrag(e: any) {
   const latlng = e.target.getLatLng();
   state.latitude = latlng.lat;
@@ -1558,12 +1581,24 @@ function onMarkerDrag(e: any) {
 
 function onLatInput(val: string | number) {
   const parsed = parseFloat(String(val));
-  if (!isNaN(parsed)) state.latitude = parsed;
+  if (!isNaN(parsed)) {
+    state.latitude = parsed;
+    if (state.longitude != null && !isNaN(Number(state.longitude))) {
+      lastGeocodedCoords.value = null; // force geocode on new manual input pair
+      reverseGeocode(state.latitude, Number(state.longitude));
+    }
+  }
 }
 
 function onLngInput(val: string | number) {
   const parsed = parseFloat(String(val));
-  if (!isNaN(parsed)) state.longitude = parsed;
+  if (!isNaN(parsed)) {
+    state.longitude = parsed;
+    if (state.latitude != null && !isNaN(Number(state.latitude))) {
+      lastGeocodedCoords.value = null; // force geocode on new manual input pair
+      reverseGeocode(Number(state.latitude), state.longitude);
+    }
+  }
 }
 
 async function loadTechnicians() {
@@ -3219,7 +3254,6 @@ onMounted(async () => {
                 value-attribute="id"
                 :search-attributes="['customer_name', 'installation_id']"
                 :loading="state.loading"
-                :disabled="state.is_terminal === 'yes'"
               />
               <div
                 class="mt-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-blue-900 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100 flex items-start gap-2"
@@ -3283,6 +3317,93 @@ onMounted(async () => {
               :rows="3"
               class="w-full customer-input"
             />
+          </UFormGroup>
+        </div>
+
+        <!-- Location & Address (Customer-Level) -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <h3 class="text-xl font-bold text-black mb-3 flex items-center gap-2">
+            <LucideIcon name="map-pin" :size="20" class="text-red-600" />
+            Location & Address
+          </h3>
+
+          <div class="mb-6">
+            <LMap
+              style="height: 360px; width: 100%;"
+              :zoom="6"
+              :center="[mapLat, mapLng]"
+              :use-global-leaflet="false"
+              class="rounded-lg overflow-hidden border border-gray-200 shadow-sm"
+            >
+              <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <LMarker
+                :lat-lng="[mapLat, mapLng]"
+                draggable
+                @dragend="onMarkerDrag"
+              />
+              <LControl position="bottomleft">
+                <UButton @click="moveToMyLocation" size="sm" color="blue" class="mb-2 shadow-sm">
+                  <template #leading>
+                    <LucideIcon name="navigation" :size="16" />
+                  </template>
+                  My Position
+                </UButton>
+              </LControl>
+            </LMap>
+          </div>
+
+          <UFormGroup name="address" class="mb-4">
+            <template #label>
+              <div class="flex items-center gap-2">
+                <LucideIcon name="map-pin" :size="16" class="text-gray-600" />
+                <span class="text-black font-medium">Address</span>
+              </div>
+            </template>
+            <UInput
+              v-model="state.address"
+              placeholder="Address will be auto-filled from map"
+              class="w-full customer-input"
+              readonly
+            />
+          </UFormGroup>
+
+          <UFormGroup name="coordinates">
+            <template #label>
+              <div class="flex items-center gap-2">
+                <LucideIcon name="navigation" :size="16" class="text-gray-600" />
+                <span class="text-black font-medium">Coordinates</span>
+              </div>
+            </template>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-black mb-1 flex items-center gap-2">
+                  <LucideIcon name="map-pin" :size="14" class="text-gray-500" />
+                  <span>Latitude</span>
+                </label>
+                <UInput
+                  :model-value="state.latitude ?? 0"
+                  @update:model-value="onLatInput"
+                  placeholder="Latitude"
+                  type="number"
+                  step="any"
+                  class="w-full customer-input"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-black mb-1 flex items-center gap-2">
+                  <LucideIcon name="map-pin" :size="14" class="text-gray-500" />
+                  <span>Longitude</span>
+                </label>
+                <UInput
+                  :model-value="state.longitude ?? 0"
+                  @update:model-value="onLngInput"
+                  placeholder="Longitude"
+                  type="number"
+                  step="any"
+                  class="w-full customer-input"
+                />
+              </div>
+            </div>
           </UFormGroup>
         </div>
 
@@ -3455,93 +3576,6 @@ onMounted(async () => {
                       </UButton>
         </div>
       </div>
-    </div>
-
-    <!-- Location & Address -->
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mt-6">
-      <h3 class="text-xl font-bold text-black mb-3 flex items-center gap-2">
-        <LucideIcon name="map-pin" :size="20" class="text-red-600" />
-        Location & Address
-      </h3>
-
-      <div class="mb-6">
-        <LMap
-          style="height: 360px; width: 100%;"
-          :zoom="6"
-          :center="[mapLat, mapLng]"
-          :use-global-leaflet="false"
-          class="rounded-lg overflow-hidden border border-gray-200 shadow-sm"
-        >
-          <LTileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          <LMarker
-            :lat-lng="[mapLat, mapLng]"
-            draggable
-            @dragend="onMarkerDrag"
-          />
-          <LControl position="bottomleft">
-            <UButton @click="moveToMyLocation" size="sm" color="blue" class="mb-2 shadow-sm">
-              <template #leading>
-                <LucideIcon name="navigation" :size="16" />
-              </template>
-              My Position
-            </UButton>
-          </LControl>
-        </LMap>
-      </div>
-
-      <UFormGroup name="address" class="mb-4">
-        <template #label>
-          <div class="flex items-center gap-2">
-            <LucideIcon name="map-pin" :size="16" class="text-gray-600" />
-            <span class="text-black font-medium">Address</span>
-          </div>
-        </template>
-        <UInput
-          v-model="state.address"
-          placeholder="Address will be auto-filled from map"
-          class="w-full customer-input"
-          readonly
-        />
-      </UFormGroup>
-
-      <UFormGroup name="coordinates">
-        <template #label>
-          <div class="flex items-center gap-2">
-            <LucideIcon name="navigation" :size="16" class="text-gray-600" />
-            <span class="text-black font-medium">Coordinates</span>
-          </div>
-        </template>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-black mb-1 flex items-center gap-2">
-              <LucideIcon name="map-pin" :size="14" class="text-gray-500" />
-              <span>Latitude</span>
-            </label>
-            <UInput
-              :model-value="state.latitude ?? 0"
-              @update:model-value="onLatInput"
-              placeholder="Latitude"
-              type="number"
-              step="any"
-              class="w-full customer-input"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-black mb-1 flex items-center gap-2">
-              <LucideIcon name="map-pin" :size="14" class="text-gray-500" />
-              <span>Longitude</span>
-            </label>
-            <UInput
-              :model-value="state.longitude ?? 0"
-              @update:model-value="onLngInput"
-              placeholder="Longitude"
-              type="number"
-              step="any"
-              class="w-full customer-input"
-            />
-          </div>
-        </div>
-      </UFormGroup>
     </div>
 
                 <!-- Notes Section -->

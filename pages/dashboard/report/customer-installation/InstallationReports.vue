@@ -4,7 +4,7 @@
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-800">Installation Reports</h1>
         <UButton @click="navigateTo('/dashboard/report/customer-installation/add')" color="blue">
-          <UIcon name="plus" class="mr-2" />
+          <LucideIcon name="plus" class="mr-2" />
           Add Report Installation
         </UButton>
       </div>
@@ -13,7 +13,7 @@
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div class="bg-blue-50 p-4 rounded-lg">
           <div class="flex items-center">
-            <UIcon name="building" class="text-blue-600 text-2xl mr-3" />
+            <LucideIcon name="building" class="text-blue-600 text-2xl mr-3" />
             <div>
               <p class="text-sm text-blue-600">Total Customers</p>
               <p class="text-2xl font-bold text-blue-800">{{ summaryStats.totalCustomers }}</p>
@@ -23,7 +23,7 @@
         
         <div class="bg-green-50 p-4 rounded-lg">
           <div class="flex items-center">
-            <UIcon name="check-circle" class="text-green-600 text-2xl mr-3" />
+            <LucideIcon name="check-circle" class="text-green-600 text-2xl mr-3" />
             <div>
               <p class="text-sm text-green-600">Completed</p>
               <p class="text-2xl font-bold text-green-800">{{ summaryStats.completedInstallations }}</p>
@@ -33,7 +33,7 @@
         
         <div class="bg-yellow-50 p-4 rounded-lg">
           <div class="flex items-center">
-            <UIcon name="clock" class="text-yellow-600 text-2xl mr-3" />
+            <LucideIcon name="clock" class="text-yellow-600 text-2xl mr-3" />
             <div>
               <p class="text-sm text-yellow-600">Pending</p>
               <p class="text-2xl font-bold text-yellow-800">{{ summaryStats.pendingInstallations }}</p>
@@ -43,7 +43,7 @@
         
         <div class="bg-purple-50 p-4 rounded-lg">
           <div class="flex items-center">
-            <UIcon name="wrench-screwdriver" class="text-purple-600 text-2xl mr-3" />
+            <LucideIcon name="wrench-screwdriver" class="text-purple-600 text-2xl mr-3" />
             <div>
               <p class="text-sm text-purple-600">In Progress</p>
               <p class="text-2xl font-bold text-purple-800">{{ summaryStats.inProgressInstallations }}</p>

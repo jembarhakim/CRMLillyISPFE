@@ -28,7 +28,7 @@
         <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-6 rounded-xl border border-blue-200 mb-6">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <h3 class="text-base sm:text-lg font-semibold text-blue-800 flex items-center">
-              <UIcon name="funnel" class="mr-2" />
+              <LucideIcon name="funnel" class="mr-2" />
               Filters
             </h3>
             <div class="flex flex-col sm:flex-row gap-2">
@@ -126,31 +126,31 @@
             <span v-if="filters.search" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
               Search: "{{ filters.search }}"
               <button @click="clearFilter('search')" class="ml-1 hover:text-indigo-600">
-                <UIcon name="x" class="w-3 h-3" />
+                <LucideIcon name="x" class="w-3 h-3" />
               </button>
             </span>
             <span v-if="filters.status" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
               Status: {{ getStatusLabel(filters.status) }}
               <button @click="clearFilter('status')" class="ml-1 hover:text-blue-600">
-                <UIcon name="x" class="w-3 h-3" />
+                <LucideIcon name="x" class="w-3 h-3" />
               </button>
             </span>
             <span v-if="filters.installation_type" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
               Type: {{ getInstallationTypeLabel(filters.installation_type) }}
               <button @click="clearFilter('installation_type')" class="ml-1 hover:text-green-600">
-                <UIcon name="x" class="w-3 h-3" />
+                <LucideIcon name="x" class="w-3 h-3" />
               </button>
             </span>
             <span v-if="filters.date_from" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
               From: {{ formatFilterDate(filters.date_from) }}
               <button @click="clearFilter('date_from')" class="ml-1 hover:text-purple-600">
-                <UIcon name="x" class="w-3 h-3" />
+                <LucideIcon name="x" class="w-3 h-3" />
               </button>
             </span>
             <span v-if="filters.date_to" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
               To: {{ formatFilterDate(filters.date_to) }}
               <button @click="clearFilter('date_to')" class="ml-1 hover:text-purple-600">
-                <UIcon name="x" class="w-3 h-3" />
+                <LucideIcon name="x" class="w-3 h-3" />
               </button>
             </span>
           </div>
@@ -160,11 +160,11 @@
         <!-- Mobile Card View -->
         <div class="block sm:hidden space-y-4">
           <div v-if="loading" class="text-center py-8">
-            <UIcon name="refresh-cw" class="animate-spin text-2xl text-blue-600 mb-2" />
+            <LucideIcon name="refresh-cw" class="animate-spin text-2xl text-blue-600 mb-2" />
             <p class="text-gray-600">Loading reports...</p>
           </div>
           <div v-else-if="filteredReports.length === 0" class="text-center py-8 text-gray-500">
-            <UIcon name="file-text" class="text-4xl mb-2" />
+            <LucideIcon name="file-text" class="text-4xl mb-2" />
             <p>No installation reports found</p>
           </div>
           <div v-else v-for="report in paginatedReports" :key="report.installation_id"
@@ -172,12 +172,12 @@
             <!-- Report Header -->
             <div class="flex items-start justify-between mb-3">
               <div class="flex-1">
-                <button
-                  @click="viewReport(report.installation_id)"
+                <NuxtLink
+                  :to="`/dashboard/report/customer-installation/detail/${report.installation_id}`"
                   class="text-lg font-semibold hover:underline text-blue-600 hover:text-blue-800"
                 >
                   {{ report.customer_name || 'Unknown' }}
-                </button>
+                </NuxtLink>
               </div>
               <UDropdown
                 :items="items(report)"
@@ -197,22 +197,22 @@
             <!-- Report Details -->
             <div class="space-y-2 text-sm">
               <div class="flex items-center gap-2">
-                <UIcon name="user" class="w-4 h-4 text-gray-400" />
+                <LucideIcon name="user" class="w-4 h-4 text-gray-400" />
                 <span class="text-gray-600">{{ report.technician_name || 'Unknown Technician' }}</span>
               </div>
               <div class="flex items-center gap-2">
-                <UIcon name="wrench" class="w-4 h-4 text-gray-400" />
+                <LucideIcon name="wrench" class="w-4 h-4 text-gray-400" />
                 <span class="text-gray-600">{{ report.installation_type || 'Unknown Type' }}</span>
               </div>
               <div v-if="report.status_psb" class="flex items-center gap-2">
-                <UIcon name="flag" class="w-4 h-4 text-gray-400" />
+                <LucideIcon name="flag" class="w-4 h-4 text-gray-400" />
                 <span :class="report.status_psb === 'Tepat Waktu' ? 'text-green-600 font-medium' : 'text-red-600 font-medium'">
                   PSB: {{ report.status_psb }}
                 </span>
               </div>
               <!-- Status Badges -->
               <div class="flex items-center gap-2 flex-wrap">
-                <UIcon name="tag" :size="16" class="text-gray-400" />
+                <LucideIcon name="tag" :size="16" class="text-gray-400" />
                 <div class="flex gap-1 flex-wrap">
                   <span :class="getStatusColor(report.installation_status)"
                         class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap">
@@ -230,12 +230,12 @@
             <UTable :rows="paginatedReports" :columns="columns" class="w-full installation-reports-table">
               <template #customer-data="{ row }">
                 <div class="flex items-center space-x-3 flex-wrap">
-                  <button
-                    @click="viewReport(row.installation_id)"
+                  <NuxtLink
+                    :to="`/dashboard/report/customer-installation/detail/${row.installation_id}`"
                     class="hover:underline font-medium text-blue-600 hover:text-blue-800"
                   >
                     {{ row.customer_name || 'Unknown' }}
-                  </button>
+                  </NuxtLink>
                 </div>
               </template>
 

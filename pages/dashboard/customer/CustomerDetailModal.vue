@@ -23,7 +23,7 @@
             <p class="text-xs text-gray-400">ID: {{ props.customerId }}</p>
           </div>
         </div>
-        <UButton color="gray" variant="ghost" icon="x-20-solid" @click="$emit('close')"
+        <UButton color="gray" variant="ghost" icon="x" @click="$emit('close')"
           class="absolute top-4 right-4 sm:relative sm:top-0 sm:right-0" />
       </div>
 
@@ -49,7 +49,7 @@
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
               'flex-shrink-0 px-4 py-3 font-medium text-sm flex items-center gap-2 transition-colors'
             ]">
-              <UIcon :name="tab.icon" class="w-4 h-4" />
+              <LucideIcon :name="tab.icon" class="w-4 h-4" />
               <span>{{ tab.name }}</span>
               <span v-if="tab.count !== undefined" class="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-full">
                 {{ tab.count }}
@@ -67,7 +67,7 @@
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
               'w-full text-left px-3 py-2 rounded-l-md font-medium text-sm flex items-center gap-3 transition-colors'
             ]">
-              <UIcon :name="tab.icon" class="w-4 h-4" />
+              <LucideIcon :name="tab.icon" class="w-4 h-4" />
               <span class="flex-1">{{ tab.name }}</span>
               <span v-if="tab.count !== undefined" class="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-full">
                 {{ tab.count }}
@@ -175,31 +175,31 @@
 
                 <!-- Action Buttons - Mobile Stacked, Desktop Horizontal -->
                 <div class="flex flex-col sm:flex-row gap-2 sm:gap-2">
-                  <UButton size="sm" color="blue" variant="outline" @click="loginAsCustomer"
-                    class="w-full sm:w-auto flex-shrink-0">
-                    <UIcon name="arrow-right-on-rectangle" class="w-4 h-4 mr-2" />
-                    Login As Customer
-                  </UButton>
-                  <UButton size="sm" color="red" variant="outline" @click="revokeAutoLogin"
-                    class="w-full sm:w-auto flex-shrink-0">
-                    <UIcon name="x" class="w-4 h-4 mr-2" />
-                    Revoke Auto Login
-                  </UButton>
-                  <UButton size="sm" color="gray" variant="outline" @click="regenerateUrl"
-                    class="w-full sm:w-auto flex-shrink-0">
-                    <UIcon name="refresh-cw" class="w-4 h-4 mr-2" />
-                    Regenerate URL
-                  </UButton>
+        <UButton size="sm" color="blue" variant="outline" @click="loginAsCustomer"
+          class="w-full sm:w-auto flex-shrink-0">
+          <LucideIcon name="log-in" class="w-4 h-4 mr-2" />
+          Login As Customer
+        </UButton>
+        <UButton size="sm" color="red" variant="outline" @click="revokeAutoLogin"
+          class="w-full sm:w-auto flex-shrink-0">
+          <LucideIcon name="x" class="w-4 h-4 mr-2" />
+          Revoke Auto Login
+        </UButton>
+        <UButton size="sm" color="gray" variant="outline" @click="regenerateUrl"
+          class="w-full sm:w-auto flex-shrink-0">
+          <LucideIcon name="refresh-cw" class="w-4 h-4 mr-2" />
+          Regenerate URL
+        </UButton>
                 </div>
 
                 <!-- Copy URL Button for Mobile -->
-                <div class="block sm:hidden">
-                  <UButton size="sm" color="green" variant="outline" @click="copyAutoLoginUrlToClipboard"
-                    class="w-full">
-                    <UIcon name="clipboard-document" class="w-4 h-4 mr-2" />
-                    Copy URL
-                  </UButton>
-                </div>
+        <div class="block sm:hidden">
+          <UButton size="sm" color="green" variant="outline" @click="copyAutoLoginUrlToClipboard"
+            class="w-full">
+            <LucideIcon name="clipboard" class="w-4 h-4 mr-2" />
+            Copy URL
+          </UButton>
+        </div>
               </div>
             </div>
 
@@ -249,7 +249,7 @@
             </div>
 
             <!-- Network Information -->
-            <div class="bg-green-50 rounded-lg p-4">
+            <div v-if="showNetworkInformation" class="bg-green-50 rounded-lg p-4">
               <h3 class="text-lg font-medium text-gray-900 mb-4">Network Information</h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <!-- Updated: Internet Package information -->
@@ -359,12 +359,12 @@
             
 
             <!-- Network Devices (Only show if customer has installation reports) -->
-            <div
+<div
 v-if="
   activeInstallations &&
   activeInstallations.length > 0 &&
-  customerDetail.value?.network_devices &&
-  customerDetail.value.network_devices.length > 0
+  activeNetworkDevices &&
+  activeNetworkDevices.length > 0
 "
 class="bg-white border border-gray-200 rounded-lg p-6"
 >
@@ -478,13 +478,13 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                           {{ getDeviceConnectionStatus(device).toUpperCase() }}
                         </span>
                         <span v-if="getDeviceConnectionStatus(device) === 'up'" class="text-xs text-green-600">
-                          <UIcon name="wifi" class="w-3 h-3" />
+                          <LucideIcon name="wifi" class="w-3 h-3" />
                         </span>
                         <span v-else-if="getDeviceConnectionStatus(device) === 'down'" class="text-xs text-red-600">
-                          <UIcon name="wifi-slash" class="w-3 h-3" />
+                          <LucideIcon name="wifi-off" class="w-3 h-3" />
                         </span>
                         <span v-else class="text-xs text-gray-500">
-                          <UIcon name="question-mark-circle" class="w-3 h-3" />
+                          <LucideIcon name="help-circle" class="w-3 h-3" />
                         </span>
                       </div>
                       <p class="text-xs text-gray-500 mt-1">
@@ -530,7 +530,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                   activeInstallations
 .length }})</h3>
                 <UButton color="green" size="sm" @click="addNewInstallationReport">
-                  <UIcon name="plus" class="w-4 h-4 mr-1" />
+                  <LucideIcon name="plus" class="w-4 h-4 mr-1" />
                   Add Report
                 </UButton>
               </div>
@@ -544,6 +544,14 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                       <span v-if="index === 0"
                         class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2">Latest</span>
                     </h4>
+                    <div class="flex items-center gap-2">
+                      <UButton size="xs" color="blue" variant="outline"
+                        :disabled="!getInstallationId(installation)"
+                        @click="openInstallationDetail(installation)">
+                        <LucideIcon name="eye" class="w-3 h-3 mr-1" />
+                        View Detail
+                      </UButton>
+                    </div>
                   </div>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                      <!-- Updated: Technician information -->
@@ -599,6 +607,34 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                       <p class="text-sm text-gray-900">{{ installation.technician_phone || 'N/A' }}</p>
                     </div>
 
+                    <!-- NEW: Coordinates -->
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700">Coordinates</label>
+                      <p class="text-sm text-gray-900">
+                        <span v-if="formatInstallationCoords(installation)">
+                          {{ formatInstallationCoords(installation) }}
+                        </span>
+                        <span v-else class="text-gray-500 italic">N/A</span>
+                      </p>
+                      <div class="mt-2">
+                        <UButton size="xs" color="blue" variant="outline"
+                          :disabled="!hasInstallationCoords(installation)"
+                          @click="openInstallationMap(installation)">
+                          <LucideIcon name="map-pin" class="w-3 h-3 mr-1" />
+                          Open in Google Maps
+                        </UButton>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700">Address</label>
+                      <p class="text-sm text-gray-900">
+                        <span v-if="getInstallationAddress(installation)">
+                          {{ getInstallationAddress(installation) }}
+                        </span>
+                        <span v-else class="text-gray-500 italic">N/A</span>
+                      </p>
+                    </div>
+
                     <!-- Updated: Date (renamed to Installation Date) -->
                     <div>
                       <label class="block text-xs font-medium text-gray-700">Installation Date</label>
@@ -627,7 +663,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                     will be available after creating an installation report.</p>
                 </div>
                 <UButton color="green" size="sm" @click="addNewInstallationReport">
-                  <UIcon name="plus" class="w-4 h-4 mr-1" />
+                  <LucideIcon name="plus" class="w-4 h-4 mr-1" />
                   Add First Report
                 </UButton>
               </div>
@@ -685,12 +721,12 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                   <div class="flex space-x-2">
                     <UButton v-if="getCustomerMacAddresses().length > 0" :loading="isConnecting"
                       :disabled="isConnecting" @click="isolateCustomer" color="red" variant="outline" size="sm">
-                      <UIcon name="lock-closed" class="w-4 h-4 mr-1" />
+                      <LucideIcon name="lock" class="w-4 h-4 mr-1" />
                       Isolate Customer
                     </UButton>
                     <UButton v-if="getCustomerMacAddresses().length > 0" :loading="isConnecting"
                       :disabled="isConnecting" @click="restoreCustomer" color="green" variant="outline" size="sm">
-                      <UIcon name="lock-open" class="w-4 h-4 mr-1" />
+                      <LucideIcon name="unlock" class="w-4 h-4 mr-1" />
                       Restore Access
                     </UButton>
                   </div>
@@ -708,7 +744,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                         <p v-if="device.ip_static" class="text-xs text-gray-500">IP: {{ device.ip_static }}</p>
                       </div>
                       <UButton @click="copyMacAddress(device.mac_address)" variant="ghost" size="sm" color="blue">
-                        <UIcon name="clipboard-document" class="w-4 h-4" />
+                        <LucideIcon name="clipboard" class="w-4 h-4" />
                       </UButton>
                     </div>
                   </div>
@@ -717,7 +753,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                 <!-- No MAC Address Warning -->
                 <div v-else class="p-3 bg-yellow-50 rounded-lg">
                   <div class="flex items-center">
-                    <UIcon name="alert-triangle" class="w-5 h-5 text-yellow-600 mr-2" />
+                    <LucideIcon name="alert-triangle" class="w-5 h-5 text-yellow-600 mr-2" />
                     <div>
                       <p class="text-sm font-medium text-yellow-900">No MAC Addresses Found</p>
                       <p class="text-sm text-yellow-700">Customer network devices with MAC addresses are required for
@@ -737,8 +773,8 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                     'w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center',
                     customerDetail.customer.status_user === 'active' ? 'bg-green-100' : 'bg-red-100'
                   ]">
-                    <UIcon
-                      :name="customerDetail.customer.status_user === 'active' ? 'user-check' : 'user-x-mark'"
+                    <LucideIcon
+                      :name="customerDetail.customer.status_user === 'active' ? 'user-check' : 'user-x'"
                       :class="[
                         'w-8 h-8',
                         customerDetail.customer.status_user === 'active' ? 'text-green-600' : 'text-red-600'
@@ -754,7 +790,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                 </div>
                 <div class="text-center">
                   <div class="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center bg-blue-100">
-                    <UIcon name="calendar" class="w-8 h-8 text-blue-600" />
+                    <LucideIcon name="calendar" class="w-8 h-8 text-blue-600" />
                   </div>
                   <h4 class="text-sm font-semibold text-gray-900">Installation Date</h4>
                   <p class="text-sm text-gray-600">{{ formatDate(customerDetail.customer.installation_date) }}</p>
@@ -763,12 +799,12 @@ class="bg-white border border-gray-200 rounded-lg p-6"
             </div>
 
             <!-- Network Devices Status (Only show if customer has installation reports) -->
-            <div
+<div
 v-if="
   activeInstallations &&
   activeInstallations.length > 0 &&
-  customerDetail.value?.network_devices &&
-  customerDetail.value.network_devices.length > 0
+  activeNetworkDevices &&
+  activeNetworkDevices.length > 0
 "
 class="bg-white border border-gray-200 rounded-lg p-6"
 >
@@ -857,9 +893,9 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                           getDeviceConnectionStatus(device) === 'up' ? 'bg-green-100 text-green-800' :
                             getDeviceConnectionStatus(device) === 'down' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
                         ]">
-                          <UIcon
+                          <LucideIcon
                             :name="getDeviceConnectionStatus(device) === 'up' ? 'wifi' :
-                              getDeviceConnectionStatus(device) === 'down' ? 'wifi-slash' : 'question-mark-circle'"
+                              getDeviceConnectionStatus(device) === 'down' ? 'wifi-off' : 'help-circle'"
                             class="w-3 h-3 mr-1" />
                           Status: {{ getDeviceConnectionStatus(device).toUpperCase() }}
                         </span>
@@ -879,12 +915,12 @@ class="bg-white border border-gray-200 rounded-lg p-6"
 .length === 0"
               class="bg-white border border-gray-200 rounded-lg p-6">
               <div class="text-center">
-                <UIcon name="file-plus" class="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                <LucideIcon name="file-plus" class="w-12 h-12 text-blue-400 mx-auto mb-4" />
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">Network Devices Not Available</h3>
                 <p class="text-gray-600 mb-4">Network devices will appear after creating an installation report for this
                   customer.</p>
                 <UButton color="blue" size="sm" @click="addNewInstallationReport">
-                  <UIcon name="plus" class="w-4 h-4 mr-1" />
+                  <LucideIcon name="plus" class="w-4 h-4 mr-1" />
                   Create Installation Report
                 </UButton>
               </div>
@@ -893,7 +929,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
             <!-- No Devices Message (when has installation but no devices) -->
             <div v-else class="bg-white border border-gray-200 rounded-lg p-6">
               <div class="text-center">
-                <UIcon name="wifi" class="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <LucideIcon name="wifi" class="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">No Network Devices</h3>
                 <p class="text-gray-600">This customer has installation reports but no network devices configured yet.
                 </p>
@@ -1116,7 +1152,10 @@ import { customerAdminApi } from '@/api/admin/customer'
 import { mikrotikAdminApi } from '@/api/admin/mikrotik'
 import { formatIDR } from '@/helper/currency'
 import LoadingComponent from '@/components/LoadingComponent.vue'
+import LucideIcon from '@/components/LucideIcon.vue'
 import { useCustomToast } from '@/composables/useCustomToast'
+import { useApiHost } from '@/composables/useApiHost'
+import { useCookie } from '#app'
 
 const props = defineProps<Props>()
 const emit = defineEmits(['close'])
@@ -1127,6 +1166,8 @@ const customerInvoices = ref<any[]>([])
 const loading = ref(true)
 const error = ref<string | undefined>(undefined)
 const activeTab = ref('summary')
+const installationCoordsMap = ref<Map<string, any>>(new Map())
+const installationAddressMap = ref<Map<string, string>>(new Map())
 
 // Connection control state
 const isConnecting = ref(false)
@@ -1137,16 +1178,29 @@ interface Props {
 }
 
 
+// Helper to detect soft-deleted records coming in different shapes
+const isSoftDeleted = (item: any) => {
+  if (!item) return true
+  const flags = [
+    item.deleted_at,
+    item.deletedAt,
+    item.deleted,
+    item.trashed,
+    item.is_deleted,
+    item.isDeleted
+  ]
+  if (flags.some((flag) => !!flag)) return true
+  if (typeof item.deleted === 'string' && item.deleted.toLowerCase() === 'true') return true
+  if (typeof item.status === 'string' && item.status.toLowerCase() === 'deleted') return true
+  return false
+}
+
 // Normalize the list and remove soft-deleted installations.
 const activeInstallations = computed(() => {
   const installs = customerDetail.value?.installations || []
 
   return installs.filter((inst: any) => {
-    if (!inst) return false
-    if ('deleted_at' in inst) return !inst.deleted_at
-    if ('is_deleted' in inst) return !inst.is_deleted
-    if ('trashed' in inst) return !inst.trashed
-    return true
+    return !!inst && !isSoftDeleted(inst)
   })
 })
 
@@ -1170,10 +1224,25 @@ const activeNetworkDevices = computed(() => {
   const activeIds = new Set((activeInstallations.value || []).map((i: any) => i.id))
 
   if (!devices.length) return []
-  if ('installation_id' in devices[0]) {
-    return devices.filter((d: any) => activeIds.has(d.installation_id))
-  }
-  return devices
+  // If there are no active installations, do not expose network devices
+  if (activeIds.size === 0) return []
+
+  const filtered = devices
+    .filter((d: any) => !!d && !isSoftDeleted(d))
+    .filter((d: any) => {
+      if ('installation_id' in d) {
+        return activeIds.has(d.installation_id)
+      }
+      return true
+    })
+
+  return filtered
+})
+
+// Determine whether to render network info block at all (hide when installation soft-deleted)
+const showNetworkInformation = computed(() => {
+  const hasActiveInstallations = (activeInstallations.value || []).length > 0
+  return hasActiveInstallations
 })
 
 
@@ -1184,12 +1253,12 @@ type DeviceConnectionStatus = 'off' | 'up' | 'down' | 'unknown'
 
 // Get customer product information from network devices (single product - for backward compatibility)
 const getCustomerProductInfo = () => {
-  if (!customerDetail.value?.network_devices || customerDetail.value.network_devices.length === 0) {
+  if (!activeNetworkDevices.value || activeNetworkDevices.value.length === 0) {
     return { name: null, price: 0 }
   }
 
   // Get the first network device with a product (most customers have one primary product)
-  const deviceWithProduct = customerDetail.value.network_devices.find((device: any) => device.product)
+  const deviceWithProduct = activeNetworkDevices.value.find((device: any) => device.product)
 
   if (deviceWithProduct?.product) {
     return {
@@ -1268,26 +1337,26 @@ const getPrimaryTechnicianName = (installation: any) => {
 
 // Tab configuration
 const tabs = computed(() => [
-  { id: 'summary', name: 'Summary', icon: 'bar-chart' },
+  { id: 'summary', name: 'Summary', icon: 'bar-chart-3' },
   { id: 'connection', name: 'Connection Status', icon: 'signal' },
   { id: 'activity', name: 'Activity', icon: 'clock' },
-  { id: 'invoices', name: 'Invoices', icon: 'file-text', count: customerInvoices.value.length },
-  { id: 'quotes', name: 'Quotes', icon: 'file-duplicate', count: 0 },
-  { id: 'tickets', name: 'Trouble Tickets', icon: 'alert-triangle', count: customerTickets.value.length },
+  { id: 'invoices', name: 'Invoices', icon: 'file-text' },
+  { id: 'quotes', name: 'Quotes', icon: 'copy' },
+  { id: 'tickets', name: 'Trouble Tickets', icon: 'alert-triangle' },
   { id: 'orders', name: 'Orders', icon: 'shopping-bag' },
   { id: 'files', name: 'Files', icon: 'file' },
   { id: 'transactions', name: 'Transactions', icon: 'dollar-sign' },
-  { id: 'edit', name: 'Edit', icon: 'pencil-square' }
+  { id: 'edit', name: 'Edit', icon: 'pencil' }
 ])
 
 // Mobile tab configuration (shorter names for mobile)
 const mobileTabs = computed(() => [
-  { id: 'summary', name: 'Summary', icon: 'bar-chart' },
+  { id: 'summary', name: 'Summary', icon: 'bar-chart-3' },
   { id: 'connection', name: 'Connection', icon: 'signal' },
   { id: 'activity', name: 'Activity', icon: 'clock' },
   { id: 'invoices', name: 'Invoices', icon: 'file-text', count: customerInvoices.value.length },
   { id: 'tickets', name: 'Tickets', icon: 'alert-triangle', count: customerTickets.value.length },
-  { id: 'edit', name: 'Edit', icon: 'pencil-square' }
+  { id: 'edit', name: 'Edit', icon: 'pencil' }
 ])
 
 // Recent activity (mock data for now)
@@ -1366,14 +1435,129 @@ const getLatestInstallationData = () => {
   
 }
 
+// NEW: Helpers for installation map links
+const resolveInstallationCoords = (installation: any) => {
+  if (!installation) return null
+
+  const lookup = (inst: any) => ({
+    latitude:
+      inst?.latitude ??
+      inst?.lat ??
+      inst?.installation_latitude ??
+      null,
+    longitude:
+      inst?.longitude ??
+      inst?.lng ??
+      inst?.installation_longitude ??
+      null
+  })
+
+  // First try the installation itself
+  let { latitude, longitude } = lookup(installation)
+
+  // If missing, try the detail map keyed by installation_id / id
+  if ((latitude === null || longitude === null) && installationCoordsMap.value) {
+    const key = installation.id || installation.id
+    const fromMap = key ? installationCoordsMap.value.get(key) : null
+    if (fromMap) {
+      const mapped = lookup(fromMap)
+      latitude = latitude ?? mapped.latitude
+      longitude = longitude ?? mapped.longitude
+    }
+  }
+
+  if (latitude === null || longitude === null) return null
+  return { latitude, longitude }
+}
+
+const hasInstallationCoords = (installation: any) => !!resolveInstallationCoords(installation)
+
+const formatInstallationCoords = (installation: any) => {
+  const coords = resolveInstallationCoords(installation)
+  if (!coords) return ''
+  return `${coords.latitude}, ${coords.longitude}`
+}
+
+const getInstallationAddress = (installation: any) => {
+  if (!installation) return ''
+  const key = installation.installation_id || installation.id
+  if (key && installationAddressMap.value.has(key)) {
+    return installationAddressMap.value.get(key) || ''
+  }
+  return installation.address ||
+    installation.installation_address ||
+    installation.customer_address ||
+    installation.location_address ||
+    ''
+}
+
+const getInstallationMapUrl = (installation: any) => {
+  const coords = resolveInstallationCoords(installation)
+  if (!coords) return ''
+  return `https://www.google.com/maps?q=${coords.latitude},${coords.longitude}`
+}
+
+const openInstallationMap = (installation: any) => {
+  const url = getInstallationMapUrl(installation)
+  if (!url) return
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+// NEW: View installation detail page
+const getInstallationId = (installation: any) => installation?.installation_id || installation?.id
+
+const openInstallationDetail = (installation: any) => {
+  const installationId = getInstallationId(installation)
+  if (!installationId) {
+    useCustomToast().add({
+      title: 'Error',
+      description: 'Installation ID not found for this report',
+      color: 'red'
+    })
+    return
+  }
+  navigateTo(`/dashboard/report/customer-installation/detail/${installationId}`)
+}
+
+// Reverse geocode helper (shared with AddCustomer pattern)
+const reverseGeocodeToAddress = async (lat: number, lng: number) => {
+  try {
+    const api = useApiHost()
+    const token = useCookie('token').value
+    const response = await fetch(
+      `${api}/api/admin/geocoding/reverse-geocode?lat=${lat}&lng=${lng}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const result = await response.json()
+    if (result.success && result.data) {
+      return result.data.display_name || result.data.address || ''
+    }
+    return ''
+  } catch (error) {
+    console.error('Reverse geocoding failed:', error)
+    return ''
+  }
+}
+
 
 // NEW: Helper function to get proposed package name by ID
 const getProposedPackageName = (packageId: string) => {
   if (!packageId) return 'N/A'
 
   // Try to find the package name from network devices first
-  if (customerDetail.value?.network_devices) {
-    const deviceWithPackage = customerDetail.value.network_devices.find((device: any) =>
+  if (activeNetworkDevices.value) {
+    const deviceWithPackage = activeNetworkDevices.value.find((device: any) =>
       device.product?.id === packageId
     )
     if (deviceWithPackage?.product?.name) {
@@ -1406,8 +1590,8 @@ const getProposedPackageNameEnhanced = (packageId: string) => {
   if (!packageId) return 'N/A'
 
   // Try to find the package name from network devices first
-  if (customerDetail.value?.network_devices) {
-    const deviceWithPackage = customerDetail.value.network_devices.find((device: any) =>
+  if (activeNetworkDevices.value) {
+    const deviceWithPackage = activeNetworkDevices.value.find((device: any) =>
       device.product?.id === packageId
     )
     if (deviceWithPackage?.product?.name) {
@@ -1427,8 +1611,64 @@ const getProposedPackageNameEnhanced = (packageId: string) => {
   return packageId
 }
 
+// Normalize installation coordinates from various possible field names, with optional fallback map
+const normalizeInstallationCoordinates = (report: any, coordsMap?: Map<string, any>) => {
+  const coerceCoord = (value: any) => {
+    if (value === undefined || value === null || value === '') return null
+    const num = Number(value)
+    return Number.isFinite(num) ? num : null
+  }
+
+  const lat =
+    coerceCoord(report?.latitude) ??
+    coerceCoord(report?.lat) ??
+    coerceCoord(report?.installation_latitude) ??
+    coerceCoord(report?.latitude_installation) ??
+    coerceCoord(report?.lat_installation) ??
+    coerceCoord(report?.lat_install) ??
+    coerceCoord(report?.latitude_install) ??
+    null
+
+  const lng =
+    coerceCoord(report?.longitude) ??
+    coerceCoord(report?.lng) ??
+    coerceCoord(report?.installation_longitude) ??
+    coerceCoord(report?.longitude_installation) ??
+    coerceCoord(report?.long_installation) ??
+    coerceCoord(report?.long_install) ??
+    coerceCoord(report?.longitude_install) ??
+    null
+
+  // Fallback: try lookup from detail installations if no coords yet
+  let latitude = lat
+  let longitude = lng
+  if ((latitude === null || longitude === null) && coordsMap && report?.installation_id) {
+    const fallback = coordsMap.get(report.installation_id)
+    if (fallback) {
+      latitude =
+        coerceCoord(fallback.latitude) ??
+        coerceCoord(fallback.lat) ??
+        coerceCoord(fallback.installation_latitude) ??
+        coerceCoord(fallback.customer_latitude) ??
+        null
+      longitude =
+        coerceCoord(fallback.longitude) ??
+        coerceCoord(fallback.lng) ??
+        coerceCoord(fallback.installation_longitude) ??
+        coerceCoord(fallback.customer_longitude) ??
+        null
+    }
+  }
+
+  return {
+    ...report,
+    latitude,
+    longitude
+  }
+}
+
 // NEW: Function to fetch installation reports for a customer (supports multiple reports)
-const fetchInstallationReports = async (customerId: string) => {
+const fetchInstallationReports = async (customerId: string, coordsMap?: Map<string, any>) => {
   try {
     // Use the working endpoint that returns complete data
     const response = await customerAdminApi().getInstallationReportComplete()
@@ -1438,30 +1678,48 @@ const fetchInstallationReports = async (customerId: string) => {
         report.customer_id === customerId
       )
       
-      // Fetch technician team data for each installation report
+      // Fetch technician team data for each installation report and normalize coordinates
       const reportsWithTechnicians = await Promise.all(
         customerReports.map(async (report: any) => {
+          const normalizedReport = normalizeInstallationCoordinates(report, coordsMap)
           try {
             const technicianResponse = await customerAdminApi().getInstallationTechnicianTeam(report.installation_id)
             if (technicianResponse.success && technicianResponse.data) {
               return {
-                ...report,
+                ...normalizedReport,
                 technicians: technicianResponse.data
               }
             }
             return {
-              ...report,
+              ...normalizedReport,
               technicians: []
             }
           } catch (error) {
             console.error(`Failed to fetch technicians for installation ${report.installation_id}:`, error)
             return {
-              ...report,
+              ...normalizedReport,
               technicians: []
             }
           }
         })
       )
+
+      // Populate address map using reverse geocode when missing
+      const geoPromises = reportsWithTechnicians.map(async (report: any) => {
+        const hasCoords = hasInstallationCoords(report)
+        const hasAddress = getInstallationAddress(report)
+        if (!hasAddress && hasCoords) {
+          const coords = resolveInstallationCoords(report)
+          if (coords) {
+            const display = await reverseGeocodeToAddress(coords.latitude, coords.longitude)
+            const key = report.installation_id || report.id
+            if (key && display) {
+              installationAddressMap.value.set(key, display)
+            }
+          }
+        }
+      })
+      await Promise.allSettled(geoPromises)
       
       return { success: true, data: reportsWithTechnicians, message: 'Success' }
     }
@@ -1595,16 +1853,16 @@ const resetEditForm = () => {
 
 // Extract IP addresses from network devices
 const getNetworkDeviceIPs = () => {
-  if (!customerDetail.value?.network_devices) return []
-  return customerDetail.value.network_devices
+  if (!activeNetworkDevices.value) return []
+  return activeNetworkDevices.value
     .filter((device: any) => device.ip_static)
     .map((device: any) => device.ip_static)
 }
 
 // Extract MAC addresses from network devices
 const getNetworkDeviceMACs = () => {
-  if (!customerDetail.value?.network_devices) return []
-  return customerDetail.value.network_devices
+  if (!activeNetworkDevices.value) return []
+  return activeNetworkDevices.value
     .filter((device: any) => device.mac_address)
     .map((device: any) => device.mac_address)
 }
@@ -1619,12 +1877,12 @@ const getOverallConnectionStatus = () => {
   }
 
   // Check if customer has network devices
-  if (!customerDetail.value.network_devices || customerDetail.value.network_devices.length === 0) {
+  if (!activeNetworkDevices.value || activeNetworkDevices.value.length === 0) {
     return 'off'
   }
 
   // Check device statuses (now using real-time status)
-  const devices = customerDetail.value.network_devices
+  const devices = activeNetworkDevices.value
   const activeDevices = devices.filter((device: any) =>
     getDeviceConnectionStatus(device) === 'up'
   )
@@ -1694,15 +1952,15 @@ const fetchRealTimeDeviceStatus = async (device: any): Promise<DeviceConnectionS
 
 // Helper functions for network devices
 const getCustomerMacAddresses = () => {
-  if (!customerDetail.value?.network_devices) return []
-  return customerDetail.value.network_devices
+  if (!activeNetworkDevices.value) return []
+  return activeNetworkDevices.value
     .filter((device: any) => device.mac_address && device.mac_address.trim() !== '')
     .map((device: any) => device.mac_address)
 }
 
 const getNetworkDevicesWithMac = () => {
-  if (!customerDetail.value?.network_devices) return []
-  return customerDetail.value.network_devices
+  if (!activeNetworkDevices.value) return []
+  return activeNetworkDevices.value
     .filter((device: any) => device.mac_address && device.mac_address.trim() !== '')
 }
 
@@ -1813,16 +2071,8 @@ const copyMacAddress = async (macAddress: string) => {
 
 // NEW: Function to add new installation report
 const addNewInstallationReport = () => {
-  // Navigate to installation report form or open modal
-  // For now, show a toast message indicating the feature
-  useCustomToast().add({
-    title: 'Add Installation Report',
-    description: 'Multiple installation reports are now supported! You can add a new report for this customer.',
-    color: 'blue'
-  })
-
-  // TODO: Implement navigation to installation report form
-  // navigateTo(`/dashboard/customer/installation/add?customer_id=${props.customerId}`)
+  const target = `/dashboard/customer/installation/add?customer_id=${props.customerId}`
+  navigateTo(target)
 }
 
 const fetchCustomerDetail = async () => {
@@ -1832,20 +2082,35 @@ const fetchCustomerDetail = async () => {
 
     console.log(`Fetching data for customer ID: ${props.customerId}`)
 
-    // Fetch customer detail, tickets, invoices, and installation reports in parallel
-    const [customerResponse, ticketsResponse, invoicesResponse, installationResponse] = await Promise.allSettled([
+    // Fetch customer detail, tickets, invoices in parallel first (need detail coords before pulling reports)
+    const [customerResponse, ticketsResponse, invoicesResponse] = await Promise.allSettled([
       customerAdminApi().getCustomerDetail(props.customerId),
       customerAdminApi().getCustomerTickets(props.customerId),
-      customerAdminApi().getCustomerInvoices(props.customerId),
-      // NEW: Fetch installation reports for this customer
-      fetchInstallationReports(props.customerId)
+      customerAdminApi().getCustomerInvoices(props.customerId)
     ])
 
     // Handle customer detail
     if (customerResponse.status === 'fulfilled') {
       customerDetail.value = customerResponse.value.data
+
+      // Build a map of installation coords from detail API to reuse when reports are missing them
+      const detailInstallations = customerResponse.value.data?.installations || []
+      installationCoordsMap.value = new Map(
+        detailInstallations
+          .filter((inst: any) => inst && (inst.id || inst.installation_id))
+          .map((inst: any) => [inst.id || inst.installation_id, inst])
+      )
     } else {
       throw new Error('Failed to fetch customer details')
+    }
+
+    // Fetch installation reports after we have coord map from detail
+    let installationResponse: any = { status: 'rejected', reason: 'not fetched' }
+    try {
+      const installationResult = await fetchInstallationReports(props.customerId, installationCoordsMap.value)
+      installationResponse = { status: installationResult.success ? 'fulfilled' : 'rejected', value: installationResult, reason: installationResult.message }
+    } catch (e) {
+      installationResponse = { status: 'rejected', reason: e }
     }
 
     // Handle tickets
@@ -1912,30 +2177,24 @@ const fetchCustomerDetail = async () => {
       if (customerDetail.value) {
         // Store all installation reports
         // Apply client-side soft-delete filter (also prefer to filter server-side)
-        const filteredCustomerInstallations = customerInstallations.filter((inst: any) => {
-          if (!inst) return false
-          if ('deleted_at' in inst) return !inst.deleted_at
-          if ('is_deleted' in inst) return !inst.is_deleted
-          if ('trashed' in inst) return !inst.trashed
-          return true
-        })
+        const filteredCustomerInstallations = customerInstallations.filter((inst: any) => !!inst && !isSoftDeleted(inst))
 
         customerDetail.value.installations = filteredCustomerInstallations
 
 
         if (filteredCustomerInstallations.length > 0) {
-  const latestInstallation = filteredCustomerInstallations[0]
-  customerDetail.value.customer = {
-    ...customerDetail.value.customer,
-    installation_type: latestInstallation.installation_type,
-    installation_status: latestInstallation.installation_status,
-    on_air_date: latestInstallation.on_air_date,
-    service_ready_date: latestInstallation.service_ready_date,
-    installation_completed_at: latestInstallation.installation_completed_at,
-    installation_team_name: getPrimaryTechnicianName(latestInstallation),
-    installation_team_phone: latestInstallation.technician_phone
-  }
-}
+          const latestInstallation = filteredCustomerInstallations[0]
+          customerDetail.value.customer = {
+            ...customerDetail.value.customer,
+            installation_type: latestInstallation.installation_type,
+            installation_status: latestInstallation.installation_status,
+            on_air_date: latestInstallation.on_air_date,
+            service_ready_date: latestInstallation.service_ready_date,
+            installation_completed_at: latestInstallation.installation_completed_at,
+            installation_team_name: getPrimaryTechnicianName(latestInstallation),
+            installation_team_phone: latestInstallation.technician_phone
+          }
+        }
 
       }
     } else {
@@ -1956,9 +2215,9 @@ const fetchCustomerDetail = async () => {
 
 // Function to refresh all device statuses
 const refreshDeviceStatuses = async () => {
-  if (!customerDetail.value?.network_devices) return
+  if (!activeNetworkDevices.value || activeNetworkDevices.value.length === 0) return
   
-  const devices = customerDetail.value.network_devices
+  const devices = activeNetworkDevices.value
   const statusPromises = devices.map((device: any) => fetchRealTimeDeviceStatus(device))
   
   try {
@@ -1980,7 +2239,7 @@ onMounted(async () => {
   await fetchCustomerDetail()
   
   // Refresh device statuses after customer detail is loaded
-  if (customerDetail.value?.network_devices?.length > 0) {
+  if (activeNetworkDevices.value?.length > 0) {
     await refreshDeviceStatuses()
   }
 })

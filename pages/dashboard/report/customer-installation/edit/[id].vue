@@ -184,7 +184,7 @@
           <div class="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-100">
             <div class="flex items-center mb-6">
               <div class="bg-purple-500 p-2 rounded-lg mr-3">
-                <UIcon name="users" class="text-white text-lg" />
+                <LucideIcon name="users" class="text-white text-lg" />
               </div>
               <h2 class="text-xl font-bold text-gray-800">Installation Team Information</h2>
             </div>
@@ -194,7 +194,7 @@
                 class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
                 <div class="flex justify-between items-center mb-2">
                   <h4 class="text-lg font-semibold text-gray-700 flex items-center">
-                    <UIcon name="user" class="mr-2 text-purple-500" />
+                    <LucideIcon name="user" class="mr-2 text-purple-500" />
                     {{ member.technician?.name || 'Unknown Technician' }}
                     <span v-if="member.is_primary"
                       class="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
@@ -219,7 +219,7 @@
               </div>
             </div>
             <div v-else class="text-center py-8 text-gray-500">
-              <UIcon name="users" class="text-4xl mb-2" />
+              <LucideIcon name="users" class="text-4xl mb-2" />
               <p>No installation team members assigned</p>
             </div>
           </div>
@@ -228,7 +228,7 @@
           <div class="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-xl border border-orange-100">
             <div class="flex items-center mb-6">
               <div class="bg-orange-500 p-2 rounded-lg mr-3">
-                <UIcon name="file-text" class="text-white text-lg" />
+                <LucideIcon name="file-text" class="text-white text-lg" />
               </div>
               <h2 class="text-xl font-bold text-gray-800">Document Information</h2>
             </div>
@@ -265,7 +265,7 @@
           <div class="bg-gradient-to-r from-cyan-50 to-blue-50 p-6 rounded-xl border border-cyan-100">
             <div class="flex items-center mb-6">
               <div class="bg-cyan-500 p-2 rounded-lg mr-3">
-                <UIcon name="cpu-chip" class="text-white text-lg" />
+                <LucideIcon name="cpu-chip" class="text-white text-lg" />
               </div>
               <h2 class="text-xl font-bold text-gray-800">Network Device Configuration</h2>
             </div>
@@ -279,11 +279,11 @@
                 class="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm">
                 <div class="flex justify-between items-center mb-4">
                   <h4 class="text-lg font-semibold text-gray-700 flex items-center">
-                    <UIcon name="cpu-chip" class="mr-2 text-cyan-500" />
+                    <LucideIcon name="cpu-chip" class="mr-2 text-cyan-500" />
                   </h4>
                   <UButton @click="removeNetworkDevice(index)" size="sm" color="red" variant="outline"
                     class="hover:bg-red-50">
-                    <UIcon name="trash-2" />
+                    <LucideIcon name="trash-2" />
                   </UButton>
                 </div>
 
@@ -293,7 +293,7 @@
                     value-attribute="id" placeholder="Select Router Asset" class="custom-select"
                     @change="onAssetChange(device.assets_id, index)" />
                   <div v-if="device.assets_id" class="flex items-center text-sm text-gray-600">
-                    <UIcon name="info" class="mr-2 text-cyan-500" />
+                    <LucideIcon name="info" class="mr-2 text-cyan-500" />
                     <span>
                       {{ getAssetDisplayName(device.assets_id) }}
                     </span>
@@ -318,7 +318,7 @@
                     <div
                       v-if="device.assets_id && availableAssetItems[device.assets_id] && availableAssetItems[device.assets_id].length === 0"
                       class="text-xs text-red-500 mt-1 flex items-center">
-                      <UIcon name="alert-triangle" class="w-3 h-3 mr-1" />
+                      <LucideIcon name="alert-triangle" class="w-3 h-3 mr-1" />
                       No available devices for this asset
                     </div>
                     <div
@@ -347,7 +347,7 @@
           <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-100">
             <div class="flex items-center mb-6">
               <div class="bg-green-500 p-2 rounded-lg mr-3">
-                <UIcon name="wifi" class="text-white text-lg" />
+                <LucideIcon name="wifi" class="text-white text-lg" />
               </div>
               <h2 class="text-xl font-bold text-gray-800">Customer Services</h2>
             </div>
@@ -356,7 +356,7 @@
               <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-gray-700">Customer Services</h3>
                 <UButton @click="addCustomerService" size="sm" color="green" class="shadow-md">
-                  <UIcon name="plus" class="mr-1" />
+                  <LucideIcon name="plus" class="mr-1" />
                   Add Service
                 </UButton>
               </div>
@@ -365,12 +365,12 @@
                 class="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm">
                 <div class="flex justify-between items-center mb-4">
                   <h4 class="text-lg font-semibold text-gray-700 flex items-center">
-                    <UIcon name="wifi" class="mr-2 text-green-500" />
+                    <LucideIcon name="wifi" class="mr-2 text-green-500" />
                     Customer Service {{ index + 1 }}
                   </h4>
                   <UButton @click="removeCustomerService(index)" size="sm" color="red" variant="outline"
                     class="hover:bg-red-50">
-                    <UIcon name="trash-2" />
+                    <LucideIcon name="trash-2" />
                   </UButton>
                 </div>
 
@@ -399,7 +399,7 @@
           <div class="bg-gradient-to-r from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-100">
             <div class="flex items-center mb-6">
               <div class="bg-amber-500 p-2 rounded-lg mr-3">
-                <UIcon name="camera" class="text-white text-lg" />
+                <LucideIcon name="camera" class="text-white text-lg" />
               </div>
               <h2 class="text-xl font-bold text-gray-800">Technician Photo Documentation</h2>
             </div>
@@ -426,12 +426,12 @@
                   <img :src="preview" :alt="`Technician Photo ${index + 1}`" class="w-full h-32 object-cover" />
                   <div
                     class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
-                    <UIcon name="eye"
+                    <LucideIcon name="eye"
                       class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xl" />
                   </div>
                   <UButton @click.stop="removeTechnicianPhoto(index)" size="xs" color="red" variant="solid"
                     class="absolute -top-2 -right-2 shadow-lg">
-                    <UIcon name="x" />
+                    <LucideIcon name="x" />
                   </UButton>
                   <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-2">
                     <div class="flex justify-between items-center">
@@ -447,7 +447,7 @@
                   class="w-full h-32 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition-all duration-200 bg-white"
                   @click="triggerTechnicianPhotoUpload">
                   <div class="text-center">
-                    <UIcon name="plus" class="text-gray-400 text-3xl mb-2" />
+                    <LucideIcon name="plus" class="text-gray-400 text-3xl mb-2" />
                     <p class="text-sm text-gray-500 font-medium">Add Photo</p>
                     <p class="text-xs text-gray-400">{{ state.technician_photo_previews.length }}/10</p>
                   </div>
@@ -460,7 +460,7 @@
               <div v-if="state.technician_photo_previews.length > 0"
                 class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                 <div class="flex items-center text-sm text-amber-800">
-                  <UIcon name="info" class="mr-2" />
+                  <LucideIcon name="info" class="mr-2" />
                   <span>
                     {{ state.technician_photo_previews.length }} photo(s) uploaded.
                     Total size: {{ formatFileSize(totalTechnicianPhotoSize) }}
@@ -477,12 +477,12 @@
             <div class="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
               <UButton @click="$router.back()" variant="outline" color="gray" size="sm"
                 class="w-full sm:w-auto px-6 sm:px-8">
-                <UIcon name="x" class="mr-2" />
+                <LucideIcon name="x" class="mr-2" />
                 Cancel
               </UButton>
               <UButton type="submit" :loading="isSubmitting" color="emerald" size="sm"
                 class="w-full sm:w-auto px-6 sm:px-8 shadow-lg">
-                <UIcon name="check" class="mr-2" />
+                <LucideIcon name="check" class="mr-2" />
                 Update Installation Report
               </UButton>
             </div>
@@ -499,7 +499,7 @@
         <div class="flex justify-between items-center">
           <h3 class="text-lg font-semibold">Image Preview</h3>
           <UButton @click="state.showModal = false" variant="ghost" size="sm">
-            <UIcon name="x" />
+            <LucideIcon name="x" />
           </UButton>
         </div>
       </template>
@@ -517,7 +517,7 @@
         <div class="flex justify-between items-center">
           <h3 class="text-lg font-semibold">Technician Photo Preview</h3>
           <UButton @click="state.showTechnicianModal = false" variant="ghost" size="sm">
-            <UIcon name="x" />
+            <LucideIcon name="x" />
           </UButton>
         </div>
       </template>

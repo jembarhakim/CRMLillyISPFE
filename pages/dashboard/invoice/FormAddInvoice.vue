@@ -579,9 +579,9 @@ watch(
             @click="handleFilterChange('internet')"
             class="px-6 py-2"
           >
-            <UIcon name="wifi" class="w-4 h-4 mr-2" />
+            <LucideIcon name="wifi" class="w-4 h-4 mr-2" />
             INTERNET
-            <UIcon name="arrow-right" class="w-4 h-4 ml-2" />
+            <LucideIcon name="arrow-right" class="w-4 h-4 ml-2" />
           </UButton>
           <UButton
             :color="customerFilter === 'collaborator' ? 'primary' : 'gray'"
@@ -589,7 +589,7 @@ watch(
             @click="handleFilterChange('collaborator')"
             class="px-6 py-2"
           >
-            <UIcon name="handshake" class="w-4 h-4 mr-2" />
+            <LucideIcon name="handshake" class="w-4 h-4 mr-2" />
             COLLABORATOR
           </UButton>
         </div>
@@ -599,7 +599,7 @@ watch(
           class="mt-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800"
         >
           <div class="flex items-start gap-2">
-            <UIcon
+            <LucideIcon
               name="info"
               class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0"
             />

@@ -4,7 +4,7 @@
 </template>
 
 <script setup>
-// This component overrides Nuxt UI's UIcon to prevent recursion
+// This component overrides Nuxt UI's LucideIcon to prevent recursion
 // All icons are now handled by Iconify in the navbar
 defineProps({
   name: String

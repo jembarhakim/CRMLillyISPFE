@@ -426,7 +426,7 @@ const logout = async () => {
             color="blue"
             variant="outline"
           >
-            <UIcon name="refresh-cw" class="w-4 h-4 mr-2" />
+            <LucideIcon name="refresh-cw" class="w-4 h-4 mr-2" />
             {{ isCheckingStatus ? 'Checking...' : 'Check Device Status' }}
           </UButton>
           
@@ -437,7 +437,7 @@ const logout = async () => {
             color="green"
             variant="outline"
           >
-            <UIcon name="refresh-cw" class="w-4 h-4 mr-2" />
+            <LucideIcon name="refresh-cw" class="w-4 h-4 mr-2" />
             {{ isLoading ? 'Refreshing...' : 'Refresh All Data' }}
           </UButton>
           
@@ -448,7 +448,7 @@ const logout = async () => {
             color="purple"
             variant="outline"
           >
-            <UIcon name="package" class="w-4 h-4 mr-2" />
+            <LucideIcon name="package" class="w-4 h-4 mr-2" />
             {{ isLoadingProducts ? 'Loading...' : 'Show Available Products' }}
           </UButton>
         </div>
