@@ -1610,32 +1610,41 @@ async function createTicket() {
     console.log('Auth store token:', authStore.getToken) // Debug log
     console.log('Creating ticket with data:', form.value) // Debug log
 
-    // Auto-classify trouble type based on title/description
-    const textToAnalyze = form.value.title || form.value.description || ''
-    let classifiedType = ''
-
-    if (textToAnalyze.trim()) {
-      classifiedType = classifyTroubleType(textToAnalyze)
-    }
-
-    // Fallback to first available trouble type if classification failed or no text provided
-    if (!classifiedType && troubleTypes.value.length > 0) {
-      classifiedType = troubleTypes.value[0].id
-    }
-
-    // Final fallback to default type '1' if no trouble types are available
-    if (!classifiedType) {
-      classifiedType = '1'
-    }
+    // Get the classification
+    const classification = form.value.classification?.toLowerCase()
 
     // Only include img_cs if there's actually an image filename (not base64)
     const ticketData: any = {
       customer_id: String(form.value.customer_id),
       title: form.value.title,
       description: form.value.description,
-      type: classifiedType,
       classification_id: form.value.classification,
     }
+
+    // Only set type for GANGGUAN tickets
+    // PSB, dismantle, and lainnya tickets should NOT have a type field
+    if (classification === 'gangguan') {
+      // Auto-classify trouble type based on title/description for gangguan tickets
+      const textToAnalyze = form.value.title || form.value.description || ''
+      let classifiedType = ''
+
+      if (textToAnalyze.trim()) {
+        classifiedType = classifyTroubleType(textToAnalyze)
+      }
+
+      // Fallback to first available trouble type if classification failed or no text provided
+      if (!classifiedType && troubleTypes.value.length > 0) {
+        classifiedType = troubleTypes.value[0].id
+      }
+
+      // Final fallback to default type '1' if no trouble types are available
+      if (!classifiedType) {
+        classifiedType = '1'
+      }
+
+      ticketData.type = classifiedType
+    }
+    // Note: For PSB, dismantle, and lainnya - type field is intentionally NOT set
 
     // Only add img_cs if there's a valid image filename (not base64 data)
     if (form.value.img_cs && form.value.img_cs.trim() !== '' && !form.value.img_cs.startsWith('data:')) {
@@ -1651,7 +1660,6 @@ async function createTicket() {
 
     // Only send to NOC for GANGGUAN classification
     // PSB, LAINNYA, and DISMANTLE are auto-assigned to technicians by the backend
-    const classification = form.value.classification?.toLowerCase()
     if (classification === 'gangguan') {
       try {
         const newId = created?.data?.id || created?.id
@@ -2091,7 +2099,10 @@ const visibleAndSortedTickets = computed(() => {
                       <td class="p-2 text-gray-700 max-w-xs truncate" :title="r.description || ''">{{ r.description ||
                         '-'
                         }}</td>
-                      <td class="p-2 capitalize">{{ r.type_name || r.type }}</td>
+                      <td class="p-2 capitalize">
+                        <span v-if="r.type_name || r.type">{{ r.type_name || r.type }}</span>
+                        <span v-else class="text-gray-400 text-xs">-</span>
+                      </td>
                       <td class="p-2">
                         <span :class="[
                           'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
@@ -2275,8 +2286,8 @@ const visibleAndSortedTickets = computed(() => {
 
                 <!-- Type and Assignee -->
                 <div class="flex flex-wrap gap-2 text-xs">
-                  <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                    Tipe: {{ r.type_name || r.type || 'Tidak Dikenal' }}
+                  <span v-if="r.type_name || r.type" class="bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                    Tipe: {{ r.type_name || r.type }}
                   </span>
                   <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded">
                     Peran: {{ r.current_assignee_name || r.current_assignee_role || '-' }}
