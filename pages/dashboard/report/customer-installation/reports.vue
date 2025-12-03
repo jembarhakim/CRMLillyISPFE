@@ -182,6 +182,7 @@
               <UDropdown
                 :items="items(report)"
                 :open="isDropdownOpen(report.installation_id)"
+                :popper="{ strategy: 'fixed', placement: 'bottom-end' }"
                 @update:open="toggleDropdown(report.installation_id, $event)"
               >
                 <UButton
@@ -928,6 +929,26 @@ const items = (row: InstallationReportCompleteResponse) => {
   border-radius: 12px !important;
   box-shadow: 0 12px 40px rgba(0,0,0,0.18) !important;
   -webkit-overflow-scrolling: touch !important;
+}
+
+/* Fix dropdown z-index for mobile */
+:deep(.mobile-actions-btn) {
+  position: relative;
+  z-index: 10 !important;
+}
+
+/* Ensure dropdown menu appears above everything */
+:deep([data-headlessui-state="open"]) {
+  z-index: 9999 !important;
+}
+
+/* Fix touch events on mobile */
+@media (max-width: 640px) {
+  :deep(.mobile-actions-btn),
+  :deep(.mobile-actions-btn button) {
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
 }
 
 /* Inner container: header fixed, body scrolls, footer sticky */

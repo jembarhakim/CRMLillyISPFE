@@ -1203,17 +1203,38 @@ const {
 
 // Metrics cache for real-time status from Kuma metrics endpoint
 const metricsCache = ref({})
+const metricsError = ref(null)
+const metricsLastAttempt = ref(null)
 
 // Fetch metrics from /api/metrics endpoint
 const fetchMetrics = async () => {
   try {
+    metricsLastAttempt.value = new Date()
     const response = await $fetch('/api/metrics')
+    
+    if (response?.error) {
+      console.error('[Metrics] API returned error:', response.error)
+      metricsError.value = response.error
+      
+      // Log specific error types
+      if (response.timeout) {
+        console.error('[Metrics] Timeout - VPS cannot reach Kuma server within 10 seconds')
+      } else if (response.networkError) {
+        console.error('[Metrics] Network error - Check VPS firewall and network connectivity')
+      }
+      return
+    }
+    
     if (response?.monitors) {
       metricsCache.value = response.monitors
+      metricsError.value = null
       console.log('[Metrics] Updated cache with', Object.keys(response.monitors).length, 'monitors')
+    } else {
+      console.warn('[Metrics] No monitors in response:', response)
     }
   } catch (error) {
     console.error('[Metrics] Error fetching:', error)
+    metricsError.value = error.message || 'Unknown error'
   }
 }
 

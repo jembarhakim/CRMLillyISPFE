@@ -715,12 +715,7 @@
                     <label class="text-sm font-medium text-red-600">End Port Type</label>
                     <p class="text-lg text-gray-700">{{ report.end_port_type || '-' }}</p>
                   </div>
-                  <div>
-                    <label class="text-sm font-medium text-red-600">Status</label>
-                    <span :class="getCableStatusColor(report.cable_status)" class="px-3 py-1 rounded-full text-sm font-medium">
-                      {{ report.cable_status || 'Unknown' }}
-                    </span>
-                  </div>
+                  
                 </div>
               </div>
 
@@ -954,26 +949,33 @@ onMounted(async () => {
 });
 
 async function fetchReport() {
+  console.log('[DEBUG] fetchReport started');
   try {
     loading.value = true;
+    console.log('[DEBUG] Loading set to true');
+    
     const installationId = route.params.id as string;
+    console.log('[DEBUG] Installation ID:', installationId);
 
     if (!installationId) {
-      console.error('Installation ID not found');
+      console.error('[ERROR] Installation ID not found');
+      loading.value = false;
       return;
     }
 
     // Get token from auth store
     const authStore = useAuthStore();
     const token = authStore.getToken;
+    console.log('[DEBUG] Token retrieved:', token ? 'YES' : 'NO');
 
     if (!token) {
-      console.error('No authentication token found');
+      console.error('[ERROR] No authentication token found');
+      loading.value = false;
       navigateTo('/login');
       return;
     }
 
-    console.log('Fetching report with token:', token.substring(0, 10) + '...');
+    console.log('[DEBUG] Fetching report from API...');
 
     // Fetch installation report from API
     const response: any = await $fetch(`/api/customer-installations/${installationId}`, {
@@ -982,31 +984,52 @@ async function fetchReport() {
         Authorization: `Bearer ${token}`
       }
     }).catch((err) => {
-      console.error('Fetch report error:', err);
+      console.error('[ERROR] Fetch report error:', err);
+      console.error('[ERROR] Error details:', JSON.stringify(err, null, 2));
       return null;
     });
 
+    console.log('[DEBUG] API Response received:', response);
+    console.log('[DEBUG] Response type:', typeof response);
+    console.log('[DEBUG] Response keys:', response ? Object.keys(response) : 'null');
+
     // Extract data from the response wrapper
     report.value = response?.data || response || {};
+    console.log('[DEBUG] Report value set:', report.value);
+    console.log('[DEBUG] Report has installation_id:', report.value?.installation_id);
 
     // Fetch technician team if needed
     if (report.value?.installation_id) {
+      console.log('[DEBUG] Fetching technician team...');
       await fetchTechnicianTeam(report.value.installation_id);
+      console.log('[DEBUG] Technician team fetched');
+    } else {
+      console.warn('[WARN] No installation_id found, skipping technician team fetch');
     }
 
     // Fetch photos
     if (report.value?.installation_id) {
+      console.log('[DEBUG] Fetching technician photos...');
       await fetchTechnicianPhotos(report.value.installation_id);
+      console.log('[DEBUG] Technician photos fetched');
+    } else {
+      console.warn('[WARN] No installation_id found, skipping photos fetch');
     }
 
     // Fetch terminal customer name if linked
     if (report.value?.terminal_customer_installation_id) {
+      console.log('[DEBUG] Fetching terminal customer name...');
       fetchTerminalCustomerName(report.value.terminal_customer_installation_id);
     }
+
+    console.log('[DEBUG] fetchReport completed successfully');
   } catch (error) {
-    console.error('Error loading installation report:', error);
+    console.error('[ERROR] Unexpected error in fetchReport:', error);
+    console.error('[ERROR] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
   } finally {
+    console.log('[DEBUG] Setting loading to false');
     loading.value = false;
+    console.log('[DEBUG] Loading is now:', loading.value);
   }
 }
 

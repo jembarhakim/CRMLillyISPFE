@@ -4,12 +4,15 @@ import { useRuntimeConfig } from '#imports'
 
 export default defineEventHandler(async (event) => {
   const KUMA_API_FALLBACK = 'http://rndpolije.lilly.net.id:3002'
+  const TIMEOUT_MS = 10000 // 10 second timeout
 
   try {
     const config = useRuntimeConfig()
 
     // Base URL: can be taken from runtimeConfig if you want
     const KUMA_API_URL = (config.kumaBaseUrl as string) || KUMA_API_FALLBACK
+
+    console.log(`[Metrics] Attempting to fetch from: ${KUMA_API_URL}/metrics`)
 
     const headers: Record<string, string> = {
       Accept: 'text/plain',
@@ -34,12 +37,15 @@ export default defineEventHandler(async (event) => {
       } else {
         headers['Authorization'] = `Basic ${envBasic}`
       }
+      console.log('[Metrics] Using KUMA_METRICS_BASIC_AUTH')
     } else if (envUser && envPass) {
       const token = Buffer.from(`${envUser}:${envPass}`).toString('base64')
       headers['Authorization'] = `Basic ${token}`
+      console.log('[Metrics] Using KUMA_METRICS_USERNAME/PASSWORD')
     } else if (cfgUser && cfgPass) {
       const token = Buffer.from(`${cfgUser}:${cfgPass}`).toString('base64')
       headers['Authorization'] = `Basic ${token}`
+      console.log('[Metrics] Using runtimeConfig credentials')
     } else {
       console.error('[Metrics] No credentials configured!')
       return {
@@ -48,11 +54,38 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // ---- Fetch metrics as TEXT ----
-    const resp = await fetch(`${KUMA_API_URL}/metrics`, {
-      headers,
-      redirect: 'follow',
-    })
+    // ---- Fetch metrics as TEXT with timeout ----
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS)
+
+    let resp
+    try {
+      resp = await fetch(`${KUMA_API_URL}/metrics`, {
+        headers,
+        redirect: 'follow',
+        signal: controller.signal,
+      })
+    } catch (fetchErr: any) {
+      clearTimeout(timeoutId)
+
+      if (fetchErr.name === 'AbortError') {
+        console.error(`[Metrics] Request timed out after ${TIMEOUT_MS}ms`)
+        return {
+          error: `Request timed out after ${TIMEOUT_MS}ms - VPS may not be able to reach Kuma server`,
+          monitors: {},
+          timeout: true,
+        }
+      }
+
+      console.error('[Metrics] Network error:', fetchErr.message)
+      return {
+        error: `Network error: ${fetchErr.message} - Check VPS network connectivity to ${KUMA_API_URL}`,
+        monitors: {},
+        networkError: true,
+      }
+    }
+
+    clearTimeout(timeoutId)
 
     const metricsText = await resp.text().catch(() => '')
 
@@ -64,6 +97,8 @@ export default defineEventHandler(async (event) => {
         bodyPreview: metricsText.slice(0, 200),
       }
     }
+
+    console.log(`[Metrics] Successfully fetched ${metricsText.length} bytes`)
 
     // ---- Parse Prometheus metrics ----
     const monitorStatusRegex =
@@ -102,12 +137,14 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    console.log(`[Metrics] Successfully parsed ${Object.keys(monitors).length} monitors`)
     return { success: true, monitors }
   } catch (err) {
-    console.error('[Metrics] Proxy error:', err)
+    console.error('[Metrics] Unexpected error:', err)
     return {
       error: err instanceof Error ? err.message : String(err),
       monitors: {},
+      unexpectedError: true,
     }
   }
 })

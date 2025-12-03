@@ -314,7 +314,7 @@
                     <USelect v-model="device.asset_item_id" :options="availableAssetItems[device.assets_id] || []"
                       :placeholder="!device.assets_id ? 'Select an asset first' : 'Select MAC Address'"
                       :disabled="!device.assets_id || (availableAssetItems[device.assets_id] && availableAssetItems[device.assets_id].length === 0)"
-                      @change="onMacAddressChange(device.asset_item_id, index)" class="custom-select" />
+                      @update:model-value="value => onMacAddressChange(value, index)" class="custom-select" />
                     <div
                       v-if="device.assets_id && availableAssetItems[device.assets_id] && availableAssetItems[device.assets_id].length === 0"
                       class="text-xs text-red-500 mt-1 flex items-center">
@@ -550,6 +550,8 @@ definePageMeta({
   middleware: 'auth'
 })
 
+const authStore = useAuthStore();
+
 // Get installation ID from route params
 const route = useRoute()
 const installationId = route.params.id as string
@@ -586,7 +588,7 @@ const state = reactive({
   installation_completed_at: "",
   is_terminal: "no", // Whether this is a terminal installation ('yes' or 'no')
   terminal_customer_installation_id: "", // Installation ID of the terminal installation (from customer_installations table)
-
+  terminalInstallations: [] as any[], // List of terminal installations (from customer_installations where is_terminal = 'yes')
   // Installation location
   latitude: undefined as number | undefined,
   longitude: undefined as number | undefined,
@@ -968,6 +970,41 @@ async function loadInstallationReport() {
               } catch (error) {
                 console.error(`Failed to load assigned asset item ${assetItemId}:`, error);
               }
+            } else if (device.mac_address) {
+               // Try to find asset item by MAC address if we don't have the ID
+               try {
+                 // We fetch ALL items for this asset to find the one with the matching MAC
+                 // This is necessary because we don't have the ID, and the item might be 'in_use'
+                 const allItemsResponse = await assetItemAdminApi().getAssetItems({ asset_id: assetsId });
+                 if (allItemsResponse.success && allItemsResponse.data) {
+                   const foundItem = allItemsResponse.data.find((item: any) => 
+                     item.mac_address && 
+                     item.mac_address.toLowerCase() === device.mac_address.toLowerCase()
+                   );
+                   
+                   if (foundItem) {
+                     assetItemId = foundItem.id; // Update the ID so it binds correctly
+                     console.log(`[loadInstallationReport] Found asset item by MAC ${device.mac_address}: ${assetItemId}`);
+                     
+                     // Add to list if not already present
+                     const exists = availableItems.find((item: any) => item.id === foundItem.id);
+                     if (!exists) {
+                       availableItems.push({
+                         value: foundItem.id,
+                         label: `${foundItem.mac_address} (${foundItem.status || 'in_use'})`,
+                         id: foundItem.id,
+                         mac_address: foundItem.mac_address,
+                         status: foundItem.status || 'in_use',
+                         asset_id: assetsId
+                       });
+                     }
+                   } else {
+                     console.warn(`[loadInstallationReport] Could not find asset item for MAC ${device.mac_address}`);
+                   }
+                 }
+               } catch (error) {
+                 console.error(`Failed to find asset item by MAC ${device.mac_address}:`, error);
+               }
             }
 
             // Store all items (both available and assigned)
@@ -1138,10 +1175,27 @@ async function loadTerminalCustomers() {
     console.log('[loadTerminalCustomers] Extracted installations:', installations.length, installations);
 
     if (installations && installations.length > 0) {
-      // Backend should already filter by is_terminal=yes, but double-check for safety
+      // Backend should already filter by is_terminal=yes, but double-check for safety and skip soft-deleted
       const terminalInstallations = installations.filter((inst: any) => {
+        // Soft delete check
+        const deletedAt = inst.deleted_at ?? inst.deletedAt;
+        let isDeleted = false;
+
+        if (deletedAt) {
+          if (typeof deletedAt === 'string') {
+            const lower = deletedAt.trim().toLowerCase();
+            isDeleted = lower !== '' && lower !== 'null' && lower !== '0000-00-00 00:00:00';
+          } else if (typeof deletedAt === 'object') {
+            isDeleted = deletedAt.Valid === true;
+          } else {
+            isDeleted = true;
+          }
+        }
+
+        if (isDeleted) return false;
+
         const isTerminal = inst.is_terminal === 'yes' || inst.is_terminal === 'Yes' || inst.is_terminal === true;
-        console.log('[loadTerminalCustomers] Installation:', inst.id, 'is_terminal:', inst.is_terminal, 'matches:', isTerminal);
+        console.log('[loadTerminalCustomers] Installation:', inst.id, 'is_terminal:', inst.is_terminal, 'matches:', isTerminal, 'isDeleted:', isDeleted);
         return isTerminal;
       });
 
@@ -1306,19 +1360,52 @@ async function onAssetChange(assetId: string, deviceIndex: number) {
 
 // Handle MAC address selection
 function onMacAddressChange(assetItemId: string, deviceIndex: number) {
+  const device = state.network_devices[deviceIndex];
+  if (!device) return;
+
   if (!assetItemId) {
-    state.network_devices[deviceIndex].asset_item_id = "";
-    state.network_devices[deviceIndex].mac_address = "";
+    device.asset_item_id = "";
+    device.mac_address = "";
     return;
   }
 
-  // Find the selected asset item and update both fields
-  const assetId = state.network_devices[deviceIndex].assets_id;
-  const selectedItem = availableAssetItems.value[assetId]?.find(item => item.id === assetItemId);
+  const assetId = device.assets_id;
+  if (!assetId) return;
 
-  if (selectedItem) {
-    state.network_devices[deviceIndex].asset_item_id = selectedItem.id;
-    state.network_devices[deviceIndex].mac_address = selectedItem.mac_address;
+  const options = availableAssetItems.value[assetId] || [];
+
+  // Find the selected item by value or id
+  const selected = options.find(
+    (item: any) => item.value === assetItemId || item.id === assetItemId
+  );
+
+  if (selected) {
+    device.asset_item_id = selected.id;
+    device.mac_address = selected.mac_address;
+    console.log(`[onMacAddressChange] Updated device ${deviceIndex} MAC to ${selected.mac_address}`);
+  } else {
+    console.warn("[onMacAddressChange] Selected asset item not found", {
+      assetId,
+      assetItemId,
+      optionsCount: options.length
+    });
+    device.mac_address = "";
+  }
+}
+
+// Helper to sync MAC address from asset item ID (useful for initial load or manual sync)
+function syncMacFromAssetItem(deviceIndex: number) {
+  const device = state.network_devices[deviceIndex];
+  if (!device || !device.assets_id || !device.asset_item_id) return;
+
+  const options = availableAssetItems.value[device.assets_id] || [];
+  const selected = options.find(
+    (item: any) =>
+      item.id === device.asset_item_id || item.value === device.asset_item_id
+  );
+
+  if (selected) {
+    device.mac_address = selected.mac_address;
   }
 }
 
@@ -1689,6 +1776,21 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   isSubmitting.value = true;
 
   try {
+    // Avoid FK constraint errors: drop empty device_id before sending
+    const validDeviceIds = new Set(
+      state.network_devices
+        .map((device: any) => device.id)
+        .filter((id: string | undefined) => !!id)
+    );
+
+    const sanitizedCustomerServices = state.customer_services.map((service) => {
+      const copy = { ...service };
+      if (!copy.device_id || (copy.device_id && !validDeviceIds.has(copy.device_id))) {
+        delete copy.device_id;
+      }
+      return copy;
+    });
+
     const submitData: UpdateCompleteInstallationReportRequest = {
       customer_id: state.customer_id,
       technician_id: state.technician_id,
@@ -1706,7 +1808,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       latitude: state.latitude,
       longitude: state.longitude,
       network_devices: state.network_devices,
-      customer_services: state.customer_services,
+      customer_services: sanitizedCustomerServices,
       image_ids: state.image_ids,
       technician_photos: state.technician_photos,
       technician_photos_notes: state.technician_photos_notes,
