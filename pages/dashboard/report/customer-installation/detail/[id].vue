@@ -978,7 +978,7 @@ async function fetchReport() {
     console.log('[DEBUG] Fetching report from API...');
 
     // Fetch installation report from API
-    const response: any = await $fetch(`/api/customer-installations/${installationId}`, {
+    const response: any = await $fetch(`/api/admin/customer-installation/report/complete/${installationId}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`
@@ -1007,14 +1007,16 @@ async function fetchReport() {
       console.warn('[WARN] No installation_id found, skipping technician team fetch');
     }
 
-    // Fetch photos
-    if (report.value?.installation_id) {
-      console.log('[DEBUG] Fetching technician photos...');
-      await fetchTechnicianPhotos(report.value.installation_id);
-      console.log('[DEBUG] Technician photos fetched');
-    } else {
-      console.warn('[WARN] No installation_id found, skipping photos fetch');
-    }
+
+    // Fetch photos - DISABLED: Photos are already included in the main report response via Images relationship
+    // if (report.value?.installation_id) {
+    //   console.log('[DEBUG] Fetching technician photos...');
+    //   await fetchTechnicianPhotos(report.value.installation_id);
+    //   console.log('[DEBUG] Technician photos fetched');
+    // } else {
+    //   console.warn('[WARN] No installation_id found, skipping photos fetch');
+    // }
+
 
     // Fetch terminal customer name if linked
     if (report.value?.terminal_customer_installation_id) {
@@ -1040,7 +1042,7 @@ async function fetchTerminalCustomerName(terminalId: string) {
 
     if (!token) return;
 
-    const response: any = await $fetch(`/api/customer-installations/${terminalId}`, {
+    const response: any = await $fetch(`/api/admin/customer-installation/report/complete/${terminalId}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`
@@ -1066,7 +1068,7 @@ async function fetchTechnicianTeam(installationId: string) {
       return;
     }
 
-    const response = await $fetch(`/api/customer-installations/${installationId}/technicians`, {
+    const response = await $fetch(`/api/admin/customer-installation/report/technician-team/${installationId}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`
@@ -1089,7 +1091,7 @@ async function fetchTechnicianPhotos(installationId: string) {
       return;
     }
 
-    const response = await $fetch(`/api/customer-installations/${installationId}/photos`, {
+    const response = await $fetch(`/api/admin/customer-installation/${installationId}/photos`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`
