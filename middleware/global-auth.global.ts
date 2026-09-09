@@ -30,6 +30,15 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     return; // Allow access to login page if not logged in
   }
 
+  // Handle employee login page
+  if (to.path === '/employee') {
+    if (authStore.isLoggedIn) {
+      console.log('Global auth middleware: User already logged in, redirecting to dashboard');
+      return navigateTo('/dashboard');
+    }
+    return; // Allow access to employee login page if not logged in
+  }
+
   // Handle customer pages - they have their own auth logic
   if (to.path.startsWith('/customer') || to.path.startsWith('/invoice')) {
     return;

@@ -262,8 +262,10 @@ const status = computed(() => {
 });
 
 const logout = async () => {
+  const userType = useAuthStore().userType;
   await useAuthStore().logout();
-  router.push("/login");
+  const redirectPath = userType === 'employee' ? '/employee' : '/login';
+  router.push(redirectPath);
 };
 </script>
 

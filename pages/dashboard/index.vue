@@ -913,7 +913,7 @@ for (const card of CardList) {
   if (card.name === "Customer") {
     try {
       const response = await dashboardAdminApi().cardCustomerDashboard();
-      const graph = response.data.graph_customer;
+      const graph = response.data.graph_customer || [];
 
       (option.title as any).text = card.name
 
@@ -941,7 +941,7 @@ for (const card of CardList) {
   if (card.name === "Packet Popular") {
     try {
       const response = await dashboardAdminApi().cardPacketPopularDashboard();
-      const graph = response.data.graph_packet_popular;
+      const graph = response.data.graph_packet_popular || [];
 
       (option.title as any).text = card.name
 
@@ -967,7 +967,7 @@ for (const card of CardList) {
   if (card.name === "Area") {
     try {
       const response = await dashboardAdminApi().cardAreaPopularDashboard();
-      const graph = response.data.graph_area_popular;
+      const graph = response.data.graph_area_popular || [];
 
       (option.title as any).text = card.name
 
@@ -993,7 +993,7 @@ for (const card of CardList) {
   if (card.name === "Report Cash") {
     try {
       const response = await dashboardAdminApi().cardReportCashDashboard();
-      const graph = response.data.graph_report_cash;
+      const graph = response.data.graph_report_cash || [];
 
       (option.title as any).text = card.name
 

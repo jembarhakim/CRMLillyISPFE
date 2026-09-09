@@ -1,9 +1,13 @@
 export default defineNuxtRouteMiddleware((to) => {
-  const { isLoggedIn, user } = useAuth()
+  const { isLoggedIn, user, userType } = useAuth()
+  const authStore = useAuthStore()
   
-  // If not logged in, redirect to login
+  // If not logged in, redirect to appropriate login page
   if (!isLoggedIn.value) {
-    return navigateTo('/login')
+    // Check stored userType to determine correct login page
+    const storedUserType = authStore.userType
+    const redirectPath = storedUserType === 'employee' ? '/employee' : '/login'
+    return navigateTo(redirectPath)
   }
 
   // Define route permissions

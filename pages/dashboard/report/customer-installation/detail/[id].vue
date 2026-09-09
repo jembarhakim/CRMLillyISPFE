@@ -971,7 +971,9 @@ async function fetchReport() {
     if (!token) {
       console.error('[ERROR] No authentication token found');
       loading.value = false;
-      navigateTo('/login');
+      const authStore = useAuthStore();
+      const redirectPath = authStore.userType === 'employee' ? '/employee' : '/login';
+      navigateTo(redirectPath);
       return;
     }
 

@@ -308,7 +308,8 @@ const getAuthHeaders = () => {
   const token = authStore.getToken
   if (!token || token === '' || token === 'null' || token === 'undefined') {
     // Try to redirect to login if no token
-    navigateTo('/login')
+    const redirectPath = authStore.userType === 'employee' ? '/employee' : '/login'
+    navigateTo(redirectPath)
     throw new Error('No valid authentication token available')
   }
   return {
@@ -325,8 +326,10 @@ const handleTokenExpiration = (error) => {
     } else {
       // Fallback if global handler not available
       showAlert('Session expired. Please login again.', 'error')
+      const userType = authStore.userType
       authStore.logout()
-      navigateTo('/login')
+      const redirectPath = userType === 'employee' ? '/employee' : '/login'
+      navigateTo(redirectPath)
     }
   }
 }
