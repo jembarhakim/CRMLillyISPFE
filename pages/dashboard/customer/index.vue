@@ -3,6 +3,7 @@ import { watch, onMounted, ref, computed, nextTick } from 'vue'
 import FormCustomerInstallation from './FormCustomerInstallation.vue'
 import FormAddComponent from './FormAddCustomer.vue'
 import CustomerDetailModal from './CustomerDetailModal.vue'
+import CustomerMap from './CustomerMap.vue'
 import CustomerDeleteConfirmationModal from '@/components/CustomerDeleteConfirmationModal.vue'
 import LucideIcon from '@/components/LucideIcon.vue'
 import BroadcastFeature from '@/components/BroadcastFeature.vue'
@@ -1584,6 +1585,18 @@ const relatedCustomers = computed(() => {
         :page-count="pageCount"
         :total="customer.length"
       />
+    </div>
+
+    <!-- Customer Mapping Section -->
+    <div class="mt-8 bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+      <div class="mb-4">
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <LucideIcon name="map" :size="24" class="text-primary" />
+          Customer Distribution Map
+        </h2>
+        <p class="text-sm text-gray-500">Geographical view of all active customer installations</p>
+      </div>
+      <CustomerMap @view-detail="OpenCustomerDetailModal" />
     </div>
 
     <!-- Customer Detail Modal -->
