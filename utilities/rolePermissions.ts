@@ -153,6 +153,13 @@ export const MAIN_MENU: MenuItem[] = [
     description: 'Internet package management'
   },
   {
+    label: 'News',
+    icon: 'heroicons:newspaper',
+    link: '/dashboard/news',
+    feature: 'news',
+    description: 'News article management'
+  },
+  {
     label: 'Assets',
     icon: 'heroicons:archive-box',
     link: '/dashboard/asset',
@@ -244,7 +251,14 @@ export function getMenuForRole(userRole: string): MenuItem[] {
 }
 
 export function getMenuForFeaturePermissions(featurePermissions: Record<string, number>): MenuItem[] {
-  return MAIN_MENU.filter(item => canAccessMenuByFeature(featurePermissions, item))
+  const menu = MAIN_MENU.filter(item => canAccessMenuByFeature(featurePermissions, item))
+  const newsItem = MAIN_MENU.find(item => item.feature === 'news')
+
+  if (featurePermissions.news === undefined && newsItem) {
+    menu.push(newsItem)
+  }
+
+  return menu
 }
 
 export function getRoleDisplayName(role: string): string {

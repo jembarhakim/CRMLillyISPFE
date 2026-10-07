@@ -492,18 +492,22 @@
               your needs and budget. All plans include 24/7 support.</p>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 max-w-7xl mx-auto">
-            <div v-for="(plan, index) in pricingPlans" :key="index"
+          <div v-if="pricingLoading" class="py-12 text-center text-white" role="status">
+            Loading internet packages...
+          </div>
+          <div v-else-if="pricingError" class="py-12 text-center text-white" role="alert">
+            <p>{{ pricingError }}</p>
+            <button @click="loadPricingPlans" class="mt-4 px-4 py-2 bg-white text-gray-900 rounded hover:bg-gray-100">
+              Retry
+            </button>
+          </div>
+          <div v-else-if="pricingPlans.length === 0" class="py-12 text-center text-white">
+            Internet packages are not available right now.
+          </div>
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 max-w-7xl mx-auto">
+            <div v-for="(plan, index) in pricingPlans" :key="plan.id || index"
               class="group relative bg-white rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:-translate-y-3 w-full"
-              :class="{ 'ring-2 sm:ring-4 ring-white ring-opacity-50 scale-100 sm:scale-105': plan.popular }">
-              <!-- Popular Badge -->
-              <div v-if="plan.popular" class="absolute top-0 right-0 z-10">
-                <div
-                  class="bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[10px] sm:text-xs font-bold px-2 sm:px-4 py-1 sm:py-2 rounded-bl-xl sm:rounded-bl-2xl shadow-lg">
-                  ⭐ POPULAR
-                </div>
-              </div>
-
+              :class="{ 'ring-2 sm:ring-4 ring-white ring-opacity-50 scale-100 sm:scale-105': index === 0 }">
               <!-- Header -->
               <div :style="{ backgroundColor: plan.color }"
                 class="text-white text-center py-6 sm:py-8 relative overflow-hidden">
@@ -525,44 +529,26 @@
                         d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                         clip-rule="evenodd" />
                     </svg>
-                    <span class="text-xs sm:text-sm md:text-base font-medium">Up to <strong>{{ plan.speed }}
+                    <span class="text-xs sm:text-sm md:text-base font-medium">Download <strong>{{ plan.downloadSpeed }}
                         Mbps</strong></span>
                   </li>
-                  <li class="flex items-start text-gray-700">
+                  <li v-if="plan.uploadSpeed !== null" class="flex items-start text-gray-700">
                     <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" :style="{ color: plan.color }"
                       fill="currentColor" viewBox="0 0 20 20">
                       <path fill-rule="evenodd"
                         d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                         clip-rule="evenodd" />
                     </svg>
-                    <span class="text-xs sm:text-sm md:text-base">{{ plan.devices }} Connected Devices</span>
+                    <span class="text-xs sm:text-sm md:text-base">Upload {{ plan.uploadSpeed }} Mbps</span>
                   </li>
-                  <li class="flex items-start text-gray-700">
+                  <li v-if="plan.description" class="flex items-start text-gray-700">
                     <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" :style="{ color: plan.color }"
                       fill="currentColor" viewBox="0 0 20 20">
                       <path fill-rule="evenodd"
                         d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                         clip-rule="evenodd" />
                     </svg>
-                    <span class="text-xs sm:text-sm md:text-base">{{ plan.support }}</span>
-                  </li>
-                  <li class="flex items-start text-gray-700">
-                    <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" :style="{ color: plan.color }"
-                      fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clip-rule="evenodd" />
-                    </svg>
-                    <span class="text-xs sm:text-sm md:text-base">{{ plan.ipType }}</span>
-                  </li>
-                  <li v-if="plan.bonus" class="flex items-start text-gray-700">
-                    <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3 flex-shrink-0" :style="{ color: plan.color }"
-                      fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clip-rule="evenodd" />
-                    </svg>
-                    <span class="text-xs sm:text-sm md:text-base font-semibold text-green-600">{{ plan.bonus }}</span>
+                    <span class="text-xs sm:text-sm md:text-base">{{ plan.description }}</span>
                   </li>
                 </ul>
 
@@ -800,29 +786,79 @@
           </p>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-          <div v-for="(item, index) in newsItems" :key="index" @mouseenter="hoverNews(index)"
-            @mouseleave="unhoverNews(index)" class="my-card box-shadow bg-white rounded-lg overflow-hidden w-full">
-            <img :src="item.image" :alt="item.title" class="w-full h-48 sm:h-56 md:h-64 object-cover"
-              @error="handleImageError" />
-            <div class="p-4 sm:p-5 md:p-6">
-              <h3 class="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 transition-colors duration-300"
-                :style="{ color: item.hovered ? themeColor : '#424242' }" :class="{ 'animate-bounce': item.hovered }">
-                {{ item.title }}
-              </h3>
-              <p class="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
-                Find out about our latest network expansion, special offers, and service improvements for our valued
-                customers.
-              </p>
-              <button :style="{ backgroundColor: themeColor }"
-                class="px-4 sm:px-6 py-2 text-white text-xs sm:text-sm rounded hover:opacity-90 transition-all">
-                READ MORE
-              </button>
-            </div>
-          </div>
+        <div v-if="newsLoading" class="py-12 text-center text-gray-600" role="status">
+          Loading latest updates...
         </div>
+        <div v-else-if="newsError" class="py-12 text-center text-gray-600" role="alert">
+          <p>{{ newsError }}</p>
+          <button @click="loadNews" class="mt-4 px-4 py-2 text-white rounded hover:opacity-90"
+            :style="{ backgroundColor: themeColor }">
+            Retry
+          </button>
+        </div>
+        <div v-else-if="newsItems.length === 0" class="py-12 text-center text-gray-600">
+          No news articles are available right now.
+        </div>
+        <template v-else>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+            <article v-for="item in newsItems" :key="item.id"
+              class="my-card box-shadow bg-white rounded-lg overflow-hidden w-full">
+              <img v-if="item.image_url" :src="resolveNewsImageUrl(item.image_url)" :alt="item.title"
+                class="w-full h-48 sm:h-56 md:h-64 object-cover" @error="handleImageError" />
+              <div v-else class="h-48 sm:h-56 md:h-64 bg-gray-200"></div>
+              <div class="p-4 sm:p-5 md:p-6">
+                <p v-if="item.published_at" class="text-xs text-gray-500 mb-2">
+                  {{ formatNewsDate(item.published_at) }}
+                </p>
+                <h3 class="text-lg sm:text-xl font-semibold mb-2 sm:mb-3" :style="{ color: '#424242' }">
+                  {{ item.title }}
+                </h3>
+                <p class="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">{{ item.summary }}</p>
+                <button @click="openNewsDetail(item)"
+                  class="px-4 sm:px-6 py-2 text-white text-xs sm:text-sm rounded hover:opacity-90 transition-all"
+                  :style="{ backgroundColor: themeColor }">
+                  READ MORE
+                </button>
+              </div>
+            </article>
+          </div>
+
+          <div v-if="newsTotalPages > 1" class="mt-8 flex items-center justify-center gap-4">
+            <button @click="changeNewsPage(newsPage - 1)" :disabled="newsPage <= 1"
+              class="px-4 py-2 rounded border border-gray-300 text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed">
+              Previous
+            </button>
+            <span class="text-sm text-gray-600">{{ newsPage }} / {{ newsTotalPages }}</span>
+            <button @click="changeNewsPage(newsPage + 1)" :disabled="newsPage >= newsTotalPages"
+              class="px-4 py-2 rounded border border-gray-300 text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed">
+              Next
+            </button>
+          </div>
+        </template>
       </div>
     </section>
+
+    <div v-if="selectedNews" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+      role="presentation" @click.self="closeNewsDetail">
+      <article class="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-2xl"
+        role="dialog" aria-modal="true" :aria-label="selectedNews.title">
+        <button @click="closeNewsDetail" aria-label="Close article"
+          class="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-2xl text-white hover:bg-black/80">
+          &times;
+        </button>
+        <img v-if="selectedNews.image_url" :src="resolveNewsImageUrl(selectedNews.image_url)" :alt="selectedNews.title"
+          class="h-56 w-full object-cover sm:h-72" @error="handleImageError" />
+        <div class="p-5 sm:p-8">
+          <p v-if="selectedNews.published_at" class="mb-2 text-sm text-gray-500">
+            {{ formatNewsDate(selectedNews.published_at) }}
+          </p>
+          <h2 class="mb-4 pr-10 text-2xl font-bold text-gray-900 sm:text-3xl">{{ selectedNews.title }}</h2>
+          <p v-if="newsDetailLoading" class="py-8 text-gray-600" role="status">Loading article...</p>
+          <p v-else-if="newsDetailError" class="py-4 text-red-700" role="alert">{{ newsDetailError }}</p>
+          <div v-else class="whitespace-pre-line leading-relaxed text-gray-700">{{ selectedNews.content }}</div>
+        </div>
+      </article>
+    </div>
 
     <!-- Contact Us Section -->
     <section id="id_contact_us" class="contact_us relative w-full">
@@ -967,6 +1003,8 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { productApi } from '@/api/product'
+import { publicNewsApi } from '@/api/news'
 import '~/assets/css/landing.css'
 
 // Set page title and meta with logo preload
@@ -989,6 +1027,12 @@ useHead({
 // Theme (Red color for Lilly ISP branding)
 const themeColor = ref('rgb(220, 38, 38)')
 const showColorPicker = ref(false)
+const apiHost = useApiHost()
+
+const resolveNewsImageUrl = (imageUrl) => {
+  if (!imageUrl || /^(https?:)?\/\//i.test(imageUrl) || /^(data|blob):/i.test(imageUrl)) return imageUrl
+  return `${apiHost.replace(/\/$/, '')}/${imageUrl.replace(/^\//, '')}`
+}
 
 // Scroll state for navbar
 const isScrolled = ref(false)
@@ -1068,62 +1112,100 @@ const testimonials = [
 const currentTeamSlide = ref(0)
 
 // Pricing plans
-const pricingPlans = [
-  {
-    name: 'BASIC',
-    description: 'Perfect for personal use',
-    price: 150000,
-    color: '#ec982f',
-    speed: '10',
-    devices: '1-2',
-    support: 'Email Support',
-    ipType: 'Dynamic IP',
-    popular: false
-  },
-  {
-    name: 'FAMILY',
-    description: 'Great for small families',
-    price: 250000,
-    color: '#f4655f',
-    speed: '20',
-    devices: '3-5',
-    support: '24/7 Support',
-    ipType: 'Dynamic IP',
-    popular: true,
-    bonus: 'Free Installation'
-  },
-  {
-    name: 'PREMIUM',
-    description: 'Ideal for home office',
-    price: 400000,
-    color: '#8b3bbd',
-    speed: '50',
-    devices: '5-8',
-    support: '24/7 Priority Support',
-    ipType: 'Dynamic IP',
-    bonus: 'Free Router',
-    popular: false
-  },
-  {
-    name: 'BUSINESS',
-    description: 'Best for businesses',
-    price: 750000,
-    color: '#3b97d1',
-    speed: '100',
-    devices: 'Unlimited',
-    support: 'Dedicated Support',
-    ipType: 'Static IP Included',
-    bonus: 'Free Installation & Router',
-    popular: false
-  }
-]
+const pricingPlans = ref([])
+const pricingLoading = ref(true)
+const pricingError = ref('')
+const pricingColors = ['#b42318', '#176b5b', '#285f9e', '#a15c16', '#5a4a8a', '#16758a']
 
-// News items
-const newsItems = ref([
-  { image: '/statics/images/about_1.png', title: 'NEW FIBER OPTIC NETWORK', hovered: false },
-  { image: '/statics/images/about_2.png', title: 'SPECIAL PROMO THIS MONTH', hovered: false },
-  { image: '/statics/images/about_3.png', title: 'CUSTOMER SATISFACTION AWARD', hovered: false }
-])
+const loadPricingPlans = async () => {
+  pricingLoading.value = true
+  pricingError.value = ''
+
+  try {
+    const response = await productApi().getAll()
+    if (!Array.isArray(response?.data)) {
+      throw new Error(response?.message || 'Failed to load internet packages.')
+    }
+
+    pricingPlans.value = response.data.map((product, index) => ({
+      id: product.id,
+      name: product.name,
+      description: product.description || '',
+      price: Number(product.price) || 0,
+      downloadSpeed: product.download_speed_mbps ?? '-',
+      uploadSpeed: product.upload_speed_mbps ?? null,
+      color: pricingColors[index % pricingColors.length]
+    }))
+  } catch (error) {
+    pricingError.value = error?.message || 'Failed to load internet packages.'
+  } finally {
+    pricingLoading.value = false
+  }
+}
+
+const newsItems = ref([])
+const newsPage = ref(1)
+const newsLimit = 3
+const newsTotal = ref(0)
+const newsLoading = ref(true)
+const newsError = ref('')
+const selectedNews = ref(null)
+const newsDetailLoading = ref(false)
+const newsDetailError = ref('')
+const newsTotalPages = computed(() => Math.max(1, Math.ceil(newsTotal.value / newsLimit)))
+
+const loadNews = async () => {
+  newsLoading.value = true
+  newsError.value = ''
+
+  try {
+    const response = await publicNewsApi().getPublished(newsPage.value, newsLimit)
+    const items = response?.items || response?.data?.items
+    if (!Array.isArray(items)) {
+      throw new Error(response?.message || 'Invalid news response.')
+    }
+
+    newsItems.value = items
+    newsPage.value = Number(response.page ?? response.data?.page ?? newsPage.value)
+    newsTotal.value = Number(response.total ?? response.data?.total ?? items.length)
+  } catch (error) {
+    newsError.value = error?.message || 'Failed to load latest updates.'
+  } finally {
+    newsLoading.value = false
+  }
+}
+
+const changeNewsPage = (page) => {
+  if (page < 1 || page > newsTotalPages.value || page === newsPage.value) return
+  newsPage.value = page
+  loadNews()
+}
+
+const openNewsDetail = async (item) => {
+  selectedNews.value = { ...item, content: '' }
+  newsDetailLoading.value = true
+  newsDetailError.value = ''
+
+  try {
+    const response = await publicNewsApi().getPublishedById(item.id)
+    selectedNews.value = response?.data || response
+  } catch (error) {
+    newsDetailError.value = error?.message || 'Failed to load article.'
+  } finally {
+    newsDetailLoading.value = false
+  }
+}
+
+const closeNewsDetail = () => {
+  selectedNews.value = null
+  newsDetailError.value = ''
+}
+
+const formatNewsDate = (value) => {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' }).format(date)
+}
 
 // Portfolio items
 const portfolioItems = [
@@ -1613,6 +1695,9 @@ let teamInterval = null
 let metricsInterval = null
 
 onMounted(() => {
+  loadPricingPlans()
+  loadNews()
+
   carouselInterval = setInterval(() => {
     nextSlide()
   }, 5000)
@@ -1706,16 +1791,6 @@ const hoverAbout = (index) => {
 const unhoverAbout = (index) => {
   setTimeout(() => {
     aboutItems.value[index].hovered = false
-  }, 1000)
-}
-
-const hoverNews = (index) => {
-  newsItems.value[index].hovered = true
-}
-
-const unhoverNews = (index) => {
-  setTimeout(() => {
-    newsItems.value[index].hovered = false
   }, 1000)
 }
 
