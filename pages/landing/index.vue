@@ -566,12 +566,14 @@
                   <p class="text-gray-600 text-xs sm:text-sm mt-1 sm:mt-2">/month</p>
                 </div>
 
-                <!-- CTA Button -->
-                <button :style="{ backgroundColor: plan.color }"
-                  class="w-full py-3 sm:py-4 text-white text-sm sm:text-base font-bold rounded-lg sm:rounded-xl hover:opacity-90 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
-                  Choose Plan
-                </button>
-
+              <!-- CTA Button -->
+<button
+  @click="choosePlan(plan)"
+  :style="{ backgroundColor: plan.color }"
+  class="w-full py-3 sm:py-4 text-white text-sm sm:text-base font-bold rounded-lg sm:rounded-xl hover:opacity-90 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+>
+  Choose Plan
+</button>
                 <!-- Terms -->
                 <p class="text-center text-[10px] sm:text-xs text-gray-500 mt-3 sm:mt-4">Terms and Conditions apply</p>
               </div>
@@ -1141,6 +1143,31 @@ const loadPricingPlans = async () => {
   } finally {
     pricingLoading.value = false
   }
+}
+
+// =====================================================
+// WHATSAPP - CHOOSE PLAN
+// =====================================================
+
+const choosePlan = (plan) => {
+  // Nomor WhatsApp CS Lilly ISP
+  const phoneNumber = '6285607121775' // Ganti dengan nomor WhatsApp CS Lilly ISP yang valid
+
+  const message = `Hi Kak, saya tertarik dengan paket ${plan.name}.
+
+Detail paket:
+- Paket: ${plan.name}
+- Download: ${plan.downloadSpeed} Mbps
+- Upload: ${plan.uploadSpeed ?? '-'} Mbps
+- Harga: Rp ${plan.price.toLocaleString('id-ID')}/bulan
+
+Mohon informasi lebih lanjut mengenai pemasangan dan ketersediaan paketnya.
+
+Terima kasih, Kak 🙏`
+
+  const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`
+
+  window.open(whatsappUrl, '_blank')
 }
 
 const newsItems = ref([])
