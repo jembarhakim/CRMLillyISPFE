@@ -1,124 +1,114 @@
 <template>
-    <section id="id_portfolio" class="py-10 sm:py-16 md:py-20 px-4 sm:px-6 md:px-8 bg-gray-50 w-full max-w-full">
-        <div class="container mx-auto max-w-full">
-            <div class="text-center mb-8 sm:mb-12 md:mb-16 px-4">
-                <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 text-gray-900">Our Services</h2>
-                <p class="text-base sm:text-lg md:text-xl text-gray-600">Comprehensive internet solutions tailored to
-                    your
-                    needs.</p>
+    <section id="id_portfolio" class="py-16 sm:py-24 bg-white w-full max-w-full">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+
+            <!-- Header Section -->
+            <div class="text-center mb-12 sm:mb-16">
+                <span
+                    class="inline-block py-1.5 px-4 rounded-full bg-[#F9EBEB] text-[#A93133] font-bold text-xs sm:text-sm mb-4 border border-[#A93133]/20">
+                    REKAM JEJAK KAMI
+                </span>
+                <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
+                    Portofolio & Solusi Proyek
+                </h2>
+                <p class="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+                    Mulai dari instalasi fiber optik hingga pengadaan server dan CCTV, kami telah dipercaya
+                    menyelesaikan berbagai tantangan IT di lapangan.
+                </p>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0">
-                <div v-for="(portfolio, index) in portfolioItems" :key="index" class="flashcard-container">
-                    <div class="flashcard">
-                        <div class="flashcard-front relative group">
-                            <img :src="portfolio.image" :alt="portfolio.title" class="w-full h-full object-cover"
-                                @error="handleImageError" />
-                            <!-- Dark overlay with text -->
-                            <div
-                                class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-100 group-hover:opacity-0 transition-opacity duration-300">
-                                <div class="absolute bottom-0 left-0 right-0 p-6">
-                                    <h3 class="text-white text-lg font-bold uppercase tracking-wide">{{ portfolio.title
-                                        }}</h3>
-                                    <p class="text-gray-200 text-sm mt-2">{{ portfolio.subtitle }}</p>
-                                </div>
-                            </div>
+            <!-- Grid Portofolio (Gaya Premium Card) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <article v-for="(portfolio, index) in portfolioItems" :key="index"
+                    class="group relative bg-white rounded-3xl overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.06)] border border-gray-100 hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 flex flex-col">
+
+                    <!-- Gambar Proyek -->
+                    <div class="relative h-56 sm:h-64 overflow-hidden bg-gray-200">
+                        <img :src="portfolio.image" :alt="portfolio.title"
+                            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            @error="handleImageError" />
+
+                        <!-- Badge Kategori Melayang -->
+                        <div
+                            class="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-[#A93133]"></span>
+                            <span class="text-xs font-bold text-gray-800 uppercase tracking-wide">{{ portfolio.subtitle
+                                }}</span>
                         </div>
-                        <div class="flashcard-back relative overflow-hidden"
-                            :style="{ background: `linear-gradient(135deg, ${themeColor} 0%, #991b1b 100%)` }">
-                            <!-- Decorative circles -->
-                            <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-                            <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12">
-                            </div>
 
-                            <!-- Content -->
-                            <div class="relative z-10 flex flex-col items-center justify-center h-full p-4">
-                                <!-- Icon -->
-                                <div
-                                    class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-3">
-                                    <i class="fas fa-wifi text-2xl text-white"></i>
-                                </div>
-
-                                <!-- Title -->
-                                <h3 class="text-white text-sm font-bold text-center mb-2 leading-tight uppercase tracking-wide px-2"
-                                    style="font-size: 13px; line-height: 1.3;">
-                                    {{ portfolio.title }}
-                                </h3>
-
-                                <!-- Divider -->
-                                <div class="w-12 h-0.5 bg-white/50 rounded-full mb-3"></div>
-
-                                <!-- Description -->
-                                <p class="text-white/90 text-xs text-center leading-relaxed px-3"
-                                    style="font-size: 12px; line-height: 1.5;">
-                                    {{ portfolio.description }}
-                                </p>
-
-                                <!-- Learn More Button -->
-                                <button
-                                    class="mt-3 px-5 py-1.5 bg-white text-gray-900 rounded-full font-semibold text-xs hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg">
-                                    Learn More →
-                                </button>
-                            </div>
+                        <!-- Gradien gelap di bawah gambar -->
+                        <div class="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent">
                         </div>
                     </div>
-                </div>
+
+                    <!-- Konten Teks -->
+                    <div class="p-6 sm:p-8 flex-grow flex flex-col">
+                        <h3 class="text-xl font-bold text-gray-900 mb-3 group-hover:text-[#A93133] transition-colors">
+                            {{ portfolio.title }}
+                        </h3>
+                        <p class="text-sm text-gray-600 leading-relaxed mb-6 flex-grow">
+                            {{ portfolio.description }}
+                        </p>
+
+                        <!-- Divider & Tombol Aksi -->
+                        <div class="pt-4 border-t border-gray-100 mt-auto flex justify-between items-center">
+                            <span class="text-xs font-semibold text-gray-400">Proyek Enterprise</span>
+                            <button
+                                class="w-10 h-10 rounded-full bg-[#F9EBEB] text-[#A93133] flex items-center justify-center group-hover:bg-[#A93133] group-hover:text-white transition-colors duration-300">
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </article>
             </div>
+
         </div>
     </section>
 </template>
 
 <script setup>
-// Terima warna tema dari index.vue
-defineProps({
-    themeColor: {
-        type: String,
-        default: 'rgb(220, 38, 38)'
-    }
-})
-
-// Fungsi penanganan jika gambar gagal dimuat
-const handleImageError = (e) => {
-    e.target.src = 'https://via.placeholder.com/400x300?text=Image+Placeholder'
-}
-
-// Data portofolio
+// Data portofolio disesuaikan ke Bahasa Indonesia dengan konteks B2B / Proyek
 const portfolioItems = [
     {
         image: '/statics/images/1.png',
-        title: 'INTERNET SERVICE',
-        subtitle: 'High-Speed Connection',
-        description: 'Experience ultra-fast and stable internet connection. Perfect for streaming, gaming, and all your online activities.'
+        title: 'Internet Terdedikasi',
+        subtitle: 'Koneksi Rasio 1:1',
+        description: 'Konektivitas berkecepatan tinggi dan stabil, didesain khusus untuk menunjang operasional bisnis 24 jam.'
     },
     {
         image: '/statics/images/2.png',
-        title: 'RELIABLE, SCALABLE & SECURE ENTERPRISE CONNECTIVITY',
-        subtitle: 'Business Solutions',
-        description: 'Enterprise-grade internet solutions with dedicated support and guaranteed uptime for your business needs.'
+        title: 'Konektivitas Enterprise',
+        subtitle: 'Solusi Korporat',
+        description: 'Infrastruktur jaringan level enterprise dengan dukungan teknis prioritas dan jaminan SLA tinggi untuk perusahaan.'
     },
     {
         image: '/statics/images/3.png',
-        title: 'SEAMLESS CONNECTIVITY, FROM ENTRY ROOM TO THE BACKYARD',
-        subtitle: 'Whole Home Coverage',
-        description: 'Complete WiFi coverage for your entire property. Stay connected from anywhere in your home or office.'
+        title: 'Instalasi Jaringan Luas',
+        subtitle: 'WLAN / LAN Terpusat',
+        description: 'Perancangan dan pemasangan akses poin untuk menjangkau seluruh area pabrik, gedung kantor, maupun fasilitas publik.'
     },
     {
         image: '/statics/images/4.png',
-        title: 'SECURE, SCALABLE & ON-DEMAND ACCESS FOR YOUR INFORMATION',
-        subtitle: 'Data Security',
-        description: 'Advanced security features to protect your data and ensure safe browsing for you and your family.'
+        title: 'Keamanan Jaringan',
+        subtitle: 'Proteksi Data Bisnis',
+        description: 'Implementasi sistem keamanan jaringan dan manajemen bandwidth tingkat lanjut untuk melindungi aset data perusahaan.'
     },
     {
         image: '/statics/images/5.png',
-        title: 'AUTOMATE & SECURE YOUR LIFE WITH INTEGRATED DEVICES',
-        subtitle: 'Smart Home Ready',
-        description: 'Connect all your smart devices seamlessly. Perfect for IoT and home automation systems.'
+        title: 'Integrasi CCTV & Sistem',
+        subtitle: 'Smart Office Ready',
+        description: 'Instalasi sistem pengawasan CCTV terpusat dan integrasi perangkat IoT yang dapat dipantau dari mana saja.'
     },
     {
         image: '/statics/images/6.png',
-        title: 'FIBER OPTIC NETWORK',
-        subtitle: 'Future-Proof Technology',
-        description: 'Lightning-fast, reliable & future-proof connectivity using the latest fiber optic technology.'
+        title: 'Infrastruktur Fiber Optik',
+        subtitle: 'Penarikan Kabel FO',
+        description: 'Manajemen proyek penarikan kabel fiber optik antar-gedung untuk konektivitas cabang yang cepat dan kebal cuaca.'
     }
 ]
+
+const handleImageError = (e) => {
+    e.target.src = 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800&auto=format&fit=crop'
+}
 </script>

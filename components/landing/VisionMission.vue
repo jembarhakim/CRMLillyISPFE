@@ -1,5 +1,5 @@
 <template>
-  <section class="py-16 sm:py-24 bg-gray-50 w-full max-w-full">
+  <section id="id_visimisi" class="py-16 sm:py-24 bg-gray-50 w-full max-w-full">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
       <div class="text-center mb-12 sm:mb-16">
         <span

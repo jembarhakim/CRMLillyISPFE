@@ -1,5 +1,5 @@
 <template>
-    <section class="py-12 bg-white border-y border-gray-100 w-full">
+    <section id="id_clients" class="py-12 bg-white border-y border-gray-100 w-full">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl text-center">
             <p class="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-8">Dipercaya Oleh Berbagai
                 Instansi dan Perusahaan</p>

@@ -6,7 +6,7 @@
 
     <!-- KONTEN DINAMIS BERDASARKAN MODE -->
     <!-- pt-24 ditambahkan agar konten tidak tertutup oleh header yang fixed -->
-    <main class="pt-24 lg:pt-28">
+    <main class="relative z-10">
       <transition name="slide-fade" mode="out-in">
 
         <!-- ============================== -->
@@ -14,11 +14,12 @@
         <!-- ============================== -->
         <div v-if="activeMode === 'personal'" key="personal">
           <LandingHeroPersonal />
+          <LandingCoverageCheck />
           <LandingPricing />
+          <LandingSubscriptionSteps />
           <LandingTestimonial />
           <LandingNews />
           <!-- <LandingPersonalPromo /> (Menyusul) -->
-          <!-- <LandingSubscriptionSteps /> (Menyusul) -->
         </div>
 
         <!-- ============================== -->
@@ -30,14 +31,6 @@
           <LandingEnterpriseClients />
           <LandingPortfolio />
           <LandingNews />
-
-          <div
-            class="min-h-[60vh] flex items-center justify-center bg-[#F9EBEB] rounded-3xl m-4 border-2 border-dashed border-[#A93133]/30">
-            <div class="text-center">
-              <h2 class="text-3xl font-bold text-[#A93133] mb-4">Mode Enterprise (B2B)</h2>
-              <p class="text-gray-500">Area ini siap diisi dengan Solusi Bisnis, Manajemen Jaringan, dan Logo Klien.</p>
-            </div>
-          </div>
         </div>
 
         <!-- ============================== -->
@@ -48,14 +41,6 @@
           <LandingAboutCompany />
           <LandingVisionMission />
           <LandingTeam />
-
-          <div
-            class="min-h-[60vh] flex items-center justify-center bg-white rounded-3xl m-4 border-2 border-dashed border-gray-200">
-            <div class="text-center">
-              <h2 class="text-3xl font-bold text-[#A93133] mb-4">Mode Tentang Kami</h2>
-              <p class="text-gray-500">Area ini siap diisi dengan Company Profile, Visi Misi, dan Profil Tim.</p>
-            </div>
-          </div>
         </div>
 
       </transition>
@@ -64,20 +49,19 @@
     <!-- FOOTER & WA MENGAMBANG UNIVERSAL -->
     <LandingContactUs />
     <LandingFooter />
+
     <LandingFloatingWhatsapp />
+    <LandingScrollTop />
 
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-
-// Import semua komponen yang sudah aktif
+import { ref, watch, nextTick } from 'vue'
 import LandingHeader from '~/components/landing/Header.vue'
 import LandingHeroPersonal from '~/components/landing/HeroPersonal.vue'
 import LandingPricing from '~/components/landing/Pricing.vue'
 import LandingFooter from '~/components/landing/Footer.vue'
-import LandingFloatingWhatsapp from '~/components/landing/FloatingWhatsapp.vue'
 import LandingNews from '~/components/landing/News.vue'
 import LandingHeroEnterprise from '~/components/landing/HeroEnterprise.vue'
 import LandingEnterpriseServices from '~/components/landing/EnterpriseServices.vue'
@@ -89,6 +73,26 @@ import LandingVisionMission from '~/components/landing/VisionMission.vue'
 import LandingTestimonial from '~/components/landing/Testimonial.vue'
 import LandingTeam from '~/components/landing/Team.vue'
 import LandingContactUs from '~/components/landing/ContactUs.vue'
+import LandingCoverageCheck from '~/components/landing/CoverageCheck.vue'
+import LandingSubscriptionSteps from '~/components/landing/SubscriptionSteps.vue'
+
+import LandingFloatingWhatsapp from '~/components/landing/FloatingWhatsapp.vue'
+import LandingScrollTop from '~/components/landing/ScrollTop.vue'
+
+// STATE UTAMA: Mode default saat web dibuka adalah 'personal'
+const activeMode = ref('personal')
+
+watch(activeMode, async () => {
+  if (typeof window !== 'undefined') {
+    await nextTick()
+    setTimeout(() => {
+      // Tembak ketiga container yang sama
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      document.documentElement.scrollTo?.({ top: 0, behavior: 'smooth' })
+      document.body.scrollTo?.({ top: 0, behavior: 'smooth' })
+    }, 100)
+  }
+})
 
 // Set Title & Font
 useHead({
@@ -97,9 +101,6 @@ useHead({
     { name: 'description', content: 'Lilly ISP menyediakan layanan internet Personal dan solusi jaringan Enterprise terbaik.' }
   ]
 })
-
-// STATE UTAMA: Mode default saat web dibuka adalah 'personal'
-const activeMode = ref('personal')
 </script>
 
 <style>
