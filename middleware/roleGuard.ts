@@ -25,6 +25,7 @@ export default defineNuxtRouteMiddleware((to) => {
     '/dashboard/tickets': ['SUPERADMIN', 'CUSTOMER_SERVICE', 'NOC', 'TECHNICIAN'],
     '/dashboard/tickets/reports': ['SUPERADMIN', 'CUSTOMER_SERVICE', 'NOC', 'TECHNICIAN'],
     '/dashboard/user-management': ['SUPERADMIN'],
+    '/dashboard/mikrotik': ['SUPERADMIN', 'CUSTOMER_SERVICE'],
   }
 
   const userRole = user.value?.role

@@ -1,5 +1,32 @@
 export const mikrotikAdminApi = () => {
   const api = useApiHost();
+  const authStore = useAuthStore();
+
+  const requestRouterOS = async <T>(
+    path: string,
+    method = "GET",
+    body?: Record<string, unknown>,
+  ): Promise<T> => {
+    const token = authStore.getToken;
+    if (!token || token === "null" || token === "undefined") {
+      throw new Error("Sesi login tidak ditemukan. Silakan login kembali.");
+    }
+
+    const response = await fetch(`${api}/api/admin/mikrotik/routeros${path}`, {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(body ? { "Content-Type": "application/json" } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.message || "Permintaan RouterOS API gagal");
+    }
+    return result as T;
+  };
+
   return {
     // Connection management
     connect: async (config: { host: string; port: number; username: string; password: string }) => {
@@ -130,6 +157,20 @@ export const mikrotikAdminApi = () => {
         throw new Error(errorData.message || 'Failed to get DHCP lease');
       }
       return response.json();
+    },
+
+    routerOS: {
+      connect: (config: {
+        host: string;
+        port: number;
+        username: string;
+        password: string;
+        use_tls: boolean;
+      }) => requestRouterOS("/connect", "POST", config),
+      disconnect: () => requestRouterOS("/disconnect", "POST"),
+      getStatus: () => requestRouterOS("/status"),
+      listDudeDevices: () => requestRouterOS("/dude/devices"),
+      listDudeServices: () => requestRouterOS("/dude/services"),
     },
   };
 };

@@ -1,6 +1,6 @@
 <template>
   <div class="h-[600px] w-full relative flex overflow-hidden bg-gray-50 dark:bg-gray-900 flex-col md:flex-row rounded-lg border border-gray-200 mt-6 shadow-sm">
-    
+
     <!-- Sidebar List -->
     <div 
       :class="[
@@ -82,11 +82,53 @@
             </p>
           </div>
         </div>
+
+        <div class="mt-5 border-t border-gray-200 dark:border-gray-800 pt-4">
+          <div class="flex items-center justify-between px-2 mb-2">
+            <h3 class="font-semibold text-sm">The Dude Routers</h3>
+            <UBadge color="blue" size="xs">{{ filteredDudeDevices.length }}</UBadge>
+          </div>
+          <p v-if="!isLoading && filteredDudeDevices.length === 0" class="px-2 py-3 text-xs text-gray-500">
+            Router akan muncul setelah The Dude mengirim notifikasi status ke backend.
+          </p>
+          <button
+            v-for="device in filteredDudeDevices"
+            :key="device.id"
+            type="button"
+            class="w-full text-left p-3 mb-2 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            @click="editDudeDevice(device)"
+          >
+            <span class="flex items-center justify-between gap-2">
+              <span class="font-medium text-sm line-clamp-1">{{ device.device_name }}</span>
+              <UBadge :color="getDudeStatus(device) === 'up' ? 'green' : getDudeStatus(device) === 'down' ? 'red' : 'gray'" size="xs">
+                {{ getDudeStatus(device).toUpperCase() }}
+              </UBadge>
+            </span>
+            <span class="block mt-1 text-xs text-gray-500">{{ device.ip_address }}</span>
+            <span class="block mt-1 text-xs" :class="hasDudeCoordinates(device) ? 'text-gray-500' : 'text-amber-600'">
+              {{ device.address || (hasDudeCoordinates(device) ? 'Alamat belum diisi' : 'Lokasi belum ditentukan — klik untuk mengatur') }}
+            </span>
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Map Container -->
     <div class="flex-1 relative h-full w-full z-10">
+      <div class="absolute top-4 right-4 z-[1100] rounded-lg bg-white/95 px-3 py-2 shadow-md text-xs">
+        <div class="flex items-center gap-2 font-medium">
+          <span
+            class="h-2.5 w-2.5 rounded-full"
+            :class="isSocketConnected ? 'bg-green-500' : 'bg-red-500'"
+          />
+          {{ isSocketConnected ? 'Live monitoring' : 'Reconnecting...' }}
+        </div>
+        <p v-if="socketError" class="mt-1 max-w-52 text-red-600">{{ socketError }}</p>
+      </div>
+      <div v-if="isPickingDudeLocation" class="absolute top-16 right-4 z-[1100] rounded-lg bg-blue-700 px-3 py-2 shadow-md text-xs text-white">
+        Klik peta untuk menentukan lokasi router
+        <button class="ml-2 underline" @click="isPickingDudeLocation = false; isDudeEditorOpen = true">Batal</button>
+      </div>
       <ClientOnly>
         <LMap 
           ref="mapRef"
@@ -95,6 +137,7 @@
           :center="center"
           class="h-full w-full z-0"
           @ready="onMapReady"
+          @click="handleMapClick"
         >
           <LTileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -105,31 +148,45 @@
 
           <!-- Markers -->
           <LMarker 
-            v-for="customer in mapCustomers" 
-            :key="customer.id" 
-            :lat-lng="[parseFloat(customer.latitude), parseFloat(customer.longitude)]"
-            :icon="getCustomIcon(customer)"
-            @click="activeCustomerId = customer.id"
+            v-for="marker in mapMarkers"
+            :key="marker.ipAddress || marker.key"
+            :ref="(leafletMarker) => setMarkerRef(marker.ipAddress, leafletMarker)"
+            :lat-lng="[parseFloat(marker.customer.latitude), parseFloat(marker.customer.longitude)]"
+            :icon="getCustomIcon(marker)"
+            @click="activeCustomerId = marker.customer.id"
           >
             <LPopup :options="{ maxWidth: 300 }">
               <div class="p-1 min-w-[200px]">
                 <div class="flex items-start justify-between mb-2">
-                  <h3 class="font-bold text-base m-0 leading-tight">{{ customer.name }}</h3>
-                  <UBadge :color="getTypeColor(customer)" size="xs">{{ getTypeName(customer) }}</UBadge>
+                  <h3 class="font-bold text-base m-0 leading-tight">{{ marker.customer.name }}</h3>
+                  <UBadge :color="getMarkerTypeColor(marker)" size="xs">{{ getMarkerTypeName(marker) }}</UBadge>
                 </div>
                 
                 <div class="space-y-2 mt-3 text-sm text-gray-600 dark:text-gray-300">
                   <p class="flex items-start gap-2 m-0">
+                    <span
+                      class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
+                      :class="getDeviceStatus(marker) === 'up' ? 'bg-green-500' : getDeviceStatus(marker) === 'down' ? 'bg-red-500' : 'bg-gray-400'"
+                    />
+                    <span>
+                      {{ getDeviceLabel(marker) }} ·
+                      {{ getDeviceStatus(marker) === 'unknown' ? 'Unknown' : getDeviceStatus(marker).toUpperCase() }}
+                    </span>
+                  </p>
+                  <p v-if="marker.ipAddress" class="m-0">
+                    <span class="font-medium">IP:</span> {{ marker.ipAddress }}
+                  </p>
+                  <p class="flex items-start gap-2 m-0">
                     <LucideIcon name="phone" :size="14" class="mt-0.5 shrink-0" />
-                    <span>{{ customer.phone || '-' }}</span>
+                    <span>{{ marker.customer.phone || '-' }}</span>
                   </p>
                   <p class="flex items-start gap-2 m-0">
                     <LucideIcon name="map" :size="14" class="mt-0.5 shrink-0" />
-                    <span class="leading-tight">{{ customer.address || '-' }}</span>
+                    <span class="leading-tight">{{ marker.customer.address || '-' }}</span>
                   </p>
                   <p class="flex items-start gap-2 m-0">
                     <LucideIcon name="compass" :size="14" class="mt-0.5 shrink-0" />
-                    <span>{{ formatArea(customer.area) }}</span>
+                    <span>{{ formatArea(marker.customer.area) }}</span>
                   </p>
                 </div>
 
@@ -140,7 +197,7 @@
                     icon="i-heroicons-map"
                     variant="solid" 
                     class="flex-1 justify-center"
-                    @click="openInGoogleMaps(customer)"
+                    @click="openInGoogleMaps(marker.customer)"
                   >
                     Maps
                   </UButton>
@@ -150,11 +207,44 @@
                     icon="i-heroicons-eye"
                     variant="solid" 
                     class="flex-1 justify-center"
-                    @click="viewDetail(customer)"
+                    @click="viewDetail(marker.customer)"
                   >
                     Detail
                   </UButton>
                 </div>
+              </div>
+            </LPopup>
+          </LMarker>
+
+          <LMarker
+            v-for="device in mappedDudeDevices"
+            :key="`dude-${device.id}`"
+            :lat-lng="[Number(device.latitude), Number(device.longitude)]"
+            :icon="getDudeIcon(device)"
+            @click="editDudeDevice(device)"
+          >
+            <LPopup :options="{ maxWidth: 300 }">
+              <div class="p-1 min-w-[200px]">
+                <div class="flex items-start justify-between gap-2 mb-2">
+                  <h3 class="font-bold text-base m-0 leading-tight">{{ device.device_name }}</h3>
+                  <UBadge :color="getDudeStatus(device) === 'up' ? 'green' : getDudeStatus(device) === 'down' ? 'red' : 'gray'" size="xs">
+                    {{ getDudeStatus(device).toUpperCase() }}
+                  </UBadge>
+                </div>
+                <div class="space-y-2 mt-3 text-sm text-gray-600">
+                  <p class="m-0"><span class="font-medium">IP:</span> {{ device.ip_address }}</p>
+                  <p class="m-0"><span class="font-medium">Pengguna:</span> {{ device.user_name || 'Belum diisi' }}</p>
+                  <p class="m-0"><span class="font-medium">Telepon:</span> {{ device.user_phone || '-' }}</p>
+                  <p class="m-0"><span class="font-medium">Alamat:</span> {{ device.address || 'Belum diisi' }}</p>
+                  <p v-if="device.notes" class="m-0"><span class="font-medium">Catatan:</span> {{ device.notes }}</p>
+                </div>
+                <button
+                  type="button"
+                  class="mt-3 w-full rounded bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700"
+                  @click.stop="editDudeDevice(device)"
+                >
+                  Edit informasi dan lokasi
+                </button>
               </div>
             </LPopup>
           </LMarker>
@@ -201,8 +291,11 @@
                 <span class="font-medium text-right">{{ filteredCustomers.length }}</span>
                 
                 <span class="text-gray-500">On Map:</span>
-                <span class="font-medium text-right">{{ mapCustomers.length }}</span>
+                <span class="font-medium text-right">{{ mapCustomers.length + mappedDudeDevices.length }}</span>
                 
+                <span class="text-gray-500">Router The Dude:</span>
+                <span class="font-medium text-right">{{ dudeDevices.length }}</span>
+
                 <span class="text-gray-500 text-blue-500">Internet:</span>
                 <span class="font-medium text-right">{{ countByType('internet') }}</span>
                 
@@ -227,14 +320,55 @@
       </ClientOnly>
     </div>
   </div>
+
+  <UModal v-model="isDudeEditorOpen">
+    <div class="p-5">
+      <div class="mb-4">
+        <h2 class="text-lg font-semibold">{{ editingDudeDevice?.device_name }}</h2>
+        <p class="text-sm text-gray-500">{{ editingDudeDevice?.ip_address }} · status {{ getDudeStatus(editingDudeDevice || {}).toUpperCase() }}</p>
+      </div>
+      <div class="space-y-3">
+        <UFormGroup label="Nama pengguna / pemilik router">
+          <UInput v-model="dudeForm.user_name" placeholder="Nama pengguna" />
+        </UFormGroup>
+        <UFormGroup label="Nomor telepon">
+          <UInput v-model="dudeForm.user_phone" placeholder="08..." />
+        </UFormGroup>
+        <UFormGroup label="Alamat lokasi router">
+          <UTextarea v-model="dudeForm.address" placeholder="Alamat lengkap atau patokan lokasi" :rows="2" />
+        </UFormGroup>
+        <UFormGroup label="Catatan">
+          <UTextarea v-model="dudeForm.notes" placeholder="Informasi tambahan (opsional)" :rows="2" />
+        </UFormGroup>
+        <div class="rounded-md bg-gray-50 p-3 text-sm dark:bg-gray-800">
+          <p class="font-medium">Koordinat lokasi</p>
+          <p class="mt-1 text-gray-500">
+            {{ dudeForm.latitude !== null && dudeForm.longitude !== null
+              ? `${dudeForm.latitude.toFixed(6)}, ${dudeForm.longitude.toFixed(6)}`
+              : 'Belum ditentukan' }}
+          </p>
+          <UButton class="mt-2" size="sm" color="primary" variant="soft" @click="startPickingDudeLocation">
+            {{ dudeForm.latitude !== null ? 'Pilih ulang titik di peta' : 'Pilih titik di peta' }}
+          </UButton>
+        </div>
+      </div>
+      <div class="mt-5 flex justify-end gap-2">
+        <UButton color="gray" variant="ghost" @click="isDudeEditorOpen = false">Batal</UButton>
+        <UButton color="primary" :loading="isSavingDudeDetails" @click="saveDudeDetails">Simpan</UButton>
+      </div>
+    </div>
+  </UModal>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from '#imports'
 import { customerAdminApi } from '@/api/admin/customer'
+import { dudeDeviceAdminApi } from '@/api/admin/dude-device'
+import { networkDeviceAdminApi } from '@/api/admin/network-device'
 import { areaAdminApi } from '@/api/admin/area'
 import { useNotification } from '@/composables/useNotification'
+import { useNetworkSocket } from '@/composables/useNetworkSocket'
 import LucideIcon from '@/components/LucideIcon.vue'
 
 const router = useRouter()
@@ -246,10 +380,29 @@ const leaflet = ref<any>(null)
 const isLoading = ref(true)
 const isSidebarOpen = ref(false)
 const customers = ref<any[]>([])
+const networkDevices = ref<any[]>([])
+const dudeDevices = ref<any[]>([])
 const areas = ref<any[]>([])
 const zoom = ref(10)
 const center = ref<[number, number]>([-6.2088, 106.8456]) // Jakarta default
 const activeCustomerId = ref<string | null>(null)
+const deviceStatuses = ref(new Map<string, { status: 'up' | 'down'; deviceName: string }>())
+const markerRefs = new Map<string, any>()
+const isDudeEditorOpen = ref(false)
+const isPickingDudeLocation = ref(false)
+const isSavingDudeDetails = ref(false)
+const editingDudeDevice = ref<any | null>(null)
+const dudeForm = ref({
+  user_name: '',
+  user_phone: '',
+  address: '',
+  notes: '',
+  latitude: null as number | null,
+  longitude: null as number | null
+})
+const runtimeConfig = useRuntimeConfig()
+const { isConnected: isSocketConnected, error: socketError, latestUpdate, connect: connectSocket } =
+  useNetworkSocket(runtimeConfig.public.NETWORK_WS_URL)
 
 // Filters
 const searchQuery = ref('')
@@ -283,13 +436,17 @@ const areaOptions = computed(() => {
 const fetchData = async () => {
   isLoading.value = true
   try {
-    const [customerRes, areaRes] = await Promise.all([
+    const [customerRes, deviceRes, areaRes, dudeDeviceRes] = await Promise.all([
       customerAdminApi().getAllCustomers(),
-      areaAdminApi().getAllAreas()
+      networkDeviceAdminApi().getAllNetworkDevices(),
+      areaAdminApi().getAllAreas(),
+      dudeDeviceAdminApi().getAll()
     ])
     
     customers.value = customerRes?.data || []
+    networkDevices.value = deviceRes?.data || []
     areas.value = areaRes?.data || []
+    dudeDevices.value = dudeDeviceRes?.data || []
     
     // Fit bounds after a short delay to ensure map is ready
     setTimeout(() => {
@@ -340,14 +497,88 @@ const getTypeColor = (customer: any) => {
   }
 }
 
-const getTypeHexColor = (customer: any) => {
-  const type = getCustomerType(customer)
-  switch (type) {
-    case 'both': return '#f97316' // orange-500
-    case 'internet': return '#3b82f6' // blue-500
-    case 'collaborator': return '#22c55e' // green-500
-    default: return '#6b7280' // gray-500
+const getCustomerDevice = (customer: any) =>
+  networkDevices.value.find((device) => String(device.customer_id) === String(customer.id)) ||
+  customer.network_devices?.find((device: any) => device.ip_static)
+
+const getDevicesForCustomer = (customer: any) => {
+  const devices = networkDevices.value.filter(
+    (device) => String(device.customer_id) === String(customer.id) && device.ip_static
+  )
+  if (devices.length > 0) return devices
+
+  return (customer.network_devices || []).filter((device: any) => device.ip_static)
+}
+
+const mapMarkers = computed(() => mapCustomers.value.flatMap((customer) => {
+  const devices = getDevicesForCustomer(customer)
+  if (devices.length === 0) {
+    return [{
+      key: `customer-${customer.id}`,
+      customer,
+      device: null,
+      ipAddress: customer.ip_static || ''
+    }]
   }
+
+  return devices.map((device: any, index: number) => ({
+    key: `device-${device.id || `${customer.id}-${index}`}`,
+    customer,
+    device,
+    ipAddress: device.ip_static
+  }))
+}))
+
+const getMarkerIp = (marker: any) => marker.ipAddress
+
+const getDeviceType = (marker: any): 'router' | 'server' | 'customer' => {
+  const device = marker.device || getCustomerDevice(marker.customer)
+  if (!device) return 'customer'
+
+  const deviceDescription = [
+    device.device_type,
+    device.type,
+    device.product?.name,
+    device.asset?.name,
+    device.name
+  ].filter(Boolean).join(' ').toLowerCase()
+
+  if (deviceDescription.includes('server')) return 'server'
+  if (deviceDescription.includes('router')) return 'router'
+  return 'customer'
+}
+
+const getMarkerTypeName = (marker: any) => {
+  const type = getDeviceType(marker)
+  return type === 'router' ? 'Router' : type === 'server' ? 'Server' : 'Customer'
+}
+
+const getMarkerTypeColor = (marker: any) => {
+  const type = getDeviceType(marker)
+  return type === 'router' ? 'blue' : type === 'server' ? 'purple' : getTypeColor(marker.customer)
+}
+
+const getDeviceStatus = (marker: any): 'up' | 'down' | 'unknown' => {
+  const ipAddress = getMarkerIp(marker)
+  if (!ipAddress) return 'unknown'
+
+  const liveStatus = deviceStatuses.value.get(ipAddress)?.status
+  if (liveStatus) return liveStatus
+
+  const status = (marker.device?.last_ping_status || marker.customer.last_ping_status || '').toLowerCase()
+  return status === 'up' || status === 'down' ? status : 'unknown'
+}
+
+const getDeviceLabel = (marker: any) =>
+  deviceStatuses.value.get(getMarkerIp(marker))?.deviceName ||
+  marker.device?.product?.name ||
+  marker.device?.name ||
+  getMarkerTypeName(marker)
+
+const setMarkerRef = (ipAddress: string, marker: any) => {
+  if (!ipAddress) return
+  if (marker) markerRefs.set(ipAddress, marker)
+  else markerRefs.delete(ipAddress)
 }
 
 const formatArea = (area: any) => {
@@ -390,6 +621,22 @@ const mapCustomers = computed(() => {
   return filteredCustomers.value.filter(c => hasValidCoordinates(c))
 })
 
+const filteredDudeDevices = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  if (!query) return dudeDevices.value
+  return dudeDevices.value.filter((device) =>
+    [device.device_name, device.ip_address, device.user_name, device.address]
+      .some((value) => String(value || '').toLowerCase().includes(query))
+  )
+})
+
+const hasDudeCoordinates = (device: any) =>
+  device.latitude !== null && device.latitude !== undefined &&
+  device.longitude !== null && device.longitude !== undefined &&
+  Number.isFinite(Number(device.latitude)) && Number.isFinite(Number(device.longitude))
+
+const mappedDudeDevices = computed(() => dudeDevices.value.filter(hasDudeCoordinates))
+
 // Map Interactions
 const onMapReady = async (map: any) => {
   if (process.client) {
@@ -397,28 +644,141 @@ const onMapReady = async (map: any) => {
   }
 }
 
-const getCustomIcon = (customer: any) => {
+const getCustomIcon = (marker: any) => {
   if (!leaflet.value) return undefined // Fallback to default before L is loaded
   
-  const color = getTypeHexColor(customer)
-  const initials = (customer.name || 'U').substring(0, 1).toUpperCase()
+  const status = getDeviceStatus(marker)
+  const color = status === 'up' ? '#22c55e' : status === 'down' ? '#ef4444' : '#6b7280'
+  const type = getDeviceType(marker)
+  const initials = type === 'router' ? 'R' : type === 'server' ? 'S' : 'C'
+  const borderRadius = type === 'server' ? '6px' : type === 'router' ? '0' : '50%'
+  const clipPath = type === 'router' ? 'polygon(50% 0%, 100% 100%, 0% 100%)' : 'none'
   
   return leaflet.value.divIcon({
     className: 'custom-marker',
-    html: `<div style="background-color: ${color}; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transition: transform 0.2s;">${initials}</div>`,
+    html: `<div style="background-color: ${color}; width: 32px; height: 32px; border-radius: ${borderRadius}; clip-path: ${clipPath}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transition: transform 0.2s;">${initials}</div>`,
     iconSize: [32, 32],
     iconAnchor: [16, 16],
     popupAnchor: [0, -16]
   })
 }
 
+const getDudeStatus = (device: any): 'up' | 'down' | 'unknown' => {
+  const liveStatus = deviceStatuses.value.get(device.ip_address)?.status
+  const status = String(liveStatus || device.status || '').toLowerCase()
+  return status === 'up' || status === 'down' ? status : 'unknown'
+}
+
+const getDudeIcon = (device: any) => {
+  if (!leaflet.value) return undefined
+  const status = getDudeStatus(device)
+  const color = status === 'up' ? '#22c55e' : status === 'down' ? '#ef4444' : '#6b7280'
+  return leaflet.value.divIcon({
+    className: 'custom-marker',
+    html: `<div style="background-color:${color};width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:13px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3)">D</div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -16]
+  })
+}
+
+const editDudeDevice = (device: any) => {
+  editingDudeDevice.value = device
+  dudeForm.value = {
+    user_name: device.user_name || '',
+    user_phone: device.user_phone || '',
+    address: device.address || '',
+    notes: device.notes || '',
+    latitude: hasDudeCoordinates(device) ? Number(device.latitude) : null,
+    longitude: hasDudeCoordinates(device) ? Number(device.longitude) : null
+  }
+  isPickingDudeLocation.value = false
+  isDudeEditorOpen.value = true
+}
+
+const startPickingDudeLocation = () => {
+  isDudeEditorOpen.value = false
+  isPickingDudeLocation.value = true
+}
+
+const handleMapClick = (event: any) => {
+  if (!isPickingDudeLocation.value || !event?.latlng) return
+  dudeForm.value.latitude = Number(event.latlng.lat)
+  dudeForm.value.longitude = Number(event.latlng.lng)
+  isPickingDudeLocation.value = false
+  isDudeEditorOpen.value = true
+}
+
+const saveDudeDetails = async () => {
+  if (!editingDudeDevice.value) return
+  isSavingDudeDetails.value = true
+  try {
+    const response = await dudeDeviceAdminApi().updateDetails(
+      editingDudeDevice.value.id,
+      dudeForm.value
+    )
+    const updatedDevice = response?.data
+    if (!updatedDevice) throw new Error('Backend did not return the updated router')
+    dudeDevices.value = dudeDevices.value.map((device) =>
+      device.id === updatedDevice.id ? updatedDevice : device
+    )
+    isDudeEditorOpen.value = false
+    notification.success('Berhasil', 'Informasi dan lokasi router berhasil disimpan')
+    setTimeout(fitBounds, 100)
+  } catch (error) {
+    console.error('Unable to save The Dude router details:', error)
+    notification.error('Gagal', error instanceof Error ? error.message : 'Gagal menyimpan informasi router')
+  } finally {
+    isSavingDudeDetails.value = false
+  }
+}
+
+watch(latestUpdate, async (update) => {
+  if (!update) return
+
+  const nextStatuses = new Map(deviceStatuses.value)
+  nextStatuses.set(update.ip_address, {
+    status: update.status,
+    deviceName: update.device_name
+  })
+  deviceStatuses.value = nextStatuses
+
+  const existingDudeDevice = dudeDevices.value.find((device) => device.ip_address === update.ip_address)
+  if (existingDudeDevice) {
+    dudeDevices.value = dudeDevices.value.map((device) =>
+      device.ip_address === update.ip_address
+        ? { ...device, device_name: update.device_name, status: update.status }
+        : device
+    )
+  } else {
+    try {
+      const response = await dudeDeviceAdminApi().getAll()
+      dudeDevices.value = response?.data || []
+    } catch (error) {
+      console.error('Unable to refresh The Dude devices after a status update:', error)
+      notification.error('Gagal', 'Status diterima, tetapi daftar router The Dude gagal diperbarui')
+    }
+  }
+
+  const mapMarker = mapMarkers.value.find((item) => getMarkerIp(item) === update.ip_address)
+  const marker = markerRefs.get(update.ip_address)
+  if (mapMarker && marker?.leafletObject) {
+    marker.leafletObject.setIcon(getCustomIcon(mapMarker))
+  }
+})
+
 const fitBounds = () => {
-  if (!mapRef.value?.leafletObject || !leaflet.value || mapCustomers.value.length === 0) return
+  if (!mapRef.value?.leafletObject || !leaflet.value) return
   
   try {
     const map = mapRef.value.leafletObject
+    const coordinates = [
+      ...mapCustomers.value.map((customer) => [parseFloat(customer.latitude), parseFloat(customer.longitude)]),
+      ...mappedDudeDevices.value.map((device) => [Number(device.latitude), Number(device.longitude)])
+    ]
+    if (coordinates.length === 0) return
     const bounds = leaflet.value.latLngBounds(
-      mapCustomers.value.map(c => [parseFloat(c.latitude), parseFloat(c.longitude)])
+      coordinates
     )
     if (bounds.isValid()) {
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 })
@@ -492,6 +852,11 @@ watch(searchQuery, () => {
 
 onMounted(() => {
   fetchData()
+  connectSocket()
+})
+
+onUnmounted(() => {
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
 })
 </script>
 

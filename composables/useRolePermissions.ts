@@ -36,7 +36,7 @@ export function useRolePermissions() {
       if (!userRole.value) return []
       return getMenuForRole(userRole.value)
     }
-    return getMenuForFeaturePermissions(featurePermissions.value)
+    return getMenuForFeaturePermissions(featurePermissions.value, userRole.value)
   })
 
   // Load feature permissions from database

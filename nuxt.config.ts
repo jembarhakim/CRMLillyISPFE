@@ -192,6 +192,7 @@ export default defineNuxtConfig({
     public: {
       API_HOST: process.env.NUXT_PUBLIC_API_HOST || 'http://rndpolije.lilly.net.id',
       WA_HOST: process.env.NUXT_PUBLIC_WA_HOST || 'http://rndpolije.lilly.net.id',
+      NETWORK_WS_URL: process.env.NUXT_PUBLIC_NETWORK_WS_URL || 'ws://127.0.0.1:3001/api/webhook/dude-status/ws',
     },
     // Add private runtime config for SSR
     ssr: {

@@ -2,6 +2,7 @@
 const route = useRoute()
 
 import LoadingComponent from '@/components/LoadingComponent.vue'
+import PageLoadingMask from '@/components/PageLoadingMask.vue'
 import NotificationModal from '@/components/NotificationModal.vue'
 import ToastNotification from '@/components/ToastNotification.vue'
 import { useLoading } from '@/composables/useLoading'
@@ -16,6 +17,7 @@ const { isVisible, currentTitle, currentMessage, currentType, currentDuration, c
 <template>
   <div>
     <NuxtRouteAnnouncer />
+    <PageLoadingMask />
     <!-- <NuxtWelcome /> -->
     <!-- <NuxtUIProvider> -->
     <NuxtLayout>

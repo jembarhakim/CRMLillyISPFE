@@ -153,6 +153,13 @@ export const MAIN_MENU: MenuItem[] = [
     description: 'Internet package management'
   },
   {
+    label: 'MikroTik',
+    icon: 'heroicons:server-stack',
+    link: '/dashboard/mikrotik',
+    roles: [ROLES.SUPERADMIN, ROLES.CUSTOMER_SERVICE],
+    description: 'RouterOS user management'
+  },
+  {
     label: 'News',
     icon: 'heroicons:newspaper',
     link: '/dashboard/news',
@@ -250,8 +257,11 @@ export function getMenuForRole(userRole: string): MenuItem[] {
   return MAIN_MENU.filter(item => canAccessMenu(normalizedRole, item))
 }
 
-export function getMenuForFeaturePermissions(featurePermissions: Record<string, number>): MenuItem[] {
-  const menu = MAIN_MENU.filter(item => canAccessMenuByFeature(featurePermissions, item))
+export function getMenuForFeaturePermissions(featurePermissions: Record<string, number>, userRole?: string): MenuItem[] {
+  const menu = MAIN_MENU.filter(item =>
+    canAccessMenuByFeature(featurePermissions, item) &&
+    (!item.roles || item.roles.length === 0 || (userRole ? item.roles.includes(normalizeRole(userRole)) : false))
+  )
   const newsItem = MAIN_MENU.find(item => item.feature === 'news')
 
   if (featurePermissions.news === undefined && newsItem) {
