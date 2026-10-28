@@ -1,10 +1,11 @@
 <template>
-    <section id="id_coverage" class="py-12 bg-gray-50 w-full max-w-full relative z-20 mt-[-40px] sm:mt-[-120px]">
+    <!-- 1. HAPUS margin negatif di section, ganti py-12 menjadi pb-12 (padding bawah saja) -->
+    <section id="id_coverage" class="pb-12 bg-white w-full max-w-full relative z-20">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
 
-            <!-- Container Utama (Horizontal di Desktop) -->
+            <!-- 2. PINDAHKAN margin negatif ke kotak putih ini (-mt-16 atau -mt-24) -->
             <div
-                class="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gray-100 p-6 sm:p-8 flex flex-col lg:flex-row items-center gap-6 lg:gap-8">
+                class="relative -mt-16 sm:-mt-24 z-30 bg-white rounded-3xl shadow-[0_15px_40px_rgb(0,0,0,0.12)] border border-gray-100 p-6 sm:p-8 flex flex-col lg:flex-row items-center gap-6 lg:gap-8">
 
                 <!-- Bagian Judul (Hanya Title, Tanpa Subtitle) -->
                 <div class="lg:w-1/4 shrink-0 text-center lg:text-left">
@@ -30,7 +31,7 @@
                             <option value="" disabled>{{ selectedCity ? 'Pilih Kecamatan' : 'Pilih Kota Dulu' }}
                             </option>
                             <option v-for="district in availableDistricts" :key="district" :value="district">{{ district
-                                }}</option>
+                            }}</option>
                         </select>
 
                         <!-- Tombol Cek -->

@@ -209,8 +209,11 @@ const dynamicNavItems = computed(() => {
     }
 })
 
-// Dinamis: Warna teks Navbar bawah menyesuaikan background Hero (Enterprise gelap, sisanya terang)
-const isDarkHero = computed(() => props.modelValue === 'enterprise' && !isScrolled.value)
+// Dinamis: Warna teks Navbar bawah menyesuaikan background Hero 
+// (Enterprise dan Personal sekarang menggunakan imej latar gelap, jadi teks putih)
+const isDarkHero = computed(() => {
+    return ['enterprise', 'personal'].includes(props.modelValue) && !isScrolled.value
+})
 </script>
 
 <style scoped>

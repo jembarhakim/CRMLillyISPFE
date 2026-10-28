@@ -13,11 +13,13 @@
         <!-- MODE 1: PERSONAL               -->
         <!-- ============================== -->
         <div v-if="activeMode === 'personal'" key="personal">
-          <LandingHeroPersonal />
+          <!-- <LandingHeroPersonal /> -->
+          <LandingHeroPersonal2 />
           <LandingCoverageCheck />
           <LandingPricing />
           <LandingSubscriptionSteps />
           <LandingTestimonial />
+          <LandingMonitoring />
           <LandingNews />
           <!-- <LandingPersonalPromo /> (Menyusul) -->
         </div>
@@ -60,6 +62,7 @@
 import { ref, watch, nextTick } from 'vue'
 import LandingHeader from '~/components/landing/Header.vue'
 import LandingHeroPersonal from '~/components/landing/HeroPersonal.vue'
+import LandingHeroPersonal2 from '~/components/landing/HeroPersonal2.vue'
 import LandingPricing from '~/components/landing/Pricing.vue'
 import LandingFooter from '~/components/landing/Footer.vue'
 import LandingNews from '~/components/landing/News.vue'
@@ -75,6 +78,7 @@ import LandingTeam from '~/components/landing/Team.vue'
 import LandingContactUs from '~/components/landing/ContactUs.vue'
 import LandingCoverageCheck from '~/components/landing/CoverageCheck.vue'
 import LandingSubscriptionSteps from '~/components/landing/SubscriptionSteps.vue'
+import LandingMonitoring from '~/components/landing/Monitoring.vue'
 
 import LandingFloatingWhatsapp from '~/components/landing/FloatingWhatsapp.vue'
 import LandingScrollTop from '~/components/landing/ScrollTop.vue'
