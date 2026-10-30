@@ -2,6 +2,7 @@ export interface Item {
   id: string;
   name: string;
   default_unit: string;
+  minimum_stock: number;
   category?: string;
   description?: string;
   asset_id?: string;
@@ -18,6 +19,7 @@ export interface Item {
 export interface CreateItemRequest {
   name: string;
   default_unit: "PCS" | "M" | "KG" | "BOX" | "ROLL";
+  minimum_stock: number;
   category?: string;
   description?: string;
   asset_id?: string;
