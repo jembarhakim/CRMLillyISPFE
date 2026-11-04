@@ -49,13 +49,13 @@
         Server The Dude belum tersambung. Minta SUPERADMIN menghubungkan API terlebih dahulu.
       </p>
 
-      <template v-if="connected">
+      <template v-if="connected || canConnect || reportedStatuses.length > 0">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex gap-2">
-            <button type="button" class="rounded px-4 py-2 text-sm" :class="tab === 'devices' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'" @click="tab = 'devices'">
-              Perangkat <span class="ml-1 rounded-full bg-white/20 px-1.5">{{ devices.length }}</span>
+            <button type="button" class="rounded px-4 py-2 text-sm" :class="tab === 'devices' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'" @click="selectTab('devices')">
+              Perangkat <span class="ml-1 rounded-full bg-white/20 px-1.5">{{ displayDevices.length }}</span>
             </button>
-            <button type="button" class="rounded px-4 py-2 text-sm" :class="tab === 'services' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'" @click="tab = 'services'">
+            <button type="button" class="rounded px-4 py-2 text-sm" :class="tab === 'services' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'" @click="selectTab('services')">
               Probe/Services <span class="ml-1 rounded-full bg-white/20 px-1.5">{{ services.length }}</span>
             </button>
           </div>
@@ -68,14 +68,20 @@
         </div>
 
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <div class="rounded-lg bg-slate-50 p-3"><p class="text-xs text-slate-500">Total perangkat</p><p class="text-xl font-semibold">{{ devices.length }}</p></div>
+          <div class="rounded-lg bg-slate-50 p-3"><p class="text-xs text-slate-500">Total perangkat</p><p class="text-xl font-semibold">{{ displayDevices.length }}</p></div>
           <div class="rounded-lg bg-emerald-50 p-3"><p class="text-xs text-emerald-700">Up</p><p class="text-xl font-semibold text-emerald-800">{{ statusCounts.up }}</p></div>
           <div class="rounded-lg bg-rose-50 p-3"><p class="text-xs text-rose-700">Down</p><p class="text-xl font-semibold text-rose-800">{{ statusCounts.down }}</p></div>
           <div class="rounded-lg bg-orange-50 p-3"><p class="text-xs text-orange-700">Partially down</p><p class="text-xl font-semibold text-orange-800">{{ statusCounts.partial }}</p></div>
           <div class="rounded-lg bg-amber-50 p-3"><p class="text-xs text-amber-700">Lainnya</p><p class="text-xl font-semibold text-amber-800">{{ statusCounts.other }}</p></div>
         </div>
         <p v-if="hasMissingStatus" class="rounded bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Sebagian data The Dude tidak menyertakan field status; periksa versi backend lalu perbarui data.
+          Status sebagian perangkat belum dapat ditentukan dari data perangkat atau probe terkait.
+        </p>
+        <p v-if="statusSourceError" class="rounded bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          Gagal memuat status webhook The Dude: {{ statusSourceError }}
+        </p>
+        <p v-else-if="reportedStatuses.length === 0 && statusCounts.up + statusCounts.down + statusCounts.partial === 0" class="rounded bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          API RouterOS hanya mengirim ID dan nama. Agar status UP/DOWN terbaca, aktifkan notifikasi status The Dude ke webhook CRM.
         </p>
 
         <div class="flex flex-wrap items-center gap-3">
@@ -85,7 +91,17 @@
             Hanya tampilkan down
           </label>
           <span class="ml-auto text-sm text-slate-500">Auto-refresh 30 detik</span>
+          <button v-if="canConnect" type="button" :disabled="pingStarting || pingJob?.running" class="rounded border border-blue-200 px-3 py-2 text-sm text-blue-700 disabled:opacity-60" @click="runPingAll">
+            {{ pingStarting ? 'Memulai pengecekan...' : pingJob?.running ? `Mengecek ${pingJob.completed}/${pingJob.total}` : 'Cek status semua IP terdaftar' }}
+          </button>
         </div>
+        <p v-if="pingJob?.running" class="text-sm text-slate-600">
+          Ping berjalan: {{ pingJob.completed }}/{{ pingJob.total }} selesai · {{ pingJob.up }} up · {{ pingJob.down }} down · {{ pingJob.failed }} gagal diperiksa
+        </p>
+        <p v-else-if="pingJob && pingJob.total > 0" class="text-sm text-slate-600">
+          Ping terakhir: {{ pingJob.up }} up · {{ pingJob.down }} down · {{ pingJob.failed }} gagal diperiksa dari {{ pingJob.total }} IP.
+        </p>
+        <p v-if="pingError" class="rounded bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ pingError }}</p>
 
         <p v-if="loadError" class="rounded bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ loadError }}</p>
         <div v-else-if="!loading && filteredRows.length === 0" class="rounded border border-dashed p-8 text-center text-sm text-slate-500">
@@ -105,7 +121,7 @@
               </tr>
             </thead>
             <tbody class="divide-y">
-              <tr v-for="(item, index) in filteredRows" :key="item['.id'] || `${item.name}-${item.address}-${index}`" class="hover:bg-slate-50">
+              <tr v-for="(item, index) in paginatedRows" :key="item['.id'] || `${item.name}-${item.address}-${index}`" class="hover:bg-slate-50">
                 <td class="whitespace-nowrap px-4 py-3">
                   <span class="rounded-full px-2 py-1 text-xs font-medium" :class="statusClass(item)">
                     {{ statusLabel(item) }}
@@ -130,21 +146,44 @@
             </tbody>
           </table>
         </div>
+        <div v-if="filteredRows.length > pageSize" class="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+          <span>Menampilkan {{ pageStart + 1 }}–{{ Math.min(pageStart + pageSize, filteredRows.length) }} dari {{ filteredRows.length }}</span>
+          <div class="flex items-center gap-2">
+            <button type="button" class="rounded border px-3 py-1.5 disabled:opacity-50" :disabled="currentPage === 1" @click="currentPage--">
+              Sebelumnya
+            </button>
+            <span>Halaman {{ currentPage }} / {{ totalPages }}</span>
+            <button type="button" class="rounded border px-3 py-1.5 disabled:opacity-50" :disabled="currentPage === totalPages" @click="currentPage++">
+              Berikutnya
+            </button>
+          </div>
+        </div>
       </template>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, shallowRef, watch } from 'vue'
 import { mikrotikAdminApi } from '@/api/admin/mikrotik'
+import { dudeDeviceAdminApi, type DudePingJobStatus } from '@/api/admin/dude-device'
+import { useNetworkSocket } from '@/composables/useNetworkSocket'
 import { useAuthStore } from '@/stores/auth'
 
 type DudeItem = Record<string, string | undefined>
 type DudeTab = 'devices' | 'services'
+type ReportedDeviceStatus = {
+  device_name: string
+  ip_address: string
+  status: string
+}
 
 const routerApi = mikrotikAdminApi().routerOS
+const dudeDeviceApi = dudeDeviceAdminApi()
 const authStore = useAuthStore()
+const runtimeConfig = useRuntimeConfig()
+const { latestUpdate, connect: connectStatusSocket, disconnect: disconnectStatusSocket } =
+  useNetworkSocket(runtimeConfig.public.NETWORK_WS_URL)
 const canConnect = computed(() => ['SUPERADMIN', 'ADMIN'].includes(String(authStore.user.role).toUpperCase()))
 const connected = ref(false)
 const connecting = ref(false)
@@ -153,14 +192,47 @@ const tab = ref<DudeTab>('devices')
 const routerHost = ref('')
 const search = ref('')
 const showOnlyDown = ref(false)
-const devices = ref<DudeItem[]>([])
-const services = ref<DudeItem[]>([])
+const currentPage = ref(1)
+const pageSize = 50
+const devices = shallowRef<DudeItem[]>([])
+const services = shallowRef<DudeItem[]>([])
+const servicesLoaded = ref(false)
+const reportedStatuses = shallowRef<ReportedDeviceStatus[]>([])
+const statusSourceError = ref('')
+const pingStarting = ref(false)
+const pingJob = ref<DudePingJobStatus | null>(null)
+const pingError = ref('')
 const loadError = ref('')
 const notice = ref({ message: '', type: 'success' })
 const lastUpdated = ref('')
 const connection = reactive({ host: '103.148.18.248', port: 8783, username: '', password: '', use_tls: false })
 
-const currentItems = computed(() => tab.value === 'devices' ? devices.value : services.value)
+const displayDevices = computed(() => {
+  const reportedByName = new Map(reportedStatuses.value.map((item) => [normalizeName(item.device_name), item]))
+  const knownNames = new Set<string>()
+  const merged = devices.value.map((device) => {
+    const key = normalizeName(device.name)
+    if (key) knownNames.add(key)
+    const reported = reportedByName.get(key)
+    return reported
+      ? { ...device, address: device.address || reported.ip_address }
+      : device
+  })
+  for (const reported of reportedStatuses.value) {
+    const key = normalizeName(reported.device_name)
+    if (key && !knownNames.has(key)) {
+      merged.push({
+        '.id': `status:${reported.ip_address}`,
+        name: reported.device_name,
+        address: reported.ip_address,
+        status: reported.status,
+      })
+      knownNames.add(key)
+    }
+  }
+  return merged
+})
+const currentItems = computed(() => tab.value === 'devices' ? displayDevices.value : services.value)
 const filteredRows = computed(() => {
   const query = search.value.toLocaleLowerCase()
   return currentItems.value.filter((item) => {
@@ -168,11 +240,33 @@ const filteredRows = computed(() => {
     return !query || Object.values(item).some((value) => String(value || '').toLocaleLowerCase().includes(query))
   })
 })
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / pageSize)))
+const pageStart = computed(() => (currentPage.value - 1) * pageSize)
+const paginatedRows = computed(() => filteredRows.value.slice(pageStart.value, pageStart.value + pageSize))
+const reportedStatusByName = computed(() => new Map(
+  reportedStatuses.value.flatMap((item) => [
+    [normalizeName(item.device_name), item.status] as const,
+    [normalizeName(item.ip_address), item.status] as const,
+  ]),
+))
+const servicesByDevice = computed(() => {
+  const byDevice = new Map<string, DudeItem[]>()
+  for (const service of services.value) {
+    for (const identifier of [service.device, service['device-name']]) {
+      const key = normalizeName(identifier)
+      if (!key) continue
+      const matches = byDevice.get(key) || []
+      matches.push(service)
+      byDevice.set(key, matches)
+    }
+  }
+  return byDevice
+})
 const statusCounts = computed(() => ({
-  up: devices.value.filter((item) => deviceStatus(item) === 'UP').length,
-  down: devices.value.filter((item) => deviceStatus(item) === 'DOWN').length,
-  partial: devices.value.filter((item) => deviceStatus(item) === 'PARTIALLY DOWN').length,
-  other: devices.value.filter((item) => !['UP', 'DOWN', 'PARTIALLY DOWN'].includes(deviceStatus(item))).length,
+  up: displayDevices.value.filter((item) => deviceStatus(item) === 'UP').length,
+  down: displayDevices.value.filter((item) => deviceStatus(item) === 'DOWN').length,
+  partial: displayDevices.value.filter((item) => deviceStatus(item) === 'PARTIALLY DOWN').length,
+  other: displayDevices.value.filter((item) => !['UP', 'DOWN', 'PARTIALLY DOWN'].includes(deviceStatus(item))).length,
 }))
 const hasMissingStatus = computed(() => currentItems.value.some((item) => (
   tab.value === 'devices' ? deviceStatus(item) === 'UNKNOWN' : !hasStatus(item)
@@ -214,6 +308,10 @@ function hasStatus(item: DudeItem): boolean {
   )
 }
 
+function normalizeName(value: string | undefined): string {
+  return (value || '').trim().toLocaleLowerCase()
+}
+
 function isDown(item: DudeItem): boolean {
   return /\b(down|error|unreachable|offline|timeout)\b/.test(statusText(item))
 }
@@ -223,18 +321,23 @@ function isUp(item: DudeItem): boolean {
 }
 
 function relatedServices(device: DudeItem): DudeItem[] {
-  const identifiers = [device['.id'], device.name].filter(Boolean)
-  return services.value.filter((service) => {
-    const serviceDevice = service.device || service['device-name'] || ''
-    return identifiers.includes(serviceDevice)
-  })
+  return [device['.id'], device.name]
+    .map(normalizeName)
+    .filter(Boolean)
+    .flatMap((identifier) => servicesByDevice.value.get(identifier) || [])
 }
 
-function deviceStatus(device: DudeItem): string {
-  const directStatus = `${device.status || ''} ${device['status-message'] || ''}`.toLowerCase()
+function resolveDeviceStatus(device: DudeItem): string {
+  const directStatus = statusText(device)
   if (/\bpartially[\s_-]*down\b/.test(directStatus)) return 'PARTIALLY DOWN'
   if (/\b(down|error|unreachable|offline|timeout)\b/.test(directStatus)) return 'DOWN'
   if (/\b(up|ok|online|running)\b/.test(directStatus)) return 'UP'
+
+  const reportedStatus = reportedStatusByName.value.get(normalizeName(device.name))
+  if (reportedStatus) {
+    if (/\b(down|error|unreachable|offline|timeout)\b/i.test(reportedStatus)) return 'DOWN'
+    if (/\b(up|ok|online|running)\b/i.test(reportedStatus)) return 'UP'
+  }
 
   const deviceServices = relatedServices(device)
   if (deviceServices.length === 0) return 'UNKNOWN'
@@ -244,6 +347,14 @@ function deviceStatus(device: DudeItem): string {
   if (hasDownService) return 'DOWN'
   if (deviceServices.every(isUp)) return 'UP'
   return 'UNKNOWN'
+}
+
+const deviceStatusById = computed(() => new Map(
+  devices.value.map((device) => [device['.id'] || normalizeName(device.name), resolveDeviceStatus(device)]),
+))
+
+function deviceStatus(device: DudeItem): string {
+  return deviceStatusById.value.get(device['.id'] || normalizeName(device.name)) || 'UNKNOWN'
 }
 
 function isDeviceDown(device: DudeItem): boolean {
@@ -284,6 +395,9 @@ function statusClass(item: DudeItem): string {
 }
 
 async function checkStatus() {
+  await loadPersistedStatuses()
+  connectStatusSocket()
+  if (canConnect.value) await loadPingJob()
   try {
     const result = getData<{ status: string; host?: string }>(await routerApi.getStatus(), 'status')
     connected.value = result.status === 'connected'
@@ -303,6 +417,7 @@ async function connect() {
     routerHost.value = connection.host
     connection.password = ''
     await refresh()
+    connectStatusSocket()
     showNotice('Berhasil terhubung. Daftar perangkat The Dude sedang ditampilkan.')
   } catch (error) {
     connected.value = false
@@ -320,6 +435,9 @@ async function disconnect() {
     routerHost.value = ''
     devices.value = []
     services.value = []
+    servicesLoaded.value = false
+    reportedStatuses.value = []
+    statusSourceError.value = ''
     showNotice('Koneksi ke server The Dude diputus.')
   } catch (error) {
     showNotice(error instanceof Error ? error.message : 'Gagal memutus koneksi API', 'error')
@@ -328,17 +446,80 @@ async function disconnect() {
   }
 }
 
-async function refresh() {
-  if (!connected.value && !connecting.value) return
+async function loadPersistedStatuses() {
+  try {
+    const response = await dudeDeviceApi.getAll()
+    reportedStatuses.value = getData<ReportedDeviceStatus[]>(response, 'status webhook') || []
+    statusSourceError.value = ''
+  } catch (error) {
+    statusSourceError.value = error instanceof Error ? error.message : 'Gagal memuat status webhook.'
+  }
+}
+
+async function loadPingJob() {
+  try {
+    const response = await dudeDeviceApi.getPingAllStatus()
+    pingJob.value = getData<DudePingJobStatus>(response, 'ping job')
+    if (pingJob.value.running) startPingPolling()
+  } catch (error) {
+    pingError.value = error instanceof Error ? error.message : 'Gagal memuat status ping.'
+  }
+}
+
+let pingPollTimer: ReturnType<typeof setInterval> | undefined
+function startPingPolling() {
+  if (pingPollTimer) return
+  pingPollTimer = setInterval(async () => {
+    try {
+      const response = await dudeDeviceApi.getPingAllStatus()
+      pingJob.value = getData<DudePingJobStatus>(response, 'ping job')
+      await loadPersistedStatuses()
+      if (!pingJob.value.running && pingPollTimer) {
+        clearInterval(pingPollTimer)
+        pingPollTimer = undefined
+      }
+    } catch (error) {
+      pingError.value = error instanceof Error ? error.message : 'Gagal memperbarui status ping.'
+      if (pingPollTimer) clearInterval(pingPollTimer)
+      pingPollTimer = undefined
+    }
+  }, 2000)
+}
+
+async function runPingAll() {
+  pingStarting.value = true
+  pingError.value = ''
+  try {
+    const response = await dudeDeviceApi.startPingAll()
+    pingJob.value = getData<DudePingJobStatus>(response, 'ping job')
+    if (pingJob.value.running) startPingPolling()
+  } catch (error) {
+    pingError.value = error instanceof Error ? error.message : 'Gagal menjalankan ping semua perangkat.'
+  } finally {
+    pingStarting.value = false
+  }
+}
+
+function selectTab(nextTab: DudeTab) {
+  tab.value = nextTab
+  if (nextTab === 'services' && !servicesLoaded.value && connected.value) void refresh(true)
+}
+
+async function refresh(includeInventory = true) {
+  if ((!connected.value && !connecting.value) || loading.value) return
   loading.value = true
   loadError.value = ''
   try {
-    const [deviceResponse, serviceResponse] = await Promise.all([
-      routerApi.listDudeDevices(),
-      routerApi.listDudeServices(),
-    ])
-    devices.value = getData<{ items: DudeItem[] }>(deviceResponse, 'The Dude devices').items || []
-    services.value = getData<{ items: DudeItem[] }>(serviceResponse, 'The Dude services').items || []
+    if (includeInventory) {
+      const deviceResponse = await routerApi.listDudeDevices()
+      devices.value = getData<{ items: DudeItem[] }>(deviceResponse, 'The Dude devices').items || []
+      if (tab.value === 'services') {
+        const serviceResponse = await routerApi.listDudeServices()
+        services.value = getData<{ items: DudeItem[] }>(serviceResponse, 'The Dude services').items || []
+        servicesLoaded.value = true
+      }
+    }
+    await loadPersistedStatuses()
     lastUpdated.value = new Date().toLocaleTimeString('id-ID')
   } catch (error) {
     loadError.value = error instanceof Error ? error.message : 'Gagal memuat status perangkat The Dude.'
@@ -348,14 +529,37 @@ async function refresh() {
   }
 }
 
+watch([tab, search, showOnlyDown], () => {
+  currentPage.value = 1
+})
+watch(totalPages, (pages) => {
+  if (currentPage.value > pages) currentPage.value = pages
+})
+
 let refreshTimer: ReturnType<typeof setInterval> | undefined
 watch(connected, (isConnected) => {
   if (refreshTimer) clearInterval(refreshTimer)
-  if (isConnected) refreshTimer = setInterval(() => void refresh(), 30_000)
+  if (isConnected) refreshTimer = setInterval(() => void refresh(false), 30_000)
 })
 
 onMounted(checkStatus)
 onUnmounted(() => {
   if (refreshTimer) clearInterval(refreshTimer)
+  if (pingPollTimer) clearInterval(pingPollTimer)
+  disconnectStatusSocket()
+})
+
+watch(latestUpdate, (update) => {
+  if (!update) return
+  const next = [...reportedStatuses.value]
+  const existing = next.findIndex((item) => normalizeName(item.ip_address) === normalizeName(update.ip_address))
+  const status = {
+    device_name: update.device_name,
+    ip_address: update.ip_address,
+    status: update.status,
+  }
+  if (existing >= 0) next[existing] = { ...next[existing], ...status }
+  else next.push(status)
+  reportedStatuses.value = next
 })
 </script>

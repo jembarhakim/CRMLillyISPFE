@@ -850,8 +850,8 @@ watch(searchQuery, () => {
   searchDebounceTimer = setTimeout(fitBounds, 300)
 })
 
-onMounted(() => {
-  fetchData()
+onMounted(async () => {
+  await fetchData()
   connectSocket()
 })
 

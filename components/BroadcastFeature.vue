@@ -758,7 +758,7 @@ async function onSubmit() {
               
               toast.add({
                 title: 'Broadcast Partially Failed',
-                description: `${response.success_count} sent, ${response.failed_count} failed. ${failedPhones}${moreFailed}`,
+                description: `${response.success_count} queued, ${response.failed_count} failed. ${failedPhones}${moreFailed}`,
                 color: 'yellow'
               })
             }
@@ -847,7 +847,7 @@ async function onSubmit() {
               
               toast.add({
                 title: 'Broadcast Partially Failed',
-                description: `${response.success_count} sent, ${response.failed_count} failed. ${failedPhones}${moreFailed}`,
+                description: `${response.success_count} queued, ${response.failed_count} failed. ${failedPhones}${moreFailed}`,
                 color: 'yellow'
               })
             }
@@ -903,7 +903,7 @@ async function onSubmit() {
               
               toast.add({
                 title: 'Broadcast Partially Failed',
-                description: `${response.success_count} sent, ${response.failed_count} failed. ${failedPhones}${moreFailed}`,
+                description: `${response.success_count} queued, ${response.failed_count} failed. ${failedPhones}${moreFailed}`,
                 color: 'yellow'
               })
             }
@@ -958,7 +958,7 @@ async function onSubmit() {
               // Partial failure
               toast.add({
                 title: 'Broadcast Partially Failed',
-                description: `${response.success_count} sent, ${response.failed_count} failed.`,
+                description: `${response.success_count} queued, ${response.failed_count} failed.`,
                 color: 'yellow'
               })
             }
@@ -990,8 +990,8 @@ async function onSubmit() {
     // Success notification - only show if we got here without errors
     // (Errors would have returned early or shown error notifications)
     toast.add({
-      title: 'Broadcast sent!',
-      description: 'All messages sent successfully',
+      title: 'Broadcast queued',
+      description: 'Messages have been added to the WhatsApp queue.',
       color: 'green'
     })
     

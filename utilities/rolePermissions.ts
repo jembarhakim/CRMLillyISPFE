@@ -195,6 +195,13 @@ export const MAIN_MENU: MenuItem[] = [
     description: 'Recurring invoice management'
   },
   {
+    label: 'WhatsApp Notifications',
+    icon: 'heroicons:chat-bubble-left-right',
+    link: '/dashboard/notifications',
+    feature: 'invoice',
+    description: 'WhatsApp templates, delivery queue, and billing reminders'
+  },
+  {
     label: 'Transaction',
     icon: 'heroicons:credit-card',
     link: '/dashboard/transaction',

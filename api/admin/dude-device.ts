@@ -21,6 +21,17 @@ export interface DudeDeviceDetails {
   longitude: number | null
 }
 
+export interface DudePingJobStatus {
+  running: boolean
+  total: number
+  completed: number
+  up: number
+  down: number
+  failed: number
+  started_at?: string
+  finished_at?: string
+}
+
 export const dudeDeviceAdminApi = () => {
   const api = useApiHost()
   const token = useCookie('token')
@@ -35,6 +46,27 @@ export const dudeDeviceAdminApi = () => {
       const result = await response.json()
       if (!response.ok) {
         throw new Error(result.message || 'Failed to load The Dude devices')
+      }
+      return result
+    },
+
+    startPingAll: async () => {
+      const response = await fetch(`${api}/api/admin/dude-devices/ping-all`, {
+        method: 'POST',
+        headers
+      })
+      const result = await response.json()
+      if (!response.ok && !(response.status === 409 && result.data?.running)) {
+        throw new Error(result.message || 'Failed to start The Dude ping check')
+      }
+      return result
+    },
+
+    getPingAllStatus: async () => {
+      const response = await fetch(`${api}/api/admin/dude-devices/ping-all`, { headers })
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to get The Dude ping check status')
       }
       return result
     },
