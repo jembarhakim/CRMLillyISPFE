@@ -3,10 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "nuxt build",
-    "build:local": "node switch-env.js local && nuxt build",
-    "build:production": "node switch-env.js production && nuxt build",
-    "build:vps": "node switch-env.js production && nuxt build && node scripts/fix-hydration.js",
+    "build": "nuxt build && node scripts/generate-sw.mjs",
+    "build:local": "node switch-env.js local && nuxt build && node scripts/generate-sw.mjs",
+    "build:production": "node switch-env.js production && nuxt build && node scripts/generate-sw.mjs",
+    "build:vps": "node switch-env.js production && nuxt build && node scripts/generate-sw.mjs && node scripts/fix-hydration.js",
+    "pwa:generate": "node scripts/generate-sw.mjs",
     "dev": "nuxt dev",
     "dev:local": "node switch-env.js local && nuxt dev",
     "dev:production": "node switch-env.js production && nuxt dev",
@@ -27,16 +28,16 @@
     "@nuxtjs/tailwindcss": "^6.13.1",
     "@pinia/nuxt": "^0.10.1",
     "@popperjs/core": "^2.11.8",
+    "@vue-leaflet/vue-leaflet": "^0.10.1",
     "@vuelidate/core": "^2.0.3",
+    "Math": "^0.0.1-security",
     "chart.js": "^4.4.8",
     "date-fns": "^4.1.0",
     "echarts": "^5.6.0",
-    "@vue-leaflet/vue-leaflet": "^0.10.1",
-    "leaflet": "^1.9.4",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.1",
+    "leaflet": "^1.9.4",
     "lucide-vue-next": "^0.546.0",
-    "Math": "^0.0.1-security",
     "nuxt": "^3.15.4",
     "nuxt-storage": "^1.2.2",
     "ohash": "^2.0.11",
@@ -52,9 +53,18 @@
   "devDependencies": {
     "@iconify/json": "^2.2.398",
     "@types/node": "^22.15.3",
+    "@vite-pwa/nuxt": "^1.1.1",
     "nuxt-echarts": "^0.3.2",
     "typescript": "^5.7.3",
     "unplugin-icons": "^22.5.0",
-    "vue-tsc": "^2.2.2"
+    "vue-tsc": "^2.2.2",
+    "workbox-core": "^7.4.1",
+    "workbox-expiration": "^7.4.1",
+    "workbox-precaching": "^7.4.1",
+    "workbox-routing": "^7.4.1",
+    "workbox-strategies": "^7.4.1"
+  },
+  "resolutions": {
+    "on-change": "4.0.2"
   }
 }

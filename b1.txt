@@ -1,0 +1,7 @@
+﻿result=running log=60318 node=2
+[nuxt] build:manifest: 10.236ms
+âœ” Server built in 59630ms
+[nuxt] nitro:build:before: 8.823ms
+[nitro] build:before: 0.066ms
+[nuxt] nitro:build:public-assets: 1.964ms
+[nitro] â„¹ Building Nuxt Nitro server (preset: node-server, compatibility date: 2024-11-01)

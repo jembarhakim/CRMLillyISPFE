@@ -28,8 +28,10 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   // Check if user is logged in using the store
   if (!authStore.isLoggedIn) {
     console.log('No valid authentication found, redirecting to login');
-    // Determine correct login page based on stored userType
-    const redirectPath = authStore.userType === 'employee' ? '/employee' : '/login'
+    // Customer portal has its own login page; staff uses /employee.
+    const redirectPath = to.path.startsWith('/customer')
+      ? '/customer/login'
+      : (authStore.userType === 'employee' ? '/employee' : '/login')
     return navigateTo(`${redirectPath}?redirect=${encodeURIComponent(to.fullPath)}`);
   }
 

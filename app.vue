@@ -20,11 +20,23 @@ const { isVisible, currentTitle, currentMessage, currentType, currentDuration, c
     <PageLoadingMask />
     <!-- <NuxtWelcome /> -->
     <!-- <NuxtUIProvider> -->
+    <!--
+      The admin navbar (sidebar) must only wrap staff pages.
+      Customer portal pages live under /customer/* and have their own shell
+      (components/customer/PortalShell.vue), so they must use startsWith -
+      otherwise /customer/bills, /customer/tickets, ... would render the admin
+      sidebar on top of the customer portal.
+    -->
     <NuxtLayout>
-      <NuxtLayout name="navbar" v-if="route.path !== '/login' && route.path !== '/employee' && route.path !== '/customer' && route.path !== '/landing' && !route.path.startsWith('/invoice')">
+      <NuxtLayout
+        name="navbar"
+        v-if="route.path !== '/login' && route.path !== '/employee' && !route.path.startsWith('/customer') && route.path !== '/landing' && !route.path.startsWith('/invoice') && !route.path.startsWith('/offline')"
+      >
         <NuxtPage />
       </NuxtLayout>
-      <NuxtPage v-if="route.path == '/login' || route.path == '/employee' || route.path == '/customer' || route.path == '/landing' || route.path.startsWith('/invoice')" />
+      <NuxtPage
+        v-if="route.path == '/login' || route.path == '/employee' || route.path.startsWith('/customer') || route.path == '/landing' || route.path.startsWith('/invoice') || route.path.startsWith('/offline')"
+      />
     </NuxtLayout>
     <!-- Wrap UI components in ClientOnly to prevent Icon SSR recursion -->
     <ClientOnly>

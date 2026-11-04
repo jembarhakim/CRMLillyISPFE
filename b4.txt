@@ -1,0 +1,3 @@
+﻿result=running log=58233 node=2
+[nuxt] â„¹ Compiled error-component.mjs in 50.37ms
+âœ” Client built in 62826ms

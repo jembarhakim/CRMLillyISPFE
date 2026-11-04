@@ -1,0 +1,7 @@
+﻿result=OK log=101534
+  â”œâ”€ .output/server/chunks/_/error-500.mjs.map (200 B) (163 B gzip)
+  â”œâ”€ .output/server/chunks/build/error-404.vue.mjs (5.7 kB) (2.25 kB gzip)
+  â”œâ”€ .output/server/chunks/build/error-404.vue.mjs.map (191 B) (157 B gzip)
+  â”œâ”€ .output/server/chunks/build/error-500.vue.mjs (4.81 kB) (1.97 kB gzip)
+  â”œâ”€ .output/server/chunks/build/error-500.vue.mjs.map (191 B) (157 B gzip)
+[generate-sw] manifest.webmanifest, sw.js and register-sw.js written (206 precache entries)

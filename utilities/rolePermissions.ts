@@ -125,6 +125,13 @@ export const MAIN_MENU: MenuItem[] = [
     description: 'Main dashboard overview'
   },
   {
+    label: 'Proyek B2B',
+    icon: 'heroicons:briefcase',
+    link: '/dashboard/b2b-project',
+    roles: [ROLES.SUPERADMIN, ROLES.CUSTOMER_SERVICE, ROLES.FINANCE],
+    description: 'Proyek borongan B2B, penawaran, termin, dan BAST'
+  },
+  {
     label: 'Customer',
     icon: 'heroicons:user-circle',
     link: '/dashboard/customer',

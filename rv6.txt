@@ -1,0 +1,17 @@
+﻿=== QuotationPanel key lines ===
+L4: import { downloadQuotationPdf } from '@/helper/b2bPdf'
+L31: tax_percent: 11,
+L37: const subtotal = computed(() =>
+L40: const taxAmount = computed(() => Math.round(subtotal.value * (Number(head.tax_percent) || 0) / 100))
+L41: const grandTotal = computed(() => subtotal.value + taxAmount.value)
+L68: head.tax_percent = 11
+L85: tax_percent: Number(head.tax_percent) || 0,
+L139: await downloadQuotationPdf(
+L153: subtotal: full.subtotal,
+L154: tax_percent: full.tax_percent,
+L250: <span class="text-gray-500">Subtotal</span>
+L251: <span class="font-medium">{{ formatIDR(subtotal) }}</span>
+=== MilestonePanel key lines ===
+L49: const res = await b2bProjectAdminApi().generateMilestones(props.projectId, {
+L66: const res = await b2bProjectAdminApi().issueMilestone(milestone.id)
+L79: await b2bProjectAdminApi().payMilestone(milestone.id)

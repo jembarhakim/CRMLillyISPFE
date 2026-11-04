@@ -1,0 +1,320 @@
+api/admin/account.ts(24,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/archive-installation.ts(12,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/archive-installation.ts(26,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/archive-installation.ts(46,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/area.ts(12,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/area.ts(27,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/area.ts(44,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/area.ts(63,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/area.ts(79,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/asset-item.ts(18,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/asset-item.ts(33,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/asset-item.ts(48,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/asset-item.ts(63,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/asset-item.ts(79,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/asset-item.ts(95,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/asset-transaction.ts(24,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/asset-transaction.ts(39,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/asset-transaction.ts(54,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/asset-transaction.ts(70,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/asset-transaction.ts(86,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/asset.ts(12,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/asset.ts(27,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/asset.ts(44,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/asset.ts(63,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/asset.ts(79,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/b2b-project.ts(168,30): error TS2304: Cannot find name 'useCookie'.
+api/admin/broadcast.ts(2,27): error TS2307: Cannot find module '#app' or its corresponding type declarations.
+api/admin/company.ts(11,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/company.ts(26,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/company.ts(41,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/company.ts(57,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/company.ts(73,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(11,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(26,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(45,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(62,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(81,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(97,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(113,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(129,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(144,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(159,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(175,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(190,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(205,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(220,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(235,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(251,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(266,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(282,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(297,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(312,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(327,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(342,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(359,38): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(379,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(395,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/customer.ts(410,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/dashboard.ts(11,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/dashboard.ts(25,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/dashboard.ts(39,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/dashboard.ts(53,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/dashboard.ts(68,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/dashboard.ts(82,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/dashboard.ts(96,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/dashboard.ts(110,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/dashboard.ts(139,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/dashboard.ts(154,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/dashboard.ts(169,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/dashboard.ts(185,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/dashboard.ts(201,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/dashboard.ts(217,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/dashboard.ts(233,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/dashboard.ts(248,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/dude-device.ts(26,17): error TS2304: Cannot find name 'useCookie'.
+api/admin/file-upload.ts(20,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/internet-package.ts(12,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/internet-package.ts(27,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/internet-package.ts(44,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/internet-package.ts(63,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/internet-package.ts(79,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/inventory.ts(12,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/inventory.ts(29,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/inventory.ts(51,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/invoice.ts(12,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/invoice.ts(27,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/invoice.ts(44,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/invoice.ts(63,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/invoice.ts(79,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/invoice.ts(97,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/invoice.ts(114,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/invoice.ts(129,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/invoice.ts(148,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/invoice.ts(164,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/invoice.ts(186,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/items-catalog.ts(2,27): error TS2307: Cannot find module '#app' or its corresponding type declarations.
+api/admin/items-transaction.ts(22,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/items-transaction.ts(37,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/items-transaction.ts(52,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/items-transaction.ts(68,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/items-transaction.ts(84,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/mikrotik.ts(37,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/mikrotik.ts(53,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/mikrotik.ts(68,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/mikrotik.ts(84,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/mikrotik.ts(103,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/mikrotik.ts(118,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/mikrotik.ts(134,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/mikrotik.ts(151,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/network-device.ts(11,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/network-device.ts(26,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/network-device.ts(41,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/network-device.ts(57,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/network-device.ts(73,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/network-device.ts(88,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/news.ts(13,30): error TS2304: Cannot find name 'useCookie'.
+api/admin/recurring-invoice.ts(86,38): error TS2304: Cannot find name 'useCookie'.
+api/admin/recurring-invoice.ts(103,38): error TS2304: Cannot find name 'useCookie'.
+api/admin/recurring-invoice.ts(120,38): error TS2304: Cannot find name 'useCookie'.
+api/admin/recurring-invoice.ts(138,38): error TS2304: Cannot find name 'useCookie'.
+api/admin/recurring-invoice.ts(156,38): error TS2304: Cannot find name 'useCookie'.
+api/admin/recurring-invoice.ts(174,38): error TS2304: Cannot find name 'useCookie'.
+api/admin/recurring-invoice.ts(191,38): error TS2304: Cannot find name 'useCookie'.
+api/admin/recurring-invoice.ts(209,38): error TS2304: Cannot find name 'useCookie'.
+api/admin/report.ts(12,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/transaction.ts(12,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/transaction.ts(28,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/transaction.ts(59,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/transaction.ts(87,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/transaction.ts(103,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/user-management.ts(11,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/user-management.ts(31,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/user-management.ts(56,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/user-management.ts(83,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/user-management.ts(99,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/user-management.ts(113,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/user-management.ts(128,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/user-management.ts(143,34): error TS2304: Cannot find name 'useCookie'.
+api/admin/user-management.ts(158,34): error TS2304: Cannot find name 'useCookie'.
+api/admin/user-management.ts(179,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/user-management.ts(201,36): error TS2304: Cannot find name 'useCookie'.
+api/admin/user-management.ts(217,36): error TS2304: Cannot find name 'useCookie'.
+app.config.ts(1,16): error TS2304: Cannot find name 'defineAppConfig'.
+components/b2b/MarginPanel.vue(15,15): error TS2304: Cannot find name 'useCustomToast'.
+components/b2b/MilestonePanel.vue(14,15): error TS2304: Cannot find name 'useCustomToast'.
+components/b2b/QuotationPanel.vue(14,15): error TS2304: Cannot find name 'useCustomToast'.
+components/b2b/WorkOrderPanel.vue(19,15): error TS2304: Cannot find name 'useCustomToast'.
+components/BroadcastFeature.vue(742,68): error TS2345: Argument of type '{ target: string; phones: string[]; message: string; template_key: string | undefined; }' is not assignable to parameter of type 'BroadcastRequest'.
+  Types of property 'target' are incompatible.
+    Type 'string' is not assignable to type '"customers" | "team"'.
+components/BroadcastFeature.vue(1080,23): error TS2304: Cannot find name 'useCookie'.
+components/customer/PortalShell.vue(21,24): error TS2304: Cannot find name 'useNuxtApp'.
+components/customer/tabs/TabBills.vue(58,23): error TS2304: Cannot find name 'useRuntimeConfig'.
+components/CustomerDeleteConfirmationModal.vue(259,5): error TS2304: Cannot find name 'useAppToast'.
+components/CustomerDeleteConfirmationModal.vue(268,5): error TS2304: Cannot find name 'useAppToast'.
+components/DatePickerComponent.vue(13,29): error TS2304: Cannot find name 'PropType'.
+components/PageLoadingMask.vue(2,35): error TS2322: Type '{ leave: number; }' is not assignable to type 'number | { enter: number; leave: number; } | undefined'.
+  Property 'enter' is missing in type '{ leave: number; }' but required in type '{ enter: number; leave: number; }'.
+components/TechnicianChecklist.vue(1472,36): error TS2304: Cannot find name 'useCookie'.
+components/TechnicianChecklist.vue(1602,36): error TS2304: Cannot find name 'useCookie'.
+components/TechnicianChecklist.vue(1629,36): error TS2304: Cannot find name 'useCookie'.
+composables/useApiHost.ts(2,18): error TS2304: Cannot find name 'useRuntimeConfig'.
+composables/useApiHost.ts(49,18): error TS2304: Cannot find name 'useRuntimeConfig'.
+middleware/auth.ts(4,16): error TS2304: Cannot find name 'defineNuxtRouteMiddleware'.
+middleware/auth.ts(4,49): error TS7006: Parameter 'to' implicitly has an 'any' type.
+middleware/auth.ts(4,53): error TS7006: Parameter 'from' implicitly has an 'any' type.
+middleware/employee-redirect.global.ts(1,16): error TS2304: Cannot find name 'defineNuxtRouteMiddleware'.
+middleware/employee-redirect.global.ts(1,43): error TS7006: Parameter 'to' implicitly has an 'any' type.
+middleware/error-logger.global.ts(1,16): error TS2304: Cannot find name 'defineNuxtRouteMiddleware'.
+middleware/error-logger.global.ts(1,43): error TS7006: Parameter 'to' implicitly has an 'any' type.
+middleware/error-logger.global.ts(1,47): error TS7006: Parameter 'from' implicitly has an 'any' type.
+middleware/global-auth.global.ts(1,30): error TS2307: Cannot find module '~/stores/auth' or its corresponding type declarations.
+middleware/global-auth.global.ts(3,16): error TS2304: Cannot find name 'defineNuxtRouteMiddleware'.
+middleware/global-auth.global.ts(3,49): error TS7006: Parameter 'to' implicitly has an 'any' type.
+middleware/global-auth.global.ts(3,53): error TS7006: Parameter 'from' implicitly has an 'any' type.
+middleware/guest.ts(1,16): error TS2304: Cannot find name 'defineNuxtRouteMiddleware'.
+middleware/guest.ts(1,49): error TS7006: Parameter 'to' implicitly has an 'any' type.
+middleware/guest.ts(1,53): error TS7006: Parameter 'from' implicitly has an 'any' type.
+middleware/redirect-to-landing.ts(1,16): error TS2304: Cannot find name 'defineNuxtRouteMiddleware'.
+middleware/redirect-to-landing.ts(1,43): error TS7006: Parameter 'to' implicitly has an 'any' type.
+middleware/redirect-to-landing.ts(1,47): error TS7006: Parameter 'from' implicitly has an 'any' type.
+middleware/roleGuard.ts(1,16): error TS2304: Cannot find name 'defineNuxtRouteMiddleware'.
+middleware/roleGuard.ts(1,43): error TS7006: Parameter 'to' implicitly has an 'any' type.
+nuxt.config.ts(5,16): error TS2552: Cannot find name 'defineNuxtConfig'. Did you mean 'defineNitroConfig'?
+nuxt.config.ts(16,26): error TS7006: Parameter 'id' implicitly has an 'any' type.
+nuxt.config.ts(110,3): error TS1117: An object literal cannot have multiple properties with the same name.
+nuxt.config.ts(119,25): error TS7006: Parameter 'tag' implicitly has an 'any' type.
+nuxt.config.ts(153,5): error TS1117: An object literal cannot have multiple properties with the same name.
+pages/customer/bills.vue(10,15): error TS2304: Cannot find name 'useCustomToast'.
+pages/customer/bills.vue(40,23): error TS2304: Cannot find name 'useRuntimeConfig'.
+pages/customer/monitoring.vue(9,15): error TS2304: Cannot find name 'useCustomToast'.
+pages/customer/service.vue(14,15): error TS2304: Cannot find name 'useCustomToast'.
+pages/customer/tickets.vue(14,15): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/asset/[id].vue(24,5): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/asset/AddAssetForm.vue(76,7): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/asset/AddAssetForm.vue(80,7): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/asset/AddAssetForm.vue(86,7): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/asset/AddAssetForm.vue(90,7): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/asset/index.vue(82,7): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/asset/index.vue(88,7): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/asset/index.vue(99,15): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/asset/items/AddAssetItemForm.vue(164,5): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/asset/items/AddAssetItemForm.vue(181,7): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/asset/items/AddAssetItemForm.vue(185,7): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/asset/items/AddAssetItemForm.vue(191,7): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/asset/items/AddAssetItemForm.vue(195,7): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/asset/items/index.vue(92,7): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/asset/items/index.vue(98,7): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/asset/items/index.vue(125,15): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/b2b-project/[id].vue(11,15): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/b2b-project/index.vue(9,15): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/companies/index.vue(170,15): error TS2304: Cannot find name 'useCustomToast'.
+pages/dashboard/customer/CustomerDetailModal.vue(72,31): error TS2339: Property 'count' does not exist on type '{ id: string; name: string; icon: string; }'.
+pages/dashboard/customer/CustomerDetailModal.vue(73,24): error TS2339: Property 'count' does not exist on type '{ id: string; name: string; icon: string; }'.
+pages/dashboard/customer/CustomerDetailModal.vue(776,22): error TS2345: Argument of type '{ class: string[]; name: string; }' is not assignable to parameter of type 'Partial<{}> & Omit<{} & VNodeProps & AllowedComponentProps & ComponentCustomProps, never> & { ...; } & Record<...>'.
+  Type '{ class: string[]; name: string; }' is not assignable to type '{ readonly name?: string | undefined; readonly size?: string | number | undefined; readonly class?: string | undefined; }'.
+    Types of property 'class' are incompatible.
+      Type 'string[]' is not assignable to type 'string'.
+pages/dashboard/customer/CustomerDetailModal.vue(1158,27): error TS2307: Cannot find module '#app' or its corresponding type declarations.
+pages/dashboard/customer/CustomerMap.vue(153,20): error TS7006: Parameter 'leafletMarker' implicitly has an 'any' type.
+pages/dashboard/customer/CustomerMap.vue(403,23): error TS2304: Cannot find name 'useRuntimeConfig'.
+pages/dashboard/customer/FormAddComponent_fixed.vue(259,36): error TS2304: Cannot find name 'useCookie'.
+pages/dashboard/customer/FormCustomerInstallation.vue(14,27): error TS2307: Cannot find module '#app' or its corresponding type declarations.
+pages/dashboard/customer/FormCustomerInstallation.vue(1107,3): error TS2322: Type 'number' is not assignable to type 'string'.
+pages/dashboard/index.vue(20,1): error TS2578: Unused '@ts-expect-error' directive.
+pages/dashboard/recurring-invoice/FormAddRecurringInvoice.vue(413,37): error TS2339: Property 'due_date' does not exist on type '{ invoice_items: { name: string; price: number; qty: number; total: number; }[]; description?: string | undefined; invoice_date: string; amount: number; customer_id: string; frequency: string; }'.
+pages/dashboard/recurring-invoice/FormAddRecurringInvoice.vue(424,37): error TS2339: Property 'due_date' does not exist on type '{ invoice_items: { name: string; price: number; qty: number; total: number; }[]; description?: string | undefined; invoice_date: string; amount: number; customer_id: string; frequency: string; }'.
+pages/dashboard/recurring-invoice/FormAddRecurringInvoice.vue(665,41): error TS7006: Parameter 'val' implicitly has an 'any' type.
+pages/dashboard/report/customer-installation/edit/[id].vue(17,30): error TS2339: Property '$router' does not exist on type 'CreateComponentPublicInstanceWithMixins<ToResolvedProps<{}, {}>, { LucideIcon: DefineComponent<{}, { name: string; size: string | number; class: string; $props: { readonly name?: string | undefined; readonly size?: string | number | undefined; readonly class?: string | undefined; }; }, ... 17 more ..., any>; ... 35 ...'.
+pages/dashboard/report/customer-installation/edit/[id].vue(317,44): error TS7006: Parameter 'value' implicitly has an 'any' type.
+pages/dashboard/report/customer-installation/edit/[id].vue(478,32): error TS2339: Property '$router' does not exist on type 'CreateComponentPublicInstanceWithMixins<ToResolvedProps<{}, {}>, { LucideIcon: DefineComponent<{}, { name: string; size: string | number; class: string; $props: { readonly name?: string | undefined; readonly size?: string | number | undefined; readonly class?: string | undefined; }; }, ... 17 more ..., any>; ... 35 ...'.
+pages/dashboard/report/customer-installation/edit/[id].vue(603,3): error TS1117: An object literal cannot have multiple properties with the same name.
+pages/dashboard/report/customer-installation/edit/[id].vue(1158,34): error TS2304: Cannot find name 'useCookie'.
+pages/dashboard/report/customer-installation/edit/[id].vue(1530,9): error TS2322: Type 'null' is not assignable to type 'string'.
+pages/dashboard/report/customer-installation/index.vue(50,83): error TS2339: Property 'inProgress' does not exist on type '{ totalInstallations: number; completed: number; pending: number; dismantle: number; }'.
+plugins/auth-expired.client.ts(1,16): error TS2304: Cannot find name 'defineNuxtPlugin'.
+plugins/auth-expired.client.ts(1,34): error TS7006: Parameter 'nuxtApp' implicitly has an 'any' type.
+plugins/auth-expired.client.ts(13,27): error TS2304: Cannot find name 'useCookie'.
+plugins/auth-init.client.ts(1,16): error TS2304: Cannot find name 'defineNuxtPlugin'.
+plugins/auth-persistence.client.ts(1,16): error TS2304: Cannot find name 'defineNuxtPlugin'.
+plugins/echarts.ts(1,16): error TS2304: Cannot find name 'defineNuxtPlugin'.
+plugins/hydration-fix.client.ts(2,16): error TS2304: Cannot find name 'defineNuxtPlugin'.
+plugins/notification-init.client.ts(1,16): error TS2304: Cannot find name 'defineNuxtPlugin'.
+plugins/offline-status.client.ts(3,16): error TS2304: Cannot find name 'defineNuxtPlugin'.
+plugins/pinia-hydration.client.ts(2,16): error TS2304: Cannot find name 'defineNuxtPlugin'.
+plugins/stale-token-guard.client.ts(14,16): error TS2304: Cannot find name 'defineNuxtPlugin'.
+plugins/stale-token-guard.client.ts(14,34): error TS7006: Parameter 'nuxtApp' implicitly has an 'any' type.
+plugins/vps-hydration-fix.client.ts(2,16): error TS2304: Cannot find name 'defineNuxtPlugin'.
+server/api/customer-installations/[id].ts(4,16): error TS2304: Cannot find name 'defineEventHandler'.
+server/api/customer-installations/[id].ts(4,42): error TS7006: Parameter 'event' implicitly has an 'any' type.
+server/api/customer-installations/[id].ts(5,20): error TS2304: Cannot find name 'useRuntimeConfig'.
+server/api/customer-installations/[id].ts(6,16): error TS2304: Cannot find name 'getRouterParam'.
+server/api/customer-installations/[id].ts(9,15): error TS2304: Cannot find name 'createError'.
+server/api/customer-installations/[id].ts(18,24): error TS2304: Cannot find name 'getHeader'.
+server/api/customer-installations/[id].ts(19,26): error TS2304: Cannot find name 'getHeader'.
+server/api/customer-installations/[id].ts(48,19): error TS2304: Cannot find name 'createError'.
+server/api/customer-installations/[id].ts(74,15): error TS2304: Cannot find name 'createError'.
+server/api/customer-installations/[id]/photos.ts(4,16): error TS2304: Cannot find name 'defineEventHandler'.
+server/api/customer-installations/[id]/photos.ts(4,42): error TS7006: Parameter 'event' implicitly has an 'any' type.
+server/api/customer-installations/[id]/photos.ts(5,20): error TS2304: Cannot find name 'useRuntimeConfig'.
+server/api/customer-installations/[id]/photos.ts(6,16): error TS2304: Cannot find name 'getRouterParam'.
+server/api/customer-installations/[id]/photos.ts(9,15): error TS2304: Cannot find name 'createError'.
+server/api/customer-installations/[id]/photos.ts(16,24): error TS2304: Cannot find name 'getHeader'.
+server/api/customer-installations/[id]/photos.ts(17,26): error TS2304: Cannot find name 'getHeader'.
+server/api/customer-installations/[id]/photos.ts(70,15): error TS2304: Cannot find name 'createError'.
+server/api/customer-installations/[id]/technicians.ts(4,16): error TS2304: Cannot find name 'defineEventHandler'.
+server/api/customer-installations/[id]/technicians.ts(4,42): error TS7006: Parameter 'event' implicitly has an 'any' type.
+server/api/customer-installations/[id]/technicians.ts(5,20): error TS2304: Cannot find name 'useRuntimeConfig'.
+server/api/customer-installations/[id]/technicians.ts(6,16): error TS2304: Cannot find name 'getRouterParam'.
+server/api/customer-installations/[id]/technicians.ts(9,15): error TS2304: Cannot find name 'createError'.
+server/api/customer-installations/[id]/technicians.ts(16,24): error TS2304: Cannot find name 'getHeader'.
+server/api/customer-installations/[id]/technicians.ts(17,26): error TS2304: Cannot find name 'getHeader'.
+server/api/customer-installations/[id]/technicians.ts(56,15): error TS2304: Cannot find name 'createError'.
+server/api/heartbeat/[id].ts(1,16): error TS2304: Cannot find name 'defineEventHandler'.
+server/api/heartbeat/[id].ts(1,42): error TS7006: Parameter 'event' implicitly has an 'any' type.
+server/api/heartbeat/[id].ts(4,16): error TS2304: Cannot find name 'getRouterParam'.
+server/api/heartbeat/[id].ts(7,13): error TS2304: Cannot find name 'createError'.
+server/api/heartbeat/[id].ts(15,13): error TS2304: Cannot find name 'createError'.
+server/api/heartbeat/[id].ts(57,11): error TS2304: Cannot find name 'createError'.
+server/api/monitor/[id].ts(1,16): error TS2304: Cannot find name 'defineEventHandler'.
+server/api/monitor/[id].ts(1,42): error TS7006: Parameter 'event' implicitly has an 'any' type.
+server/api/monitor/[id].ts(3,16): error TS2304: Cannot find name 'getRouterParam'.
+server/api/monitor/[id].ts(6,13): error TS2304: Cannot find name 'createError'.
+server/api/monitor/[id].ts(14,13): error TS2304: Cannot find name 'createError'.
+server/api/monitor/[id].ts(29,11): error TS2304: Cannot find name 'createError'.
+server/api/proxy-image.ts(1,16): error TS2304: Cannot find name 'defineEventHandler'.
+server/api/proxy-image.ts(1,42): error TS7006: Parameter 'event' implicitly has an 'any' type.
+server/api/proxy-image.ts(2,20): error TS2304: Cannot find name 'useRuntimeConfig'.
+server/api/proxy-image.ts(3,19): error TS2304: Cannot find name 'getQuery'.
+server/api/proxy-image.ts(7,15): error TS2304: Cannot find name 'createError'.
+server/api/proxy-image.ts(32,19): error TS2304: Cannot find name 'createError'.
+server/api/proxy-image.ts(45,9): error TS2304: Cannot find name 'setResponseHeaders'.
+server/api/proxy-image.ts(54,15): error TS2304: Cannot find name 'createError'.
+server/api/status-page/[endpoint].ts(1,16): error TS2304: Cannot find name 'defineEventHandler'.
+server/api/status-page/[endpoint].ts(1,42): error TS7006: Parameter 'event' implicitly has an 'any' type.
+server/api/status-page/[endpoint].ts(4,22): error TS2304: Cannot find name 'getRouterParam'.
+server/api/status-page/[endpoint].ts(7,13): error TS2304: Cannot find name 'createError'.
+server/api/status-page/[endpoint].ts(16,13): error TS2304: Cannot find name 'createError'.
+server/api/status-page/[endpoint].ts(32,11): error TS2304: Cannot find name 'createError'.
+server/api/status-page/bedjo.ts(9,20): error TS2304: Cannot find name 'useRuntimeConfig'.
+server/api/status-page/layanan.ts(9,20): error TS2304: Cannot find name 'useRuntimeConfig'.
+server/api/status-page/lilly.ts(9,20): error TS2304: Cannot find name 'useRuntimeConfig'.
+server/api/status-page/menara.ts(9,20): error TS2304: Cannot find name 'useRuntimeConfig'.
+stores/auth.ts(29,29): error TS2304: Cannot find name 'useCookie'.
+stores/auth.ts(44,29): error TS2304: Cannot find name 'useCookie'.
+stores/auth.ts(57,29): error TS2304: Cannot find name 'useCookie'.
+stores/auth.ts(64,28): error TS2304: Cannot find name 'useCookie'.
+stores/auth.ts(71,28): error TS2304: Cannot find name 'useCookie'.
+stores/auth.ts(78,29): error TS2304: Cannot find name 'useCookie'.
+stores/auth.ts(85,32): error TS2304: Cannot find name 'useCookie'.
+stores/auth.ts(132,29): error TS2304: Cannot find name 'useCookie'.
+stores/auth.ts(139,28): error TS2304: Cannot find name 'useCookie'.
+stores/auth.ts(146,28): error TS2304: Cannot find name 'useCookie'.
+stores/auth.ts(153,29): error TS2304: Cannot find name 'useCookie'.
+stores/auth.ts(160,32): error TS2304: Cannot find name 'useCookie'.
+stores/auth.ts(202,29): error TS2304: Cannot find name 'useCookie'.
+stores/auth.ts(203,28): error TS2304: Cannot find name 'useCookie'.
+stores/auth.ts(204,28): error TS2304: Cannot find name 'useCookie'.
+stores/auth.ts(205,29): error TS2304: Cannot find name 'useCookie'.
+stores/auth.ts(206,32): error TS2304: Cannot find name 'useCookie'.

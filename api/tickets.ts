@@ -4,26 +4,22 @@ import { useAuthStore } from '@/stores/auth'
 const authHeader = () => {
   const authStore = useAuthStore()
   const token = authStore.getToken
-  console.log('Auth token from store:', token) // Debug log
-  
-  // Validate token before using it
+  console.log('Auth token from store:', token)
+
   if (!token || token === '' || token === 'null' || token === 'undefined') {
     console.error('authHeader - Invalid token detected:', token)
     throw new Error('No valid authentication token available')
   }
-  
+
   return { Authorization: `Bearer ${token}` }
 }
 
 export const ticketsApi = () => {
   const base = useApiHost()
   return {
-    // Lookup technicians by role
     listTechnicians: () => $fetch(`${base}/api/admin/user-management?role=TECHNICIAN`, { headers: authHeader() }),
     list: (history?: boolean) => {
-      const url = history 
-        ? `${base}/api/tickets?history=true`
-        : `${base}/api/tickets`
+      const url = history ? `${base}/api/tickets?history=true` : `${base}/api/tickets`
       return $fetch(url, { headers: authHeader() })
     },
     create: (p: any) => $fetch(`${base}/api/tickets`, { method: 'POST', body: p, headers: authHeader() }),
@@ -38,7 +34,7 @@ export const ticketsApi = () => {
       return $fetch(`${base}/api/tickets/${id}/send-to-noc`, {
         method: 'POST',
         body: formData,
-        headers
+        headers,
       })
     },
     sendToCS: (id: number, note: string, type?: string, imageFile?: File) => {
@@ -47,14 +43,13 @@ export const ticketsApi = () => {
       if (type) formData.append('type', type)
       if (imageFile) formData.append('image', imageFile)
 
-      // For FormData, don't include Content-Type header - let browser set it automatically
       const headers: any = authHeader()
       delete headers['Content-Type']
 
       return $fetch(`${base}/api/tickets/${id}/send-to-cs`, {
         method: 'POST',
         body: formData,
-        headers: headers
+        headers,
       })
     },
     nocSolved: (id: number, note: string) => $fetch(`${base}/api/tickets/${id}/noc-solved`, { method: 'POST', body: { note }, headers: authHeader() }),
@@ -67,59 +62,25 @@ export const ticketsApi = () => {
       if (imgTechBf) formData.append('img_tech_bf', imgTechBf)
       if (imgTechAf) formData.append('img_tech_af', imgTechAf)
 
-      // For FormData, don't include Content-Type header - let browser set it automatically
       const headers: any = authHeader()
       delete headers['Content-Type']
 
-      console.log('Sending technician note request:', {
-        url: `${base}/api/tickets/${id}/technician-note`,
-        note,
-        hasImgTechBf: !!imgTechBf,
-        hasImgTechAf: !!imgTechAf,
-        headers
-      })
-
-      // Check file sizes
-      if (imgTechBf && imgTechBf.size > 10 * 1024 * 1024) {
-        throw new Error('Gambar sebelum terlalu besar (maks 10MB)')
-      }
-      if (imgTechAf && imgTechAf.size > 10 * 1024 * 1024) {
-        throw new Error('Gambar sesudah terlalu besar (maks 10MB)')
-      }
-
       try {
-        console.log('FormData contents:')
-        for (let [key, value] of formData.entries()) {
-          console.log(`${key}:`, value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value)
-        }
-        
         const response = await $fetch(`${base}/api/tickets/${id}/technician-note`, {
           method: 'POST',
           body: formData,
-          headers: headers,
-          timeout: 30000 // 30 second timeout
+          headers,
+          timeout: 30000,
         })
-        console.log('Technician note response:', response)
         return response
       } catch (error: any) {
         console.error('Technician note error:', error)
-        console.error('Error details:', {
-          message: error?.message,
-          status: error?.status,
-          statusText: error?.statusText,
-          data: error?.data,
-          name: error?.name
-        })
         throw error
       }
     },
-
-    // Technician accepts the ticket
     accept: (id: number) => $fetch(`${base}/api/tickets/${id}/accept`, { method: 'POST', headers: authHeader() }),
-    // Set team composition
     setTeam: (id: number, members: { user_id: string; role: 'senior' | 'junior' | 'helper' }[]) =>
       $fetch(`${base}/api/tickets/${id}/team`, { method: 'POST', body: { members }, headers: authHeader() }),
-    // Add troubleshooting step (multipart) - multiple images
     addStep: (id: number, description: string, imageFiles?: File[]) => {
       const formData = new FormData()
       formData.append('description', description)
@@ -129,18 +90,14 @@ export const ticketsApi = () => {
       const headers: any = authHeader(); delete headers['Content-Type']
       return $fetch(`${base}/api/tickets/${id}/steps`, { method: 'POST', body: formData, headers })
     },
-    // CS verify & close
     verifyClose: (id: number) => $fetch(`${base}/api/tickets/${id}/verify-close`, { method: 'POST', headers: authHeader() }),
-
     delete: (id: number) => $fetch(`${base}/api/tickets/${id}`, { method: 'DELETE', headers: authHeader() }),
     byType: (startDate?: string, endDate?: string) => {
       const params = new URLSearchParams()
       if (startDate) params.append('start_date', startDate)
       if (endDate) params.append('end_date', endDate)
-      
       const queryString = params.toString()
       const url = queryString ? `${base}/api/tickets/reports/by-type?${queryString}` : `${base}/api/tickets/reports/by-type`
-      
       return $fetch(url, { headers: authHeader() })
     },
     troubleTypes: () => $fetch(`${base}/api/tickets/lookups/trouble-types`, { headers: authHeader() }),
@@ -148,79 +105,57 @@ export const ticketsApi = () => {
     hotspots: () => $fetch(`${base}/api/tickets/reports/hotspots`, { headers: authHeader() }),
     debugRole: () => $fetch(`${base}/api/tickets/debug/role`, { headers: authHeader() }),
     updates: (since: string) => $fetch(`${base}/api/tickets/updates?since=${encodeURIComponent(since)}`, { headers: authHeader() }),
-    
-    // Technician workflow APIs
     getTechnicianSteps: () => $fetch(`${base}/api/tickets/technician-steps`, { method: 'GET', headers: authHeader() }),
     getSpareParts: () => $fetch(`${base}/api/tickets/spare-parts`, { method: 'GET', headers: authHeader() }),
     getTechnicianChecklist: (id: number, technicianId: string) => $fetch(`${base}/api/tickets/${id}/technician-checklist?technician_id=${technicianId}`, { method: 'GET', headers: authHeader() }),
-    updateTechnicianStep: (id: number, stepId: number, technicianId: string, status: string, notes?: string, sparePartsUsed?: string) => $fetch(`${base}/api/tickets/${id}/technician-step`, { 
-      method: 'POST', 
-      headers: authHeader(),
-      body: { step_id: stepId, technician_id: technicianId, status, notes, spare_parts_used: sparePartsUsed }
-    }),
+    updateTechnicianStep: (id: number, stepId: number, technicianId: string, status: string, notes?: string, sparePartsUsed?: string) => $fetch(`${base}/api/tickets/${id}/technician-step`, { method: 'POST', headers: authHeader(), body: { step_id: stepId, technician_id: technicianId, status, notes, spare_parts_used: sparePartsUsed } }),
     getTechnicianProgress: (id: number, technicianId: string) => $fetch(`${base}/api/tickets/${id}/technician-progress?technician_id=${technicianId}`, { method: 'GET', headers: authHeader() }),
     markTechnicianJobCompleted: (id: number) => $fetch(`${base}/api/tickets/${id}/technician-complete`, { method: 'POST', headers: authHeader() }),
-    setNetworkArchitecture: (id: number, architecture: string) => $fetch(`${base}/api/tickets/${id}/network-architecture`, { 
-      method: 'POST', 
-      headers: authHeader(),
-      body: { architecture: architecture }
-    }),
-    // Technician team management
+    setNetworkArchitecture: (id: number, architecture: string) => $fetch(`${base}/api/tickets/${id}/network-architecture`, { method: 'POST', headers: authHeader(), body: { architecture: architecture } }),
     getTeamMembers: (id: number) => $fetch(`${base}/api/tickets/${id}/team-members`, { method: 'GET', headers: authHeader() }),
     updateTechnicianStepWithImages: (id: number, stepId: number, technicianId: string, status: string, notes?: string, sparePartsUsed?: string, images?: File[]) => {
-      const formData = new FormData()
-      formData.append('step_id', stepId.toString())
-      formData.append('technician_id', technicianId)
-      formData.append('status', status)
-      if (notes) formData.append('notes', notes)
-      if (sparePartsUsed) formData.append('spare_parts_used', sparePartsUsed)
+      const formData = new FormData();
+      formData.append('step_id', stepId.toString());
+      formData.append('technician_id', technicianId);
+      formData.append('status', status);
+      if (notes) formData.append('notes', notes);
+      if (sparePartsUsed) formData.append('spare_parts_used', sparePartsUsed);
       if (images && images.length > 0) {
-        images.forEach((img, index) => {
-          formData.append(`images`, img)
-        })
+        images.forEach((img) => { formData.append('images', img) })
       }
-      
-      const headers: any = authHeader()
-      delete headers['Content-Type']
-      
+
+      const headers: any = authHeader();
+      delete headers['Content-Type'];
+
       return $fetch(`${base}/api/tickets/${id}/technician-step`, {
         method: 'POST',
         body: formData,
-        headers
+        headers,
       })
     },
-    
-    // Accumulation management APIs
     getSimilarTroubles: (id: number, timeWindow?: number) => {
-      const params = new URLSearchParams()
-      if (timeWindow) params.append('time_window', timeWindow.toString())
-      
-      const queryString = params.toString()
-      const url = queryString ? `${base}/api/tickets/${id}/similar?${queryString}` : `${base}/api/tickets/${id}/similar`
-      
+      const params = new URLSearchParams();
+      if (timeWindow) params.append('time_window', timeWindow.toString());
+      const queryString = params.toString();
+      const url = queryString ? `${base}/api/tickets/${id}/similar?${queryString}` : `${base}/api/tickets/${id}/similar`;
       return $fetch(url, { headers: authHeader() })
     },
     updateAccumulation: (ticketIds: number[], accumulation: number) => $fetch(`${base}/api/tickets/accumulation`, {
       method: 'POST',
       body: { ticket_ids: ticketIds, accumulation },
-      headers: authHeader()
+      headers: authHeader(),
     }),
     autoDetectAndGroup: () => $fetch(`${base}/api/tickets/accumulation/auto-detect`, {
       method: 'POST',
-      headers: authHeader()
+      headers: authHeader(),
     }),
     getAccumulationStats: () => $fetch(`${base}/api/tickets/accumulation/stats`, { headers: authHeader() }),
     getHighAccumulationTickets: (minAccumulation?: number) => {
-      const params = new URLSearchParams()
-      if (minAccumulation) params.append('min_accumulation', minAccumulation.toString())
-      
-      const queryString = params.toString()
-      const url = queryString ? `${base}/api/tickets/accumulation/high?${queryString}` : `${base}/api/tickets/accumulation/high`
-      
+      const params = new URLSearchParams();
+      if (minAccumulation) params.append('min_accumulation', minAccumulation.toString());
+      const queryString = params.toString();
+      const url = queryString ? `${base}/api/tickets/accumulation/high?${queryString}` : `${base}/api/tickets/accumulation/high`;
       return $fetch(url, { headers: authHeader() })
     },
-    
   }
 }
-
-

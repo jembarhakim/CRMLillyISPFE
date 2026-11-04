@@ -1,0 +1,2 @@
+﻿result=running log=25184 node=2
+[nuxt] â„¹ Compiled error-component.mjs in 50.37ms

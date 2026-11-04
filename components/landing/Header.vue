@@ -1,5 +1,13 @@
 <template>
-    <header class="fixed top-0 left-0 right-0 z-[60] flex flex-col transition-all duration-300">
+    <!--
+      z-index is scoped to the landing page only: on other routes this fixed
+      header would float above the page content and intercept every click
+      (e.g. the customer login form).
+    -->
+    <header
+        class="fixed top-0 left-0 right-0 z-40 flex flex-col transition-all duration-300"
+        :class="isLandingPage ? 'z-[60]' : 'hidden'"
+    >
 
         <!-- 1. NAVBAR ATAS (Gelap & Ramping) -->
         <div class="bg-[#111111] text-gray-400 border-b border-gray-800">
@@ -32,7 +40,7 @@
 
                 <!-- Kanan: Login & Bahasa -->
                 <div class="flex items-center h-full">
-                    <a href="/login" class="flex items-center gap-1.5 hover:text-white transition-colors px-3 sm:px-4">
+                    <a href="/customer/login" class="flex items-center gap-1.5 hover:text-white transition-colors px-3 sm:px-4">
                         Login <i class="fas fa-arrow-up-right-from-square text-[10px]"></i>
                     </a>
 
@@ -109,7 +117,7 @@
                         {{ item.label }} <i class="fas fa-chevron-right text-sm text-gray-300"></i>
                     </a>
                     <div class="mt-6 pt-6 border-t border-gray-100 flex flex-col gap-3">
-                        <a href="/login"
+                        <a href="/customer/login"
                             class="text-center px-4 py-3 bg-gray-100 text-gray-800 font-bold rounded-xl">Masuk Akun</a>
                         <a href="#id_contact_us" @click="mobileMenuOpen = false"
                             class="text-center px-4 py-3 bg-[#A93133] text-white font-bold rounded-xl">Hubungi Kami</a>
@@ -123,6 +131,11 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+
+// Only render/stack this fixed header on the landing page. Anywhere else it
+// would sit above the page content and block clicks.
+const route = useRoute()
+const isLandingPage = computed(() => route.path === '/landing' || route.path === '/')
 
 // Fungsi untuk Smooth Scroll dengan kompensasi tinggi Navbar (Tahan Banting)
 const scrollToSection = (event, href) => {

@@ -90,8 +90,10 @@ export default defineNuxtPlugin((nuxtApp) => {
                 hasValidToken && 
                 !isInitialLoad) {
                 
-                // Redirect based on user type
-                const redirectPath = userType === 'employee' ? '/employee' : '/login'
+                // Redirect based on user type; customers go back to the portal login
+                const redirectPath = location.pathname.startsWith('/customer')
+                    ? '/customer/login'
+                    : (userType === 'employee' ? '/employee' : '/login')
                 console.log('Redirecting to', redirectPath, 'due to 401 error')
                 await navigateTo(redirectPath)
             }
