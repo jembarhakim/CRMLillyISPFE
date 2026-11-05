@@ -144,6 +144,7 @@ const itemsMenu = (row: Item) => [
 const tableColumns = [
   { key: "name", label: "Name" },
   { key: "default_unit", label: "Default Unit" },
+  { key: "minimum_stock", label: "Minimum Stock" },
   { key: "category", label: "Category" },
   { key: "description", label: "Description" },
   { key: "asset", label: "Linked Asset" },
@@ -231,6 +232,14 @@ const tableColumns = [
             <UBadge
               :label="row.default_unit"
               color="blue"
+              variant="soft"
+              size="sm"
+            />
+          </template>
+          <template #minimum_stock-data="{ row }">
+            <UBadge
+              :label="String(row.minimum_stock ?? 0)"
+              color="gray"
               variant="soft"
               size="sm"
             />

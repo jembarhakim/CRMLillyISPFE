@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { object, string, type InferType } from "yup";
+import { object, string, number, type InferType } from "yup";
 import type { FormSubmitEvent } from "#ui/types";
 import { itemsCatalogAdminApi } from "@/api/admin/items-catalog";
 import { useNotificationStore } from "@/stores/notification";
@@ -13,6 +13,11 @@ const schema = object({
   default_unit: string()
     .required("Default unit is required")
     .oneOf(["PCS", "M", "KG", "BOX", "ROLL"], "Invalid unit"),
+  minimum_stock: number()
+    .typeError("Minimum stock must be a number")
+    .integer("Minimum stock must be a whole number")
+    .min(0, "Minimum stock cannot be negative")
+    .required("Minimum stock is required"),
   category: string().optional(),
   description: string().optional(),
   asset_id: string().optional(),
@@ -21,6 +26,7 @@ const schema = object({
 const state = reactive<CreateItemRequest & { loading: boolean }>({
   name: "",
   default_unit: "PCS",
+  minimum_stock: 0,
   category: undefined,
   description: undefined,
   asset_id: undefined,
@@ -59,6 +65,7 @@ watch(
     if (newValue && props.data) {
       state.name = props.data.name;
       state.default_unit = props.data.default_unit as any;
+      state.minimum_stock = props.data.minimum_stock ?? 0;
       state.category = props.data.category || undefined;
       state.description = props.data.description || undefined;
       state.asset_id = props.data.asset_id || undefined;
@@ -72,6 +79,7 @@ watch(
 function clearState() {
   state.name = "";
   state.default_unit = "PCS";
+  state.minimum_stock = 0;
   state.category = undefined;
   state.description = undefined;
   state.asset_id = undefined;
@@ -86,6 +94,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     const submitData: CreateItemRequest = {
       name: state.name,
       default_unit: state.default_unit,
+      minimum_stock: Number(state.minimum_stock),
       category: state.category || undefined,
       description: state.description || undefined,
       asset_id: state.asset_id || undefined,
@@ -143,6 +152,19 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
             option-attribute="label"
             value-attribute="value"
           />
+        </UFormGroup>
+
+        <UFormGroup label="Minimum Stock" name="minimum_stock" required>
+          <UInput
+            v-model.number="state.minimum_stock"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="e.g., 5"
+          />
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Alert threshold: stock at or below this value needs reordering
+          </p>
         </UFormGroup>
 
         <UFormGroup label="Category (Optional)" name="category">
