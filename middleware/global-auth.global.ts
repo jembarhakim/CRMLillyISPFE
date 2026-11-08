@@ -21,13 +21,14 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     return;
   }
 
-  // Handle login page - redirect to dashboard if already logged in
+  // Keep the legacy customer login URL pointed at the customer portal.
   if (to.path === '/login') {
     if (authStore.isLoggedIn) {
-      console.log('Global auth middleware: User already logged in, redirecting to dashboard');
-      return navigateTo('/dashboard');
+      const destination = authStore.userType === 'employee' ? '/dashboard' : '/customer'
+      console.log('Global auth middleware: User already logged in, redirecting to:', destination);
+      return navigateTo(destination);
     }
-    return; // Allow access to login page if not logged in
+    return navigateTo('/customer/login')
   }
 
   // Handle employee login page

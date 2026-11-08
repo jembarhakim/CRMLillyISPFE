@@ -342,7 +342,7 @@ onUnmounted(() => {
                             <span class="font-bold text-[#A93133]">30 Detik</span>
                         </li>
                     </ul>
-                </div>
+        <!--  -->        </div>
             </div>
         </div>
     </div>
