@@ -2,6 +2,31 @@ export const mikrotikAdminApi = () => {
   const api = useApiHost();
   const authStore = useAuthStore();
 
+  const parseResponse = async <T>(response: Response, fallbackMessage: string): Promise<T> => {
+    const responseText = await response.text();
+    let payload: unknown;
+
+    try {
+      payload = JSON.parse(responseText);
+    } catch {
+      const detail = responseText.trim().slice(0, 400);
+      throw new Error(
+        `${fallbackMessage} (HTTP ${response.status}): ${
+          detail || "server returned an empty, non-JSON response"
+        }`,
+      );
+    }
+
+    const result =
+      typeof payload === "object" && payload !== null
+        ? (payload as { success?: boolean; message?: string } & Record<string, unknown>)
+        : {};
+    if (!response.ok || result.success === false) {
+      throw new Error(result.message || `${fallbackMessage} (HTTP ${response.status})`);
+    }
+    return result as T;
+  };
+
   const requestRouterOS = async <T>(
     path: string,
     method = "GET",
@@ -20,11 +45,7 @@ export const mikrotikAdminApi = () => {
       },
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
-    const result = await response.json();
-    if (!response.ok || !result.success) {
-      throw new Error(result.message || "Permintaan RouterOS API gagal");
-    }
-    return result as T;
+    return parseResponse<T>(response, `Permintaan RouterOS API ${method} ${path} gagal`);
   };
 
   return {
@@ -38,11 +59,7 @@ export const mikrotikAdminApi = () => {
         },
         body: JSON.stringify(config),
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Connection failed');
-      }
-      return response.json();
+      return parseResponse(response, "Gagal menghubungkan MikroTik");
     },
 
     disconnect: async () => {
@@ -53,11 +70,7 @@ export const mikrotikAdminApi = () => {
           Authorization: `Bearer ${useCookie("token").value}`,
         },
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Disconnection failed');
-      }
-      return response.json();
+      return parseResponse(response, "Gagal memutus koneksi MikroTik");
     },
 
     getStatus: async () => {
@@ -68,11 +81,7 @@ export const mikrotikAdminApi = () => {
           Authorization: `Bearer ${useCookie("token").value}`,
         },
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to get status');
-      }
-      return response.json();
+      return parseResponse(response, "Gagal membaca status MikroTik");
     },
 
     // Hotspot IP binding management
@@ -88,11 +97,7 @@ export const mikrotikAdminApi = () => {
           type: type
         }),
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to set IP binding type');
-      }
-      return response.json();
+      return parseResponse(response, "Gagal mengubah tipe IP Binding");
     },
 
     getHotspotIPBindings: async () => {
@@ -103,11 +108,7 @@ export const mikrotikAdminApi = () => {
           Authorization: `Bearer ${useCookie("token").value}`,
         },
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to get IP bindings');
-      }
-      return response.json();
+      return parseResponse(response, "Gagal membaca IP Binding");
     },
 
     getHotspotIPBindingByMAC: async (macAddress: string) => {
@@ -118,11 +119,7 @@ export const mikrotikAdminApi = () => {
           Authorization: `Bearer ${useCookie("token").value}`,
         },
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to get IP binding');
-      }
-      return response.json();
+      return parseResponse(response, "Gagal membaca IP Binding berdasarkan MAC");
     },
 
     // Execute custom command
@@ -135,11 +132,7 @@ export const mikrotikAdminApi = () => {
         },
         body: JSON.stringify({ command }),
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Command execution failed');
-      }
-      return response.json();
+      return parseResponse(response, "Gagal menjalankan perintah MikroTik");
     },
 
     // Get DHCP lease for sticker MAC address
@@ -152,11 +145,7 @@ export const mikrotikAdminApi = () => {
         },
         body: JSON.stringify({ sticker_mac: stickerMac }),
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to get DHCP lease');
-      }
-      return response.json();
+      return parseResponse(response, "Gagal membaca DHCP lease");
     },
 
     routerOS: {
@@ -171,6 +160,31 @@ export const mikrotikAdminApi = () => {
       getStatus: () => requestRouterOS("/status"),
       listDudeDevices: () => requestRouterOS("/dude/devices"),
       listDudeServices: () => requestRouterOS("/dude/services"),
+      listHotspotUsers: () => requestRouterOS("/hotspot/users"),
+      listHotspotProfiles: () => requestRouterOS("/hotspot/profiles"),
+      listHotspotActiveSessions: () => requestRouterOS("/hotspot/active"),
+      resolveHotspotDeviceBindings: (addresses: string[]) =>
+        requestRouterOS("/hotspot/device-bindings/resolve", "POST", { addresses }),
+      setHotspotDeviceBindingType: (address: string, type: "blocked" | "restore") =>
+        requestRouterOS("/hotspot/device-bindings/set-type", "POST", { address, type }),
+      createHotspotUser: (input: {
+        name: string;
+        password: string;
+        profile?: string;
+        comment?: string;
+      }) => requestRouterOS("/hotspot/users", "POST", input),
+      updateHotspotUser: (name: string, input: {
+        password?: string;
+        profile?: string;
+        address?: string;
+        limit_uptime?: string;
+        comment?: string;
+        disabled?: boolean;
+      }) => requestRouterOS(`/hotspot/users/${encodeURIComponent(name)}`, "PUT", input),
+      deleteHotspotUser: (name: string) =>
+        requestRouterOS(`/hotspot/users/${encodeURIComponent(name)}`, "DELETE"),
+      kickHotspotUser: (name: string) =>
+        requestRouterOS(`/hotspot/active/${encodeURIComponent(name)}/kick`, "POST"),
     },
   };
 };

@@ -195,6 +195,13 @@ export const MAIN_MENU: MenuItem[] = [
     description: 'Invoice management'
   },
   {
+    label: 'Field Payments',
+    icon: 'heroicons:banknotes',
+    link: '/dashboard/field-payments',
+    roles: [ROLES.SUPERADMIN, ROLES.FINANCE, ROLES.TECHNICIAN],
+    description: 'Technician cash collection and finance settlement'
+  },
+  {
     label: 'Recurring Invoices',
     icon: 'heroicons:arrow-path',
     link: '/dashboard/recurring-invoice',

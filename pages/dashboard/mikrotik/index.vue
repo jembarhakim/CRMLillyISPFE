@@ -5,16 +5,16 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center py-6">
           <div>
-            <h1 class="text-2xl font-bold text-gray-900">Monitoring Jaringan</h1>
-            <p class="text-sm text-gray-600">Pantau semua perangkat yang terdaftar di server The Dude</p>
+            <h1 class="text-2xl font-bold text-gray-900">Manajemen MikroTik</h1>
+            <p class="text-sm text-gray-600">Kelola akun Hotspot lokal, sesi aktif, profil, dan IP Binding</p>
           </div>
-          <span class="rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">The Dude API</span>
+          <span class="rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">RouterOS API</span>
         </div>
       </div>
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <TheDudeMonitor class="mb-8" />
+      <HotspotManager class="mb-8" />
 
       <details class="mb-8 rounded-lg border border-gray-200 bg-white p-4">
         <summary class="cursor-pointer font-medium text-gray-700">Monitoring SSH lama (opsional, bukan daftar perangkat The Dude)</summary>
@@ -286,7 +286,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useApiHost } from '~/composables/useApiHost'
 import { useAuthStore } from '~/stores/auth'
 import LucideIcon from '@/components/LucideIcon.vue'
-import TheDudeMonitor from '@/components/mikrotik/TheDudeMonitor.vue'
+import HotspotManager from '@/components/mikrotik/HotspotManager.vue'
 
 // Set page title
 useHead({
