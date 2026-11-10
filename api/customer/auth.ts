@@ -18,14 +18,14 @@ export const authCustomerApi = () => {
     };
 
     return {
-        loginAuth: async (email: string, password: string) => {
+        loginAuth: async (phone: string, password: string) => {
             const response = await fetch(`${api}/api/auth/login-customer`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    email,
+                    phone,
                     password,
                 }),
             });
