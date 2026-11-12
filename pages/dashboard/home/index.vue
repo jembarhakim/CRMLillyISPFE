@@ -1,5 +1,50 @@
 <script setup lang="ts">
 import FormAddComponent from './FormAddComponent.vue'
+import { useKumaMonitoring } from '~/composables/useKumaMonitoring'
+
+const lilly = useKumaMonitoring('lilly')
+const menara = useKumaMonitoring('menara')
+const bedjo = useKumaMonitoring('bedjo')
+
+onMounted(() => {
+    lilly.connect()
+    menara.connect()
+    bedjo.connect()
+})
+
+onUnmounted(() => {
+    lilly.disconnect()
+    menara.disconnect()
+    bedjo.disconnect()
+})
+
+const kumaNodes = computed(() => {
+    const sources = [
+        { label: 'Lilly', monitoring: lilly },
+        { label: 'Menara', monitoring: menara },
+        { label: 'Bedjo', monitoring: bedjo },
+    ]
+
+    return sources.map(({ label, monitoring }) => {
+        const page = monitoring.data.value as any
+        const monitors = page?.publicGroupList?.flatMap((group: any) => group.monitorList || []) || []
+        const monitor = monitors.find((item: any) =>
+            String(item.name || '').toLowerCase().includes(label.toLowerCase())
+        ) || monitors[0]
+
+        const heartbeat = monitor?.id != null
+            ? page?.heartbeatList?.[String(monitor.id)]?.at(-1)
+            : null
+
+        return {
+            label,
+            monitorName: monitor?.name || label,
+            status: heartbeat?.status === 1 ? 'up' : heartbeat?.status === 0 ? 'down' : 'pending',
+            latency: heartbeat?.ping != null ? Number(heartbeat.ping) : 0,
+        }
+    })
+})
+
 const people = [{
     id: 1,
     name: 'Lindsay Walton',
@@ -121,6 +166,35 @@ const isOpen = ref(false)
 <template>
 
     <UButton label="Add Customer" @click="isOpen = true" />
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-4">
+        <div
+            v-for="node in kumaNodes"
+            :key="node.label"
+            class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4"
+        >
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ node.label }}</p>
+                    <p class="text-xs text-gray-500">{{ node.monitorName }}</p>
+                </div>
+                <span
+                    class="inline-block h-3 w-3 rounded-full"
+                    :class="{
+                        'bg-green-500': node.status === 'up',
+                        'bg-red-500': node.status === 'down',
+                        'bg-yellow-500': node.status === 'pending'
+                    }"
+                    :title="node.status"
+                />
+            </div>
+            <p class="mt-3 text-sm font-medium" :class="node.status === 'down' ? 'text-red-600' : 'text-gray-700 dark:text-gray-300'">
+                {{ node.status === 'up' ? 'UP' : node.status === 'down' ? 'DOWN' : 'Pending' }}
+                <span class="ml-1 text-xs text-gray-500">{{ node.latency }} ms</span>
+            </p>
+        </div>
+    </div>
+
     <div class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700">
         <UInput v-model="q" placeholder="Search" />
     </div>

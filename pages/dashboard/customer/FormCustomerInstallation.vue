@@ -78,6 +78,12 @@ const schema = object({
       const num = parseFloat(value || "0");
       return num > 0;
     }),
+  rx_power: string()
+    .required("Hasil ukur redaman OPM wajib diisi")
+    .test("valid-opm", "Nilai redaman OPM tidak valid", (value) => {
+      const num = Number(value);
+      return value !== "" && Number.isFinite(num) && num >= -60 && num <= 20;
+    }),
 });
 
 const state = reactive({
@@ -119,6 +125,8 @@ const state = reactive({
   product_id: "", // Package/Product selection
   switch_id: "",
   port_number: "",
+  odp_id: "",
+  odp_port_number: null as number | null,
   remote_port: "",
   eth_port: "",
   ip_static: "",
@@ -134,6 +142,7 @@ const state = reactive({
   password: "",
   user_status: "Active",
   installation_notes: "",
+  rx_power: "",
 
   // UI State
   loading: false,
@@ -142,6 +151,8 @@ const state = reactive({
   isTrial: false, // Whether this is a trial installation (affects service_activation_date)
   customers: [] as any[],
   availableTechnicians: [] as any[], // List of available technicians from DB
+  odps: [] as any[],
+  odpPorts: [] as any[],
   assets: [] as any[],
   products: [] as any[], // Available products/packages
   documentPreview: "",
@@ -149,6 +160,7 @@ const state = reactive({
 
   // Asset item tracking
   asset_item_id: "" as string | any, // Track the specific asset item selected
+  ont_serial_number: "" as string,
 
   // Technician Photo Documentation
   technician_photos: [] as string[], // Stores uploaded file paths/URLs (after successful form submission)
@@ -163,6 +175,14 @@ const state = reactive({
   pendingMacUpdate: null as
     | { mac: string; shifted_mac?: string; sticker_mac?: string | null }
     | null,
+});
+
+const opmStatus = computed(() => {
+  const value = Number(state.rx_power);
+  if (state.rx_power === "" || !Number.isFinite(value)) return null;
+  if (value > -20) return { label: "Normal - sinyal sangat baik", class: "bg-green-100 text-green-800" };
+  if (value >= -24) return { label: "Warning - perlu diperhatikan", class: "bg-yellow-100 text-yellow-800" };
+  return { label: "Kritis - redaman terlalu tinggi. Periksa kembali splicing atau lekukan kabel sebelum aktivasi", class: "bg-red-100 text-red-800" };
 });
 
 // Create a ref for the file input
@@ -190,6 +210,10 @@ function geocodeIfCoordinatesReady(force: boolean = false) {
 // Available asset items for MAC address selection
 const availableAssetItems = ref<{ [assetId: string]: any[] }>({});
 
+const availableOdpPortCount = computed(() =>
+  state.odpPorts.filter((port: any) => port.status === "available").length
+);
+
 // Watch for asset changes to clear MAC address selection
 watch(
   () => state.assets_id,
@@ -209,6 +233,7 @@ watch(
     if (!newAssetItemId) {
       state.mac_address = ""; // Clear MAC address
       state.mac_sticker = "";
+      state.ont_serial_number = "";
       return;
     }
 
@@ -223,7 +248,9 @@ watch(
         (newAssetItemId as any).mac_sticker ||
         (newAssetItemId as any).mac_address ||
         "";
-      console.log("Updated MAC address to:", state.mac_address);
+      state.ont_serial_number =
+        (newAssetItemId as any).serial_number || "";
+      console.log("Updated MAC address and ONT serial to:", state.mac_address, state.ont_serial_number);
     }
   }
 );
@@ -671,6 +698,15 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       return;
     }
 
+    if (state.odp_id && availableOdpPortCount.value === 0) {
+      notification.error("Validation Error", "Port ODP ini sudah penuh");
+      return;
+    }
+    if (state.odp_id && !state.odp_port_number) {
+      notification.error("Validation Error", "Pilih port ODP yang tersedia");
+      return;
+    }
+
     // Create FormData for multipart form submission
     const formData = new FormData();
 
@@ -733,9 +769,12 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       }
     }
     formData.append("asset_item_id", assetItemId); // Include specific asset item ID
+    if (state.ont_serial_number) formData.append("ont_serial_number", state.ont_serial_number);
     if (state.product_id) formData.append("product_id", state.product_id); // Include selected product/package
     formData.append("switch_id", state.switch_id);
     formData.append("port_number", state.port_number);
+    if (state.odp_id) formData.append("odp_id", state.odp_id);
+    if (state.odp_port_number) formData.append("odp_port_number", String(state.odp_port_number));
     formData.append("remote_port", state.remote_port);
     formData.append("eth_port", state.eth_port);
     formData.append("ip_static", state.ip_static);
@@ -751,6 +790,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     formData.append("password", state.password);
     formData.append("user_status", state.user_status);
     formData.append("installation_notes", state.installation_notes);
+    formData.append("rx_power", state.rx_power);
 
     // Append document photo if selected
     if (state.document_photo) {
@@ -1805,6 +1845,7 @@ async function onAssetChange(assetId: string) {
   // Always clear the MAC address selection when asset changes
   state.mac_address = ""; // This clears both Network Device and MikroTik MAC address
   state.asset_item_id = "";
+  state.ont_serial_number = "";
 
   if (!assetId) {
     return;
@@ -1816,9 +1857,10 @@ async function onAssetChange(assetId: string) {
     if (response.success) {
       availableAssetItems.value[assetId] = response.data.map((item: any) => ({
         value: item.id, // Use item ID as value for better tracking
-        label: `${item.mac_address} (${item.status})`,
+        label: `${item.mac_address}${item.serial_number ? ` / SN: ${item.serial_number}` : ""} (${item.status})`,
         id: item.id,
         mac_address: item.mac_address,
+        serial_number: item.serial_number || "",
         mac_sticker: item.mac_sticker || item.mac_address,
         status: item.status,
       }));
@@ -1979,6 +2021,37 @@ async function fetchDHCPLease() {
   }
 }
 
+async function loadODPs() {
+  const api = useApiHost();
+  const token = useCookie("auth_token").value || authStore.token;
+  try {
+    const response = await $fetch(`${api.baseUrl}/api/admin/network-nodes?type=odp`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    state.odps = (response as any)?.data || [];
+  } catch (error) {
+    console.error("Failed to load ODP list:", error);
+  }
+}
+
+async function loadOdpPorts(odpId: string) {
+  state.odp_port_number = null;
+  state.odpPorts = [];
+  if (!odpId) return;
+  const api = useApiHost();
+  const token = useCookie("auth_token").value || authStore.token;
+  try {
+    const response = await $fetch(`${api.baseUrl}/api/admin/odp/${odpId}/ports`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    state.odpPorts = (response as any)?.data || [];
+  } catch (error) {
+    console.error("Failed to load ODP ports:", error);
+  }
+}
+
+watch(() => state.odp_id, loadOdpPorts);
+
 // Load data on component mount
 onMounted(async () => {
   console.log("[FormCustomerInstallation] Component mounted, loading data...");
@@ -2080,6 +2153,7 @@ onMounted(async () => {
       loadTechnicians(),
       loadAssets(),
       loadProducts(),
+      loadODPs(),
     ]);
 
     // Always load terminal installations (available for all installations)
@@ -3710,6 +3784,50 @@ onMounted(async () => {
               />
             </UFormGroup>
 
+            <UFormGroup name="odp_id" label="ODP">
+              <USelectMenu
+                v-model="state.odp_id"
+                :options="state.odps"
+                placeholder="Pilih ODP terdekat"
+                searchable
+                option-attribute="name"
+                value-attribute="id"
+                class="w-full customer-select"
+              />
+              <p v-if="state.odp_id" class="mt-1 text-xs text-gray-600">
+                Sisa port tersedia: <strong>{{ availableOdpPortCount }}</strong>
+              </p>
+            </UFormGroup>
+
+            <UFormGroup name="odp_port_number" label="Port ODP">
+              <USelectMenu
+                v-model="state.odp_port_number"
+                :options="state.odpPorts.filter((port: any) => port.status === 'available')"
+                placeholder="Pilih port tersedia"
+                option-attribute="port_number"
+                value-attribute="port_number"
+                :disabled="!state.odp_id || availableOdpPortCount === 0"
+                class="w-full customer-select"
+              />
+              <div v-if="state.odpPorts.length" class="mt-2 flex flex-wrap gap-2">
+                <button
+                  v-for="port in state.odpPorts"
+                  :key="port.id"
+                  type="button"
+                  class="h-8 w-8 rounded text-xs font-semibold text-white"
+                  :class="{
+                    'bg-gray-400': port.status === 'available',
+                    'bg-blue-600': port.status === 'occupied',
+                    'bg-red-600': port.status === 'damaged'
+                  }"
+                  :disabled="port.status !== 'available'"
+                  @click="state.odp_port_number = port.port_number"
+                >
+                  {{ port.port_number }}
+                </button>
+              </div>
+            </UFormGroup>
+
             <UFormGroup name="remote_port">
               <template #label>
                 <div class="flex items-center gap-2">
@@ -4381,6 +4499,25 @@ onMounted(async () => {
               </p>
             </UFormGroup>
 
+            <UFormGroup name="rx_power">
+              <template #label>
+                <span>Hasil Ukur Redaman OPM (dBm) <span class="text-red-500">*</span></span>
+              </template>
+              <UInput
+                v-model="state.rx_power"
+                type="number"
+                step="0.01"
+                min="-60"
+                max="20"
+                placeholder="-19.50"
+                required
+                class="w-full customer-input"
+              />
+              <div v-if="opmStatus" :class="['mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium', opmStatus.class]">
+                {{ opmStatus.label }}
+              </div>
+            </UFormGroup>
+
             <UFormGroup name="end_port_type">
               <template #label>
                 <div class="flex items-center gap-2">
@@ -4500,7 +4637,8 @@ onMounted(async () => {
                 !state.customer_id ||
                 state.technicians.length === 0 ||
                 !state.assets_id ||
-                !state.product_id
+                !state.product_id ||
+                (state.odp_id !== '' && (availableOdpPortCount === 0 || !state.odp_port_number))
               "
               name="alert-triangle"
               :size="20"
@@ -4595,4 +4733,3 @@ onMounted(async () => {
     </UCard>
   </UModal>
 </template>
-

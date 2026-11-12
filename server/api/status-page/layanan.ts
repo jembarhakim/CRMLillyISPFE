@@ -73,13 +73,13 @@ export default defineEventHandler(async (event) => {
           if (statusMap[monitor.name] !== undefined) {
             realStatus = statusMap[monitor.name]
             statusMessage = 'Real-time'
-            pingValue = realStatus === 1 ? Math.floor(Math.random() * 50) + 5 : 0
+            pingValue = realStatus === 1 ? (originalHeartbeats[monitor.id]?.at(-1)?.ping || 0) : 0
           }
           // Try normalized name match from metrics
           else if (normalizedStatusMap[normalizedMonitorName] !== undefined) {
             realStatus = normalizedStatusMap[normalizedMonitorName]
             statusMessage = 'Real-time'
-            pingValue = realStatus === 1 ? Math.floor(Math.random() * 50) + 5 : 0
+            pingValue = realStatus === 1 ? (originalHeartbeats[monitor.id]?.at(-1)?.ping || 0) : 0
           }
           // Fallback to original heartbeat data
           else if (originalHeartbeats[monitor.id]) {

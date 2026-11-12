@@ -84,7 +84,7 @@ import {
     Send,
     SendHorizontal,
     Loader2,
-    Newspaper,
+    Table2,
 } from "lucide-vue-next";
 
 const props = defineProps({
@@ -205,7 +205,7 @@ const iconMap = {
     "paper-plane": Send,
     "loader-2": Loader2,
     loader: Loader2,
-    newspaper: Newspaper,
+    table: Table2,
 };
 
 const iconComponent = computed(() => {

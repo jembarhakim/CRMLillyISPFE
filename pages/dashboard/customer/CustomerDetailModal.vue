@@ -358,6 +358,148 @@
 
             
 
+            <div class="bg-white border border-gray-200 rounded-lg p-6">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Riwayat Pengukuran Redaman Fisik (OPM)</h3>
+              <div v-if="customerDetail?.optical_readings?.length" class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                  <thead class="text-left text-gray-500">
+                    <tr>
+                      <th class="py-2 pr-4">Tanggal Ukur</th>
+                      <th class="py-2 pr-4">Teknisi</th>
+                      <th class="py-2 pr-4">Nilai dBm</th>
+                      <th class="py-2">Status Kabel</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="reading in customerDetail.optical_readings" :key="reading.id" class="border-t border-gray-100">
+                      <td class="py-2 pr-4">{{ formatDate(reading.created_at) }}</td>
+                      <td class="py-2 pr-4">{{ reading.technician_name || reading.technician_id || '-' }}</td>
+                      <td class="py-2 pr-4 font-mono">{{ Number(reading.rx_power).toFixed(2) }} dBm</td>
+                      <td class="py-2">
+                        <span :class="[
+                          'inline-flex px-2 py-1 text-xs font-medium rounded-full',
+                          reading.optical_status === 'normal' ? 'bg-green-100 text-green-800' :
+                          reading.optical_status === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        ]">
+                          {{ reading.optical_status === 'normal' ? 'Normal' : reading.optical_status === 'warning' ? 'Warning' : 'Kritis' }}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p v-else class="text-sm text-gray-500">Belum ada pengukuran redaman fisik.</p>
+
+              <div v-if="customerDetail?.link_stability?.status === 'link_flapping'" class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                Link Flapping terdeteksi: {{ customerDetail.link_stability.disconnect_count }} pemutusan dalam 15 menit.
+              </div>
+            </div>
+
+            <!-- Legacy GenieACS panel intentionally hidden in NET-06 physical OPM mode. -->
+            <div v-if="false && ontStatus && ontStatus.serial_number"
+                 class="bg-white border border-gray-200 rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Status ONT (GenieACS)</h3>
+                <UButton size="xs" color="blue" :loading="isOntRefreshing" @click="refreshOnt">
+                  Refresh ONT
+                </UButton>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-700">Status Koneksi</label>
+                  <span :class="[
+                    'inline-flex px-2 py-1 text-xs font-medium rounded-full',
+                    ontStatus.is_online ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  ]">
+                    {{ ontStatus.is_online ? 'ONLINE' : (ontStatus.is_stale ? 'OFFLINE (data terakhir)' : 'OFFLINE') }}
+                  </span>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-700">Status Redaman</label>
+                  <span :class="['inline-flex px-2 py-1 text-xs font-medium rounded-full', ontOpticalBadgeClass]">
+                    {{ ontOpticalLabel }}
+                  </span>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-700">Rx Power</label>
+                  <p class="text-sm text-gray-900">{{ formatDbm(ontStatus.rx_power) }}</p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-700">Tx Power</label>
+                  <p class="text-sm text-gray-900">{{ formatDbm(ontStatus.tx_power) }}</p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-700">Serial Number</label>
+                  <p class="text-sm text-gray-900">{{ ontStatus.serial_number || 'N/A' }}</p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-700">Perangkat</label>
+                  <p class="text-sm text-gray-900">
+                    {{ [ontStatus.manufacturer, ontStatus.model_name].filter(Boolean).join(' ') || 'N/A' }}
+                  </p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-700">IP Address</label>
+                  <p class="text-sm text-gray-900">{{ ontStatus.ip_address || ontStatus.ip_static || 'N/A' }}</p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-700">MAC Address</label>
+                  <p class="text-sm text-gray-900">{{ ontStatus.mac_address || 'N/A' }}</p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-700">SSID</label>
+                  <p class="text-sm text-gray-900">{{ ontStatus.ssid || 'N/A' }}</p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-700">Client WiFi</label>
+                  <p class="text-sm text-gray-900">{{ ontStatus.client_count ?? 0 }}</p>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-gray-700">Last Inform</label>
+                  <p class="text-sm text-gray-900">{{ formatOntDateTime(ontStatus.last_inform) }}</p>
+                </div>
+
+                <div class="md:col-span-2">
+                  <label class="block text-xs font-medium text-gray-700">Software Version</label>
+                  <p class="text-sm text-gray-900">{{ ontStatus.software_version || 'N/A' }}</p>
+                </div>
+              </div>
+
+              <!-- Optical history sparkline (rx power over time) -->
+              <div v-if="ontHistory && ontHistory.length > 1" class="mt-4 pt-4 border-t border-gray-200">
+                <label class="block text-xs font-medium text-gray-700 mb-2">
+                  Riwayat Redaman ({{ ontHistory.length }} sampel)
+                </label>
+                <div class="flex items-end gap-0.5 h-16">
+                  <div
+                    v-for="(point, idx) in ontHistory"
+                    :key="idx"
+                    class="flex-1 rounded-t"
+                    :class="{
+                      'bg-green-500': point.optical_status === 'normal',
+                      'bg-amber-500': point.optical_status === 'warning',
+                      'bg-red-500': point.optical_status === 'critical',
+                      'bg-gray-400': !point.optical_status || point.optical_status === 'unknown'
+                    }"
+                    :style="{ height: `${Math.min(100, Math.max(10, Math.abs(Number(point.rx_power || 0)) * 3))}%` }"
+                    :title="`${formatDbm(point.rx_power)} — ${formatOntDateTime(point.recorded_at)}`"
+                  ></div>
+                </div>
+              </div>
+            </div>
+
             <!-- Network Devices (Only show if customer has installation reports) -->
 <div
 v-if="
@@ -371,8 +513,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
   <h3 class="text-lg font-semibold text-gray-900 mb-4">Network Devices Status</h3>
   <div class="space-y-4">
     <div v-for="device in activeNetworkDevices" :key="device.id">
-
-                  class="bg-white rounded-lg p-4 border">
+      <div class="bg-white rounded-lg p-4 border">
                   <div class="flex items-center justify-between mb-3">
                     <h4 class="text-sm font-semibold text-gray-900">Device {{ device.id }}</h4>
                     <div class="flex items-center space-x-2">
@@ -416,10 +557,24 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                         ${device.assets.model}` : 'N/A' }}</p>
                     </div>
 
-                    <!-- Serial Number from Assets -->
+                    <!-- Serial Number from physical asset unit (AssetItem), fallback to catalog -->
                     <div>
                       <label class="block text-xs font-medium text-gray-700">Serial Number</label>
-                      <p class="text-sm text-gray-900">{{ device.assets?.serial_number || 'N/A' }}</p>
+                      <p class="text-sm text-gray-900">{{ getRouterSerial(device) }}</p>
+                    </div>
+
+                    <!-- Asset unit status (in_stock / in_use / ...) -->
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700">Status Unit</label>
+                      <span :class="[
+                        'inline-flex px-2 py-1 text-xs font-medium rounded-full',
+                        device.asset_item?.status === 'in_use' ? 'bg-blue-100 text-blue-800' :
+                          device.asset_item?.status === 'in_stock' ? 'bg-green-100 text-green-800' :
+                            device.asset_item?.status === 'damaged' ? 'bg-red-100 text-red-800' :
+                              device.asset_item?.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+                      ]">
+                        {{ getAssetItemStatusLabel(device) }}
+                      </span>
                     </div>
 
                     <!-- Port Information from network device -->
@@ -517,6 +672,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                     </div>
                   </div>
                 </div>
+      </div>
               </div>
             </div>
 
@@ -811,8 +967,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
   <h3 class="text-lg font-semibold text-gray-900 mb-4">Network Devices Status</h3>
   <div class="space-y-4">
     <div v-for="device in activeNetworkDevices" :key="device.id">
-
-                  class="border border-gray-200 rounded-lg p-4">
+      <div class="border border-gray-200 rounded-lg p-4">
                   <div class="flex items-center justify-between mb-3">
                     <h4 class="text-sm font-semibold text-gray-900">Device {{ device.id }}</h4>
                     <div class="flex items-center space-x-2">
@@ -850,7 +1005,19 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                     </div>
                     <div>
                       <label class="block text-xs font-medium text-gray-700">Serial Number</label>
-                      <p class="text-sm text-gray-900">{{ device.assets?.serial_number || 'N/A' }}</p>
+                      <p class="text-sm text-gray-900">{{ getRouterSerial(device) }}</p>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium text-gray-700">Status Unit</label>
+                      <span :class="[
+                        'inline-flex px-2 py-1 text-xs font-medium rounded-full',
+                        device.asset_item?.status === 'in_use' ? 'bg-blue-100 text-blue-800' :
+                          device.asset_item?.status === 'in_stock' ? 'bg-green-100 text-green-800' :
+                            device.asset_item?.status === 'damaged' ? 'bg-red-100 text-red-800' :
+                              device.asset_item?.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+                      ]">
+                        {{ getAssetItemStatusLabel(device) }}
+                      </span>
                     </div>
                     <div>
                       <label class="block text-xs font-medium text-gray-700">Port</label>
@@ -906,6 +1073,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                     </div>
                   </div>
                 </div>
+      </div>
               </div>
             </div>
 
@@ -1149,6 +1317,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue'
 import { customerAdminApi } from '@/api/admin/customer'
+import { assetItemAdminApi } from '@/api/admin/asset-item'
 import { mikrotikAdminApi } from '@/api/admin/mikrotik'
 import { formatIDR } from '@/helper/currency'
 import LoadingComponent from '@/components/LoadingComponent.vue'
@@ -1250,6 +1419,129 @@ const showNetworkInformation = computed(() => {
 type DeviceConnectionStatus = 'off' | 'up' | 'down' | 'unknown'
 
 
+
+/**
+ * Serial number router harus diambil dari unit fisik (asset_item).
+ * assets.serial_number adalah serial KATALOG (sama untuk semua unit model yang sama),
+ * sehingga tidak boleh dipakai sebagai identitas unit.
+ * Prioritas: asset_item.serial_number -> ont_serial_number -> assets.serial_number (legacy)
+ */
+const getRouterSerial = (device: any): string => {
+  if (!device) return 'N/A'
+  const assetItemSerial = device.asset_item?.serial_number
+  if (assetItemSerial) return assetItemSerial
+  if (device.ont_serial_number) return device.ont_serial_number
+  if (device.assets?.serial_number) return device.assets.serial_number
+  return 'N/A'
+}
+
+// ============================================================================
+// ONT monitoring (GenieACS) — status up/down & redaman
+// ============================================================================
+
+const ontStatus = ref<any | null>(null)
+const ontHistory = ref<any[]>([])
+const isOntLoading = ref(false)
+const isOntRefreshing = ref(false)
+
+/** Fetch ONT status + optical history for the selected customer */
+const loadOntStatus = async () => {
+  const customerId = customerDetail.value?.customer?.id
+  if (!customerId) {
+    ontStatus.value = null
+    ontHistory.value = []
+    return
+  }
+
+  isOntLoading.value = true
+  try {
+    const [statusRes, historyRes] = await Promise.all([
+      assetItemAdminApi().getCustomerOnt(customerId).catch(() => null),
+      assetItemAdminApi().getCustomerOntHistory(customerId, 100).catch(() => null)
+    ])
+    ontStatus.value = statusRes?.data || null
+    ontHistory.value = historyRes?.data || []
+  } catch (e) {
+    ontStatus.value = null
+    ontHistory.value = []
+  } finally {
+    isOntLoading.value = false
+  }
+}
+
+/** Force the ONT to report fresh values via TR-069 */
+const refreshOnt = async () => {
+  const customerId = customerDetail.value?.customer?.id
+  if (!customerId || isOntRefreshing.value) return
+
+  isOntRefreshing.value = true
+  try {
+    await assetItemAdminApi().refreshCustomerOnt(customerId)
+    await loadOntStatus()
+  } catch (e) {
+    // keep silent, the panel simply shows the previous values
+  } finally {
+    isOntRefreshing.value = false
+  }
+}
+
+/** Optical status token: normal | warning | critical | unknown */
+const ontOpticalStatus = computed(() => ontStatus.value?.optical_status || 'unknown')
+
+/** Human label for the optical status */
+const ontOpticalLabel = computed(() => {
+  const labels: Record<string, string> = {
+    normal: 'Normal',
+    warning: 'Warning',
+    critical: 'Critical',
+    unknown: 'Tidak diketahui'
+  }
+  return labels[ontOpticalStatus.value] || ontOpticalStatus.value
+})
+
+/** Badge classes for the optical status */
+const ontOpticalBadgeClass = computed(() => {
+  switch (ontOpticalStatus.value) {
+    case 'normal':
+      return 'bg-green-100 text-green-800'
+    case 'warning':
+      return 'bg-amber-100 text-amber-800'
+    case 'critical':
+      return 'bg-red-100 text-red-800'
+    default:
+      return 'bg-gray-100 text-gray-800'
+  }
+})
+
+/** Format a dBm reading */
+const formatDbm = (value: any): string => {
+  if (value === null || value === undefined || value === '') return 'N/A'
+  const num = Number(value)
+  if (Number.isNaN(num)) return 'N/A'
+  return `${num.toFixed(2)} dBm`
+}
+
+/** Format a timestamp for display */
+const formatOntDateTime = (value: any): string => {
+  if (!value) return 'N/A'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'N/A'
+  return date.toLocaleString('id-ID')
+}
+
+/** Label status unit asset (in_stock / in_use / maintenance / damaged / retired) */
+const getAssetItemStatusLabel = (device: any): string => {
+  const status = device?.asset_item?.status
+  if (!status) return 'N/A'
+  const labels: Record<string, string> = {
+    in_stock: 'In Stock',
+    in_use: 'In Use',
+    maintenance: 'Maintenance',
+    damaged: 'Damaged',
+    retired: 'Retired',
+  }
+  return labels[status] || status
+}
 
 // Get customer product information from network devices (single product - for backward compatibility)
 const getCustomerProductInfo = () => {
@@ -2242,6 +2534,9 @@ onMounted(async () => {
   if (activeNetworkDevices.value?.length > 0) {
     await refreshDeviceStatuses()
   }
+
+  // Load ONT status (GenieACS): up/down + redaman
+  await loadOntStatus()
 })
 
 // Watch for customer detail changes to populate edit form

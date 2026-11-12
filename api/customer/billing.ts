@@ -22,6 +22,18 @@ export interface CustomerSnapToken {
   expires_in: number
 }
 
+export type VABank = 'bca' | 'bni' | 'bri'
+
+export interface CustomerVA {
+  invoice_id: string
+  order_id: string
+  bank: VABank
+  va_number: string
+  amount: number
+  expiry_time: string
+  status: string
+}
+
 export const billingCustomerApi = () => {
   const api = useApiHost()
   const authStore = useAuthStore()
@@ -59,6 +71,23 @@ export const billingCustomerApi = () => {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ invoice_id: invoiceId }),
+      })
+      return handle(response)
+    },
+
+    createVA: async (invoiceId: string, bank: VABank): Promise<{ success: boolean; data: CustomerVA; message: string }> => {
+      const response = await fetch(`${api}/api/payments/va`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ invoiceId, bank }),
+      })
+      return handle(response)
+    },
+
+    checkVAStatus: async (orderId: string): Promise<{ success: boolean; data: { transaction_status: string }; message: string }> => {
+      const response = await fetch(`${api}/api/payments/va/${encodeURIComponent(orderId)}/status`, {
+        method: 'GET',
+        headers: authHeaders(),
       })
       return handle(response)
     },

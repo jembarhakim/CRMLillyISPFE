@@ -29,6 +29,17 @@ export const dashboardCustomerApi = () => {
       }
       return response.json();
     },
+    getActiveIncidents: async () => {
+      const response = await fetch(`${api}/api/customer/dashboard/incidents`, {
+        method: "GET",
+        headers: authHeaders(),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to get active incidents');
+      }
+      return response.json();
+    },
     createPaymentDashboard: async (data: { invoice_id: string }) => {
       const response = await fetch(`${api}/api/customer/dashboard`, {
         method: "POST",
