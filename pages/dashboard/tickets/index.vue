@@ -314,18 +314,9 @@ async function verifyClose(id?: number) {
 async function markTechnicianCompleted(id?: number) {
   const tid = id || selectedId.value
   if (!tid) return
-  const input = window.prompt('Hasil Ukur Redaman OPM (dBm)', '-19.50')
-  if (input === null || input.trim() === '') {
-    useCustomToast().add({ title: 'Redaman wajib diisi', description: 'Masukkan hasil pengukuran OPM sebelum menyelesaikan tiket.', color: 'red' })
-    return
-  }
-  const rxPower = Number(input)
-  if (!Number.isFinite(rxPower) || rxPower < -60 || rxPower > 20) {
-    useCustomToast().add({ title: 'Nilai tidak valid', description: 'Nilai OPM harus antara -60 dan 20 dBm.', color: 'red' })
-    return
-  }
   try {
-    await ticketsApi().markTechnicianJobCompleted(tid, rxPower, note.value)
+    // This will be implemented in the backend
+    await ticketsApi().markTechnicianJobCompleted(tid)
     useCustomToast().add({ title: 'Pekerjaan Selesai', description: 'Pekerjaan teknisi telah ditandai sebagai selesai.', color: 'green', timeout: 3000 })
     await refresh()
   } catch (e: any) {

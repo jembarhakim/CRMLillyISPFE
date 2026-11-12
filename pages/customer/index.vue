@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { formatRupiah, formatDateID } from "@/helper/customerPortal";
 import { dashboardCustomerApi } from "../../api/customer/dashboard";
 import { formatDateToYMD } from "@/helper/date";
@@ -44,15 +44,6 @@ interface DashboardResponse {
   customer: Customer; product: Product; invoice: Invoice[]; network_device: NetworkDevice;
 }
 
-interface ActiveIncident {
-  id: string
-  title: string
-  node_name: string
-  description?: string
-  eta?: string
-  status: string
-}
-
 const dashboardResponse = ref<DashboardResponse>({
   customer: {} as Customer,
   product: {} as Product,
@@ -61,19 +52,12 @@ const dashboardResponse = ref<DashboardResponse>({
 });
 
 const deviceStatus = ref<string>('unknown');
-const activeIncidents = ref<ActiveIncident[]>([]);
 const isCheckingStatus = ref(false);
 const isLoading = ref(true);
 let statusRefreshInterval: NodeJS.Timeout | null = null;
 
 // Tab Menu System (Kembali ke desain & label asli)
 const activeTab = ref<'bayar' | 'lapor' | 'paket' | 'monitoring'>('bayar');
-async function focusPaymentBlock() {
-  activeTab.value = 'bayar';
-  await nextTick();
-  document.getElementById('va-payment-block')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
 const tabs = [
   { id: 'bayar', label: 'Bayar Tagihan' },
   { id: 'lapor', label: 'Lapor Gangguan' },
@@ -102,19 +86,9 @@ async function getData() {
   }
 }
 
-async function loadActiveIncidents() {
-  try {
-    const response = await dashboardCustomerApi().getActiveIncidents()
-    activeIncidents.value = response?.data || []
-  } catch {
-    activeIncidents.value = []
-  }
-}
-
 onMounted(async () => {
   try {
     await getData();
-    await loadActiveIncidents();
     if (dashboardResponse.value.network_device?.mac_address) {
       statusRefreshInterval = setInterval(() => checkDeviceStatus(), 30000);
     }
@@ -230,19 +204,6 @@ const lastInvoiceDateText = computed(() =>
         <!-- KONTEN UTAMA -->
         <div v-else class="space-y-8">
 
-          <section v-if="activeIncidents.length" class="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-red-900 shadow-sm">
-            <div class="flex items-start gap-3">
-              <LucideIcon name="triangle-alert" :size="20" class="mt-0.5 shrink-0 text-red-600" />
-              <div>
-                <p class="font-bold">Informasi Gangguan di Wilayah Anda</p>
-                <p class="mt-1 text-sm">
-                  {{ activeIncidents[0].title }}
-                  <span v-if="activeIncidents[0].eta"> — estimasi selesai {{ new Date(activeIncidents[0].eta).toLocaleString('id-ID') }}</span>
-                </p>
-              </div>
-            </div>
-          </section>
-
           <!-- ===== Header Sapaan ===== -->
           <header class="border-b-2 border-gray-900 pb-5 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
@@ -275,7 +236,7 @@ const lastInvoiceDateText = computed(() =>
                 </p>
               </div>
 
-              <button @click="focusPaymentBlock"
+              <button @click="activeTab = 'bayar'"
                 class="mt-6 w-full py-3 rounded-xl font-bold text-sm transition-all duration-300"
                 :class="unpaidTotal > 0 ? 'bg-[#A93133] text-white shadow-md hover:bg-red-800' : 'bg-[#F9EBEB] text-[#A93133] hover:bg-[#A93133] hover:text-white'">
                 {{ payButtonText }}

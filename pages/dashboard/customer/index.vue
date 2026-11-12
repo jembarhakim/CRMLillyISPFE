@@ -614,7 +614,6 @@ const columns = [
 
 const page = ref(1);
 const pageCount = 5;
-const customerViewMode = ref<"table" | "map">("table");
 
 const q = ref("");
 const statusFilter = ref("all"); // Device status filter: 'all', 'down', 'mixed', 'up', 'unknown', 'off'
@@ -1113,42 +1112,8 @@ const relatedCustomers = computed(() => {
       </div>
     </div>
 
-    <!-- Customer View Toggle -->
-    <div class="flex justify-start sm:justify-end">
-      <div class="inline-flex items-center rounded-lg border border-gray-200 bg-white p-1 shadow-sm">
-        <UButton
-          :color="customerViewMode === 'table' ? 'primary' : 'gray'"
-          :variant="customerViewMode === 'table' ? 'solid' : 'ghost'"
-          size="sm"
-          class="min-w-[110px] justify-center"
-          @click="customerViewMode = 'table'"
-        >
-          <template #leading>
-            <LucideIcon name="table" :size="16" />
-          </template>
-          Table
-        </UButton>
-        <UButton
-          :color="customerViewMode === 'map' ? 'primary' : 'gray'"
-          :variant="customerViewMode === 'map' ? 'solid' : 'ghost'"
-          size="sm"
-          class="min-w-[110px] justify-center"
-          @click="customerViewMode = 'map'"
-        >
-          <template #leading>
-            <LucideIcon name="map" :size="16" />
-          </template>
-          Map
-        </UButton>
-      </div>
-    </div>
-
-    <!-- Status Filter and Table -->
-    <div
-      v-if="customerViewMode === 'table'"
-      class="bg-white rounded-lg border border-gray-200 overflow-hidden"
-    >
-      <div class="p-4 border-b border-gray-200">
+    <!-- Status Filter Buttons -->
+    <div class="bg-white rounded-lg border border-gray-200 p-4">
       <div class="flex flex-wrap gap-2 items-center">
         <!-- Device Status Filters -->
         <UButton
@@ -1267,9 +1232,8 @@ const relatedCustomers = computed(() => {
       </div>
     </div>
 
-    <!-- Table View: Mobile Cards and Desktop Table -->
     <!-- Mobile Card View -->
-    <div class="block sm:hidden space-y-4 p-3">
+    <div class="block sm:hidden space-y-4">
       <div
         v-for="customer in rows"
         :key="customer.id"
@@ -1456,6 +1420,7 @@ const relatedCustomers = computed(() => {
 
     <!-- Desktop Table View -->
     <div class="hidden sm:block">
+      <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <UTable :rows="rows" :columns="columns" class="w-full customer-table">
           <template #number-data="{ row }">
             <div class="table-cell-content">
@@ -1610,6 +1575,7 @@ const relatedCustomers = computed(() => {
             </div>
           </template>
         </UTable>
+      </div>
     </div>
 
     <!-- Pagination -->
@@ -1620,10 +1586,9 @@ const relatedCustomers = computed(() => {
         :total="customer.length"
       />
     </div>
-    </div>
 
     <!-- Customer Mapping Section -->
-    <div v-if="customerViewMode === 'map'" class="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+    <div class="mt-8 bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
       <div class="mb-4">
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
           <LucideIcon name="map" :size="24" class="text-primary" />

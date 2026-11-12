@@ -49,15 +49,6 @@
           option-attribute="label"
           class="w-full"
         />
-
-        <USelectMenu
-          v-model="selectedSite"
-          :options="siteOptions"
-          placeholder="Filter by Site"
-          value-attribute="value"
-          option-attribute="label"
-          class="w-full"
-        />
       </div>
 
       <div class="flex-1 overflow-y-auto p-2">
@@ -124,79 +115,19 @@
 
     <!-- Map Container -->
     <div class="flex-1 relative h-full w-full z-10">
-      <div class="absolute top-4 left-1/2 z-[1100] -translate-x-1/2">
-        <div class="flex items-center rounded-lg border border-gray-200 bg-white/95 p-1 shadow-md">
-          <UButton
-            v-for="site in siteOptions"
-            :key="site.value"
-            size="xs"
-            :color="selectedSite === site.value ? 'primary' : 'gray'"
-            :variant="selectedSite === site.value ? 'solid' : 'ghost'"
-            class="whitespace-nowrap"
-            @click="selectedSite = site.value"
-          >
-            {{ site.label }}
-            <span class="ml-1 opacity-75">({{ site.count ?? 0 }})</span>
-          </UButton>
-        </div>
-      </div>
-      <div
-        class="absolute top-4 right-4 z-[1100] rounded-lg border px-3 py-2 shadow-md backdrop-blur-sm"
-        :class="isSocketConnected
-          ? 'border-green-200 bg-green-50'
-          : 'border-red-200 bg-red-50'"
-      >
-        <div class="flex items-center gap-2 text-sm font-bold text-gray-900">
+      <div class="absolute top-4 right-4 z-[1100] rounded-lg bg-white/95 px-3 py-2 shadow-md text-xs">
+        <div class="flex items-center gap-2 font-medium">
           <span
-            class="h-3 w-3 shrink-0 rounded-full ring-4 ring-white"
-            :class="isSocketConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'"
+            class="h-2.5 w-2.5 rounded-full"
+            :class="isSocketConnected ? 'bg-green-500' : 'bg-red-500'"
           />
-          <span>
-            {{ isSocketConnected ? 'LIVE MONITORING' : 'RECONNECTING...' }}
-          </span>
+          {{ isSocketConnected ? 'Live monitoring' : 'Reconnecting...' }}
         </div>
         <p v-if="socketError" class="mt-1 max-w-52 text-red-600">{{ socketError }}</p>
       </div>
       <div v-if="isPickingDudeLocation" class="absolute top-16 right-4 z-[1100] rounded-lg bg-blue-700 px-3 py-2 shadow-md text-xs text-white">
         Klik peta untuk menentukan lokasi router
         <button class="ml-2 underline" @click="isPickingDudeLocation = false; isDudeEditorOpen = true">Batal</button>
-      </div>
-      <div class="absolute bottom-5 left-3 z-[1100] rounded-lg border border-gray-200 bg-white/95 px-3 py-2 shadow-md backdrop-blur-sm">
-        <div class="mb-2 border-b border-gray-200 pb-2">
-          <p class="mb-1 text-xs font-semibold text-gray-700">Tampilan Peta</p>
-          <div class="flex gap-1" role="group" aria-label="Pilih tampilan peta">
-            <button
-              type="button"
-              :aria-pressed="mapBaseLayer === 'streets'"
-              class="rounded px-2 py-1 text-xs font-medium transition-colors"
-              :class="mapBaseLayer === 'streets' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
-              @click="mapBaseLayer = 'streets'"
-            >
-              Jalan
-            </button>
-            <button
-              type="button"
-              :aria-pressed="mapBaseLayer === 'satellite'"
-              class="rounded px-2 py-1 text-xs font-medium transition-colors"
-              :class="mapBaseLayer === 'satellite' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
-              @click="mapBaseLayer = 'satellite'"
-            >
-              Satelit
-            </button>
-          </div>
-        </div>
-        <label class="flex cursor-pointer items-center gap-2 py-1 text-xs font-medium text-gray-700">
-          <input v-model="showCustomers" type="checkbox" class="rounded border-gray-300 text-blue-600" />
-          Tampilkan Pelanggan
-        </label>
-        <label class="flex cursor-pointer items-center gap-2 py-1 text-xs font-medium text-gray-700">
-          <input v-model="showTopologyNodes" type="checkbox" class="rounded border-gray-300 text-blue-600" />
-          Tampilkan ODP / ODC
-        </label>
-        <label class="flex cursor-pointer items-center gap-2 py-1 text-xs font-medium text-gray-700">
-          <input v-model="showCableRoutes" type="checkbox" class="rounded border-gray-300 text-blue-600" />
-          Tampilkan Jalur Kabel FO
-        </label>
       </div>
       <ClientOnly>
         <LMap 
@@ -209,66 +140,19 @@
           @click="handleMapClick"
         >
           <LTileLayer
-            v-if="mapBaseLayer === 'streets'"
-            key="streets"
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution="&amp;copy; <a href=&quot;https://www.openstreetmap.org/copyright&quot;>OpenStreetMap</a> contributors"
             layer-type="base"
             name="OpenStreetMap"
           />
-          <LTileLayer
-            v-else
-            key="satellite"
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-            attribution="Tiles &amp;copy; <a href=&quot;https://www.esri.com/&quot;>Esri</a>, Maxar, Earthstar Geographics, and the GIS User Community"
-            layer-type="base"
-            name="Esri World Imagery"
-          />
-
-          <LPolyline
-            v-for="route in visibleCableRoutes"
-            :key="route.id"
-            :lat-lngs="route.geometry"
-            :color="getCableColor(route.cable_type)"
-            :weight="getCableWeight(route.cable_type)"
-            :opacity="0.9"
-            :smooth-factor="1.5"
-            :options="{ interactive: true, bubblingMouseEvents: false, pane: 'overlayPane' }"
-          >
-            <LPopup :options="{ maxWidth: 260, autoPan: true }" class="!z-[700]">
-              <div class="text-sm">
-                <p class="font-bold text-base mb-1">{{ route.name }}</p>
-                <p class="m-0">Tipe Kabel: {{ formatCableType(route.cable_type) }}</p>
-                <p class="m-0">{{ route.used_core || 0 }} / {{ route.total_core || 0 }} Core terpakai</p>
-              </div>
-            </LPopup>
-          </LPolyline>
-
-          <LMarker
-            v-for="node in visibleTopologyNodes"
-            :key="`node-${node.id}`"
-            :lat-lng="[Number(node.latitude), Number(node.longitude)]"
-            :icon="getTopologyNodeIcon(node)"
-            :draggable="false"
-          >
-            <LPopup :options="{ maxWidth: 220 }">
-              <div class="text-sm">
-                <p class="font-bold text-base mb-1">{{ node.name }}</p>
-                <p class="m-0">Tipe: {{ String(node.type).toUpperCase() }}</p>
-                <p class="m-0">Status: {{ node.status || 'up' }}</p>
-              </div>
-            </LPopup>
-          </LMarker>
 
           <!-- Markers -->
           <LMarker 
             v-for="marker in mapMarkers"
-            v-if="showCustomers"
             :key="marker.ipAddress || marker.key"
-            :ref="(leafletMarker: any) => setMarkerRef(marker.ipAddress || marker.key, leafletMarker)"
+            :ref="(leafletMarker) => setMarkerRef(marker.ipAddress, leafletMarker)"
             :lat-lng="[parseFloat(marker.customer.latitude), parseFloat(marker.customer.longitude)]"
             :icon="getCustomIcon(marker)"
-            :draggable="false"
             @click="activeCustomerId = marker.customer.id"
           >
             <LPopup :options="{ maxWidth: 300 }">
@@ -292,14 +176,6 @@
                   <p v-if="marker.ipAddress" class="m-0">
                     <span class="font-medium">IP:</span> {{ marker.ipAddress }}
                   </p>
-                  <p v-if="marker.customer.is_internet === 'yes'" class="flex items-center gap-2 m-0">
-                    <span
-                      class="h-2.5 w-2.5 shrink-0 rounded-full"
-                      :class="getPppoeStatus(marker.customer) === 'online' ? 'bg-green-500' : getPppoeStatus(marker.customer) === 'offline' ? 'bg-red-500' : 'bg-gray-400'"
-                    />
-                    <span class="font-medium">PPPoE:</span>
-                    {{ getPppoeStatus(marker.customer) === 'online' ? 'Online' : getPppoeStatus(marker.customer) === 'offline' ? 'Offline / unreachable' : 'Belum diaktivasi / isolir' }}
-                  </p>
                   <p class="flex items-start gap-2 m-0">
                     <LucideIcon name="phone" :size="14" class="mt-0.5 shrink-0" />
                     <span>{{ marker.customer.phone || '-' }}</span>
@@ -311,49 +187,6 @@
                   <p class="flex items-start gap-2 m-0">
                     <LucideIcon name="compass" :size="14" class="mt-0.5 shrink-0" />
                     <span>{{ formatArea(marker.customer.area) }}</span>
-                  </p>
-                </div>
-
-                <!-- ONT status from GenieACS: up/down + redaman -->
-                <div v-if="getOntFor(marker.customer.id)" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-1.5 text-sm">
-                  <p class="flex items-center gap-2 m-0">
-                    <span class="font-medium">ONT:</span>
-                    <span
-                      class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                      :class="{
-                        'bg-green-100 text-green-800': getOntColor(marker.customer.id) === 'green',
-                        'bg-amber-100 text-amber-800': getOntColor(marker.customer.id) === 'amber',
-                        'bg-red-100 text-red-800': getOntColor(marker.customer.id) === 'red',
-                        'bg-gray-100 text-gray-800': getOntColor(marker.customer.id) === 'gray'
-                      }"
-                    >
-                      {{ getOntOpticalLabel(marker.customer.id) }}
-                    </span>
-                    <span
-                      class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                      :class="getOntFor(marker.customer.id)?.is_online ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
-                    >
-                      {{ getOntOnlineLabel(marker.customer.id) }}
-                    </span>
-                  </p>
-                  <p class="m-0">
-                    <span class="font-medium">Redaman Rx:</span>
-                    {{ formatDbm(getOntFor(marker.customer.id)?.rx_power) }}
-                    <span class="text-gray-400">|</span>
-                    <span class="font-medium">Tx:</span>
-                    {{ formatDbm(getOntFor(marker.customer.id)?.tx_power) }}
-                  </p>
-                  <p class="m-0">
-                    <span class="font-medium">MAC:</span>
-                    {{ getOntFor(marker.customer.id)?.mac_address || '-' }}
-                  </p>
-                  <p class="m-0">
-                    <span class="font-medium">Serial:</span>
-                    {{ getOntFor(marker.customer.id)?.router_serial || getOntFor(marker.customer.id)?.serial_number || '-' }}
-                  </p>
-                  <p class="m-0">
-                    <span class="font-medium">Perangkat:</span>
-                    {{ [getOntFor(marker.customer.id)?.manufacturer, getOntFor(marker.customer.id)?.model_name].filter(Boolean).join(' ') || '-' }}
                   </p>
                 </div>
 
@@ -388,8 +221,6 @@
             :key="`dude-${device.id}`"
             :lat-lng="[Number(device.latitude), Number(device.longitude)]"
             :icon="getDudeIcon(device)"
-            :draggable="false"
-            :ref="(leafletMarker: any) => setDudeMarkerRef(device.id, leafletMarker)"
             @click="editDudeDevice(device)"
           >
             <LPopup :options="{ maxWidth: 300 }">
@@ -474,31 +305,6 @@
                 <span class="text-gray-500 text-orange-500">Both:</span>
                 <span class="font-medium text-right">{{ countByType('both') }}</span>
               </div>
-
-              <!-- ONT optical status legend (GenieACS) -->
-              <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                <div class="font-semibold text-gray-700 dark:text-gray-200 mb-1">
-                  Status Redaman ONT
-                </div>
-                <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs">
-                  <span class="flex items-center gap-1.5">
-                    <span class="inline-block w-3 h-3 rounded-full" style="background-color:#22c55e"></span>
-                    <span class="text-gray-600">Normal</span>
-                  </span>
-                  <span class="flex items-center gap-1.5">
-                    <span class="inline-block w-3 h-3 rounded-full" style="background-color:#f59e0b"></span>
-                    <span class="text-gray-600">Warning</span>
-                  </span>
-                  <span class="flex items-center gap-1.5">
-                    <span class="inline-block w-3 h-3 rounded-full" style="background-color:#ef4444"></span>
-                    <span class="text-gray-600">Critical</span>
-                  </span>
-                  <span class="flex items-center gap-1.5">
-                    <span class="inline-block w-3 h-3 rounded-full" style="background-color:#9ca3af"></span>
-                    <span class="text-gray-600">Belum terdata / Offline</span>
-                  </span>
-                </div>
-              </div>
             </div>
           </LControl>
         </LMap>
@@ -556,18 +362,16 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRuntimeConfig } from '#imports'
+import { useRouter } from '#imports'
 import { customerAdminApi } from '@/api/admin/customer'
 import { dudeDeviceAdminApi } from '@/api/admin/dude-device'
 import { networkDeviceAdminApi } from '@/api/admin/network-device'
-import { assetItemAdminApi } from '@/api/admin/asset-item'
 import { areaAdminApi } from '@/api/admin/area'
-import { useApiHost } from '@/composables/useApiHost'
-import { useCookie } from '#app'
 import { useNotification } from '@/composables/useNotification'
 import { useNetworkSocket } from '@/composables/useNetworkSocket'
 import LucideIcon from '@/components/LucideIcon.vue'
 
+const router = useRouter()
 const notification = useNotification()
 
 // State
@@ -579,24 +383,11 @@ const customers = ref<any[]>([])
 const networkDevices = ref<any[]>([])
 const dudeDevices = ref<any[]>([])
 const areas = ref<any[]>([])
-const cableRoutes = ref<any[]>([])
-const topologyNodes = ref<any[]>([])
-const pppoeSessions = ref<any[]>([])
-const showCustomers = ref(true)
-const showTopologyNodes = ref(true)
-const showCableRoutes = ref(true)
-const mapBaseLayer = ref<'streets' | 'satellite'>('streets')
-
-// ONT status map keyed by customer id (from GenieACS via /api/map/ont-status)
-const ontStatuses = ref<Map<string, any>>(new Map())
-const DEFAULT_AREA_CENTER: [number, number] = [-8.1672231, 112.6918261]
-const DEFAULT_AREA_NAMES = ['turen', 'talangsuko', 'talang suko', 'saggrahan', 'sagrahan', 'sunggrahan', 'sung sagrahan']
-const zoom = ref(13)
-const center = ref<[number, number]>(DEFAULT_AREA_CENTER)
+const zoom = ref(10)
+const center = ref<[number, number]>([-6.2088, 106.8456]) // Jakarta default
 const activeCustomerId = ref<string | null>(null)
 const deviceStatuses = ref(new Map<string, { status: 'up' | 'down'; deviceName: string }>())
 const markerRefs = new Map<string, any>()
-const dudeMarkerRefs = new Map<string, any>()
 const isDudeEditorOpen = ref(false)
 const isPickingDudeLocation = ref(false)
 const isSavingDudeDetails = ref(false)
@@ -617,7 +408,6 @@ const { isConnected: isSocketConnected, error: socketError, latestUpdate, connec
 const searchQuery = ref('')
 const selectedArea = ref('')
 const selectedType = ref('all')
-const selectedSite = ref('all')
 
 const typeOptions = [
   { label: 'All Types', value: 'all' },
@@ -642,103 +432,25 @@ const areaOptions = computed(() => {
   return opts
 })
 
-const getSiteKey = (value: any): string => {
-  const text = String(
-    typeof value === 'object' && value !== null
-      ? [
-          value.name,
-          value.company?.name,
-          value.code_name,
-          value.name_city,
-          value.name_subdistrict,
-          value.name_village
-        ].filter(Boolean).join(' ')
-      : value || ''
-  )
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '')
-
-  if (text.includes('bedjo')) return 'bedjo'
-  if (text.includes('menara')) return 'menara'
-  if (text.includes('lilly')) return 'lilly'
-  return 'all'
-}
-
-const getCustomerSite = (customer: any): string => {
-  const company = customer.company || { name: '' }
-  const companyName = company.name || String(customer.company_name || '')
-  const companySite = getSiteKey(companyName)
-  if (companySite !== 'all') return companySite
-  return getSiteKey(customer.area)
-}
-
-const getDudeSite = (device: any): string => {
-  const text = [
-    device.device_name,
-    device.user_name,
-    device.address,
-    device.notes
-  ].filter(Boolean).join(' ')
-  return getSiteKey(text)
-}
-
-const siteOptions = computed(() => {
-  const countSite = (site: string) =>
-    customers.value.filter((customer) => {
-      if (site === 'all') return true
-      return getCustomerSite(customer) === site
-    }).length
-
-  return [
-    { label: 'All Site', value: 'all', count: countSite('all') },
-    { label: 'Site 1 - Lilly', value: 'lilly', count: countSite('lilly') },
-    { label: 'Site 2 - Menara', value: 'menara', count: countSite('menara') },
-    { label: 'Site 3 - Bedjo', value: 'bedjo', count: countSite('bedjo') }
-  ]
-})
-
 // Data fetching
 const fetchData = async () => {
   isLoading.value = true
   try {
-    const api = useApiHost()
-    const token = useCookie('auth_token').value
-    const headers = token ? { Authorization: `Bearer ${token}` } : {}
-    const [customerRes, deviceRes, areaRes, dudeDeviceRes, ontRes, cableRes, nodeRes, pppoeRes] = await Promise.all([
+    const [customerRes, deviceRes, areaRes, dudeDeviceRes] = await Promise.all([
       customerAdminApi().getAllCustomers(),
       networkDeviceAdminApi().getAllNetworkDevices(),
       areaAdminApi().getAllAreas(),
-      dudeDeviceAdminApi().getAll(),
-      // ONT status from GenieACS — failure must not break the map
-      assetItemAdminApi().getOntMapStatus().catch(() => null),
-      $fetch(`${api.baseUrl}/api/admin/cable-routes`, { headers }).catch(() => null),
-      $fetch(`${api.baseUrl}/api/admin/network-nodes`, { headers }).catch(() => null),
-      $fetch(`${api.baseUrl}/api/admin/mikrotik/pppoe-active`, { headers }).catch(() => null)
+      dudeDeviceAdminApi().getAll()
     ])
-
+    
     customers.value = customerRes?.data || []
     networkDevices.value = deviceRes?.data || []
     areas.value = areaRes?.data || []
     dudeDevices.value = dudeDeviceRes?.data || []
-    cableRoutes.value = (cableRes as any)?.data || []
-    topologyNodes.value = ((nodeRes as any)?.data || []).filter((node: any) =>
-      node.latitude !== null && node.longitude !== null &&
-      ['odp', 'odc'].includes(String(node.type).toLowerCase())
-    )
-    pppoeSessions.value = (pppoeRes as any)?.data?.sessions ||
-      (pppoeRes as any)?.sessions || []
-
-    // Build a lookup of ONT status keyed by customer id
-    const ontList = ontRes?.data || []
-    const ontMap = new Map<string, any>()
-    ontList.forEach((item: any) => {
-      if (item?.customer_id) ontMap.set(String(item.customer_id), item)
-    })
-    ontStatuses.value = ontMap
-
-    // Default map view: Turen, Talangsuko, and Saggrahan.
+    
+    // Fit bounds after a short delay to ensure map is ready
     setTimeout(() => {
-      fitDefaultAreas()
+      fitBounds()
     }, 500)
   } catch (error) {
     notification.error('Error', 'Failed to load mapping data')
@@ -746,81 +458,6 @@ const fetchData = async () => {
   } finally {
     isLoading.value = false
   }
-}
-
-// ============================================================================
-// ONT (GenieACS) helpers — status up/down & redaman
-// ============================================================================
-
-/** Get ONT status entry for a customer */
-const getOntFor = (customerId: any) => {
-  if (customerId === undefined || customerId === null) return null
-  return ontStatuses.value.get(String(customerId)) || null
-}
-
-/** Optical status colour token: normal | warning | critical | unknown | no_ont */
-const getOntOpticalStatus = (customerId: any): string => {
-  const ont = getOntFor(customerId)
-  if (!ont) return 'no_ont'
-  return ont.optical_status || 'unknown'
-}
-
-/** Human label for the optical status */
-const getOntOpticalLabel = (customerId: any): string => {
-  const status = getOntOpticalStatus(customerId)
-  const labels: Record<string, string> = {
-    normal: 'Normal',
-    warning: 'Warning',
-    critical: 'Critical',
-    unknown: 'Tidak diketahui',
-    no_ont: 'Belum terdata',
-  }
-  return labels[status] || status
-}
-
-/** Marker colour per optical status (matches docs/genieacs-parameters.md) */
-const getOntColor = (customerId: any): string => {
-  const ont = getOntFor(customerId)
-
-  // Device registered but offline -> grey
-  if (ont && ont.serial_number && ont.is_online === false && ont.optical_status !== 'no_ont') {
-    return 'gray'
-  }
-
-  switch (getOntOpticalStatus(customerId)) {
-    case 'normal':
-      return 'green'
-    case 'warning':
-      return 'amber'
-    case 'critical':
-      return 'red'
-    default:
-      return 'gray'
-  }
-}
-
-/** Format dBm value safely */
-const formatDbm = (value: any): string => {
-  if (value === null || value === undefined || value === '') return 'N/A'
-  const num = Number(value)
-  if (Number.isNaN(num)) return 'N/A'
-  return `${num.toFixed(2)} dBm`
-}
-
-/** Online / offline label */
-const getOntOnlineLabel = (customerId: any): string => {
-  const ont = getOntFor(customerId)
-  if (!ont || !ont.serial_number) return 'Belum terdata'
-  if (ont.is_online) return 'Online'
-  return ont.is_stale ? 'Offline (data terakhir)' : 'Offline'
-}
-
-/** IP address for a customer: prefer ONT-reported IP, fall back to network device IP */
-const getOntIp = (customerId: any, fallback?: string): string => {
-  const ont = getOntFor(customerId)
-  if (ont?.ip_static) return ont.ip_static
-  if (ont?.ip_address) return ont.ip_address
-  return fallback || ''
 }
 
 // Helpers
@@ -880,7 +517,7 @@ const mapMarkers = computed(() => mapCustomers.value.flatMap((customer) => {
       key: `customer-${customer.id}`,
       customer,
       device: null,
-      ipAddress: getOntIp(customer.id, customer.ip_static || '')
+      ipAddress: customer.ip_static || ''
     }]
   }
 
@@ -888,7 +525,7 @@ const mapMarkers = computed(() => mapCustomers.value.flatMap((customer) => {
     key: `device-${device.id || `${customer.id}-${index}`}`,
     customer,
     device,
-    ipAddress: getOntIp(customer.id, device.ip_static)
+    ipAddress: device.ip_static
   }))
 }))
 
@@ -939,24 +576,9 @@ const getDeviceLabel = (marker: any) =>
   getMarkerTypeName(marker)
 
 const setMarkerRef = (ipAddress: string, marker: any) => {
-  if (marker) {
-    if (ipAddress) markerRefs.set(ipAddress, marker)
-    lockMarker(marker)
-  } else if (ipAddress) markerRefs.delete(ipAddress)
-}
-
-const setDudeMarkerRef = (deviceId: string, marker: any) => {
-  if (!deviceId) return
-  if (marker) {
-    dudeMarkerRefs.set(deviceId, marker)
-    lockMarker(marker)
-  } else dudeMarkerRefs.delete(deviceId)
-}
-
-const lockMarker = (marker: any) => {
-  const markerObject = marker?.leafletObject || marker?.mapObject || marker
-  markerObject?.options && (markerObject.options.draggable = false)
-  markerObject?.dragging?.disable()
+  if (!ipAddress) return
+  if (marker) markerRefs.set(ipAddress, marker)
+  else markerRefs.delete(ipAddress)
 }
 
 const formatArea = (area: any) => {
@@ -972,11 +594,6 @@ const countByType = (type: string) => {
 // Computed Data
 const filteredCustomers = computed(() => {
   return customers.value.filter(customer => {
-    // Company/Site
-    if (selectedSite.value !== 'all' && getCustomerSite(customer) !== selectedSite.value) {
-      return false
-    }
-
     // Search
     if (searchQuery.value) {
       const q = searchQuery.value.toLowerCase()
@@ -1006,14 +623,11 @@ const mapCustomers = computed(() => {
 
 const filteredDudeDevices = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
-  return dudeDevices.value.filter((device) => {
-    if (selectedSite.value !== 'all' && getDudeSite(device) !== selectedSite.value) {
-      return false
-    }
-    if (!query) return true
-    return [device.device_name, device.ip_address, device.user_name, device.address]
+  if (!query) return dudeDevices.value
+  return dudeDevices.value.filter((device) =>
+    [device.device_name, device.ip_address, device.user_name, device.address]
       .some((value) => String(value || '').toLowerCase().includes(query))
-  })
+  )
 })
 
 const hasDudeCoordinates = (device: any) =>
@@ -1021,103 +635,25 @@ const hasDudeCoordinates = (device: any) =>
   device.longitude !== null && device.longitude !== undefined &&
   Number.isFinite(Number(device.latitude)) && Number.isFinite(Number(device.longitude))
 
-const mappedDudeDevices = computed(() => filteredDudeDevices.value.filter(hasDudeCoordinates))
-
-const visibleCableRoutes = computed(() => showCableRoutes.value
-  ? cableRoutes.value.filter((route) => Array.isArray(route.geometry) && route.geometry.length >= 2)
-  : [])
-const visibleTopologyNodes = computed(() => showTopologyNodes.value
-  ? topologyNodes.value.filter((node) =>
-      Number.isFinite(Number(node.latitude)) && Number.isFinite(Number(node.longitude)))
-  : [])
-
-const getCableColor = (type: string) => {
-  const normalized = String(type || '').toLowerCase()
-  if (normalized === 'backbone') return '#ef4444'
-  if (normalized === 'distribution') return '#2563eb'
-  return '#eab308'
-}
-
-const getCableWeight = (type: string) => {
-  const normalized = String(type || '').toLowerCase()
-  if (normalized === 'backbone') return 4
-  if (normalized === 'distribution') return 3
-  return 2
-}
-
-const formatCableType = (type: string) => {
-  const normalized = String(type || '').toLowerCase()
-  if (normalized === 'backbone') return 'Backbone'
-  if (normalized === 'distribution') return 'Distribusi'
-  return 'Dropcore'
-}
-
-const getTopologyNodeIcon = (node: any) => {
-  if (!leaflet.value) return undefined
-  const type = String(node.type || '').toLowerCase()
-  const color = type === 'odp' ? '#2563eb' : '#7c3aed'
-  return leaflet.value.divIcon({
-    className: 'custom-marker',
-    html: `<div style="background:${color};width:28px;height:28px;border-radius:${type === 'odp' ? '50%' : '5px'};border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:bold">${type === 'odp' ? 'O' : 'D'}</div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-    popupAnchor: [0, -14]
-  })
-}
+const mappedDudeDevices = computed(() => dudeDevices.value.filter(hasDudeCoordinates))
 
 // Map Interactions
 const onMapReady = async (map: any) => {
   if (process.client) {
     leaflet.value = await import('leaflet')
-    setTimeout(fitDefaultAreas, 100)
   }
-}
-
-const getPppoeStatus = (customer: any): 'online' | 'offline' | 'inactive' => {
-  const customerId = String(customer?.id || '')
-  const matchedSession = pppoeSessions.value.find((session: any) =>
-    String(session.customer_id || '') === customerId ||
-    String(session.customer_name || '').toLowerCase() === String(customer?.name || '').toLowerCase() ||
-    String(session.name || '').toLowerCase() === String(customer?.alias || '').toLowerCase()
-  )
-  if (matchedSession) return 'online'
-
-  const activation = String(customer?.user_status || customer?.status || '').toLowerCase()
-  const internetStatus = String(customer?.is_internet || '').toLowerCase()
-  if (internetStatus === 'no' || ['inactive', 'isolir', 'suspend', 'suspended', 'disabled'].includes(activation)) {
-    return 'inactive'
-  }
-  return 'offline'
 }
 
 const getCustomIcon = (marker: any) => {
   if (!leaflet.value) return undefined // Fallback to default before L is loaded
-
-  const customerId = marker?.customer?.id
-  const ontColor = getOntColor(customerId)
-
-  // ONT colour palette (docs/genieacs-parameters.md)
-  const ontPalette: Record<string, string> = {
-    green: '#22c55e',
-    amber: '#f59e0b',
-    red: '#ef4444',
-    gray: '#9ca3af'
-  }
-
-  // Fall back to the legacy connectivity colour when there is no ONT data at all
-  const legacyStatus = getDeviceStatus(marker)
-  const legacyColor = legacyStatus === 'up' ? '#22c55e' : legacyStatus === 'down' ? '#ef4444' : '#6b7280'
-
-  const hasOnt = !!getOntFor(customerId)
-  const pppoeStatus = getPppoeStatus(marker?.customer)
-  const pppoeColor = pppoeStatus === 'online' ? '#22c55e' : pppoeStatus === 'offline' ? '#ef4444' : '#9ca3af'
-  const color = marker?.customer?.is_internet === 'yes' ? pppoeColor : (hasOnt ? (ontPalette[ontColor] || '#9ca3af') : legacyColor)
-
+  
+  const status = getDeviceStatus(marker)
+  const color = status === 'up' ? '#22c55e' : status === 'down' ? '#ef4444' : '#6b7280'
   const type = getDeviceType(marker)
   const initials = type === 'router' ? 'R' : type === 'server' ? 'S' : 'C'
   const borderRadius = type === 'server' ? '6px' : type === 'router' ? '0' : '50%'
   const clipPath = type === 'router' ? 'polygon(50% 0%, 100% 100%, 0% 100%)' : 'none'
-
+  
   return leaflet.value.divIcon({
     className: 'custom-marker',
     html: `<div style="background-color: ${color}; width: 32px; height: 32px; border-radius: ${borderRadius}; clip-path: ${clipPath}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); transition: transform 0.2s;">${initials}</div>`,
@@ -1252,43 +788,6 @@ const fitBounds = () => {
   }
 }
 
-const fitDefaultAreas = () => {
-  if (!mapRef.value?.leafletObject || !leaflet.value) {
-    const [lat, lng] = DEFAULT_AREA_CENTER
-    center.value = [lat, lng]
-    zoom.value = 13
-    return
-  }
-
-  try {
-    const map = mapRef.value.leafletObject
-    const defaultCustomerCoordinates = customers.value
-      .filter((customer) => {
-        if (!hasValidCoordinates(customer)) return false
-        const areaText = [
-          customer.area?.name_village,
-          customer.area?.name_subdistrict,
-          customer.area?.name_city,
-          customer.address
-        ].filter(Boolean).join(' ').toLowerCase().replace(/[^a-z0-9 ]/g, ' ')
-        return DEFAULT_AREA_NAMES.some((name) => areaText.includes(name.replace(/[^a-z0-9 ]/g, ' ').trim()))
-      })
-      .map((customer) => [parseFloat(customer.latitude), parseFloat(customer.longitude)])
-
-    if (defaultCustomerCoordinates.length > 0) {
-      const bounds = leaflet.value.latLngBounds(defaultCustomerCoordinates)
-      if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [70, 70], maxZoom: 14 })
-        return
-      }
-    }
-
-    map.setView(DEFAULT_AREA_CENTER, 13)
-  } catch (error) {
-    console.error('Error fitting default areas:', error)
-  }
-}
-
 const goToMyLocation = () => {
   if (!navigator.geolocation) {
     notification.error('Error', 'Geolocation is not supported by your browser')
@@ -1340,7 +839,7 @@ const viewDetail = (customer: any) => {
 }
 
 // Watchers
-watch([selectedArea, selectedType, selectedSite], () => {
+watch([selectedArea, selectedType], () => {
   // Wait a tick for computed mapCustomers to update, then fit bounds
   setTimeout(fitBounds, 100)
 })
@@ -1373,7 +872,6 @@ onUnmounted(() => {
 .custom-marker {
   background: transparent;
   border: none;
-  cursor: pointer;
 }
 .custom-marker:hover div {
   transform: scale(1.1);

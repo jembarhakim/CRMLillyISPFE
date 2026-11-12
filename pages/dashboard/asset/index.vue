@@ -237,10 +237,6 @@ function goToItemsCatalog() {
   navigateTo("/dashboard/asset/items-catalog");
 }
 
-function goToStock() {
-  navigateTo("/dashboard/asset/stock");
-}
-
 function goToAssetDetail(assetId: string) {
   navigateTo(`/dashboard/asset/${assetId}`);
 }
@@ -285,18 +281,6 @@ onMounted(() => {
     >
       <template #leading>
         <LucideIcon name="list" :size="16" />
-      </template>
-    </UButton>
-    <UButton
-      label="Stock"
-      color="teal"
-      variant="outline"
-      @click="goToStock"
-      class="w-full sm:w-auto"
-      size="lg"
-    >
-      <template #leading>
-        <LucideIcon name="layers" :size="16" />
       </template>
     </UButton>
     <UButton

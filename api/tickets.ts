@@ -110,7 +110,7 @@ export const ticketsApi = () => {
     getTechnicianChecklist: (id: number, technicianId: string) => $fetch(`${base}/api/tickets/${id}/technician-checklist?technician_id=${technicianId}`, { method: 'GET', headers: authHeader() }),
     updateTechnicianStep: (id: number, stepId: number, technicianId: string, status: string, notes?: string, sparePartsUsed?: string) => $fetch(`${base}/api/tickets/${id}/technician-step`, { method: 'POST', headers: authHeader(), body: { step_id: stepId, technician_id: technicianId, status, notes, spare_parts_used: sparePartsUsed } }),
     getTechnicianProgress: (id: number, technicianId: string) => $fetch(`${base}/api/tickets/${id}/technician-progress?technician_id=${technicianId}`, { method: 'GET', headers: authHeader() }),
-    markTechnicianJobCompleted: (id: number, rxPower: number, notes?: string) => $fetch(`${base}/api/tickets/${id}/technician-complete`, { method: 'POST', headers: authHeader(), body: { rx_power: rxPower, notes } }),
+    markTechnicianJobCompleted: (id: number) => $fetch(`${base}/api/tickets/${id}/technician-complete`, { method: 'POST', headers: authHeader() }),
     setNetworkArchitecture: (id: number, architecture: string) => $fetch(`${base}/api/tickets/${id}/network-architecture`, { method: 'POST', headers: authHeader(), body: { architecture: architecture } }),
     getTeamMembers: (id: number) => $fetch(`${base}/api/tickets/${id}/team-members`, { method: 'GET', headers: authHeader() }),
     updateTechnicianStepWithImages: (id: number, stepId: number, technicianId: string, status: string, notes?: string, sparePartsUsed?: string, images?: File[]) => {
