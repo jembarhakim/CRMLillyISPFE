@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { billingCustomerApi, type CustomerBill } from '@/api/customer/billing'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { billingCustomerApi, type CustomerBill, type CustomerVA, type VABank } from '@/api/customer/billing'
 import { billStatusStyle, formatDateID, formatRupiah } from '@/helper/customerPortal'
 import { downloadInvoicePdf } from '@/helper/invoicePdf'
 import { useCustomToast } from '@/composables/useCustomToast'
@@ -12,6 +12,15 @@ const bills = ref<CustomerBill[]>([])
 const isLoading = ref(true)
 const isPayingId = ref<string | null>(null)
 const isDownloadingId = ref<string | null>(null)
+const selectedInvoiceId = ref('')
+const selectedBank = ref<VABank>('bca')
+const activeVA = ref<CustomerVA | null>(null)
+const vaStatus = ref('')
+const vaError = ref('')
+const isGeneratingVA = ref(false)
+const isCheckingVA = ref(false)
+const currentTime = ref(Date.now())
+let vaExpiryTimer: ReturnType<typeof setInterval> | null = null
 
 const statusFilter = ref<'all' | 'unpaid' | 'paid'>('all')
 const sortOrder = ref<'newest' | 'oldest'>('newest')
@@ -21,6 +30,12 @@ const unpaidCount = computed(() => bills.value.filter((b) => b.status !== 'paid'
 const paidCount = computed(() => bills.value.filter((b) => b.status === 'paid').length)
 const pendingTotal = computed(() =>
     bills.value.filter((b) => b.status !== 'paid').reduce((sum, b) => sum + b.amount, 0)
+)
+const payableBills = computed(() => bills.value.filter((bill) => bill.is_payable && bill.status !== 'paid'))
+const activeVAForSelectedInvoice = computed(() =>
+    activeVA.value?.invoice_id === selectedInvoiceId.value &&
+    activeVA.value.status.toLowerCase() === 'pending' &&
+    new Date(activeVA.value.expiry_time).getTime() > currentTime.value
 )
 
 const filteredBills = computed(() => {
@@ -47,10 +62,65 @@ async function loadBills() {
     try {
         const response = await billingCustomerApi().getBills()
         bills.value = response?.data || []
+        if (!payableBills.value.some((bill) => bill.invoice_id === selectedInvoiceId.value)) {
+            selectedInvoiceId.value = payableBills.value[0]?.invoice_id || ''
+        }
     } catch (error: any) {
         toast.error('Gagal memuat tagihan', error?.message)
     } finally {
         isLoading.value = false
+    }
+}
+
+async function generateVA() {
+    if (!selectedInvoiceId.value) {
+        vaError.value = 'Pilih tagihan yang ingin dibayar.'
+        return
+    }
+    if (activeVAForSelectedInvoice.value) {
+        vaError.value = 'Tagihan ini masih memiliki VA aktif. Gunakan VA yang tersedia hingga batas waktu pembayaran.'
+        return
+    }
+
+    isGeneratingVA.value = true
+    vaError.value = ''
+    vaStatus.value = ''
+    try {
+        const response = await billingCustomerApi().createVA(selectedInvoiceId.value, selectedBank.value)
+        activeVA.value = response.data
+        selectedBank.value = response.data.bank
+    } catch (error: any) {
+        vaError.value = error?.message || 'VA belum dapat dibuat. Silakan coba lagi.'
+    } finally {
+        isGeneratingVA.value = false
+    }
+}
+
+async function copyVANumber() {
+    if (!activeVA.value) return
+    try {
+        await navigator.clipboard.writeText(activeVA.value.va_number)
+        toast.success('Nomor VA disalin')
+    } catch {
+        vaError.value = 'Nomor VA tidak dapat disalin. Silakan salin secara manual.'
+    }
+}
+
+async function checkVAStatus() {
+    if (!activeVA.value) return
+    isCheckingVA.value = true
+    vaError.value = ''
+    try {
+        const response = await billingCustomerApi().checkVAStatus(activeVA.value.order_id)
+        const transactionStatus = response.data.transaction_status?.toLowerCase()
+        vaStatus.value = transactionStatus || 'Status belum tersedia'
+        if (transactionStatus && ['expire', 'cancel', 'deny', 'failure'].includes(transactionStatus)) {
+            activeVA.value = { ...activeVA.value, status: transactionStatus }
+        }
+    } catch (error: any) {
+        vaError.value = error?.message || 'Status pembayaran belum dapat diperiksa.'
+    } finally {
+        isCheckingVA.value = false
     }
 }
 
@@ -136,7 +206,16 @@ async function downloadReceipt(bill: CustomerBill) {
     }
 }
 
-onMounted(loadBills)
+onMounted(() => {
+    loadBills()
+    vaExpiryTimer = setInterval(() => {
+        currentTime.value = Date.now()
+    }, 30_000)
+})
+
+onUnmounted(() => {
+    if (vaExpiryTimer) clearInterval(vaExpiryTimer)
+})
 </script>
 
 <template>
@@ -255,6 +334,64 @@ onMounted(loadBills)
                             class="w-11 h-11 rounded-2xl bg-[#A93133] text-white flex items-center justify-center shadow-md">
                             <LucideIcon name="wallet" :size="20" />
                         </span>
+                    </div>
+
+                    <div id="va-payment-block" class="mt-4 pt-4 border-t border-gray-100 space-y-3">
+                        <div>
+                            <label for="va-invoice" class="block text-xs font-semibold text-gray-700 mb-1">Tagihan</label>
+                            <select id="va-invoice" v-model="selectedInvoiceId"
+                                class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:border-[#A93133] focus:outline-none">
+                                <option value="" disabled>Pilih tagihan belum lunas</option>
+                                <option v-for="bill in payableBills" :key="bill.invoice_id" :value="bill.invoice_id">
+                                    {{ bill.month }} — {{ formatRupiah(bill.amount) }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="flex items-end gap-2">
+                            <div class="min-w-0 flex-1">
+                                <label for="va-bank" class="block text-xs font-semibold text-gray-700 mb-1">Bank VA</label>
+                                <select id="va-bank" v-model="selectedBank" :disabled="activeVAForSelectedInvoice"
+                                    class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 focus:border-[#A93133] focus:outline-none">
+                                    <option value="bca">BCA</option>
+                                    <option value="bni">BNI</option>
+                                    <option value="bri">BRI</option>
+                                </select>
+                            </div>
+                            <button type="button" :disabled="isGeneratingVA || !payableBills.length || activeVAForSelectedInvoice"
+                                @click="generateVA"
+                                class="rounded-xl bg-[#A93133] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#8F2729] disabled:cursor-not-allowed disabled:opacity-50">
+                                {{ isGeneratingVA ? 'Memproses...' : activeVAForSelectedInvoice ? 'VA Masih Aktif' : 'Generate VA' }}
+                            </button>
+                        </div>
+                        <p v-if="activeVAForSelectedInvoice" class="text-xs text-amber-700">
+                            VA masih aktif untuk tagihan ini. Generate VA baru tersedia setelah VA kedaluwarsa.
+                        </p>
+                        <p v-if="vaError" role="alert" class="text-xs text-red-600">{{ vaError }}</p>
+                        <div v-if="activeVA && activeVA.invoice_id === selectedInvoiceId" class="rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs">
+                            <div class="grid grid-cols-2 gap-2">
+                                <span class="text-gray-500">Bank</span>
+                                <span class="font-semibold uppercase text-gray-900">{{ activeVA.bank }}</span>
+                                <span class="text-gray-500">Nomor VA</span>
+                                <span class="font-mono font-bold text-gray-900">{{ activeVA.va_number }}</span>
+                                <span class="text-gray-500">Nominal</span>
+                                <span class="font-semibold text-gray-900">{{ formatRupiah(activeVA.amount) }}</span>
+                                <span class="text-gray-500">Batas pembayaran</span>
+                                <span class="font-semibold text-gray-900">{{ formatDateID(activeVA.expiry_time) }}</span>
+                            </div>
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <button type="button" @click="copyVANumber"
+                                    class="rounded-lg border border-gray-300 bg-white px-3 py-2 font-semibold text-gray-700 hover:border-[#A93133] hover:text-[#A93133]">
+                                    Salin nomor VA
+                                </button>
+                                <button type="button" :disabled="isCheckingVA" @click="checkVAStatus"
+                                    class="rounded-lg bg-[#F9EBEB] px-3 py-2 font-semibold text-[#A93133] hover:bg-[#A93133] hover:text-white disabled:opacity-50">
+                                    {{ isCheckingVA ? 'Memeriksa...' : 'Cek status pembayaran' }}
+                                </button>
+                            </div>
+                            <p v-if="vaStatus" class="mt-2 text-gray-700">
+                                Status pembayaran: <strong>{{ vaStatus }}</strong>
+                            </p>
+                        </div>
                     </div>
                 </div>
 
