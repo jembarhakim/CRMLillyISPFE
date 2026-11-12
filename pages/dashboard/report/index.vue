@@ -42,19 +42,29 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <UTabs :items="tab_items" class="w-full">
-    <template #item="{ item }">
-      <div v-if="item.value == 'report-cash-flow'">
-        <CashFlow />
-      </div>
+  <div class="space-y-5">
+    <AdminPageHeader
+      title="Report"
+      description="Tinjau laporan arus kas, layanan internet, dan instalasi pelanggan."
+      icon="bar-chart"
+      eyebrow="Analitik & Laporan"
+    />
+    <section class="admin-data-panel p-4 sm:p-5">
+      <UTabs :items="tab_items" class="w-full">
+        <template #item="{ item }">
+          <div v-if="item.value == 'report-cash-flow'">
+            <CashFlow />
+          </div>
 
-      <div v-if="item.value == 'report-internet'">
-        <Internet />
-      </div>
+          <div v-if="item.value == 'report-internet'">
+            <Internet />
+          </div>
 
-      <div v-if="item.value == 'report-customer'">
-        <CustomerInstallation ref="customerInstallationRef" />
-      </div>
-    </template>
-  </UTabs>
+          <div v-if="item.value == 'report-customer'">
+            <CustomerInstallation ref="customerInstallationRef" />
+          </div>
+        </template>
+      </UTabs>
+    </section>
+  </div>
 </template>

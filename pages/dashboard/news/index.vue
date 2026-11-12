@@ -173,13 +173,16 @@ onMounted(fetchArticles)
 
 <template>
   <section class="space-y-5">
-    <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-2xl font-semibold text-gray-900">Kelola News</h1>
-        <p class="mt-1 text-sm text-gray-600">Buat dan atur artikel yang ditampilkan di Latest Updates.</p>
-      </div>
-      <UButton label="Tambah artikel" icon="i-heroicons-plus" @click="openCreateForm" />
-    </header>
+    <AdminPageHeader
+      title="News"
+      description="Buat dan kelola artikel yang ditampilkan pada Latest Updates."
+      icon="file-text"
+      eyebrow="Konten & Informasi"
+    >
+      <template #actions>
+        <UButton label="Tambah artikel" icon="i-heroicons-plus" @click="openCreateForm" />
+      </template>
+    </AdminPageHeader>
 
     <div class="flex flex-col gap-3 border-y border-gray-200 py-3 sm:flex-row sm:items-center sm:justify-between">
       <UInput v-model="search" icon="i-heroicons-magnifying-glass" placeholder="Cari judul atau ringkasan" class="w-full sm:max-w-sm" />

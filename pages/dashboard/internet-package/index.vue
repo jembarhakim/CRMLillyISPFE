@@ -130,40 +130,61 @@ const items = (row: any) => [
 </script>
 
 <template>
-    <UButton label="Add Internet Package" @click="openModal(false, null)" />
-    <!-- <UButton label="Push" @click="pushData" /> -->
-    <div class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700">
-        <UInput v-model="q" placeholder="Search" />
-    </div>
-    <UTable :rows="internetPackageList" :columns="column">
-        <template #actions-data="{ row }">
-            <UDropdown :items="items(row)">
-                <button
-                    type="button"
-                    class="bg-gray-700 text-white px-2 py-1 text-sm hover:bg-gray-600 rounded inline-flex items-center justify-center shadow-sm transition-colors duration-200 group"
-                    aria-label="Actions"
-                >
-                    <LucideIcon
-                        name="ellipsis-vertical"
-                        class="text-white"
-                        :size="18"
-                    />
-                </button>
-            </UDropdown>
-        </template>
-        <template #price-data="{ row }">
-            <p class="font-medium text-gray-900">{{ formatIDR(row.price) }}</p>
-        </template>
-    </UTable>
+    <div class="space-y-5">
+        <AdminPageHeader
+            title="Internet Package"
+            description="Atur paket layanan internet, harga, dan detail produk."
+            icon="wifi"
+            eyebrow="Produk & Layanan"
+        >
+            <template #actions>
+                <UButton label="Tambah Paket" @click="openModal(false, null)">
+                    <template #leading>
+                        <LucideIcon name="plus" :size="16" />
+                    </template>
+                </UButton>
+            </template>
+        </AdminPageHeader>
 
-    <div
-        class="flex justify-end px-3 py-3.5 border-t border-gray-200 dark:border-gray-700"
-    >
-        <UPagination
-            v-model="page"
-            :page-count="pageCount"
-            :total="internetPackages.length"
-        />
+        <section class="admin-data-panel">
+            <div class="admin-data-toolbar">
+                <div>
+                    <h2 class="text-sm font-semibold text-gray-900">Daftar Paket Internet</h2>
+                    <p class="mt-1 text-xs text-gray-500">{{ internetPackages.length }} paket tersedia</p>
+                </div>
+                <UInput v-model="q" placeholder="Cari paket..." class="w-full sm:max-w-xs" />
+            </div>
+            <div class="admin-data-table">
+                <UTable :rows="internetPackageList" :columns="column">
+                    <template #actions-data="{ row }">
+                        <UDropdown :items="items(row)">
+                            <button
+                                type="button"
+                                class="bg-gray-700 text-white px-2 py-1 text-sm hover:bg-gray-600 rounded inline-flex items-center justify-center shadow-sm transition-colors duration-200 group"
+                                aria-label="Actions"
+                            >
+                                <LucideIcon
+                                    name="ellipsis-vertical"
+                                    class="text-white"
+                                    :size="18"
+                                />
+                            </button>
+                        </UDropdown>
+                    </template>
+                    <template #price-data="{ row }">
+                        <p class="font-medium text-gray-900">{{ formatIDR(row.price) }}</p>
+                    </template>
+                </UTable>
+            </div>
+
+            <div class="flex justify-end border-t border-gray-100 px-4 py-3">
+                <UPagination
+                    v-model="page"
+                    :page-count="pageCount"
+                    :total="internetPackages.length"
+                />
+            </div>
+        </section>
     </div>
 
     <!-- <div>

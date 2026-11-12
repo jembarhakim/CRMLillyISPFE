@@ -1,167 +1,165 @@
 <template>
-  <div class="min-h-screen flex flex-col">
-      <!-- Navbar -->
-      <div
-        class="sticky top-0 z-20 flex justify-between items-center w-full h-16 px-4 md:px-6 bg-[#111111] border-b border-gray-800 shadow-sm">
-        <div class="flex items-center gap-2 sm:gap-3">
-          <p class="text-base sm:text-lg md:text-xl font-bold text-white">
-            Lilly <span class="text-[#A93133]">ISP</span>
-          </p>
-          <!-- Mobile sidebar toggle button -->
-          <button
-            class="lg:hidden flex items-center gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 focus:outline-none bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors duration-200"
-            @click="toggleMobileSidebar" aria-label="Toggle mobile sidebar" title="Menu">
-            <div v-if="!showMobileSidebar" class="flex flex-col gap-0.5 sm:gap-1">
-              <div class="w-3 sm:w-4 h-0.5 bg-gray-300 rounded"></div>
-              <div class="w-3 sm:w-4 h-0.5 bg-gray-300 rounded"></div>
-              <div class="w-3 sm:w-4 h-0.5 bg-gray-300 rounded"></div>
-            </div>
-            <div v-else class="flex flex-col gap-0.5 sm:gap-1">
-              <div class="w-3 sm:w-4 h-0.5 bg-gray-300 rounded rotate-45 translate-y-1.5"></div>
-              <div class="w-3 sm:w-4 h-0.5 bg-gray-300 rounded opacity-0"></div>
-              <div class="w-3 sm:w-4 h-0.5 bg-gray-300 rounded -rotate-45 -translate-y-1.5"></div>
-            </div>
-            <span class="text-xs sm:text-sm font-medium text-gray-300">Menu</span>
-          </button>
-        </div>
-        <!-- Profile dropdown for desktop -->
+  <div class="min-h-screen flex flex-col font-['Poppins',sans-serif] bg-gray-50/50">
+
+    <!-- ===== NAVBAR (Dark Mode) ===== -->
+    <div
+      class="sticky top-0 z-30 flex justify-between items-center w-full h-16 px-4 md:px-6 bg-[#111111] border-b border-gray-800 shadow-sm">
+
+      <!-- Logo & Mobile Toggle -->
+      <div class="flex items-center gap-4">
+        <!-- Mobile sidebar toggle -->
+        <button
+          class="lg:hidden flex items-center justify-center p-2 focus:outline-none text-gray-400 hover:text-white hover:bg-gray-800 rounded-xl transition-all"
+          @click="toggleMobileSidebar" aria-label="Toggle mobile sidebar">
+          <LucideIcon :name="showMobileSidebar ? 'x' : 'menu'" :size="24" />
+        </button>
+
+        <p class="text-xl md:text-2xl font-extrabold text-white tracking-tight hidden sm:block">
+          Lilly <span class="text-[#A93133]">ISP</span>
+        </p>
+      </div>
+
+      <!-- Profile / Right Section -->
+      <div class="flex items-center gap-4">
+        <!-- Desktop Profile -->
         <div class="hidden lg:block">
-          <UDropdown :items="ProfileDropdown" mode="hover" :popper="{ placement: 'bottom-start' }">
-            <div class="flex items-center gap-3 cursor-pointer">
-              <UAvatar src="https://avatars.githubusercontent.com/u/739984?v=4" alt="Avatar" chip-color="red"
-                chip-text="" chip-position="top-right" size="md" />
-              <div class="flex flex-col">
-                <span class="text-sm font-medium text-gray-300">{{ authStore.user?.name || 'User' }}</span>
-                <span class="text-xs text-gray-400">{{ authStore.user?.role || 'Role' }}</span>
+          <UDropdown :items="ProfileDropdown" mode="hover" :popper="{ placement: 'bottom-end' }">
+            <div
+              class="flex items-center gap-3 cursor-pointer p-1.5 rounded-xl hover:bg-gray-800 border border-transparent transition-all">
+              <div class="flex flex-col text-right">
+                <span class="text-sm font-bold text-gray-100">{{ authStore.user?.name || 'Admin User' }}</span>
+                <span class="text-xs font-medium text-gray-400">{{ authStore.user?.role || 'Administrator' }}</span>
               </div>
+              <UAvatar src="https://avatars.githubusercontent.com/u/739984?v=4" alt="Avatar" size="md"
+                class="ring-2 ring-[#A93133]" />
             </div>
           </UDropdown>
         </div>
-        <!-- Profile avatar for mobile -->
-        <div class="lg:hidden">
-          <div class="flex items-center gap-2" @click="toggleMobileSidebar">
-            <UAvatar src="https://avatars.githubusercontent.com/u/739984?v=4" alt="Avatar" size="sm" />
-            <div class="flex flex-col">
-              <span class="text-sm font-medium text-gray-300">{{ authStore.user?.name || 'User' }}</span>
-              <span class="text-xs text-gray-400">{{ authStore.user?.role || 'Role' }}</span>
-            </div>
+
+        <!-- Mobile Profile -->
+        <div class="lg:hidden flex items-center" @click="toggleMobileSidebar">
+          <UAvatar src="https://avatars.githubusercontent.com/u/739984?v=4" alt="Avatar" size="sm"
+            class="ring-2 ring-[#A93133]" />
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-shell flex flex-1 overflow-hidden relative">
+
+      <!-- Mobile Sidebar Backdrop -->
+      <transition name="fade">
+        <div v-if="showMobileSidebar" class="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+          @click="toggleMobileSidebar"></div>
+      </transition>
+
+      <!-- ===== SIDEBAR (Dark Mode, No Grouping) ===== -->
+      <div
+        class="sidebar-fix transition-all duration-300 bg-[#111111] border-r border-gray-800 z-50 flex flex-col shadow-lg"
+        :class="[
+          showSidebar ? 'w-20' : 'w-72',
+          showMobileSidebar ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        ]">
+
+        <div
+          class="hidden lg:flex items-center border-b border-gray-800/50 p-4"
+          :class="showSidebar ? 'justify-center' : 'justify-between'"
+        >
+          <span v-if="!showSidebar" class="text-xs font-semibold uppercase tracking-wider text-gray-500">
+            Menu navigasi
+          </span>
+          <button
+            @click="toggleSidebar"
+            class="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-gray-800 transition-all">
+            <LucideIcon :name="showSidebar ? 'chevron-right' : 'chevron-left'" :size="20" />
+          </button>
+        </div>
+
+        <!-- Sidebar Menu Container -->
+        <div ref="sidebarMenuContainer" class="flex-1 overflow-y-auto custom-scrollbar px-3 pb-6 pt-4"
+          @scroll="saveSidebarScrollPosition">
+
+          <div v-if="isLoadingPermissions" class="flex flex-col items-center justify-center py-10 opacity-50">
+            <LucideIcon name="loader-2" :size="24" class="animate-spin text-[#A93133] mb-2" />
+            <span class="text-xs text-gray-400 font-medium" v-if="!showSidebar">Memuat menu...</span>
+          </div>
+
+          <div v-else-if="userMenu.length === 0"
+            class="p-4 text-center text-sm text-gray-400 bg-gray-800/50 rounded-xl mx-2">
+            Tidak ada akses menu.
+          </div>
+
+          <!-- Flat 17 Menus -->
+          <ul v-else class="space-y-1">
+            <li v-for="(item, index) in userMenu" :key="index">
+              <button @click="navigateTo(item.link)"
+                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 group relative"
+                :class="isActiveMenuItem(item.link)
+                  ? 'bg-[#A93133]/20 text-[#F9EBEB]'
+                  : 'text-gray-400 hover:bg-gray-800 hover:text-gray-100'" :title="showSidebar ? item.label : ''">
+                <!-- Active Indicator (Left Border) -->
+                <div v-if="isActiveMenuItem(item.link)"
+                  class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#A93133] rounded-r-full shadow-[0_0_8px_#A93133]">
+                </div>
+
+                <LucideIcon :name="getIconName(item.icon)" :size="20"
+                  class="flex-shrink-0 transition-colors duration-200"
+                  :class="isActiveMenuItem(item.link) ? 'text-[#A93133]' : 'text-gray-500 group-hover:text-gray-300'" />
+
+                <span v-if="!showSidebar" class="font-semibold text-sm truncate transition-colors duration-200">
+                  {{ item.label }}
+                </span>
+              </button>
+            </li>
+          </ul>
+
+          <!-- Mobile Profile Menu Inject -->
+          <div class="lg:hidden mt-8 pt-6 border-t border-gray-800">
+            <div class="px-4 mb-2 text-[11px] font-bold tracking-wider text-gray-500 uppercase">Akun</div>
+            <button @click="handleLogoutConfirm"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-400 hover:bg-red-900/30 transition-all">
+              <LucideIcon name="log-out" :size="20" />
+              <span class="font-semibold text-sm">Logout</span>
+            </button>
           </div>
         </div>
       </div>
 
-      <div class="admin-shell flex flex-1 overflow-hidden">
-
-        <!-- Mobile Sidebar Backdrop -->
-        <div v-if="showMobileSidebar" class="lg:hidden fixed inset-0 bg-black/50 z-30 transition-opacity duration-300"
-          @click="toggleMobileSidebar"></div>
-
-        <!-- Responsive Sidebar -->
-        <div class="sidebar-fix transition-all duration-300 bg-[#111111] text-gray-300" :class="[
-          showSidebar ? 'w-16 collapsed-sidebar' : 'w-80',
-          showMobileSidebar ? 'show' : '',
-        ]">
-          <!-- Sidebar toggle button - Hidden on mobile/tablet -->
-          <div
-            class="toggle-header hidden lg:flex justify-center items-center p-4 border-b cursor-pointer hover:bg-gray-800 transition-colors duration-200 bg-[#111111] min-h-[60px] z-20"
-            @click="toggleSidebar" role="button" aria-label="Toggle sidebar" title="Toggle sidebar">
-            <LucideIcon 
-              name="chevron-right"
-              :size="24"
-              :class="`transition-colors duration-200 ${!showSidebar ? 'rotate-180' : ''}`"
-              style="color: white !important; fill: white !important; stroke: white !important;" />
-          </div>
-          <div ref="sidebarMenuContainer" class="flex-1 p-2 overflow-auto no-scrollbar"
-            @scroll="saveSidebarScrollPosition">
-            <ul class="space-y-2">
-              <li v-for="(item, index) in userMenu" :key="index"
-                class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200"
-                :class="[showSidebar ? 'justify-center' : '', isActiveMenuItem(item.link) ? 'active-menu-item' : 'hover:bg-white/5 hover:text-white']"
-                @click="navigateTo(item.link)">
-                <LucideIcon 
-                  :name="getIconName(item.icon)" 
-                  :size="20"
-                  class="transition-colors duration-200" 
-                  :class="isActiveMenuItem(item.link) ? 'text-white' : 'text-gray-400'" />
-                <span class="font-medium transition-colors duration-200"
-                  :class="isActiveMenuItem(item.link) ? 'text-white' : 'text-gray-300'">
-                  {{ item.label }}
-                </span>
-              </li>
-            </ul>
-
-            <!-- Show message if no menu items -->
-            <div v-if="userMenu.length === 0 && !isLoadingPermissions" class="p-3 text-center text-gray-400 text-sm">
-              No menu items available for your role
-            </div>
-            
-            <!-- Show loading message -->
-            <div v-if="isLoadingPermissions" class="p-3 text-center text-gray-400 text-sm">
-              Loading permissions...
-            </div>
-
-            <!-- Profile section for mobile -->
-            <div class="lg:hidden mt-4 pt-4 border-t border-gray-800">
-              <div class="p-3 text-sm text-gray-400">
-                Logged in as: {{ authStore.user?.name || 'User' }}
-              </div>
-              <ul class="space-y-2">
-                <li v-for="(item, index) in ProfileDropdown[0]" :key="'profile-' + index"
-                  class="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-800 text-gray-300"
-                  @click="() => { item.click(); showMobileSidebar = false }">
-                  <LucideIcon name="user-circle" :size="20" class="text-gray-400" />
-                  <span class="font-medium text-gray-300">{{ item.label }}</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <!-- Main Content -->
-        <div
-          class="admin-main flex-1 overflow-auto bg-gray-50 px-4 pb-4 pt-4 sm:px-6 sm:pb-6 sm:pt-6 md:px-8 md:pb-8 lg:px-10 lg:pb-10"
-          :class="{ 'lg:ml-16': showSidebar, 'lg:ml-80': !showSidebar }"
-          style="background: #f9fafb;">
+      <!-- ===== MAIN CONTENT ===== -->
+      <div class="flex-1 overflow-auto bg-gray-50 w-full lg:w-auto" :class="showSidebar ? 'lg:pl-20' : 'lg:pl-72'">
+        <!-- Slots for Pages -->
+        <div class="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto transition-all duration-300">
           <slot name="header"></slot>
           <slot name="header-child"></slot>
           <slot></slot>
         </div>
-
-
       </div>
-    </div>
 
-    <!-- Logout Confirmation Modal -->
-    <LogoutConfirmationModal
-      :is-visible="showLogoutModal"
-      title="Konfirmasi Logout"
-      message="Apakah Anda yakin ingin logout? Anda akan keluar dari sistem."
-      @confirm="handleLogoutConfirm"
-      @cancel="handleLogoutCancel"
-    />
-  </template>
+    </div>
+  </div>
+
+  <!-- Logout Confirmation Modal -->
+  <LogoutConfirmationModal :is-visible="showLogoutModal" title="Konfirmasi Logout"
+    message="Apakah Anda yakin ingin logout? Anda akan keluar dari sistem." @confirm="handleLogoutConfirm"
+    @cancel="handleLogoutCancel" />
+</template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch, defineAsyncComponent } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useRolePermissions } from '@/composables/useRolePermissions'
 import LucideIcon from '@/components/LucideIcon.vue'
 
-// Convert heroicons:icon-name to icon-name for LucideIcon
 const getIconName = (iconName: string) => {
-  if (iconName.startsWith('heroicons:')) {
-    return iconName.replace('heroicons:', '')
-  }
+  if (iconName.startsWith('heroicons:')) return iconName.replace('heroicons:', '')
   return iconName
 }
 
-// Type definitions
 interface ProfileDropdownItem {
   label: string
   click: () => Promise<void> | void
 }
 
-// Reactive state
 const router = useRouter()
 const route = useRoute()
 const showSidebar = ref(false)
@@ -170,26 +168,16 @@ const sidebarMenuContainer = ref<HTMLElement | null>(null)
 const sidebarScrollPosition = useState<number>('admin-sidebar-scroll-position', () => 0)
 const authStore = useAuthStore()
 
-// Role permissions composable
 const { userMenu, loadFeaturePermissions, isLoadingPermissions } = useRolePermissions()
-
-// Modal state for logout confirmation
 const showLogoutModal = ref(false)
 
-// Profile dropdown
 const ProfileDropdown: ProfileDropdownItem[][] = [
-  [
-    {
-      label: 'Logout',
-      click: async () => {
-        // Show logout confirmation modal
-        showLogoutModal.value = true
-      },
-    },
-  ],
+  [{
+    label: 'Logout',
+    click: () => { showLogoutModal.value = true },
+  }],
 ]
 
-// Load feature permissions on mount
 onMounted(async () => {
   if (authStore.user) {
     await loadFeaturePermissions()
@@ -200,14 +188,10 @@ onMounted(async () => {
 
 onBeforeUnmount(saveSidebarScrollPosition)
 
-watch(
-  () => route.fullPath,
-  async () => {
-    await nextTick()
-    restoreSidebarScrollPosition()
-  },
-  { flush: 'post' },
-)
+watch(() => route.fullPath, async () => {
+  await nextTick()
+  restoreSidebarScrollPosition()
+}, { flush: 'post' })
 
 function saveSidebarScrollPosition() {
   sidebarScrollPosition.value = sidebarMenuContainer.value?.scrollTop ?? 0
@@ -219,47 +203,25 @@ function restoreSidebarScrollPosition() {
   }
 }
 
-// Function to check if a menu item is active
 const isActiveMenuItem = (menuLink: string): boolean => {
   const currentPath = route.path
-  // Exact match for dashboard root
-  if (menuLink === '/dashboard' && currentPath === '/dashboard') {
-    return true
-  }
-  // For other routes, check if current path starts with the menu link
-  if (menuLink !== '/dashboard' && currentPath.startsWith(menuLink)) {
-    return true
-  }
+  if (menuLink === '/dashboard' && currentPath === '/dashboard') return true
+  if (menuLink !== '/dashboard' && currentPath.startsWith(menuLink)) return true
   return false
 }
 
-// Methods
-const toggleSidebar = () => {
-  showSidebar.value = !showSidebar.value
-}
-
-const toggleMobileSidebar = () => {
-  showMobileSidebar.value = !showMobileSidebar.value
-}
+const toggleSidebar = () => { showSidebar.value = !showSidebar.value }
+const toggleMobileSidebar = () => { showMobileSidebar.value = !showMobileSidebar.value }
 
 const navigateTo = (link: string) => {
   router.push(link)
-  // Close mobile sidebar on navigation
   showMobileSidebar.value = false
 }
 
-// Handle logout confirmation
 function handleLogoutConfirm() {
-  // Store the user role before logout to determine redirect
   const userRole = authStore.user?.role
-  
-  // Logout user
   authStore.logout()
   showLogoutModal.value = false
-  
-  // Redirect based on previous role
-  // If role was CUSTOMER, redirect to customer login
-  // Otherwise (employee/admin roles), redirect to employee login
   if (userRole === 'CUSTOMER') {
     router.push('/login')
   } else {
@@ -267,128 +229,56 @@ function handleLogoutConfirm() {
   }
 }
 
-// Handle logout cancel
 function handleLogoutCancel() {
   showLogoutModal.value = false
 }
 </script>
 
 <style scoped>
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
+/* Sidebar Setup */
 .sidebar-fix {
-  display: flex;
-  flex-direction: column;
   position: fixed;
-  inset: 0 auto 0 0;
-  height: 100vh;
-  height: 100dvh;
-  z-index: 40;
-  transform: translateX(-100%);
-  transition: transform 0.3s ease;
-  width: 280px;
-  max-width: 80vw;
-  background: #111111;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
+  top: 64px;
+  /* Sesuai tinggi navbar h-16 */
+  bottom: 0;
+  left: 0;
 }
 
-.sidebar-fix.show {
-  transform: translateX(0);
+/* Custom Scrollbar untuk Dark Mode */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
 }
 
-@media (min-width: 1024px) {
-  .sidebar-fix {
-    top: 64px;
-    bottom: 0;
-    height: calc(100vh - 64px);
-    height: calc(100dvh - 64px);
-    transform: none;
-    box-shadow: none;
-    max-width: none;
-    border-right: 1px solid #27272a;
-    z-index: 10;
-  }
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-  .sidebar-fix.w-16 {
-    width: 64px;
-  }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  /* Gray-700 */
+  border-radius: 10px;
+}
 
-  .sidebar-fix:not(.w-16) {
-    width: 320px;
-  }
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: #52525b;
+  /* Gray-600 */
+}
+
+/* Animasi Fade Backdrop Mobile */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 @media (max-width: 1023px) {
-  .sidebar-fix.show {
-    width: 280px;
-  }
-
-  .sidebar-fix.show .flex-1 ul li {
-    justify-content: flex-start;
-  }
-
-  .sidebar-fix.show .flex-1 ul li span {
-    display: block;
+  .sidebar-fix {
+    top: 0;
+    z-index: 50;
   }
 }
-
-@media (min-width: 1024px) {
-  .sidebar-fix.w-16 .flex-1 ul li span {
-    display: none;
-  }
-
-  .sidebar-fix.w-16 .flex-1 ul li {
-    justify-content: center;
-  }
-
-  .sidebar-fix:not(.w-16) .flex-1 ul li span {
-    display: block;
-  }
-
-  .sidebar-fix:not(.w-16) .flex-1 ul li {
-    justify-content: flex-start;
-  }
-}
-
-.sidebar-fix .toggle-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: #111111;
-  border-bottom: 1px solid #27272a;
-  min-height: 60px;
-}
-
-.sidebar-fix .toggle-header:hover {
-  background-color: #27272a;
-}
-
-.sidebar-fix .active-menu-item {
-  background-color: rgba(169, 49, 51, 0.22);
-  border-left: 4px solid #A93133;
-  color: #F9EBEB;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
-}
-
-.sidebar-fix .active-menu-item:hover {
-  background-color: rgba(169, 49, 51, 0.32);
-}
-
-.admin-shell {
-  min-height: 0;
-}
-
-.admin-main {
-  min-width: 0;
-  min-height: 0;
-  background: #f9fafb;
-}
-
 </style>

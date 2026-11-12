@@ -1763,11 +1763,15 @@ const visibleAndSortedTickets = computed(() => {
 </script>
 <template>
   <div class="space-y-4 text-gray-900">
+    <AdminPageHeader
+      title="Tickets"
+      description="Pantau laporan gangguan, penugasan teknisi, dan tindak lanjut layanan."
+      icon="ticket"
+      eyebrow="Layanan Pelanggan"
+    />
     <UTabs :items="tab_items" class="w-full" v-model="activeTab" />
 
     <div v-if="activeTab === 0" class="space-y-4">
-      <h1 class="text-2xl font-semibold text-gray-900">Tiket Gangguan</h1>
-
       <!-- New Classification System UI -->
       <div class="bg-white rounded-lg shadow border border-gray-100 p-4">
         <!-- Responsive Classification Buttons -->

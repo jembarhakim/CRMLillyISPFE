@@ -105,6 +105,13 @@ const tab_items = [
 </script>
 
 <template>
+    <div class="space-y-5">
+    <AdminPageHeader
+        title="Transaction"
+        description="Pantau transaksi keuangan, deposit, pengeluaran, dan neraca."
+        icon="wallet"
+        eyebrow="Keuangan"
+    />
     <UTabs :items="tab_items" class="w-full" v-model="activeTab">
         <template #item="{ item }">
             <div v-if="item.value == 'deposit'">
@@ -146,4 +153,5 @@ const tab_items = [
       </div> -->
         </template>
     </UTabs>
+    </div>
 </template>

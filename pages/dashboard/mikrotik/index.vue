@@ -1,19 +1,20 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <div class="bg-white shadow-sm border-b">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center py-6">
-          <div>
-            <h1 class="text-2xl font-bold text-gray-900">Manajemen MikroTik</h1>
-            <p class="text-sm text-gray-600">Kelola akun Hotspot lokal, sesi aktif, profil, dan IP Binding</p>
-          </div>
-          <span class="rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">RouterOS API</span>
-        </div>
-      </div>
-    </div>
+    <AdminPageHeader
+      class="w-full"
+      title="MikroTik"
+      description="Kelola akun hotspot lokal, sesi aktif, profil, dan IP binding."
+      icon="server"
+      eyebrow="Manajemen Jaringan"
+    >
+      <template #actions>
+        <span class="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
+          RouterOS API
+        </span>
+      </template>
+    </AdminPageHeader>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="w-full py-8">
       <HotspotManager class="mb-8" />
 
       <details class="mb-8 rounded-lg border border-gray-200 bg-white p-4">

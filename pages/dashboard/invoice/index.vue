@@ -1487,6 +1487,13 @@ async function printAllUnpaidInvoices() {
 </script>
 
 <template>
+  <AdminPageHeader
+    class="mb-5"
+    title="Invoice"
+    description="Kelola tagihan pelanggan, status pembayaran, dan laporan invoice."
+    icon="file-text"
+    eyebrow="Penagihan"
+  />
   <div class="flex justify-between items-center mb-4">
     <div class="flex gap-2 mb-4">
       <UButton label="Add Invoice" @click="OpenModalAddCustomer(false, null)" />
@@ -1582,7 +1589,9 @@ async function printAllUnpaidInvoices() {
     </div>
   </div>
 
-  <UTable :rows="filteredRows || []" :columns="columns || []" :loading="isLoading">
+  <section class="admin-data-panel">
+  <div class="invoice-table-scroll">
+  <UTable class="invoice-table" :rows="filteredRows || []" :columns="columns || []" :loading="isLoading">
     <template #actions-data="{ row }">
       <UDropdown :items="items(row)">
         <UButton color="gray">
@@ -1723,13 +1732,13 @@ async function printAllUnpaidInvoices() {
           <!-- Mobile-friendly stacked buttons -->
 
           <div
-            class="flex flex-col space-y-1 lg:flex-row lg:space-y-0 lg:space-x-1"
+            class="flex flex-col space-y-1"
           >
             <UButton
               size="xs"
               color="green"
               variant="soft"
-              class="w-full lg:w-auto"
+              class="w-full"
               @click="updateStatus(row.id, 'paid', row.status)"
             >
               Mark Paid
@@ -1739,7 +1748,7 @@ async function printAllUnpaidInvoices() {
               size="xs"
               color="gray"
               variant="outline"
-              class="w-full lg:w-auto"
+              class="w-full"
               @click="updateStatus(row.id, 'unpaid', row.status)"
             >
               Mark Unpaid
@@ -1769,13 +1778,13 @@ async function printAllUnpaidInvoices() {
           <!-- Mobile-friendly stacked buttons -->
 
           <div
-            class="flex flex-col space-y-1 lg:flex-row lg:space-y-0 lg:space-x-1"
+            class="flex flex-col space-y-1"
           >
             <UButton
               size="xs"
               color="green"
               variant="soft"
-              class="w-full lg:w-auto"
+              class="w-full"
               @click="updateStatus(row.id, 'paid', row.status)"
             >
               Mark Paid
@@ -1785,7 +1794,7 @@ async function printAllUnpaidInvoices() {
               size="xs"
               color="yellow"
               variant="soft"
-              class="w-full lg:w-auto"
+              class="w-full"
               @click="updateStatus(row.id, 'pending', row.status)"
             >
               Mark Pending
@@ -1820,9 +1829,10 @@ async function printAllUnpaidInvoices() {
       <span>{{ row.due_date ? row.due_date : "-" }}</span>
     </template>
   </UTable>
+  </div>
 
   <div
-    class="flex justify-end px-3 py-3.5 border-t border-gray-200 dark:border-gray-700"
+    class="admin-pagination-footer flex justify-end px-3 py-3.5 border-t border-gray-200 dark:border-gray-700"
   >
     <UPagination
       v-model="page"
@@ -1830,6 +1840,7 @@ async function printAllUnpaidInvoices() {
       :total="customer && customer.length ? customer.length : 0"
     />
   </div>
+  </section>
 
   <!-- Partial Payment Modal -->
 

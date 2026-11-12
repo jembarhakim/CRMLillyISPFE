@@ -360,18 +360,24 @@ onMounted(() => {
 
 <template>
   <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900">Recurring Invoices</h1>
-        <p class="text-gray-600">Manage recurring invoice templates</p>
-      </div>
-      <UButton
-        label="+ Add Recurring Invoice"
-        color="blue"
-        @click="openModalAddRecurringInvoice(false, null)"
-      />
-    </div>
+    <AdminPageHeader
+      title="Recurring Invoices"
+      description="Kelola tagihan berulang dan jadwal penagihan pelanggan."
+      icon="arrow-path"
+      eyebrow="Penagihan Otomatis"
+    >
+      <template #actions>
+        <UButton
+          label="Tambah Invoice"
+          color="blue"
+          @click="openModalAddRecurringInvoice(false, null)"
+        >
+          <template #leading>
+            <LucideIcon name="plus" :size="16" />
+          </template>
+        </UButton>
+      </template>
+    </AdminPageHeader>
 
     <!-- Filter Section -->
     <div

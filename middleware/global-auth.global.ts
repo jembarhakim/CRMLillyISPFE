@@ -40,15 +40,28 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     return; // Allow access to employee login page if not logged in
   }
 
-  // Handle customer pages - they have their own auth logic.
-  // A logged-in CUSTOMER opening the portal login should go back to the
-  // portal, never to the staff dashboard.
-  if (to.path.startsWith('/customer') || to.path.startsWith('/invoice')) {
-    if (to.path === '/customer/login' && authStore.isLoggedIn) {
-      // Staff tokens have no business in the portal: send them to the dashboard.
-      const isCorporateUser = authStore.userType === 'employee'
-      return navigateTo(isCorporateUser ? '/dashboard' : '/customer')
+  // Customer portal routes require a customer session; the login page itself
+  // remains public so unauthenticated visitors can sign in.
+  if (to.path.startsWith('/customer')) {
+    if (to.path === '/customer/login') {
+      if (authStore.isLoggedIn && authStore.userType === 'customer') {
+        return navigateTo('/customer')
+      }
+      if (authStore.isLoggedIn && authStore.userType === 'employee') {
+        return navigateTo('/dashboard')
+      }
+      return
     }
+
+    if (!authStore.isLoggedIn || authStore.userType !== 'customer') {
+      return navigateTo('/customer/login')
+    }
+
+    return
+  }
+
+  // Invoice payment links are public and have their own payment flow.
+  if (to.path.startsWith('/invoice')) {
     return;
   }
 

@@ -18,6 +18,8 @@ import {
     Ticket,
     Users,
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
     LogOut,
     Settings,
     Bell,
@@ -82,6 +84,7 @@ import {
     Send,
     SendHorizontal,
     Loader2,
+    Newspaper,
 } from "lucide-vue-next";
 
 const props = defineProps({
@@ -115,6 +118,8 @@ const iconMap = {
     ticket: Ticket,
     users: Users,
     "chevron-down": ChevronDown,
+    "chevron-left": ChevronLeft,
+    "chevron-right": ChevronRight,
     "log-out": LogOut,
     settings: Settings,
     bell: Bell,
@@ -200,6 +205,7 @@ const iconMap = {
     "paper-plane": Send,
     "loader-2": Loader2,
     loader: Loader2,
+    newspaper: Newspaper,
 };
 
 const iconComponent = computed(() => {

@@ -1031,15 +1031,14 @@ const relatedCustomers = computed(() => {
 
     <!-- Content (hidden while loading) -->
     <div v-else class="space-y-6">
-    <!-- Header Section -->
-    <div
-      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+    <AdminPageHeader
+      title="Customer"
+      description="Kelola data pelanggan, layanan, dan status koneksi."
+      icon="users"
+      eyebrow="Manajemen Pelanggan"
     >
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900">Customer Management</h1>
-        <p class="text-sm text-gray-600">Manage your customer database</p>
-      </div>
-      <div class="flex flex-col sm:flex-row gap-2">
+      <template #actions>
+      <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
         <BroadcastFeature
           :related-customers="relatedCustomers"
           class="w-full sm:w-auto"
@@ -1062,7 +1061,7 @@ const relatedCustomers = computed(() => {
           label="Add Installation Report"
           @click="OpenModalReportInstallation(false, null)"
           class="w-full sm:w-auto"
-          color="green"
+          color="primary"
         >
           <template #leading>
             <LucideIcon name="plus" :size="16" />
@@ -1095,7 +1094,8 @@ const relatedCustomers = computed(() => {
           </template>
         </UButton>
       </div>
-    </div>
+      </template>
+    </AdminPageHeader>
 
     <!-- Search and Filter -->
     <div class="flex flex-col sm:flex-row gap-4">

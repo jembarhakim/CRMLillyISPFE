@@ -172,57 +172,74 @@ const modal = useModal();
 </script>
 
 <template>
-    <UButton label="Add Companies" @click="() => openAddCompanyModal()" />
-    <div class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700">
-        <UInput v-model="q" placeholder="Search" />
-    </div>
+    <div class="space-y-5">
+        <AdminPageHeader
+            title="Company"
+            description="Kelola profil, kontak, dan informasi perusahaan."
+            icon="building-2"
+            eyebrow="Data Perusahaan"
+        >
+            <template #actions>
+                <UButton label="Tambah Company" @click="() => openAddCompanyModal()">
+                    <template #leading>
+                        <LucideIcon name="plus" :size="16" />
+                    </template>
+                </UButton>
+            </template>
+        </AdminPageHeader>
 
-    <div class="table-scroll-container">
-        <div class="table-scroll-content">
-            <UTable
-                :rows="filteredRows"
-                :columns="columns"
-                class="dashboard-table"
-            >
-                <template #logo_url-data="{ row }">
-                    <UAvatar :src="row.logo_url" size="xl" />
-                </template>
-                <template #actions-data="{ row }">
-                    <UDropdown :items="items(row)">
-                        <button
-                            type="button"
-                            class="bg-gray-700 text-white px-2 py-1 text-sm hover:bg-gray-600 rounded inline-flex items-center justify-center shadow-sm transition-colors duration-200 group"
-                            aria-label="Actions"
+        <section class="admin-data-panel">
+            <div class="admin-data-toolbar">
+                <div>
+                    <h2 class="text-sm font-semibold text-gray-900">Daftar Company</h2>
+                    <p class="mt-1 text-xs text-gray-500">{{ peopleData.length }} perusahaan terdaftar</p>
+                </div>
+                <UInput v-model="q" placeholder="Cari company..." class="w-full sm:max-w-xs" />
+            </div>
+
+            <div class="admin-data-table">
+                <div class="table-scroll-container">
+                    <div class="table-scroll-content company-table-scroll">
+                        <UTable
+                            :rows="filteredRows"
+                            :columns="columns"
+                            class="dashboard-table"
                         >
-                            <LucideIcon
-                                name="ellipsis-vertical"
-                                class="text-white"
-                                :size="18"
-                            />
-                        </button>
-                    </UDropdown>
-                </template>
-            </UTable>
-        </div>
-        <div class="table-scroll-footer">
-            <span class="scroll-hint"
-                >↔ Scroll horizontally to see more columns | ↕ Scroll
-                vertically for more rows</span
-            >
-        </div>
-    </div>
+                            <template #logo_url-data="{ row }">
+                                <UAvatar :src="row.logo_url" size="xl" />
+                            </template>
+                            <template #actions-data="{ row }">
+                                <UDropdown :items="items(row)">
+                                    <button
+                                        type="button"
+                                        class="bg-gray-700 text-white px-2 py-1 text-sm hover:bg-gray-600 rounded inline-flex items-center justify-center shadow-sm transition-colors duration-200 group"
+                                        aria-label="Actions"
+                                    >
+                                        <LucideIcon
+                                            name="ellipsis-vertical"
+                                            class="text-white"
+                                            :size="18"
+                                        />
+                                    </button>
+                                </UDropdown>
+                            </template>
+                        </UTable>
+                    </div>
+                    <div class="table-scroll-footer">
+                        <span class="scroll-hint">Scroll horizontally to view all company details.</span>
+                    </div>
+                </div>
+            </div>
 
-    <div
-        class="flex justify-end px-3 py-3.5 border-t border-gray-200 dark:border-gray-700"
-    >
-        <UPagination
-            v-model="page"
-            :page-count="pageCount"
-            :total="peopleData.length"
-        />
-    </div>
+            <div class="flex justify-end border-t border-gray-100 px-4 py-3">
+                <UPagination
+                    v-model="page"
+                    :page-count="pageCount"
+                    :total="peopleData.length"
+                />
+            </div>
+        </section>
 
-    <div>
         <UModal v-model="isOpen">
             <div class="p-4">
                 <Placeholder class="h-48" />

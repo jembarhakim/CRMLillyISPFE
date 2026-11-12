@@ -248,13 +248,22 @@ onMounted(() => {
 </script>
 
 <template>
+  <div class="space-y-5">
+  <AdminPageHeader
+    title="Assets"
+    description="Kelola aset, item inventaris, dan transaksi barang."
+    icon="archive-box"
+    eyebrow="Inventaris & Aset"
+  />
+
+  <section class="admin-data-panel">
   <!-- Action Buttons - Responsive -->
-  <div class="flex flex-col sm:flex-row gap-2 mb-4">
+  <div class="admin-data-toolbar">
+    <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
     <UButton
       label="Add Asset"
       @click="OpenModalAddAsset(false, null)"
       class="w-full sm:w-auto"
-      size="lg"
     />
     <UButton
       label="Manage Asset Items"
@@ -262,7 +271,6 @@ onMounted(() => {
       variant="outline"
       @click="goToAssetItems"
       class="w-full sm:w-auto"
-      size="lg"
     />
     <UButton
       label="Items Catalog"
@@ -270,7 +278,6 @@ onMounted(() => {
       variant="outline"
       @click="goToItemsCatalog"
       class="w-full sm:w-auto"
-      size="lg"
     >
       <template #leading>
         <LucideIcon name="list" :size="16" />
@@ -282,21 +289,16 @@ onMounted(() => {
       variant="outline"
       @click="showGoodsModal = true"
       class="w-full sm:w-auto"
-      size="lg"
     >
       <template #leading>
         <LucideIcon name="package" :size="16" />
       </template>
     </UButton>
-  </div>
-
-  <!-- Search Filter - Responsive -->
-  <div class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700">
+    </div>
     <UInput
       v-model="q"
-      placeholder="Filter asset..."
-      class="w-full"
-      size="lg"
+      placeholder="Cari aset..."
+      class="w-full sm:max-w-xs"
       icon="i-heroicons-magnifying-glass"
     />
   </div>
@@ -438,10 +440,11 @@ onMounted(() => {
       class="w-full sm:w-auto"
     />
   </div>
+  </section>
 
   <!-- Goods Transactions Section -->
   <div
-    class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+    class="mt-0 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:bg-gray-800 dark:border-gray-700"
   >
     <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
       <div
@@ -764,6 +767,7 @@ onMounted(() => {
       </template>
     </UCard>
   </UModal>
+  </div>
 </template>
 
 <style scoped>

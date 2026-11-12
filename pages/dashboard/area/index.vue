@@ -104,44 +104,60 @@ async function deleteData(id: string){
 </script>
 
 <template>
-  <div class="flex gap-2">
-    <UButton color="blue" label="Add New Area" @click="openModal(false,null)">
-      <template #leading>
-        <LucideIcon name="plus" :size="16" />
+  <div class="space-y-5">
+    <AdminPageHeader
+      title="Area"
+      description="Kelola data kota, kecamatan, desa, dan kode area layanan."
+      icon="map"
+      eyebrow="Wilayah Layanan"
+    >
+      <template #actions>
+        <UButton color="blue" label="Tambah Area" @click="openModal(false,null)">
+          <template #leading>
+            <LucideIcon name="plus" :size="16" />
+          </template>
+        </UButton>
       </template>
-    </UButton>
-  </div>
-  <div class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700">
-    <UInput v-model="q" placeholder="Filter Area..." />
-  </div>
+    </AdminPageHeader>
 
-  <UTable :rows="filteredRows" :columns="columns">
-    <template #code_name-data="{ row }">
-      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-        {{ row.code_name || 'N/A' }}
-      </span>
-    </template>
-    <template #actions-data="{ row }">
-      <div class="flex gap-2">
-        <UButton color="yellow" label="Edit" @click="openModal(true,row)">
-          <template #leading>
-            <LucideIcon name="pencil" :size="16" />
-          </template>
-        </UButton>
-        <UButton color="red" label="Delete" @click="deleteData(row.id)">
-          <template #leading>
-            <LucideIcon name="trash" :size="16" />
-          </template>
-        </UButton>
+    <section class="admin-data-panel">
+      <div class="admin-data-toolbar">
+        <div>
+          <h2 class="text-sm font-semibold text-gray-900">Daftar Area</h2>
+          <p class="mt-1 text-xs text-gray-500">{{ area.length }} area terdaftar</p>
+        </div>
+        <UInput v-model="q" placeholder="Cari area..." class="w-full sm:max-w-xs" />
       </div>
-    </template>
-  </UTable>
 
-  <div class="flex justify-end px-3 py-3.5 border-t border-gray-200 dark:border-gray-700">
-    <UPagination v-model="page" :page-count="pageCount" :total="area.length" />
-  </div>
+      <div class="admin-data-table">
+        <UTable :rows="filteredRows" :columns="columns">
+          <template #code_name-data="{ row }">
+            <span class="inline-flex items-center rounded-full bg-[#F9EBEB] px-2.5 py-0.5 text-xs font-medium text-[#A93133]">
+              {{ row.code_name || 'N/A' }}
+            </span>
+          </template>
+          <template #actions-data="{ row }">
+            <div class="flex flex-wrap gap-2">
+              <UButton color="gray" label="Edit" @click="openModal(true,row)">
+                <template #leading>
+                  <LucideIcon name="pencil" :size="16" />
+                </template>
+              </UButton>
+              <UButton color="red" label="Hapus" @click="deleteData(row.id)">
+                <template #leading>
+                  <LucideIcon name="trash" :size="16" />
+                </template>
+              </UButton>
+            </div>
+          </template>
+        </UTable>
+      </div>
 
-  <div>
+      <div class="flex justify-end border-t border-gray-100 px-4 py-3">
+        <UPagination v-model="page" :page-count="pageCount" :total="area.length" />
+      </div>
+    </section>
+
     <UModal v-model="isOpen">
       <div class="p-4">
         <Placeholder class="h-48" />

@@ -231,23 +231,14 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-7xl space-y-6">
-    <header class="relative isolate overflow-hidden rounded-2xl bg-[#111111] px-5 py-6 text-white shadow-lg sm:px-7 sm:py-8">
-      <div class="pointer-events-none absolute -right-10 -top-20 -z-10 h-64 w-64 rounded-full border-[32px] border-[#A93133]/20"></div>
-      <div class="pointer-events-none absolute -bottom-24 right-24 -z-10 h-48 w-48 rounded-full bg-[#A93133]/20 blur-3xl"></div>
-      <div class="flex flex-wrap items-center justify-between gap-5">
-        <div class="flex items-start gap-4">
-          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#A93133] shadow-lg shadow-[#A93133]/20">
-            <LucideIcon name="message-circle" :size="24" />
-          </div>
-          <div>
-            <p class="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-red-200">Pusat komunikasi</p>
-            <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">Notifikasi WhatsApp</h1>
-            <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-300">
-              Kelola template pesan, pantau pengiriman, dan atur pengingat tagihan pelanggan.
-            </p>
-          </div>
-        </div>
+  <div class="w-full space-y-6">
+    <AdminPageHeader
+      title="Notifikasi WhatsApp"
+      description="Kelola template pesan, pantau pengiriman, dan atur pengingat tagihan pelanggan."
+      icon="message-circle"
+      eyebrow="Pusat Komunikasi"
+    >
+      <template #actions>
         <button
           class="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
           :disabled="loading"
@@ -256,8 +247,8 @@ onBeforeUnmount(() => {
           <LucideIcon name="refresh-cw" :size="16" :class="loading ? 'animate-spin' : ''" />
           {{ loading ? 'Memuat...' : 'Muat ulang' }}
         </button>
-      </div>
-    </header>
+      </template>
+    </AdminPageHeader>
 
     <div v-if="errorMessage" class="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">
       <LucideIcon name="alert-triangle" :size="18" class="mt-0.5 shrink-0" />

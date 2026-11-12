@@ -26,20 +26,30 @@ const tab_items = [
 </script>
 
 <template>
-  <UTabs :items="tab_items" class="w-full">
-    <template #item="{ item }">
-      <div v-if="item.value == 'user'">
-        <User />
-      </div>
+  <div class="space-y-5">
+    <AdminPageHeader
+      title="User Management"
+      description="Kelola akun pengguna dan role akses dalam sistem."
+      icon="users"
+      eyebrow="Akses & Pengguna"
+    />
+    <section class="admin-data-panel p-4 sm:p-5">
+      <UTabs :items="tab_items" class="w-full">
+        <template #item="{ item }">
+          <div v-if="item.value == 'user'">
+            <User />
+          </div>
 
-      <div v-if="item.value == 'role'">
-        <Role />
-      </div>
+          <div v-if="item.value == 'role'">
+            <Role />
+          </div>
 
-      <!-- <div v-if="item.value == 'report-customer'">
+          <!-- <div v-if="item.value == 'report-customer'">
         <CustomerInstallation />
 
       </div> -->
-    </template>
-  </UTabs>
+        </template>
+      </UTabs>
+    </section>
+  </div>
 </template>

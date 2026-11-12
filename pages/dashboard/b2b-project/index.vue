@@ -114,20 +114,21 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 max-w-7xl mx-auto">
-    <!-- Header -->
-    <div class="flex flex-wrap items-start justify-between gap-3 mb-5">
-      <div>
-        <h1 class="text-xl font-bold text-gray-900">Proyek B2B</h1>
-        <p class="text-sm text-gray-500 mt-0.5">
-          Proyek borongan insidental: penawaran, pengerjaan, hingga serah terima.
-        </p>
-      </div>
-      <UButton color="primary" @click="showCreate = true">
-        <LucideIcon name="plus" :size="16" class="mr-1" />
-        Proyek Baru
-      </UButton>
-    </div>
+  <div class="w-full">
+    <AdminPageHeader
+      class="mb-5"
+      title="Proyek B2B"
+      description="Proyek borongan insidental: penawaran, pengerjaan, hingga serah terima."
+      icon="briefcase"
+      eyebrow="Proyek & Kontrak"
+    >
+      <template #actions>
+        <UButton color="primary" @click="showCreate = true">
+          <LucideIcon name="plus" :size="16" class="mr-1" />
+          Proyek Baru
+        </UButton>
+      </template>
+    </AdminPageHeader>
 
     <!-- Summary -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">

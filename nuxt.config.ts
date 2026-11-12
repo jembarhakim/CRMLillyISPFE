@@ -35,6 +35,7 @@ export default defineNuxtConfig({
   css: [
     "~/assets/css/tailwind.css",
     "~/assets/css/global.css",
+    "~/assets/css/admin-theme.css",
     // Customer portal component classes. Loaded last and written as plain CSS
     // (no @layer) so they always ship and can override utility defaults.
     "~/assets/css/portal.css",
