@@ -11,6 +11,7 @@ export interface DudeDevice {
   latitude: number | null
   longitude: number | null
   last_seen: string
+  last_down_at?: string | null
 }
 
 export interface DudeDeviceDetails {

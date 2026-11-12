@@ -60,7 +60,7 @@
           >
             {{ item.label }}
             <span class="ml-1 rounded-full bg-white/20 px-1.5">
-              {{ item.id === 'users' ? users.length : item.id === 'active' ? sessions.length : item.id === 'profiles' ? profiles.length : item.id === 'bindings' ? bindings.length : dudeDevices.length }}
+              {{ tabCount(item.id) }}
             </span>
           </button>
         </nav>
@@ -236,7 +236,7 @@
             </table>
           </div>
         </template>
-        <template v-else>
+        <template v-else-if="tab === 'devices'">
           <div class="space-y-3">
             <div class="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
               <div>
@@ -268,13 +268,31 @@
             </div>
             <div class="flex flex-wrap items-center justify-between gap-3">
               <p class="max-w-3xl text-sm text-slate-600">
-                Daftar dapat berasal dari inventori live The Dude atau CSV Network Map yang sudah diimpor. Tombol hanya aktif jika IP cocok dengan tepat satu MAC dan satu IP Binding.
+                Daftar hanya menampilkan perangkat dari Network Map yang sudah diimpor. Tombol isolir aktif jika IP cocok dengan tepat satu MAC dan satu IP Binding.
                 Pemulihan mengembalikan tipe binding sebelumnya.
               </p>
               <p class="w-full text-xs text-slate-500">
-                Flag CSV adalah status saat ekspor. Status berkala diperbarui melalui ping router (sekitar 60 detik); status langsung dari The Dude memerlukan konfigurasi notifikasi webhook.
+                Flag CSV adalah status saat ekspor. Jika flag menunjukkan DOWN, waktu yang ditampilkan adalah waktu pertama kali status itu diimpor/teramati CRM. Status selanjutnya diperbarui melalui ping router (sekitar 60 detik); status langsung dari The Dude memerlukan konfigurasi notifikasi webhook.
               </p>
-              <button type="button" class="rounded border px-3 py-2 text-sm disabled:opacity-50" :disabled="loadingDude" @click="loadDudeDevices">
+              <label class="min-w-64 text-sm text-slate-700">
+                Filter Network Map
+                <select v-model="selectedNetworkMap" :disabled="loadingDude" class="mt-1 w-full rounded border bg-white px-3 py-2 disabled:opacity-50 sm:w-96" @change="() => loadDudeDevices()">
+                  <option :value="allNetworkMapsValue">Semua Network Map · {{ allImportedMapDeviceCount }} perangkat</option>
+                  <option value="" disabled>Pilih Network Map</option>
+                  <option v-for="mapName in availableNetworkMaps" :key="mapName" :value="mapName">
+                    {{ mapName }} · {{ dudeDevicesByMap(mapName).length }} perangkat
+                  </option>
+                </select>
+              </label>
+              <label class="min-w-40 text-sm text-slate-700">
+                Filter Status
+                <select v-model="selectedDeviceStatus" class="mt-1 w-full rounded border bg-white px-3 py-2">
+                  <option value="all">Semua status</option>
+                  <option value="up">UP</option>
+                  <option value="down">DOWN (termasuk partially down)</option>
+                </select>
+              </label>
+              <button type="button" class="rounded border px-3 py-2 text-sm disabled:opacity-50" :disabled="loadingDude" @click="() => loadDudeDevices()">
                 {{ loadingDude ? 'Memuat perangkat...' : 'Muat ulang perangkat' }}
               </button>
             </div>
@@ -287,13 +305,14 @@
                     <th class="px-3 py-2 font-medium">IP</th>
                     <th class="px-3 py-2 font-medium">Network Map</th>
                     <th class="px-3 py-2 font-medium">Status / Flag</th>
+                    <th class="px-3 py-2 font-medium">Terakhir down</th>
                     <th class="px-3 py-2 font-medium">MAC terdeteksi</th>
                     <th class="px-3 py-2 font-medium">Status binding</th>
                     <th class="px-3 py-2 font-medium">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(device, index) in dudeDevices" :key="device['.id'] || `${device.name}-${device.address}-${index}`" class="border-t">
+                  <tr v-for="(device, index) in visibleDudeDevices" :key="device['.id'] || `${device.name}-${device.address}-${index}`" class="border-t">
                     <td class="px-3 py-3">
                       <p class="font-medium">{{ device.name || device['.id'] || '(tanpa nama)' }}</p>
                       <p v-if="device.comment" class="text-xs text-slate-500">{{ device.comment }}</p>
@@ -306,6 +325,7 @@
                       </span>
                       <p v-if="device.last_seen" class="mt-1 text-xs text-slate-500">{{ formatLastSeen(device.last_seen) }}</p>
                     </td>
+                    <td class="whitespace-nowrap px-3 py-3 text-slate-600">{{ formatLastDown(device.last_down_at) }}</td>
                     <td class="px-3 py-3 font-mono">{{ deviceResolution(device)?.mac || '-' }}</td>
                     <td class="px-3 py-3">
                       <span v-if="deviceResolution(device)?.binding_id" class="rounded-full px-2 py-1 text-xs" :class="deviceResolution(device)?.binding_type === 'blocked' ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'">
@@ -328,8 +348,51 @@
                       <p v-if="deviceResolution(device)?.reason" class="mt-1 max-w-xs text-xs text-amber-700">{{ deviceResolution(device)?.reason }}</p>
                     </td>
                   </tr>
-                  <tr v-if="!loadingDude && dudeDevices.length === 0">
-                    <td colspan="7" class="px-3 py-8 text-center text-slate-500">Belum ada perangkat. Pilih CSV Network Map di atas untuk mengimpornya.</td>
+                  <tr v-if="!loadingDude && visibleDudeDevices.length === 0">
+                    <td colspan="8" class="px-3 py-8 text-center text-slate-500">
+                      {{ filteredDudeDevices.length > 0 ? `Tidak ada perangkat dengan status ${selectedDeviceStatus === 'up' ? 'UP' : 'DOWN'} pada filter ini.` : selectedNetworkMap === allNetworkMapsValue ? 'Belum ada perangkat dari Network Map yang diimpor.' : selectedNetworkMap ? `Belum ada perangkat pada map ${selectedNetworkMap}.` : 'Belum ada map yang diimpor. Pilih CSV Network Map di atas.' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </template>
+
+        <template v-else-if="tab === 'down-history'">
+          <div class="space-y-3">
+            <div>
+              <h3 class="font-semibold text-slate-900">Riwayat Perangkat Down</h3>
+              <p class="text-sm text-slate-500">Perangkat dengan waktu down terakhir, diurutkan dari kejadian terbaru.</p>
+            </div>
+            <p v-if="dudeDeviceError" class="rounded bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ dudeDeviceError }}</p>
+            <div class="overflow-x-auto rounded border border-slate-200">
+              <table class="w-full min-w-[700px] text-left text-sm">
+                <thead class="bg-slate-50 text-slate-600">
+                  <tr>
+                    <th class="px-3 py-2 font-medium">Perangkat</th>
+                    <th class="px-3 py-2 font-medium">IP</th>
+                    <th class="px-3 py-2 font-medium">Network Map</th>
+                    <th class="px-3 py-2 font-medium">Status sekarang</th>
+                    <th class="px-3 py-2 font-medium">Terakhir down</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="device in downHistoryDevices" :key="device.id" class="border-t">
+                    <td class="px-3 py-3 font-medium">{{ device.device_name || '(tanpa nama)' }}</td>
+                    <td class="px-3 py-3 font-mono">{{ device.ip_address }}</td>
+                    <td class="px-3 py-3">{{ device.map_name || '-' }}</td>
+                    <td class="px-3 py-3">
+                      <span class="rounded-full px-2 py-1 text-xs font-medium" :class="dudeStatusClass(device.status)">
+                        {{ dudeStatusLabel(device.status) }}
+                      </span>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-3 text-slate-600">{{ formatLastDown(device.last_down_at) }}</td>
+                  </tr>
+                  <tr v-if="!loadingDude && downHistoryDevices.length === 0">
+                    <td colspan="5" class="px-3 py-8 text-center text-slate-500">
+                      Belum ada perangkat down yang tercatat. Muat ulang data setelah status perangkat diperiksa.
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -384,7 +447,7 @@ import {
 import { useNetworkSocket } from '@/composables/useNetworkSocket'
 import { useAuthStore } from '@/stores/auth'
 
-type Tab = 'users' | 'active' | 'profiles' | 'bindings' | 'devices'
+type Tab = 'users' | 'active' | 'profiles' | 'bindings' | 'devices' | 'down-history'
 type HotspotUser = {
   id: string; name: string; profile: string; address: string; limit_uptime: string; comment: string; disabled: boolean
 }
@@ -396,6 +459,8 @@ type HotspotSession = {
 }
 type HotspotBinding = { id: string; mac: string; address: string; type: string; disabled: boolean }
 type DudeDevice = Record<string, string | undefined>
+const allNetworkMapsValue = '__all_network_maps__'
+type DeviceStatusFilter = 'all' | 'up' | 'down'
 type DudeDeviceBinding = {
   address: string
   mac: string
@@ -419,6 +484,7 @@ const tabs: Array<{ id: Tab; label: string }> = [
   { id: 'profiles', label: 'Profil' },
   { id: 'bindings', label: 'IP Binding' },
   { id: 'devices', label: 'Perangkat The Dude' },
+  { id: 'down-history', label: 'Riwayat Down' },
 ]
 const tab = ref<Tab>('users')
 const connected = ref(false)
@@ -450,11 +516,29 @@ const dudeDeviceError = ref('')
 const busyDeviceAddress = ref('')
 const selectedDeviceCSV = ref<File | null>(null)
 const selectedDeviceMap = ref('')
+const selectedNetworkMap = ref(allNetworkMapsValue)
+const selectedDeviceStatus = ref<DeviceStatusFilter>('all')
 const deviceCSVPreview = ref<DudeCSVPreview | null>(null)
 const previewingDeviceCSV = ref(false)
 const importingDeviceCSV = ref(false)
 const deviceCSVError = ref('')
 const selectedDeviceMapPreview = computed(() => deviceCSVPreview.value?.maps.find((map) => map.name === selectedDeviceMap.value))
+const availableNetworkMaps = computed(() => [...new Set(
+  dudeDevices.value.map((device) => device.map_name?.trim()).filter((mapName): mapName is string => Boolean(mapName)),
+)].sort((left, right) => left.localeCompare(right)))
+const allImportedMapDeviceCount = computed(() => dudeDevices.value.filter((device) => Boolean(device.map_name?.trim())).length)
+const filteredDudeDevices = computed(() => dudeDevicesByMap(selectedNetworkMap.value))
+const visibleDudeDevices = computed(() => filteredDudeDevices.value.filter((device) => {
+  const status = dudeStatusLabel(device.status)
+  if (selectedDeviceStatus.value === 'up') return status === 'UP'
+  if (selectedDeviceStatus.value === 'down') return status === 'DOWN' || status === 'PARTIALLY DOWN'
+  return true
+}))
+const downHistoryDevices = computed(() => dudeDevices.value
+  .filter((device) => ['DOWN', 'PARTIALLY DOWN'].includes(dudeStatusLabel(device.status)) &&
+    Boolean(device.last_down_at) &&
+    !Number.isNaN(Date.parse(device.last_down_at || '')))
+  .sort((left, right) => Date.parse(right.last_down_at || '') - Date.parse(left.last_down_at || '')))
 let deviceStatusPollTimer: ReturnType<typeof setInterval> | undefined
 const search = ref('')
 const message = ref('')
@@ -463,6 +547,16 @@ const editingUser = ref<HotspotUser | null>(null)
 const newUser = reactive({ name: '', password: '', profile: '', comment: '' })
 const editForm = reactive({ password: '', profile: '', address: '', limit_uptime: '', comment: '' })
 const canManage = computed(() => ['SUPERADMIN', 'ADMIN', 'FINANCE'].includes(String(authStore.user.role).toUpperCase()))
+function tabCount(id: Tab): number {
+  switch (id) {
+    case 'users': return users.value.length
+    case 'active': return sessions.value.length
+    case 'profiles': return profiles.value.length
+    case 'bindings': return bindings.value.length
+    case 'devices': return visibleDudeDevices.value.length
+    case 'down-history': return downHistoryDevices.value.length
+  }
+}
 const filteredUsers = computed(() => {
   const query = search.value.toLowerCase()
   if (!query) return users.value
@@ -564,8 +658,8 @@ async function selectTab(value: Tab) {
     deviceStatusPollTimer = undefined
   }
   if (!connected.value) return
-  if (value === 'devices') {
-    await loadDudeDevices()
+  if (value === 'devices' || value === 'down-history') {
+    await loadDudeDevices(value === 'devices')
     deviceStatusPollTimer = setInterval(() => {
       void refreshDeviceStatuses()
     }, 60_000)
@@ -584,6 +678,14 @@ function deviceAddress(device: DudeDevice): string {
 function deviceResolution(device: DudeDevice): DudeDeviceBinding | undefined {
   const address = deviceAddress(device)
   return address ? deviceBindingsByAddress.value.get(address) : undefined
+}
+
+function dudeDevicesByMap(mapName: string): DudeDevice[] {
+  if (mapName === allNetworkMapsValue) {
+    return dudeDevices.value.filter((device) => Boolean(device.map_name?.trim()))
+  }
+  if (!mapName) return []
+  return dudeDevices.value.filter((device) => device.map_name === mapName)
 }
 
 function dudeStatusLabel(status: string | undefined): string {
@@ -621,87 +723,82 @@ function formatLastSeen(value: string): string {
   return Number.isNaN(timestamp.getTime()) ? '' : `Diperbarui ${timestamp.toLocaleString()}`
 }
 
-async function loadDudeDevices() {
+function formatLastDown(value: string | null | undefined): string {
+  if (!value) return '-'
+  const timestamp = new Date(value)
+  return Number.isNaN(timestamp.getTime()) ? '-' : timestamp.toLocaleString()
+}
+
+async function loadDudeDevices(resolveBindings = true) {
   if (!connected.value) return
   loadingDude.value = true
   dudeDeviceError.value = ''
   deviceBindingsByAddress.value = new Map()
-  const [liveResult, importedResult] = await Promise.allSettled([
-    routerApi.listDudeDevices(),
-    dudeDeviceApi.getAll(),
-  ])
   try {
-    let liveDevices: DudeDevice[] = []
-    let importedDevices: ImportedDudeDevice[] = []
-    const errors: string[] = []
-    if (liveResult.status === 'fulfilled') {
-      liveDevices = unwrapData<{ items: DudeDevice[] }>(liveResult.value, 'perangkat live The Dude').items || []
-    } else {
-      errors.push(liveResult.reason instanceof Error ? liveResult.reason.message : 'Gagal membaca inventori live The Dude.')
+    const importedDevices = unwrapData<ImportedDudeDevice[]>(await dudeDeviceApi.getAll(), 'perangkat Network Map')
+    dudeDevices.value = importedDevices.map((device) => ({
+      id: device.id,
+      device_name: device.device_name,
+      ip_address: device.ip_address,
+      '.id': `import:${device.id}`,
+      name: device.device_name,
+      address: device.ip_address,
+      map_name: device.map_name,
+      status: device.status,
+      last_seen: device.last_seen,
+      last_down_at: device.last_down_at || undefined,
+    }))
+    if (selectedNetworkMap.value !== allNetworkMapsValue && !availableNetworkMaps.value.includes(selectedNetworkMap.value)) {
+      selectedNetworkMap.value = allNetworkMapsValue
     }
-    if (importedResult.status === 'fulfilled') {
-      importedDevices = unwrapData<ImportedDudeDevice[]>(importedResult.value, 'perangkat Network Map')
-    } else {
-      errors.push(importedResult.reason instanceof Error ? importedResult.reason.message : 'Gagal membaca perangkat Network Map.')
-    }
-    const merged = new Map<string, DudeDevice>()
-    for (const device of liveDevices) {
-      const address = deviceAddress(device)
-      const key = address || device['.id'] || device.name || ''
-      if (key) merged.set(key, device)
-    }
-    for (const imported of importedDevices) {
-      const key = imported.ip_address
-      const existing = merged.get(key)
-      merged.set(key, {
-        ...existing,
-        '.id': existing?.['.id'] || `import:${imported.id}`,
-        name: existing?.name || imported.device_name,
-        address: existing?.address || imported.ip_address,
-        status: existing?.status || imported.status,
-        map_name: imported.map_name || existing?.map_name,
-      })
-    }
-    dudeDevices.value = [...merged.values()]
-    if (errors.length === 2) throw new Error(errors.join(' '))
-    if (errors.length === 1 && dudeDevices.value.length === 0) throw new Error(errors[0])
 
-    const addresses = [...new Set(dudeDevices.value.map(deviceAddress).filter(Boolean))]
+    if (!resolveBindings) {
+      deviceBindingsByAddress.value = new Map()
+      return
+    }
+
+    const addresses = [...new Set(filteredDudeDevices.value.map(deviceAddress).filter(Boolean))]
     if (addresses.length === 0) {
       deviceBindingsByAddress.value = new Map()
-      if (errors.length === 1) dudeDeviceError.value = `Sebagian sumber tidak tersedia. ${errors[0]}`
       return
     }
-    try {
+    const resolutions: DudeDeviceBinding[] = []
+    for (let start = 0; start < addresses.length; start += 200) {
+      const batch = addresses.slice(start, start + 200)
       const resolutionResult = unwrapData<{ items: DudeDeviceBinding[] }>(
-        await routerApi.resolveHotspotDeviceBindings(addresses),
+        await routerApi.resolveHotspotDeviceBindings(batch),
         'pemetaan IP dan MAC perangkat',
       )
-      deviceBindingsByAddress.value = new Map((resolutionResult.items || []).map((item) => [item.address, item]))
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : 'Gagal mencocokkan IP perangkat dengan MAC dan IP Binding.'
-      dudeDeviceError.value = `Daftar perangkat berhasil dimuat, tetapi pencocokan MAC gagal. Periksa koneksi RouterOS API serta policy read untuk DHCP, ARP, dan Hotspot, lalu klik Muat ulang perangkat. ${detail}`
-      return
+      resolutions.push(...(resolutionResult.items || []))
     }
-    if (errors.length === 1) dudeDeviceError.value = `Sebagian sumber tidak tersedia; menampilkan data yang berhasil dimuat. ${errors[0]}`
+    deviceBindingsByAddress.value = new Map(resolutions.map((item) => [item.address, item]))
   } catch (error) {
-    dudeDevices.value = []
-    deviceBindingsByAddress.value = new Map()
-    dudeDeviceError.value = error instanceof Error ? error.message : 'Gagal memuat perangkat The Dude atau Network Map.'
+    const detail = error instanceof Error ? error.message : 'Gagal memuat perangkat Network Map.'
+    if (dudeDevices.value.length > 0) {
+      dudeDeviceError.value = `Data Network Map tampil, tetapi pencocokan MAC gagal. Periksa koneksi RouterOS API serta policy read untuk DHCP, ARP, dan Hotspot. ${detail}`
+    } else {
+      dudeDeviceError.value = detail
+    }
   } finally {
     loadingDude.value = false
   }
 }
 
 async function refreshDeviceStatuses() {
-  if (!connected.value || tab.value !== 'devices') return
+  if (!connected.value || !['devices', 'down-history'].includes(tab.value)) return
   try {
     const importedDevices = unwrapData<ImportedDudeDevice[]>(await dudeDeviceApi.getAll(), 'status perangkat')
     const statusByAddress = new Map(importedDevices.map((device) => [device.ip_address, device]))
     dudeDevices.value = dudeDevices.value.map((device) => {
       const imported = statusByAddress.get(deviceAddress(device))
       return imported
-        ? { ...device, status: imported.status, last_seen: imported.last_seen }
+        ? {
+            ...device,
+            status: imported.status,
+            last_seen: imported.last_seen,
+            last_down_at: imported.last_down_at || undefined,
+            map_name: imported.map_name,
+          }
         : device
     })
   } catch (error) {
@@ -740,6 +837,7 @@ async function importDeviceCSV() {
       response,
       'hasil impor',
     )
+    selectedNetworkMap.value = result.map_name
     await loadDudeDevices()
     showMessage(
       `${result.total} IP dari map ${result.map_name} diimpor (${result.created} baru, ${result.updated} diperbarui, ${result.skipped} alamat dilewati).`,
@@ -905,7 +1003,18 @@ watch(statusSocket.latestUpdate, (update) => {
   const updatedAt = new Date().toISOString()
   dudeDevices.value = dudeDevices.value.map((device) => (
     deviceAddress(device) === update.ip_address
-      ? { ...device, name: update.device_name || device.name, status: update.status, last_seen: updatedAt }
+      ? {
+          ...device,
+          name: update.device_name || device.name,
+          status: update.status,
+          last_seen: updatedAt,
+          last_down_at: ['up', 'online', 'ok'].includes(update.status.toLowerCase())
+            ? undefined
+            : ['down', 'offline'].includes(update.status.toLowerCase()) &&
+                !['down', 'offline'].includes((device.status || '').toLowerCase())
+              ? updatedAt
+              : device.last_down_at,
+        }
       : device
   ))
 })
