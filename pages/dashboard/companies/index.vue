@@ -4,7 +4,7 @@ import { companyAdminApi } from "@/api/admin/company";
 import AddCompanyForm from "./AddCompanyForm.vue";
 // Set page title
 useHead({
-    title: "Company Management - CRM System",
+    title: "Manajemen Perusahaan - CRM",
 });
 
 let people: any[] = [];
@@ -52,7 +52,7 @@ const columns = [
     },
     {
         key: "name",
-        label: "Name",
+        label: "Nama",
     },
     {
         key: "email",
@@ -60,7 +60,7 @@ const columns = [
     },
     {
         key: "url",
-        label: "Website",
+        label: "Situs Web",
     },
     {
         key: "npwp",
@@ -68,19 +68,19 @@ const columns = [
     },
     {
         key: "address",
-        label: "Address",
+        label: "Alamat",
     },
     {
         key: "phone",
-        label: "Phone",
+        label: "Telepon",
     },
     {
         key: "logo_url",
-        label: "Image",
+        label: "Logo",
     },
     {
         key: "actions",
-        label: "Actions",
+        label: "Tindakan",
     },
 ];
 
@@ -122,7 +122,7 @@ function openEditCompanyModal(companyId: string) {
 
 async function handleSubmitCompany() {
     toast.add({
-        title: "Success!",
+        title: "Berhasil",
         id: "modal-success",
     });
 
@@ -133,14 +133,14 @@ async function handleSubmitCompany() {
 
 async function deleteCompany(companyId: string) {
     const confirmed = window.confirm(
-        "Are you sure you want to delete this company?",
+        "Apakah Anda yakin ingin menghapus perusahaan ini?",
     );
     if (!confirmed) return;
 
     try {
         await companyAdminApi().deleteCompany(companyId);
         toast.add({
-            title: "Success!",
+            title: "Berhasil",
             id: "modal-success",
         });
 
@@ -153,14 +153,14 @@ async function deleteCompany(companyId: string) {
 const items = (row: Person) => [
     [
         {
-            label: "Edit",
+            label: "Ubah",
             icon: "pencil-square-20-solid",
             click: () => openEditCompanyModal(row.id.toString()),
         },
     ],
     [
         {
-            label: "Delete",
+            label: "Hapus",
             icon: "trash-2-20-solid",
             click: () => deleteCompany(row.id.toString()),
         },
@@ -174,13 +174,13 @@ const modal = useModal();
 <template>
     <div class="space-y-5">
         <AdminPageHeader
-            title="Company"
+            title="Perusahaan"
             description="Kelola profil, kontak, dan informasi perusahaan."
             icon="building-2"
             eyebrow="Data Perusahaan"
         >
             <template #actions>
-                <UButton label="Tambah Company" @click="() => openAddCompanyModal()">
+                <UButton label="Tambah Perusahaan" @click="() => openAddCompanyModal()">
                     <template #leading>
                         <LucideIcon name="plus" :size="16" />
                     </template>
@@ -191,10 +191,10 @@ const modal = useModal();
         <section class="admin-data-panel">
             <div class="admin-data-toolbar">
                 <div>
-                    <h2 class="text-sm font-semibold text-gray-900">Daftar Company</h2>
+                    <h2 class="text-sm font-semibold text-gray-900">Daftar Perusahaan</h2>
                     <p class="mt-1 text-xs text-gray-500">{{ peopleData.length }} perusahaan terdaftar</p>
                 </div>
-                <UInput v-model="q" placeholder="Cari company..." class="w-full sm:max-w-xs" />
+                <UInput v-model="q" placeholder="Cari perusahaan..." class="w-full sm:max-w-xs" />
             </div>
 
             <div class="admin-data-table">
@@ -213,7 +213,7 @@ const modal = useModal();
                                     <button
                                         type="button"
                                         class="bg-gray-700 text-white px-2 py-1 text-sm hover:bg-gray-600 rounded inline-flex items-center justify-center shadow-sm transition-colors duration-200 group"
-                                        aria-label="Actions"
+                                        aria-label="Tindakan"
                                     >
                                         <LucideIcon
                                             name="ellipsis-vertical"
@@ -226,7 +226,7 @@ const modal = useModal();
                         </UTable>
                     </div>
                     <div class="table-scroll-footer">
-                        <span class="scroll-hint">Scroll horizontally to view all company details.</span>
+                        <span class="scroll-hint">Geser secara horizontal untuk melihat seluruh detail perusahaan.</span>
                     </div>
                 </div>
             </div>

@@ -48,23 +48,23 @@ onMounted(async () => {
 });
 
 const schema = object({
-  name: string().required("Name is required"),
+  name: string().required("Nama wajib diisi"),
   email: string()
-    .email("Email must be a valid email")
-    .required("Email is required"),
-  role_id: string().required("Role is required"),
+    .email("Format email tidak valid")
+    .required("Email wajib diisi"),
+  role_id: string().required("Peran wajib dipilih"),
   password: string()
-    .min(6, "Password must be at least 6 characters")
-    .required("Password is required"),
+    .min(6, "Kata sandi minimal 6 karakter")
+    .required("Kata sandi wajib diisi"),
   password_confirm: string()
-    .required("Confirm Password is required")
-    .test("passwords-match", "Passwords must match", function (value) {
+    .required("Konfirmasi kata sandi wajib diisi")
+    .test("passwords-match", "Kata sandi tidak cocok", function (value) {
       const { password } = this.parent; // Access parent object, which includes the password
       return password === value; // Compare password and confirmPassword
     }),
   phone: string()
-    .matches(/^\d+$/, "Phone number must be digits")
-    .required("Phone number is required"),
+    .matches(/^\d+$/, "Nomor telepon hanya boleh berisi angka")
+    .required("Nomor telepon wajib diisi"),
   // logo_url: string()
   //   .url("Logo URL must be a valid URL")
   //   .required("Logo URL is required"),
@@ -106,7 +106,7 @@ async function onSubmit() {
 <template>
   <UModal>
     <div class="p-2 mb-4 text-2xl font-bold text-center">
-      <h1>{{ props.isEdit ? "Edit" : "Add New" }} User</h1>
+      <h1>{{ props.isEdit ? "Ubah Pengguna" : "Tambah Pengguna" }}</h1>
     </div>
     <div class="p-4">
       <UForm
@@ -115,35 +115,35 @@ async function onSubmit() {
         class="space-y-4"
         @submit="onSubmit"
       >
-        <UFormGroup label="Username" name="name">
+        <UFormGroup label="Nama Pengguna" name="name">
           <UInput v-model="state.name" />
         </UFormGroup>
         <UFormGroup label="Email" name="email">
           <UInput v-model="state.email" />
         </UFormGroup>
-        <UFormGroup label="Phone number" name="phone">
+        <UFormGroup label="Nomor Telepon" name="phone">
           <UInput v-model="state.phone" />
         </UFormGroup>
         <div v-if="roles.length === 0">
-          <span class="text-gray-500">Loading roles...</span>
+          <span class="text-gray-500">Memuat daftar peran...</span>
         </div>
         <URadioGroup
           v-else
           v-model="state.role_id"
           :options="roles"
           name="role_id"
-          legend="Role"
+          legend="Peran"
         />
         <UFormGroup label="Password" name="password">
           <UInput type="password" v-model="state.password" />
         </UFormGroup>
-        <UFormGroup label="Confirm Password" name="password_confirm">
+        <UFormGroup label="Konfirmasi Kata Sandi" name="password_confirm">
           <UInput type="password" v-model="state.password_confirm" />
         </UFormGroup>
-        <UFormGroup label="Logo URL" name="logo_url">
+        <UFormGroup label="URL Logo" name="logo_url">
           <UInput v-model="state.logo_url" />
         </UFormGroup>
-        <UButton type="submit">Submit</UButton>
+        <UButton type="submit">Simpan</UButton>
       </UForm>
     </div>
   </UModal>

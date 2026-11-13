@@ -11,7 +11,7 @@ import { useCustomToast } from "@/composables/useCustomToast";
 
 // Set page title
 useHead({
-  title: "Recurring Invoices - CRM System",
+  title: "Tagihan Berulang - CRM",
 });
 
 const router = useRouter();
@@ -44,29 +44,29 @@ const columns = [
   },
   {
     key: "customer.name",
-    label: "Account",
+    label: "Akun",
     sortable: true,
   },
   {
     key: "amount",
-    label: "Amount",
+    label: "Jumlah",
     sortable: true,
   },
   {
     key: "invoice_date",
-    label: "Invoice Date",
+    label: "Tanggal Tagihan",
     sortable: true,
     class: "hidden md:table-cell", // Hide on mobile
   },
   {
     key: "due_date",
-    label: "Due Date",
+    label: "Tanggal Jatuh Tempo",
     sortable: true,
     class: "hidden lg:table-cell", // Hide on mobile and tablet
   },
   {
     key: "next_invoice_date",
-    label: "Next Invoice",
+    label: "Tagihan Berikutnya",
     sortable: true,
     class: "hidden xl:table-cell", // Hide on smaller screens
   },
@@ -77,7 +77,7 @@ const columns = [
   },
   {
     key: "actions",
-    label: "Manage",
+    label: "Tindakan",
   },
 ];
 
@@ -90,8 +90,8 @@ async function getData() {
   } catch (error) {
     console.error("Error fetching recurring invoices:", error);
     toast.add({
-      title: "Error",
-      description: "Failed to fetch recurring invoices",
+      title: "Gagal",
+      description: "Gagal memuat tagihan berulang",
       color: "red",
       timeout: 3000,
     });
@@ -171,6 +171,19 @@ function getStatusColor(status: string) {
   }
 }
 
+function getStatusLabel(status: string) {
+  switch (status.toLowerCase()) {
+    case "active":
+      return "Aktif";
+    case "stopped":
+      return "Dihentikan";
+    case "completed":
+      return "Selesai";
+    default:
+      return status;
+  }
+}
+
 // Frequency badge color
 function getFrequencyColor(frequency: string) {
   switch (frequency.toLowerCase()) {
@@ -182,6 +195,19 @@ function getFrequencyColor(frequency: string) {
       return "purple";
     default:
       return "gray";
+  }
+
+  function getFrequencyLabel(frequency: string) {
+    switch (frequency.toLowerCase()) {
+      case "monthly":
+        return "Bulanan";
+      case "quarterly":
+        return "Triwulanan";
+      case "yearly":
+        return "Tahunan";
+      default:
+        return frequency;
+    }
   }
 }
 
@@ -199,19 +225,19 @@ const items = (row: RecurringInvoice) => [
       click: () => openModalAddRecurringInvoice(true, row),
     },
     {
-      label: "Generate Invoice",
+      label: "Buat Tagihan",
       icon: "file-plus-20-solid",
       click: () => generateInvoice(row),
     },
   ],
   [
     {
-      label: row.status === "active" ? "Stop Recurring" : "Resume",
+      label: row.status === "active" ? "Hentikan Pengulangan" : "Lanjutkan",
       icon: row.status === "active" ? "stop-20-solid" : "play-20-solid",
       click: () => toggleRecurringStatus(row),
     },
     {
-      label: "Delete",
+      label: "Hapus",
       icon: "trash-2-20-solid",
       click: () => deleteRecurringInvoice(row.id),
     },
@@ -262,8 +288,8 @@ async function generateInvoice(invoice: RecurringInvoice) {
       });
 
     toast.add({
-      title: "Success",
-      description: "Invoice generated successfully",
+      title: "Berhasil",
+      description: "Tagihan berhasil dibuat",
       color: "green",
       timeout: 3000,
     });
@@ -278,8 +304,8 @@ async function generateInvoice(invoice: RecurringInvoice) {
   } catch (error) {
     console.error("Error generating invoice:", error);
     toast.add({
-      title: "Error",
-      description: "Failed to generate invoice",
+      title: "Gagal",
+      description: "Gagal membuat tagihan",
       color: "red",
       timeout: 3000,
     });
@@ -299,10 +325,10 @@ async function toggleRecurringStatus(invoice: RecurringInvoice) {
     await recurringInvoiceAdminApi().updateRecurringInvoiceStatus(request);
 
     toast.add({
-      title: "Success",
-      description: `Recurring invoice ${
-        newStatus === "active" ? "resumed" : "stopped"
-      } successfully`,
+      title: "Berhasil",
+      description: `Pengulangan tagihan berhasil ${
+        newStatus === "active" ? "dilanjutkan" : "dihentikan"
+      }`,
       color: "green",
       timeout: 3000,
     });
@@ -311,8 +337,8 @@ async function toggleRecurringStatus(invoice: RecurringInvoice) {
   } catch (error) {
     console.error("Error updating status:", error);
     toast.add({
-      title: "Error",
-      description: "Failed to update recurring invoice status",
+      title: "Gagal",
+      description: "Gagal memperbarui status tagihan berulang",
       color: "red",
       timeout: 3000,
     });
@@ -323,7 +349,7 @@ async function toggleRecurringStatus(invoice: RecurringInvoice) {
 
 // Delete recurring invoice
 async function deleteRecurringInvoice(id: string) {
-  if (!confirm("Are you sure you want to delete this recurring invoice?")) {
+  if (!confirm("Apakah Anda yakin ingin menghapus tagihan berulang ini?")) {
     return;
   }
 
@@ -332,8 +358,8 @@ async function deleteRecurringInvoice(id: string) {
     await recurringInvoiceAdminApi().deleteRecurringInvoice(id);
 
     toast.add({
-      title: "Success",
-      description: "Recurring invoice deleted successfully",
+      title: "Berhasil",
+      description: "Tagihan berulang berhasil dihapus",
       color: "green",
       timeout: 3000,
     });
@@ -342,8 +368,8 @@ async function deleteRecurringInvoice(id: string) {
   } catch (error) {
     console.error("Error deleting recurring invoice:", error);
     toast.add({
-      title: "Error",
-      description: "Failed to delete recurring invoice",
+      title: "Gagal",
+      description: "Gagal menghapus tagihan berulang",
       color: "red",
       timeout: 3000,
     });
@@ -361,14 +387,14 @@ onMounted(() => {
 <template>
   <div class="space-y-6">
     <AdminPageHeader
-      title="Recurring Invoices"
+      title="Tagihan Berulang"
       description="Kelola tagihan berulang dan jadwal penagihan pelanggan."
       icon="arrow-path"
       eyebrow="Penagihan Otomatis"
     >
       <template #actions>
         <UButton
-          label="Tambah Invoice"
+          label="Tambah Tagihan"
           color="blue"
           @click="openModalAddRecurringInvoice(false, null)"
         >
@@ -387,58 +413,58 @@ onMounted(() => {
         <!-- Customer Search Filter -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1"
-            >Filter Customer</label
+            >Saring Pelanggan</label
           >
-          <UInput v-model="q" placeholder="Search customer..." />
+          <UInput v-model="q" placeholder="Cari pelanggan..." />
         </div>
 
         <!-- Date Filter -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1"
-            >Filter by Date</label
+            >Saring berdasarkan Tanggal</label
           >
           <UInput
             v-model="dateFilter"
             type="date"
-            placeholder="Select date..."
+            placeholder="Pilih tanggal..."
           />
         </div>
 
         <!-- Status Filter -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1"
-            >Filter by Status</label
+            >Saring berdasarkan Status</label
           >
           <USelectMenu
             v-model="statusFilter"
             :options="[
-              { label: 'All Status', value: '' },
-              { label: 'Active', value: 'active' },
-              { label: 'Stopped', value: 'stopped' },
-              { label: 'Completed', value: 'completed' },
+              { label: 'Semua Status', value: '' },
+              { label: 'Aktif', value: 'active' },
+              { label: 'Dihentikan', value: 'stopped' },
+              { label: 'Selesai', value: 'completed' },
             ]"
             option-attribute="label"
             value-attribute="value"
-            placeholder="Select status..."
+            placeholder="Pilih status..."
           />
         </div>
 
         <!-- Frequency Filter -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1"
-            >Filter by Frequency</label
+            >Saring berdasarkan Frekuensi</label
           >
           <USelectMenu
             v-model="frequencyFilter"
             :options="[
-              { label: 'All Frequencies', value: '' },
-              { label: 'Monthly', value: 'monthly' },
-              { label: 'Quarterly', value: 'quarterly' },
-              { label: 'Yearly', value: 'yearly' },
+              { label: 'Semua Frekuensi', value: '' },
+              { label: 'Bulanan', value: 'monthly' },
+              { label: 'Triwulanan', value: 'quarterly' },
+              { label: 'Tahunan', value: 'yearly' },
             ]"
             option-attribute="label"
             value-attribute="value"
-            placeholder="Select frequency..."
+            placeholder="Pilih frekuensi..."
           />
         </div>
 
@@ -450,7 +476,7 @@ onMounted(() => {
             variant="solid"
             class="w-full filter-button bg-gray-700 dark:bg-gray-800 text-white hover:bg-gray-900 dark:hover:bg-gray-700 transition-colors duration-200"
           >
-            Clear Filters
+            Hapus Saringan
           </UButton>
         </div>
       </div>
@@ -467,7 +493,7 @@ onMounted(() => {
           class="text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0"
         />
         <div>
-          <h4 class="font-medium text-blue-900 dark:text-blue-100">Pro Tip</h4>
+          <h4 class="font-medium text-blue-900 dark:text-blue-100">Tips</h4>
           <p class="text-sm text-blue-700 dark:text-blue-300 mt-1">
             Klik kolom tabel untuk melihat hasil filter sesuai kolom
           </p>
@@ -482,7 +508,7 @@ onMounted(() => {
         :loading="loading"
         :empty-state="{
           icon: 'file-text',
-          label: 'No recurring invoices found',
+          label: 'Tidak ada tagihan berulang',
         }"
         class="min-w-full"
       >
@@ -502,22 +528,22 @@ onMounted(() => {
         </template>
 
         <template #invoice_date-data="{ row }">
-          {{ new Date(row.invoice_date).toLocaleDateString() }}
+          {{ new Date(row.invoice_date).toLocaleDateString('id-ID') }}
         </template>
 
         <template #due_date-data="{ row }">
-          {{ new Date(row.due_date).toLocaleDateString() }}
+          {{ new Date(row.due_date).toLocaleDateString('id-ID') }}
         </template>
 
         <template #next_invoice_date-data="{ row }">
           <span class="font-medium">{{
-            new Date(row.next_invoice_date).toLocaleDateString()
+            new Date(row.next_invoice_date).toLocaleDateString('id-ID')
           }}</span>
         </template>
 
         <template #status-data="{ row }">
           <UBadge :color="getStatusColor(row.status)" variant="subtle">
-            {{ row.status.charAt(0).toUpperCase() + row.status.slice(1) }}
+            {{ getStatusLabel(row.status) }}
           </UBadge>
         </template>
 

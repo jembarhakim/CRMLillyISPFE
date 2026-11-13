@@ -20,7 +20,7 @@ const showCreate = ref(false)
 // Status metadata drives both the table badge and the filter dropdown.
 const statusMeta: Record<string, { label: string; color: 'gray' | 'blue' | 'green' | 'orange' | 'red' }> = {
   penawaran: { label: 'Penawaran', color: 'gray' },
-  deal: { label: 'Deal', color: 'blue' },
+  deal: { label: 'Kesepakatan', color: 'blue' },
   pengerjaan: { label: 'Pengerjaan', color: 'orange' },
   serah_terima: { label: 'Serah Terima', color: 'green' },
   pelunasan: { label: 'Pelunasan', color: 'green' },
@@ -158,7 +158,7 @@ onMounted(load)
         :options="[
           { label: 'Semua status', value: '' },
           { label: 'Penawaran', value: 'penawaran' },
-          { label: 'Deal', value: 'deal' },
+          { label: 'Kesepakatan', value: 'deal' },
           { label: 'Pengerjaan', value: 'pengerjaan' },
           { label: 'Serah Terima', value: 'serah_terima' },
           { label: 'Pelunasan', value: 'pelunasan' },
@@ -210,7 +210,7 @@ onMounted(load)
 
         <template #actions-data="{ row }">
           <UButton size="xs" color="gray" variant="ghost" @click="openDetail(row)">
-            Detail
+            Lihat Detail
           </UButton>
         </template>
       </UTable>

@@ -32,16 +32,16 @@ const emit = defineEmits(["success"]);
 
 // Form validation schema
 const schema = object({
-  customer_id: string().required("Customer is required"),
+  customer_id: string().required("Pelanggan wajib dipilih"),
   amount: number()
-    .required("Amount is required")
-    .min(1, "Amount must be greater than 0"),
-  invoice_date: string().required("Invoice date is required"),
+    .required("Jumlah wajib diisi")
+    .min(1, "Jumlah harus lebih dari 0"),
+  invoice_date: string().required("Tanggal tagihan wajib diisi"),
   frequency: string()
-    .required("Frequency is required")
+    .required("Frekuensi wajib dipilih")
     .oneOf(["monthly", "quarterly", "yearly"]),
   description: string().optional(),
-  invoice_items: array().min(1, "At least one invoice item is required"),
+  invoice_items: array().min(1, "Minimal satu rincian tagihan harus diisi"),
 });
 
 type Schema = InferType<typeof schema>;
@@ -132,13 +132,13 @@ async function populateInvoiceItemsFromNetworkDevices(customerId: string) {
 
       // Update description to include device information
       if (!state.description) {
-        state.description = `Recurring invoice for ${devicesWithProducts.length} network device(s)`;
+        state.description = `Tagihan berulang untuk ${devicesWithProducts.length} perangkat jaringan`;
       }
     } else {
       // If no devices with products, show a default item
       state.invoice_items = [
         {
-          name: "Internet Service",
+          name: "Layanan Internet",
           qty: 1,
           price: 0,
           total: 0,
@@ -535,7 +535,7 @@ onMounted(() => {
     >
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-center">
-          {{ props.isEdit ? "Edit" : "Add New" }} Recurring Invoice
+          {{ props.isEdit ? "Ubah" : "Tambah" }} Tagihan Berulang
         </h1>
       </div>
 
@@ -546,52 +546,52 @@ onMounted(() => {
         @submit="onSubmit"
       >
         <!-- Customer Selection -->
-        <UFormGroup label="Customer" name="customer_id" required>
+        <UFormGroup label="Pelanggan" name="customer_id" required>
           <USelectMenu
             v-model="state.customer_id"
             :options="customers"
             value-attribute="value"
             option-attribute="label"
-            placeholder="Select customer..."
+            placeholder="Pilih pelanggan..."
             :loading="loading"
           />
         </UFormGroup>
 
         <!-- Invoice Details -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <UFormGroup label="Invoice Date" name="invoice_date" required>
+          <UFormGroup label="Tanggal Tagihan" name="invoice_date" required>
             <UInput
               v-model="state.invoice_date"
               type="date"
-              placeholder="Select invoice date..."
+              placeholder="Pilih tanggal tagihan..."
             />
           </UFormGroup>
 
-          <UFormGroup label="Due Date" name="due_date" required>
+          <UFormGroup label="Tanggal Jatuh Tempo" name="due_date" required>
             <UInput
               v-model="state.due_date"
               type="date"
-              placeholder="Select due date..."
+              placeholder="Pilih tanggal jatuh tempo..."
               :disabled="!props.isEdit"
             />
             <template #help>
               <span v-if="!props.isEdit" class="text-sm text-blue-600">
-                Automatically set to the same as the next invoice date
+                Otomatis diatur sama dengan tanggal tagihan berikutnya
               </span>
             </template>
           </UFormGroup>
 
-          <UFormGroup label="Frequency" name="frequency" required>
+          <UFormGroup label="Frekuensi" name="frequency" required>
             <USelectMenu
               v-model="state.frequency"
               :options="[
-                { label: 'Monthly', value: 'monthly' },
-                { label: 'Quarterly', value: 'quarterly' },
-                { label: 'Yearly', value: 'yearly' },
+                { label: 'Bulanan', value: 'monthly' },
+                { label: 'Triwulanan', value: 'quarterly' },
+                { label: 'Tahunan', value: 'yearly' },
               ]"
               option-attribute="label"
               value-attribute="value"
-              placeholder="Select frequency..."
+              placeholder="Pilih frekuensi..."
             />
           </UFormGroup>
         </div>
@@ -602,16 +602,16 @@ onMounted(() => {
           class="bg-blue-50 p-3 rounded-lg border border-blue-200"
         >
           <div class="text-sm text-blue-800">
-            <span class="font-medium">Next Invoice Date:</span>
-            {{ new Date(nextInvoiceDate).toLocaleDateString() }}
+            <span class="font-medium">Tanggal Tagihan Berikutnya:</span>
+            {{ new Date(nextInvoiceDate).toLocaleDateString('id-ID') }}
           </div>
         </div>
 
         <!-- Description -->
-        <UFormGroup label="Description" name="description">
+        <UFormGroup label="Deskripsi" name="description">
           <UTextarea
             v-model="state.description"
-            placeholder="Enter description (optional)..."
+            placeholder="Masukkan deskripsi (opsional)..."
             :rows="3"
           />
         </UFormGroup>
@@ -619,7 +619,7 @@ onMounted(() => {
         <!-- Invoice Items -->
         <div>
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-medium text-gray-900">Invoice Items</h3>
+            <h3 class="text-lg font-medium text-gray-900">Rincian Tagihan</h3>
             <div class="flex gap-2">
               <UButton
                 v-if="state.customer_id"
@@ -634,8 +634,8 @@ onMounted(() => {
               >
                 {{
                   loadingNetworkDevices
-                    ? "Loading..."
-                    : "Auto-fill from Devices"
+                    ? "Memuat..."
+                    : "Isi Otomatis dari Perangkat"
                 }}
               </UButton>
               <UButton
@@ -645,7 +645,7 @@ onMounted(() => {
                 variant="outline"
                 size="sm"
               >
-                Add Item
+                Tambah Item
               </UButton>
             </div>
           </div>
@@ -658,7 +658,7 @@ onMounted(() => {
             >
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >Item Name</label
+                  >Nama Item</label
                 >
                 <USelectMenu
                   :model-value="item.name"
@@ -666,14 +666,14 @@ onMounted(() => {
                   :options="productOptions"
                   option-attribute="label"
                   value-attribute="label"
-                  placeholder="Select product..."
+                  placeholder="Pilih produk..."
                   :loading="loadingProducts"
                 />
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >Quantity</label
+                  >Jumlah</label
                 >
                 <UInput
                   :model-value="quantityInputs[index] ?? item.qty.toString()"
@@ -687,7 +687,7 @@ onMounted(() => {
 
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >Price</label
+                  >Harga</label
                 >
                 <div class="relative">
                   <UInput
@@ -709,7 +709,7 @@ onMounted(() => {
                   </div>
                 </div>
                 <div class="text-xs text-gray-600 mt-1">
-                  Value:
+                  Nilai:
                   {{ item.price > 0 ? formatIDR(item.price) : "Rp 0,00" }}
                 </div>
               </div>
@@ -733,7 +733,7 @@ onMounted(() => {
                   </div>
                 </div>
                 <div class="text-xs text-gray-600 mt-1">
-                  Value:
+                  Nilai:
                   {{ item.total > 0 ? formatIDR(item.total) : "Rp 0,00" }}
                 </div>
               </div>
@@ -759,14 +759,14 @@ onMounted(() => {
           <div class="mt-4 p-4 bg-gray-50 rounded-lg">
             <div class="flex justify-between items-center">
               <span class="text-lg font-medium text-gray-900"
-                >Total Amount:</span
+                >Jumlah Total:</span
               >
               <span class="text-xl font-bold text-blue-600">
                 {{ displayAmount }}
               </span>
             </div>
             <div class="text-sm text-gray-600 mt-1">
-              Formatted: {{ formattedAmount || "0" }}
+              Format: {{ formattedAmount || "0" }}
             </div>
           </div>
         </div>
@@ -779,7 +779,7 @@ onMounted(() => {
             variant="outline"
             @click="$emit('success')"
           >
-            Cancel
+            Batal
           </UButton>
           <UButton
             type="submit"
@@ -787,8 +787,8 @@ onMounted(() => {
             :loading="submitting"
             :disabled="submitting"
           >
-            {{ submitting ? "Saving..." : props.isEdit ? "Update" : "Create" }}
-            Recurring Invoice
+            {{ submitting ? "Menyimpan..." : props.isEdit ? "Perbarui" : "Buat" }}
+            Tagihan Berulang
           </UButton>
         </div>
       </UForm>

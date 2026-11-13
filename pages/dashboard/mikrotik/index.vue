@@ -23,12 +23,12 @@
       <!-- Connection Panel -->
       <div class="bg-white rounded-lg shadow-sm border mb-8">
         <div class="px-6 py-4 border-b border-gray-200">
-          <h3 class="text-lg font-medium text-gray-900">Connection Settings</h3>
+          <h3 class="text-lg font-medium text-gray-900">Pengaturan Koneksi</h3>
         </div>
         <div class="p-6">
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Host</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Alamat Host</label>
               <input
                 v-model="connectionConfig.host"
                 type="text"
@@ -46,7 +46,7 @@
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Nama Pengguna</label>
               <input
                 v-model="connectionConfig.username"
                 type="text"
@@ -55,7 +55,7 @@
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Kata Sandi</label>
               <input
                 v-model="connectionConfig.password"
                 type="password"
@@ -72,7 +72,7 @@
               class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <LucideIcon name="plug" :size="16" class="mr-2" />
-              {{ connectionStatus === 'connecting' ? 'Connecting...' : 'Connect' }}
+              {{ connectionStatus === 'connecting' ? 'Menghubungkan...' : 'Hubungkan' }}
             </button>
             <button
               @click="disconnectFromMikroTik"
@@ -80,7 +80,7 @@
               class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <LucideIcon name="x" :size="16" class="mr-2" />
-              Disconnect
+              Putuskan Koneksi
             </button>
             <button
               @click="refreshLogs"
@@ -88,7 +88,7 @@
               class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <LucideIcon name="rotate-ccw" :size="16" class="mr-2" />
-              Refresh Logs
+              Muat Ulang Log
             </button>
           </div>
         </div>
@@ -98,21 +98,21 @@
       <div class="bg-white rounded-lg shadow-sm border">
         <div class="px-6 py-4 border-b border-gray-200">
           <div class="flex justify-between items-center">
-            <h3 class="text-lg font-medium text-gray-900">Device Logs</h3>
+            <h3 class="text-lg font-medium text-gray-900">Log Perangkat</h3>
             <div class="flex items-center space-x-4">
               <!-- Time Range Selector -->
               <div class="flex items-center space-x-2">
-                <label class="text-sm font-medium text-gray-700">Time Range:</label>
+                <label class="text-sm font-medium text-gray-700">Rentang Waktu:</label>
                 <select
                   v-model="selectedTimeRange"
                   @change="changeTimeRange"
                   class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="1h">Last 1 Hour</option>
-                  <option value="6h">Last 6 Hours</option>
-                  <option value="1d" selected>Last 1 Day</option>
-                  <option value="7d">Last 7 Days</option>
-                  <option value="30d">Last 30 Days</option>
+                  <option value="1h">1 Jam Terakhir</option>
+                  <option value="6h">6 Jam Terakhir</option>
+                  <option value="1d" selected>1 Hari Terakhir</option>
+                  <option value="7d">7 Hari Terakhir</option>
+                  <option value="30d">30 Hari Terakhir</option>
                 </select>
               </div>
               
@@ -141,7 +141,7 @@
           <div class="max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
             <div v-if="logs.length === 0" class="p-8 text-center text-gray-500">
               <LucideIcon name="info" :size="48" class="mb-4 text-gray-400" />
-              <p>No logs available. Connect to MikroTik to view logs.</p>
+              <p>Belum ada log. Hubungkan ke MikroTik untuk melihat log.</p>
             </div>
             
             <div v-else class="divide-y divide-gray-200">
@@ -167,7 +167,7 @@
                         getStatusClass(log.status)
                       ]"
                     >
-                      {{ log.status }}
+                      {{ statusLabel(log.status) }}
                     </span>
                     <span class="text-xs text-gray-500">
                       {{ formatTime(log.timestamp) }}
@@ -180,8 +180,8 @@
           
           <!-- Logs Summary -->
           <div class="mt-4 flex justify-between items-center text-sm text-gray-600">
-            <span>Showing {{ filteredLogs.length }} of {{ logs.length }} logs</span>
-            <span>Last updated: {{ lastUpdateTime }}</span>
+            <span>Menampilkan {{ filteredLogs.length }} dari {{ logs.length }} log</span>
+            <span>Pembaruan terakhir: {{ lastUpdateTime }}</span>
           </div>
         </div>
       </div>
@@ -190,21 +190,21 @@
       <div v-if="connectionStatus === 'connected'" class="mt-8 bg-white rounded-lg shadow-sm border">
         <div class="px-6 py-4 border-b border-gray-200">
           <div class="flex justify-between items-center">
-            <h3 class="text-lg font-medium text-gray-900">Netwatch Devices</h3>
+            <h3 class="text-lg font-medium text-gray-900">Perangkat Netwatch</h3>
             <button
               @click="getNetwatchDevices"
               :disabled="connectionStatus !== 'connected'"
               class="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               <LucideIcon name="rotate-ccw" :size="16" class="mr-1" />
-              Refresh
+              Muat Ulang
             </button>
           </div>
         </div>
         <div class="p-6">
           <div v-if="netwatchDevices.length === 0" class="text-center py-8 text-gray-500">
             <LucideIcon name="globe" :size="48" class="mb-4 text-gray-400" />
-            <p>No Netwatch devices found. Connect to MikroTik to view devices.</p>
+            <p>Perangkat Netwatch tidak ditemukan. Hubungkan ke MikroTik untuk melihat perangkat.</p>
           </div>
           <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div 
@@ -227,9 +227,9 @@
                 </span>
               </div>
               <div class="text-sm text-gray-600 space-y-1">
-                <p><span class="font-medium">Interval:</span> {{ device.interval || 'N/A' }}</p>
-                <p><span class="font-medium">Timeout:</span> {{ device.timeout || 'N/A' }}</p>
-                <p v-if="device.comment"><span class="font-medium">Comment:</span> {{ device.comment }}</p>
+                <p><span class="font-medium">Interval:</span> {{ device.interval || 'Tidak tersedia' }}</p>
+                <p><span class="font-medium">Batas Waktu:</span> {{ device.timeout || 'Tidak tersedia' }}</p>
+                <p v-if="device.comment"><span class="font-medium">Catatan:</span> {{ device.comment }}</p>
               </div>
             </div>
           </div>
@@ -239,20 +239,20 @@
       <!-- System Info Panel -->
       <div v-if="connectionStatus === 'connected'" class="mt-8 bg-white rounded-lg shadow-sm border">
         <div class="px-6 py-4 border-b border-gray-200">
-          <h3 class="text-lg font-medium text-gray-900">System Information</h3>
+          <h3 class="text-lg font-medium text-gray-900">Informasi Sistem</h3>
         </div>
         <div class="p-6">
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div class="bg-gray-50 p-4 rounded-lg">
-              <h4 class="font-medium text-gray-900 mb-2">CPU Load</h4>
+              <h4 class="font-medium text-gray-900 mb-2">Beban CPU</h4>
               <p class="text-sm text-gray-600">{{ systemInfo.cpu_load || 'N/A' }}</p>
             </div>
             <div class="bg-gray-50 p-4 rounded-lg">
-              <h4 class="font-medium text-gray-900 mb-2">Memory Usage</h4>
+              <h4 class="font-medium text-gray-900 mb-2">Penggunaan Memori</h4>
               <p class="text-sm text-gray-600">{{ systemInfo.memory || 'N/A' }}</p>
             </div>
             <div class="bg-gray-50 p-4 rounded-lg">
-              <h4 class="font-medium text-gray-900 mb-2">Uptime</h4>
+              <h4 class="font-medium text-gray-900 mb-2">Waktu Aktif</h4>
               <p class="text-sm text-gray-600">{{ systemInfo.uptime || 'N/A' }}</p>
             </div>
           </div>
@@ -305,7 +305,7 @@ const getAuthHeaders = () => {
     // Try to redirect to login if no token
     const redirectPath = authStore.userType === 'employee' ? '/employee' : '/login'
     navigateTo(redirectPath)
-    throw new Error('No valid authentication token available')
+    throw new Error('Token autentikasi tidak valid atau tidak tersedia')
   }
   return {
     'Authorization': `Bearer ${token}`
@@ -320,7 +320,7 @@ const handleTokenExpiration = (error) => {
       window.handleTokenExpiration()
     } else {
       // Fallback if global handler not available
-      showAlert('Session expired. Please login again.', 'error')
+      showAlert('Sesi berakhir. Silakan masuk kembali.', 'error')
       const userType = authStore.userType
       authStore.logout()
       const redirectPath = userType === 'employee' ? '/employee' : '/login'
@@ -343,14 +343,14 @@ const systemInfo = ref({})
 const netwatchDevices = ref([])
 const selectedTimeRange = ref('1d')
 const activeLogFilter = ref('all')
-const lastUpdateTime = ref('Never')
+const lastUpdateTime = ref('Belum pernah')
 const alert = ref({ show: false, message: '', type: 'info' })
 
 // Log filters - simplified to only UP and DOWN
 const logFilters = [
-  { value: 'all', label: 'All' },
-  { value: 'up', label: 'UP' },
-  { value: 'down', label: 'DOWN' }
+  { value: 'all', label: 'Semua' },
+  { value: 'up', label: 'Terhubung' },
+  { value: 'down', label: 'Terputus' }
 ]
 
 // Computed properties
@@ -392,18 +392,18 @@ const connectToMikroTik = async () => {
     
     if (data.success) {
       connectionStatus.value = 'connected'
-      showAlert('Successfully connected to MikroTik', 'success')
+      showAlert('Berhasil terhubung ke MikroTik', 'success')
       await refreshLogs()
       await getSystemInfo()
       await getNetwatchDevices()
       startAutoRefresh()
     } else {
-      throw new Error(data.message || 'Failed to connect')
+      throw new Error(data.message || 'Gagal terhubung')
     }
   } catch (error) {
     connectionStatus.value = 'disconnected'
     handleTokenExpiration(error)
-    showAlert(`Connection failed: ${error.message}`, 'error')
+    showAlert(`Koneksi gagal: ${error.message}`, 'error')
   }
 }
 
@@ -422,13 +422,13 @@ const disconnectFromMikroTik = async () => {
       systemInfo.value = {}
       netwatchDevices.value = []
       stopAutoRefresh()
-      showAlert('Successfully disconnected from MikroTik', 'success')
+      showAlert('Berhasil memutuskan koneksi dari MikroTik', 'success')
     } else {
-      throw new Error(data.message || 'Failed to disconnect')
+      throw new Error(data.message || 'Gagal memutuskan koneksi')
     }
   } catch (error) {
     handleTokenExpiration(error)
-    showAlert(`Disconnect failed: ${error.message}`, 'error')
+    showAlert(`Gagal memutuskan koneksi: ${error.message}`, 'error')
   }
 }
 
@@ -446,11 +446,11 @@ const refreshLogs = async () => {
       logs.value = data.data.logs || []
       lastUpdateTime.value = new Date().toLocaleString('id-ID')
     } else {
-      throw new Error(data.message || 'Failed to get logs')
+      throw new Error(data.message || 'Gagal mengambil log')
     }
   } catch (error) {
     handleTokenExpiration(error)
-    showAlert(`Failed to refresh logs: ${error.message}`, 'error')
+    showAlert(`Gagal memuat ulang log: ${error.message}`, 'error')
   }
 }
 
@@ -471,12 +471,12 @@ const getNetwatchDevices = async () => {
       netwatchDevices.value = data.data.devices || []
       console.log('Netwatch devices set to:', netwatchDevices.value)
     } else {
-      throw new Error(data.message || 'Failed to get netwatch devices')
+      throw new Error(data.message || 'Gagal mengambil perangkat Netwatch')
     }
   } catch (error) {
     console.error('Error getting netwatch devices:', error)
     handleTokenExpiration(error)
-    showAlert(`Failed to get netwatch devices: ${error.message}`, 'error')
+    showAlert(`Gagal mengambil perangkat Netwatch: ${error.message}`, 'error')
   }
 }
 
@@ -518,8 +518,19 @@ const getStatusClass = (status) => {
   return 'bg-blue-100 text-blue-800'
 }
 
+const statusLabel = (status) => {
+  const labels = {
+    up: 'Terhubung',
+    down: 'Terputus',
+    warning: 'Peringatan',
+    error: 'Kesalahan',
+    critical: 'Kritis'
+  }
+  return labels[status.toLowerCase()] || status
+}
+
 const formatTime = (timestamp) => {
-  if (!timestamp) return 'N/A'
+  if (!timestamp) return 'Tidak tersedia'
   return new Date(timestamp).toLocaleString('id-ID', {
     year: 'numeric',
     month: '2-digit',

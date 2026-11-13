@@ -18,7 +18,7 @@ export function formatRupiah(amount: number | null | undefined): string {
 
 
 // Colour + label mapping for the customer bill table.
-// "Lunas" -> green, "Pending" -> yellow, "Belum Bayar" -> red.
+// "Lunas" -> green, "Menunggu" -> yellow, "Belum Bayar" -> red.
 export interface BillStatusStyle {
   label: string
   color: 'green' | 'yellow' | 'red' | 'gray'
@@ -30,7 +30,7 @@ export function billStatusStyle(status: CustomerBill['status'] | string): BillSt
     case 'paid':
       return { label: 'Lunas', color: 'green', icon: 'check-circle' }
     case 'pending':
-      return { label: 'Pending', color: 'yellow', icon: 'clock' }
+      return { label: 'Menunggu', color: 'yellow', icon: 'clock' }
     default:
       return { label: 'Belum Bayar', color: 'red', icon: 'alert-triangle' }
   }

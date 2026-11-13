@@ -226,10 +226,10 @@ onUnmounted(() => {
             <div class="flex flex-wrap items-center gap-3">
                 <div
                     class="bg-white rounded-full px-4 py-2 shadow-sm border border-white flex items-center gap-2 text-xs">
-                    <span class="text-gray-500">Timeframe:</span>
+                    <span class="text-gray-500">Periode:</span>
                     <select v-model="yearFilter"
                         class="font-bold text-gray-900 bg-transparent focus:outline-none cursor-pointer">
-                        <option value="all">All-time</option>
+                        <option value="all">Sepanjang waktu</option>
                         <option value="2026">Tahun Ini</option>
                     </select>
                 </div>
@@ -239,7 +239,7 @@ onUnmounted(() => {
                     <span class="text-gray-500">Status:</span>
                     <select v-model="statusFilter"
                         class="font-bold text-gray-900 bg-transparent focus:outline-none cursor-pointer">
-                        <option value="all">All</option>
+                        <option value="all">Semua</option>
                         <option value="unpaid">Belum Bayar</option>
                         <option value="paid">Lunas</option>
                     </select>
@@ -265,7 +265,7 @@ onUnmounted(() => {
                 </div>
                 <div
                     class="bg-white rounded-full px-5 py-2 shadow-sm border border-white flex items-center justify-between gap-3">
-                    <span class="text-xs text-gray-500 font-medium">Unpaid</span>
+                    <span class="text-xs text-gray-500 font-medium">Belum dibayar</span>
                     <span class="text-base sm:text-lg font-extrabold text-[#A93133]">{{ unpaidCount }}</span>
                 </div>
                 <div
@@ -436,7 +436,7 @@ onUnmounted(() => {
                                 <div class="flex items-center gap-2">
                                     <p class="text-xs sm:text-sm font-bold text-gray-900">{{ bill.month }}</p>
                                     <UBadge size="xs" :color="billStatusStyle(bill.status).color"
-                                        :label="bill.status_label || billStatusStyle(bill.status).label" />
+                                        :label="billStatusStyle(bill.status).label" />
                                 </div>
                                 <p class="text-[11px] text-gray-500">Jatuh tempo {{ formatDateID(bill.due_date) }}</p>
                             </div>

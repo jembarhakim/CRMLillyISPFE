@@ -42,14 +42,14 @@ type User = {
     Type: string;
 };
 const columns = [
-    { key: "number", label: "Number" },
-    { key: "avatar", label: "Avatar" },
-    { key: "name", label: "Name" },
+    { key: "number", label: "Nomor" },
+    { key: "avatar", label: "Foto" },
+    { key: "name", label: "Nama" },
     { key: "email", label: "Email" },
-    { key: "role", label: "Type" },
+    { key: "role", label: "Peran" },
     {
         key: "actions",
-        label: "Actions",
+        label: "Tindakan",
     },
 ];
 
@@ -80,14 +80,14 @@ const count = ref(0);
 const items = (row: User) => [
     [
         {
-            label: "Edit",
+            label: "Ubah",
             icon: "pencil-square-20-solid",
             click: () => openEditUserModal(row.id.toString()),
         },
     ],
     [
         {
-            label: "Delete",
+            label: "Hapus",
             icon: "trash-2-20-solid",
             click: () => deleteUser(row.id.toString()),
         },
@@ -112,7 +112,7 @@ function openEditUserModal(companyId: string) {
 
 async function handleSubmitUser() {
     toast.add({
-        title: "Success!",
+        title: "Berhasil",
         id: "modal-success",
     });
 
@@ -123,14 +123,14 @@ async function handleSubmitUser() {
 
 async function deleteUser(companyId: string) {
     const confirmed = window.confirm(
-        "Are you sure you want to delete this company?",
+        "Apakah Anda yakin ingin menghapus pengguna ini?",
     );
     if (!confirmed) return;
 
     try {
         await userManagementAdminApi().deleteUser(companyId);
         toast.add({
-            title: "Success!",
+            title: "Berhasil",
             id: "modal-success",
         });
 
@@ -142,9 +142,9 @@ async function deleteUser(companyId: string) {
 </script>
 
 <template>
-    <UButton label="Add User" @click="openAddUserModal" />
+    <UButton label="Tambah Pengguna" @click="openAddUserModal" />
     <div class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700">
-        <UInput v-model="q" placeholder="Filter user..." />
+        <UInput v-model="q" placeholder="Cari pengguna..." />
     </div>
     <UTable :rows="filteredRows" :columns="columns">
         <template #avatar-data="{ row }">
@@ -155,7 +155,7 @@ async function deleteUser(companyId: string) {
                 <button
                     type="button"
                     class="bg-gray-700 text-white px-2 py-1 text-sm hover:bg-gray-600 rounded inline-flex items-center justify-center shadow-sm transition-colors duration-200 group"
-                    aria-label="Actions"
+                    aria-label="Tindakan"
                 >
                     <LucideIcon
                         name="ellipsis-vertical"

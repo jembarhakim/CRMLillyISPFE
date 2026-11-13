@@ -12,14 +12,14 @@
             </div>
             <div
               class="absolute -bottom-1 -left-1 sm:-bottom-2 sm:-left-2 bg-black text-white px-2 py-1 text-xs font-medium rounded">
-              {{ customerDetail?.customer?.name || 'Customer' }}
+              {{ customerDetail?.customer?.name || 'Pelanggan' }}
             </div>
           </div>
           <div class="flex-1 min-w-0">
             <h2 class="text-lg sm:text-xl font-semibold text-gray-900 truncate">
-              {{ customerDetail?.customer?.name || 'Customer' }}
+              {{ customerDetail?.customer?.name || 'Pelanggan' }}
             </h2>
-            <p class="text-sm text-gray-600 truncate">{{ customerDetail?.customer?.phone || 'No phone' }}</p>
+            <p class="text-sm text-gray-600 truncate">{{ customerDetail?.customer?.phone || 'Tidak ada nomor telepon' }}</p>
             <p class="text-xs text-gray-400">ID: {{ props.customerId }}</p>
           </div>
         </div>
@@ -35,7 +35,7 @@
       <!-- Error State -->
       <div v-else-if="error" class="p-6 text-center text-red-600">
         <p>{{ error }}</p>
-        <UButton @click="fetchCustomerDetail" class="mt-4">Retry</UButton>
+        <UButton @click="fetchCustomerDetail" class="mt-4">Coba Lagi</UButton>
       </div>
 
       <!-- Navigation Tabs -->
@@ -82,7 +82,7 @@
           <div v-if="activeTab === 'summary'" class="space-y-6">
             <!-- Contact Information -->
             <div class="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Informasi Kontak</h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <!-- Updated fields based on Add Customer form -->
                 <div>
@@ -93,7 +93,7 @@
                 <!-- NEW: Alias field from Add Customer form -->
                 <div>
                   <label class="block text-sm font-medium text-gray-700">Panggilan / Samaran</label>
-                  <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.alias || 'N/A' }}</p>
+                  <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.alias || 'Tidak tersedia' }}</p>
                 </div>
 
                 <div>
@@ -109,7 +109,7 @@
                 </div>
 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Address</label>
+                  <label class="block text-sm font-medium text-gray-700">Alamat</label>
                   <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.address }}</p>
                 </div>
 
@@ -117,32 +117,32 @@
 
                 <!-- Updated: Area information with proper labels -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Area Code</label>
-                  <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.area?.name_city || 'N/A' }}</p>
+                  <label class="block text-sm font-medium text-gray-700">Wilayah</label>
+                  <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.area?.name_city || 'Tidak tersedia' }}</p>
                 </div>
 
                 <!-- NEW: Sales Representative from Add Customer form -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Sales Representative</label>
+                  <label class="block text-sm font-medium text-gray-700">Perwakilan Penjualan</label>
                   <p class="mt-1 text-sm text-gray-900">{{
                     getSalesRepresentativeName(customerDetail.customer.sales_representative_id) }}</p>
                 </div>
 
                 <!-- Updated: Company field -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Company</label>
+                  <label class="block text-sm font-medium text-gray-700">Perusahaan</label>
                   <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.company?.name || 'N/A' }}</p>
                 </div>
 
                 <!-- Updated: Area Code with proper display -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Area Code</label>
+                  <label class="block text-sm font-medium text-gray-700">Kode Wilayah</label>
                   <p class="mt-1">
                     <span v-if="customerDetail.customer.area?.code_name"
                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                       {{ customerDetail.customer.area.code_name }}
                     </span>
-                    <span v-else class="text-sm text-gray-500">No code assigned</span>
+                    <span v-else class="text-sm text-gray-500">Belum ada kode</span>
                   </p>
                 </div>
 
@@ -164,7 +164,7 @@
 
             <!-- Auto Login URL -->
             <div class="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">Auto Login URL</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Tautan Masuk Otomatis</h3>
               <div class="space-y-4">
                 <!-- URL Display -->
                 <div class="bg-gray-50 p-3 rounded-lg overflow-hidden">
@@ -178,17 +178,17 @@
         <UButton size="sm" color="blue" variant="outline" @click="loginAsCustomer"
           class="w-full sm:w-auto flex-shrink-0">
           <LucideIcon name="log-in" class="w-4 h-4 mr-2" />
-          Login As Customer
+          Masuk sebagai Pelanggan
         </UButton>
         <UButton size="sm" color="red" variant="outline" @click="revokeAutoLogin"
           class="w-full sm:w-auto flex-shrink-0">
           <LucideIcon name="x" class="w-4 h-4 mr-2" />
-          Revoke Auto Login
+          Cabut Akses Masuk Otomatis
         </UButton>
         <UButton size="sm" color="gray" variant="outline" @click="regenerateUrl"
           class="w-full sm:w-auto flex-shrink-0">
           <LucideIcon name="refresh-cw" class="w-4 h-4 mr-2" />
-          Regenerate URL
+          Buat Ulang Tautan
         </UButton>
                 </div>
 
@@ -197,7 +197,7 @@
           <UButton size="sm" color="green" variant="outline" @click="copyAutoLoginUrlToClipboard"
             class="w-full">
             <LucideIcon name="clipboard" class="w-4 h-4 mr-2" />
-            Copy URL
+            Salin Tautan
           </UButton>
         </div>
               </div>
@@ -205,10 +205,10 @@
 
             <!-- Invoice Summary -->
             <div class="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">Invoice Summary</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Ringkasan Tagihan</h3>
               <div class="flex items-center gap-4">
                 <div class="bg-blue-100 text-blue-800 px-4 py-2 rounded-lg">
-                  <span class="text-sm font-medium">Total Revenue from Customer</span>
+                  <span class="text-sm font-medium">Total Pendapatan dari Pelanggan</span>
                   <p class="text-lg font-bold">{{ formatIDR(getTotalInvoiceAmount()) }}</p>
                 </div>
               </div>
@@ -216,10 +216,10 @@
 
             <!-- Location Information -->
             <div class="bg-blue-50 rounded-lg p-4">
-              <h3 class="text-lg font-medium text-gray-900 mb-4">Location & Area</h3>
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Lokasi & Wilayah</h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Area</label>
+                  <label class="block text-sm font-medium text-gray-700">Wilayah</label>
                   <p class="mt-1 text-sm text-gray-900">
                     {{ customerDetail.customer.area?.name_city }} -
                     {{ customerDetail.customer.area?.name_subdistrict }} -
@@ -227,21 +227,21 @@
                   </p>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Area Code</label>
+                  <label class="block text-sm font-medium text-gray-700">Kode Wilayah</label>
                   <p class="mt-1">
                     <span v-if="customerDetail.customer.area?.code_name"
                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                       {{ customerDetail.customer.area.code_name }}
                     </span>
-                    <span v-else class="text-sm text-gray-500">No code assigned</span>
+                    <span v-else class="text-sm text-gray-500">Belum ada kode</span>
                   </p>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Company</label>
+                  <label class="block text-sm font-medium text-gray-700">Perusahaan</label>
                   <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.company?.name }}</p>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Coordinates</label>
+                  <label class="block text-sm font-medium text-gray-700">Koordinat</label>
                   <p class="mt-1 text-sm text-gray-900">{{ customerDetail.customer.latitude }}, {{
                     customerDetail.customer.longitude }}</p>
                 </div>
@@ -250,11 +250,11 @@
 
             <!-- Network Information -->
             <div v-if="showNetworkInformation" class="bg-green-50 rounded-lg p-4">
-              <h3 class="text-lg font-medium text-gray-900 mb-4">Network Information</h3>
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Informasi Jaringan</h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <!-- Updated: Internet Package information -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Internet Package(s)</label>
+                  <label class="block text-sm font-medium text-gray-700">Paket Internet</label>
                   <div v-if="getCustomerProductsInfo().length > 0" class="mt-1 space-y-2">
                     <div v-for="product in getCustomerProductsInfo()" :key="product.id"
                       class="flex items-center gap-2 p-2 bg-green-50 rounded-lg border border-green-200">
@@ -270,26 +270,26 @@
                       </span>
                     </div>
                     <div v-if="getCustomerProductsInfo().length > 1" class="text-xs text-gray-500">
-                      {{ getCustomerProductsInfo().length }} different packages assigned
+                      {{ getCustomerProductsInfo().length }} paket berbeda ditetapkan
                     </div>
                   </div>
-                  <p v-else class="mt-1 text-sm text-gray-500 italic">No package assigned</p>
+                  <p v-else class="mt-1 text-sm text-gray-500 italic">Belum ada paket</p>
                 </div>
 
                 <!-- NEW: Installation Type from installation report -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Installation Type</label>
+                  <label class="block text-sm font-medium text-gray-700">Jenis Instalasi</label>
                   <p class="mt-1 text-sm text-gray-900">
                     <span v-if="getLatestInstallationData().installation_type">
                       {{ getLatestInstallationData().installation_type }}
                     </span>
-                    <span v-else class="text-gray-500 italic">No installation report available</span>
+                    <span v-else class="text-gray-500 italic">Laporan instalasi belum tersedia</span>
                   </p>
                 </div>
 
                 <!-- NEW: Installation Status from installation report -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Installation Status</label>
+                  <label class="block text-sm font-medium text-gray-700">Status Instalasi</label>
                   <p class="mt-1">
                     <span v-if="getLatestInstallationData().installation_status">
                       <span :class="[
@@ -299,7 +299,7 @@
                         {{ getLatestInstallationData().installation_status }}
                       </span>
                     </span>
-                    <span v-else class="text-gray-500 italic">No installation report available</span>
+                    <span v-else class="text-gray-500 italic">Laporan instalasi belum tersedia</span>
                   </p>
                 </div>
 
@@ -310,7 +310,7 @@
                     <span v-if="getLatestInstallationData().on_air_date">
                       {{ formatDate(getLatestInstallationData().on_air_date) }}
                     </span>
-                    <span v-else class="text-gray-500 italic">No installation report available</span>
+                    <span v-else class="text-gray-500 italic">Laporan instalasi belum tersedia</span>
                   </p>
                 </div>
 
@@ -321,7 +321,7 @@
                     <span v-if="getLatestInstallationData().service_ready_date">
                       {{ formatDate(getLatestInstallationData().service_ready_date) }}
                     </span>
-                    <span v-else class="text-gray-500 italic">No installation report available</span>
+                    <span v-else class="text-gray-500 italic">Laporan instalasi belum tersedia</span>
                   </p>
                 </div>
 
@@ -332,7 +332,7 @@
                     <span v-if="getNetworkDeviceIPs().length > 0">
                       {{ getNetworkDeviceIPs().join(', ') }}
                     </span>
-                    <span v-else class="text-gray-500">No IP addresses found</span>
+                    <span v-else class="text-gray-500">Alamat IP tidak ditemukan</span>
                   </p>
                 </div>
 
@@ -343,13 +343,13 @@
                     <span v-if="getNetworkDeviceMACs().length > 0">
                       {{ getNetworkDeviceMACs().join(', ') }}
                     </span>
-                    <span v-else class="text-gray-500">No MAC addresses found</span>
+                    <span v-else class="text-gray-500">Alamat MAC tidak ditemukan</span>
                   </p>
                 </div>
 
                 <!-- Updated: Installation Date -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700">Installation Date</label>
+                  <label class="block text-sm font-medium text-gray-700">Tanggal Instalasi</label>
                   <p class="mt-1 text-sm text-gray-900">{{ formatDate(customerDetail.customer.installation_date) ||
                     'N/A' }}</p>
                 </div>
@@ -368,13 +368,13 @@ v-if="
 "
 class="bg-white border border-gray-200 rounded-lg p-6"
 >
-  <h3 class="text-lg font-semibold text-gray-900 mb-4">Network Devices Status</h3>
+  <h3 class="text-lg font-semibold text-gray-900 mb-4">Status Perangkat Jaringan</h3>
   <div class="space-y-4">
     <div v-for="device in activeNetworkDevices" :key="device.id">
 
                   class="bg-white rounded-lg p-4 border">
                   <div class="flex items-center justify-between mb-3">
-                    <h4 class="text-sm font-semibold text-gray-900">Device {{ device.id }}</h4>
+                    <h4 class="text-sm font-semibold text-gray-900">Perangkat {{ device.id }}</h4>
                     <div class="flex items-center space-x-2">
                       <div :class="[
                         'w-3 h-3 rounded-full',
@@ -386,7 +386,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                         getDeviceConnectionStatus(device) === 'up' ? 'text-green-600' :
                           getDeviceConnectionStatus(device) === 'down' ? 'text-red-600' : 'text-gray-600'
                       ]">
-                        {{ getDeviceConnectionStatus(device).toUpperCase() }}
+                        {{ getConnectionStatusLabel(getDeviceConnectionStatus(device)) }}
                       </span>
                     </div>
                   </div>
@@ -405,20 +405,20 @@ class="bg-white border border-gray-200 rounded-lg p-6"
 
                     <!-- Device Type from Assets -->
                     <div>
-                      <label class="block text-xs font-medium text-gray-700">Device Type</label>
+                      <label class="block text-xs font-medium text-gray-700">Jenis Perangkat</label>
                       <p class="text-sm text-gray-900">{{ device.assets?.type || 'N/A' }}</p>
                     </div>
 
                     <!-- Device Model from Assets -->
                     <div>
-                      <label class="block text-xs font-medium text-gray-700">Device Model</label>
+                      <label class="block text-xs font-medium text-gray-700">Model Perangkat</label>
                       <p class="text-sm text-gray-900">{{ device.assets ? `${device.assets.brand}
                         ${device.assets.model}` : 'N/A' }}</p>
                     </div>
 
                     <!-- Serial Number from Assets -->
                     <div>
-                      <label class="block text-xs font-medium text-gray-700">Serial Number</label>
+                      <label class="block text-xs font-medium text-gray-700">Nomor Seri</label>
                       <p class="text-sm text-gray-900">{{ device.assets?.serial_number || 'N/A' }}</p>
                     </div>
 
@@ -430,13 +430,13 @@ class="bg-white border border-gray-200 rounded-lg p-6"
 
                     <!-- NEW: Remote Port from installation report -->
                     <div>
-                      <label class="block text-xs font-medium text-gray-700">Remote Port</label>
+                      <label class="block text-xs font-medium text-gray-700">Port Jarak Jauh</label>
                       <p class="text-sm text-gray-900">{{ device.remote_port || 'N/A' }}</p>
                     </div>
 
                     <!-- NEW: Eth Port from installation report -->
                     <div>
-                      <label class="block text-xs font-medium text-gray-700">Eth Port</label>
+                      <label class="block text-xs font-medium text-gray-700">Port Ethernet</label>
                       <p class="text-sm text-gray-900">{{ device.eth_port || 'N/A' }}</p>
                     </div>
 
@@ -455,27 +455,27 @@ class="bg-white border border-gray-200 rounded-lg p-6"
 
                     <!-- Updated: Device Status (Real-time from Mikrotik) -->
                     <div>
-                      <label class="block text-xs font-medium text-gray-700">Real-time Status</label>
+                      <label class="block text-xs font-medium text-gray-700">Status Waktu Nyata</label>
                       <span :class="[
                         'inline-flex px-2 py-1 text-xs font-medium rounded-full',
                         getDeviceConnectionStatus(device) === 'up' ? 'bg-green-100 text-green-800' :
                           getDeviceConnectionStatus(device) === 'down' ? 'bg-red-100 text-red-800' :
                             getDeviceConnectionStatus(device) === 'unknown' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
                       ]">
-                        {{ getDeviceConnectionStatus(device).toUpperCase() }}
+                        {{ getConnectionStatusLabel(getDeviceConnectionStatus(device)) }}
                       </span>
                     </div>
 
                     <!-- Updated: Connection Status (Real-time from Mikrotik) -->
                     <div>
-                      <label class="block text-xs font-medium text-gray-700">Connection Status</label>
+                      <label class="block text-xs font-medium text-gray-700">Status Koneksi</label>
                       <div class="flex items-center space-x-2">
                         <span :class="[
                           'inline-flex px-2 py-1 text-xs font-medium rounded-full',
                           getDeviceConnectionStatus(device) === 'up' ? 'bg-green-100 text-green-800' :
                             getDeviceConnectionStatus(device) === 'down' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
                         ]">
-                          {{ getDeviceConnectionStatus(device).toUpperCase() }}
+                          {{ getConnectionStatusLabel(getDeviceConnectionStatus(device)) }}
                         </span>
                         <span v-if="getDeviceConnectionStatus(device) === 'up'" class="text-xs text-green-600">
                           <LucideIcon name="wifi" class="w-3 h-3" />
@@ -488,13 +488,13 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                         </span>
                       </div>
                       <p class="text-xs text-gray-500 mt-1">
-                        Real-time status from Mikrotik
+                        Status waktu nyata dari MikroTik
                       </p>
                     </div>
 
                     <!-- Updated: Internet Package from installation report -->
                     <div>
-                      <label class="block text-xs font-medium text-gray-700">Internet Package</label>
+                      <label class="block text-xs font-medium text-gray-700">Paket Internet</label>
                       <div v-if="getDeviceProductInfo(device)" class="space-y-1">
                         <span
                           class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -507,12 +507,12 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                             getDeviceProductInfo(device)?.uploadSpeed }}M
                         </div>
                       </div>
-                      <p v-else class="text-sm text-gray-500 italic">No package assigned</p>
+                      <p v-else class="text-sm text-gray-500 italic">Belum ada paket</p>
                     </div>
                   </div>
                   <div class="mt-3 pt-3 border-t border-gray-200">
                     <div class="flex justify-between items-center text-xs text-gray-500">
-                      <span>Status: Real-time from Mikrotik</span>
+                      <span>Status: waktu nyata dari MikroTik</span>
                       <span v-if="device.ip_static">IP: {{ device.ip_static }}</span>
                     </div>
                   </div>
@@ -657,28 +657,28 @@ class="bg-white border border-gray-200 rounded-lg p-6"
             <div v-else class="bg-yellow-50 rounded-lg p-4">
               <div class="flex justify-between items-center">
                 <div>
-                  <h3 class="text-lg font-medium text-gray-900 mb-2">Installation Reports</h3>
-                  <p class="text-sm text-gray-600">No installation reports found for this customer.</p>
+                  <h3 class="text-lg font-medium text-gray-900 mb-2">Laporan Instalasi</h3>
+                  <p class="text-sm text-gray-600">Belum ada laporan instalasi untuk pelanggan ini.</p>
                   <p class="text-xs text-gray-500 mt-1">Installation Type, Status, On Air Date, and Service Ready Date
-                    will be available after creating an installation report.</p>
+                    akan tersedia setelah laporan instalasi dibuat.</p>
                 </div>
                 <UButton color="green" size="sm" @click="addNewInstallationReport">
                   <LucideIcon name="plus" class="w-4 h-4 mr-1" />
-                  Add First Report
+                  Tambah Laporan Pertama
                 </UButton>
               </div>
             </div>
 
             <!-- Recent Invoices -->
             <div v-if="customerInvoices && customerInvoices.length > 0" class="bg-indigo-50 rounded-lg p-4">
-              <h3 class="text-lg font-medium text-gray-900 mb-4">Recent Invoices</h3>
+              <h3 class="text-lg font-medium text-gray-900 mb-4">Tagihan Terbaru</h3>
               <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                   <thead class="bg-gray-50">
                     <tr>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal
                       </th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah
                       </th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status
                       </th>
@@ -695,7 +695,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                       <td class="px-6 py-4 whitespace-nowrap">
                         <span :class="getStatusColor(invoice.status)"
                           class="inline-flex px-2 py-1 text-xs font-medium rounded-full">
-                          {{ invoice.status?.toUpperCase() }}
+                          {{ getStatusLabel(invoice.status) }}
                         </span>
                       </td>
                     </tr>
@@ -711,23 +711,23 @@ class="bg-white border border-gray-200 rounded-lg p-6"
 
             <!-- Connection Control -->
             <div class="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">Connection Control</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Kendali Koneksi</h3>
               <div class="space-y-4">
                 <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div>
-                    <h4 class="text-sm font-medium text-gray-900">Customer Isolation</h4>
-                    <p class="text-sm text-gray-600">Control customer's hotspot access for payment enforcement</p>
+                    <h4 class="text-sm font-medium text-gray-900">Isolasi Pelanggan</h4>
+                    <p class="text-sm text-gray-600">Kendalikan akses hotspot pelanggan untuk penegakan pembayaran</p>
                   </div>
                   <div class="flex space-x-2">
                     <UButton v-if="getCustomerMacAddresses().length > 0" :loading="isConnecting"
                       :disabled="isConnecting" @click="isolateCustomer" color="red" variant="outline" size="sm">
                       <LucideIcon name="lock" class="w-4 h-4 mr-1" />
-                      Isolate Customer
+                      Isolasi Pelanggan
                     </UButton>
                     <UButton v-if="getCustomerMacAddresses().length > 0" :loading="isConnecting"
                       :disabled="isConnecting" @click="restoreCustomer" color="green" variant="outline" size="sm">
                       <LucideIcon name="unlock" class="w-4 h-4 mr-1" />
-                      Restore Access
+                      Pulihkan Akses
                     </UButton>
                   </div>
                 </div>
@@ -735,11 +735,11 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                 <!-- MAC Address Display -->
                 <div v-if="getCustomerMacAddresses().length > 0" class="p-3 bg-blue-50 rounded-lg">
                   <div class="space-y-2">
-                    <p class="text-sm font-medium text-blue-900">Network Device MAC Addresses</p>
+                    <p class="text-sm font-medium text-blue-900">Alamat MAC Perangkat Jaringan</p>
                     <div v-for="(device, index) in getNetworkDevicesWithMac()" :key="device.id"
                       class="flex items-center justify-between p-2 bg-white rounded border">
                       <div>
-                        <p class="text-xs text-gray-600">Device {{ index + 1 }}</p>
+                        <p class="text-xs text-gray-600">Perangkat {{ index + 1 }}</p>
                         <p class="text-sm text-blue-700 font-mono">{{ device.mac_address }}</p>
                         <p v-if="device.ip_static" class="text-xs text-gray-500">IP: {{ device.ip_static }}</p>
                       </div>
@@ -755,9 +755,9 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                   <div class="flex items-center">
                     <LucideIcon name="alert-triangle" class="w-5 h-5 text-yellow-600 mr-2" />
                     <div>
-                      <p class="text-sm font-medium text-yellow-900">No MAC Addresses Found</p>
-                      <p class="text-sm text-yellow-700">Customer network devices with MAC addresses are required for
-                        connection control</p>
+                      <p class="text-sm font-medium text-yellow-900">Alamat MAC tidak ditemukan</p>
+                      <p class="text-sm text-yellow-700">Perangkat jaringan pelanggan harus memiliki alamat MAC agar
+                        kendali koneksi dapat digunakan</p>
                     </div>
                   </div>
                 </div>
@@ -766,7 +766,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
 
             <!-- Customer Status -->
             <div class="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">Customer Account Status</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Status Akun Pelanggan</h3>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="text-center">
                   <div :class="[
@@ -780,19 +780,19 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                         customerDetail.customer.status_user === 'active' ? 'text-green-600' : 'text-red-600'
                       ]" />
                   </div>
-                  <h4 class="text-sm font-semibold text-gray-900">Account Status</h4>
+                  <h4 class="text-sm font-semibold text-gray-900">Status Akun</h4>
                   <p :class="[
                     'text-sm font-medium',
                     customerDetail.customer.status_user === 'active' ? 'text-green-600' : 'text-red-600'
                   ]">
-                    {{ customerDetail.customer.status_user?.toUpperCase() || 'UNKNOWN' }}
+                    {{ getStatusLabel(customerDetail.customer.status_user) }}
                   </p>
                 </div>
                 <div class="text-center">
                   <div class="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center bg-blue-100">
                     <LucideIcon name="calendar" class="w-8 h-8 text-blue-600" />
                   </div>
-                  <h4 class="text-sm font-semibold text-gray-900">Installation Date</h4>
+                  <h4 class="text-sm font-semibold text-gray-900">Tanggal Instalasi</h4>
                   <p class="text-sm text-gray-600">{{ formatDate(customerDetail.customer.installation_date) }}</p>
                 </div>
               </div>
@@ -808,13 +808,13 @@ v-if="
 "
 class="bg-white border border-gray-200 rounded-lg p-6"
 >
-  <h3 class="text-lg font-semibold text-gray-900 mb-4">Network Devices Status</h3>
+  <h3 class="text-lg font-semibold text-gray-900 mb-4">Status Perangkat Jaringan</h3>
   <div class="space-y-4">
     <div v-for="device in activeNetworkDevices" :key="device.id">
 
                   class="border border-gray-200 rounded-lg p-4">
                   <div class="flex items-center justify-between mb-3">
-                    <h4 class="text-sm font-semibold text-gray-900">Device {{ device.id }}</h4>
+                    <h4 class="text-sm font-semibold text-gray-900">Perangkat {{ device.id }}</h4>
                     <div class="flex items-center space-x-2">
                       <div :class="[
                         'w-3 h-3 rounded-full',
@@ -826,46 +826,46 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                         getDeviceConnectionStatus(device) === 'up' ? 'text-green-600' :
                           getDeviceConnectionStatus(device) === 'down' ? 'text-red-600' : 'text-gray-600'
                       ]">
-                        {{ getDeviceConnectionStatus(device).toUpperCase() }}
+                        {{ getConnectionStatusLabel(getDeviceConnectionStatus(device)) }}
                       </span>
                     </div>
                   </div>
                   <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
-                      <label class="block text-xs font-medium text-gray-700">IP Address</label>
-                      <p class="text-sm text-gray-900">{{ device.ip_static || 'N/A' }}</p>
+                      <label class="block text-xs font-medium text-gray-700">Alamat IP</label>
+                      <p class="text-sm text-gray-900">{{ device.ip_static || 'Tidak tersedia' }}</p>
                     </div>
                     <div>
                       <label class="block text-xs font-medium text-gray-700">MAC Address</label>
-                      <p class="text-sm text-gray-900">{{ device.mac_address || 'N/A' }}</p>
+                      <p class="text-sm text-gray-900">{{ device.mac_address || 'Tidak tersedia' }}</p>
                     </div>
                     <div>
-                      <label class="block text-xs font-medium text-gray-700">Device Type</label>
-                      <p class="text-sm text-gray-900">{{ device.assets?.type || 'N/A' }}</p>
+                      <label class="block text-xs font-medium text-gray-700">Jenis Perangkat</label>
+                      <p class="text-sm text-gray-900">{{ device.assets?.type || 'Tidak tersedia' }}</p>
                     </div>
                     <div>
                       <label class="block text-xs font-medium text-gray-700">Device Model</label>
                       <p class="text-sm text-gray-900">{{ device.assets ? `${device.assets.brand}
-                        ${device.assets.model}` : 'N/A' }}</p>
+                        ${device.assets.model}` : 'Tidak tersedia' }}</p>
                     </div>
                     <div>
-                      <label class="block text-xs font-medium text-gray-700">Serial Number</label>
-                      <p class="text-sm text-gray-900">{{ device.assets?.serial_number || 'N/A' }}</p>
+                      <label class="block text-xs font-medium text-gray-700">Nomor Seri</label>
+                      <p class="text-sm text-gray-900">{{ device.assets?.serial_number || 'Tidak tersedia' }}</p>
                     </div>
                     <div>
                       <label class="block text-xs font-medium text-gray-700">Port</label>
-                      <p class="text-sm text-gray-900">{{ device.port_number || 'N/A' }}</p>
+                      <p class="text-sm text-gray-900">{{ device.port_number || 'Tidak tersedia' }}</p>
                     </div>
                     <div>
-                      <label class="block text-xs font-medium text-gray-700">Remote Port</label>
-                      <p class="text-sm text-gray-900">{{ device.remote_port || 'N/A' }}</p>
+                      <label class="block text-xs font-medium text-gray-700">Port Jarak Jauh</label>
+                      <p class="text-sm text-gray-900">{{ device.remote_port || 'Tidak tersedia' }}</p>
                     </div>
                     <div>
-                      <label class="block text-xs font-medium text-gray-700">Eth Port</label>
-                      <p class="text-sm text-gray-900">{{ device.eth_port || 'N/A' }}</p>
+                      <label class="block text-xs font-medium text-gray-700">Port Ethernet</label>
+                      <p class="text-sm text-gray-900">{{ device.eth_port || 'Tidak tersedia' }}</p>
                     </div>
                     <div>
-                      <label class="block text-xs font-medium text-gray-700">Internet Package</label>
+                      <label class="block text-xs font-medium text-gray-700">Paket Internet</label>
                       <div v-if="getDeviceProductInfo(device)" class="space-y-1">
                         <span
                           class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -878,11 +878,11 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                             getDeviceProductInfo(device)?.uploadSpeed }}M
                         </div>
                       </div>
-                      <p v-else class="text-sm text-gray-500 italic">No package assigned</p>
+                      <p v-else class="text-sm text-gray-500 italic">Belum ada paket</p>
                     </div>
                     <div>
                       <label class="block text-xs font-medium text-gray-700">Connection Status</label>
-                      <p class="text-sm text-gray-900">{{ getDeviceConnectionStatus(device).toUpperCase() }}</p>
+                      <p class="text-sm text-gray-900">{{ getConnectionStatusLabel(getDeviceConnectionStatus(device)) }}</p>
                     </div>
                   </div>
                   <div class="mt-3 pt-3 border-t border-gray-200">
@@ -897,11 +897,11 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                             :name="getDeviceConnectionStatus(device) === 'up' ? 'wifi' :
                               getDeviceConnectionStatus(device) === 'down' ? 'wifi-off' : 'help-circle'"
                             class="w-3 h-3 mr-1" />
-                          Status: {{ getDeviceConnectionStatus(device).toUpperCase() }}
+                          Status: {{ getConnectionStatusLabel(getDeviceConnectionStatus(device)) }}
                         </span>
                       </div>
                       <span class="text-xs text-gray-500">
-                        Real-time from Mikrotik
+                        Waktu nyata dari MikroTik
                       </span>
                     </div>
                   </div>
@@ -916,12 +916,11 @@ class="bg-white border border-gray-200 rounded-lg p-6"
               class="bg-white border border-gray-200 rounded-lg p-6">
               <div class="text-center">
                 <LucideIcon name="file-plus" class="w-12 h-12 text-blue-400 mx-auto mb-4" />
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Network Devices Not Available</h3>
-                <p class="text-gray-600 mb-4">Network devices will appear after creating an installation report for this
-                  customer.</p>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Perangkat Jaringan Belum Tersedia</h3>
+                <p class="text-gray-600 mb-4">Perangkat jaringan akan muncul setelah laporan instalasi pelanggan ini dibuat.</p>
                 <UButton color="blue" size="sm" @click="addNewInstallationReport">
                   <LucideIcon name="plus" class="w-4 h-4 mr-1" />
-                  Create Installation Report
+                  Buat Laporan Instalasi
                 </UButton>
               </div>
             </div>
@@ -930,8 +929,8 @@ class="bg-white border border-gray-200 rounded-lg p-6"
             <div v-else class="bg-white border border-gray-200 rounded-lg p-6">
               <div class="text-center">
                 <LucideIcon name="wifi" class="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">No Network Devices</h3>
-                <p class="text-gray-600">This customer has installation reports but no network devices configured yet.
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Tidak Ada Perangkat Jaringan</h3>
+                <p class="text-gray-600">Pelanggan ini memiliki laporan instalasi, tetapi perangkat jaringan belum dikonfigurasi.
                 </p>
               </div>
             </div>
@@ -940,7 +939,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
           <!-- Activity Tab -->
           <div v-if="activeTab === 'activity'" class="space-y-6">
             <div class="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Aktivitas Terbaru</h3>
               <div class="space-y-4">
                 <div v-for="activity in recentActivity" :key="activity.id"
                   class="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
@@ -951,7 +950,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                   </div>
                 </div>
                 <div v-if="recentActivity.length === 0" class="text-center text-gray-500 py-8">
-                  No recent activity found
+                  Belum ada aktivitas terbaru
                 </div>
               </div>
             </div>
@@ -961,25 +960,25 @@ class="bg-white border border-gray-200 rounded-lg p-6"
           <div v-if="activeTab === 'invoices'" class="space-y-6">
             <div class="bg-white border border-gray-200 rounded-lg p-6">
               <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold text-gray-900">Invoices</h3>
+                <h3 class="text-lg font-semibold text-gray-900">Tagihan</h3>
                 <span class="text-sm text-gray-500">
-                  Showing invoices for: <strong>{{ customerDetail?.customer?.name || 'Unknown Customer' }}</strong>
+                  Menampilkan tagihan untuk: <strong>{{ customerDetail?.customer?.name || 'Pelanggan tidak diketahui' }}</strong>
                 </span>
               </div>
               <div v-if="customerInvoices.length > 0" class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                   <thead class="bg-gray-50">
                     <tr>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice
-                        #</th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nomor Tagihan
+                        </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal
                       </th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah
                       </th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status
                       </th>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Customer ID</th>
+                        ID Pelanggan</th>
                     </tr>
                   </thead>
                   <tbody class="bg-white divide-y divide-gray-200">
@@ -994,18 +993,18 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                       <td class="px-6 py-4 whitespace-nowrap">
                         <span :class="getStatusColor(invoice.status)"
                           class="inline-flex px-2 py-1 text-xs font-medium rounded-full">
-                          {{ invoice.status?.toUpperCase() }}
+                          {{ getStatusLabel(invoice.status) }}
                         </span>
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {{ invoice.customer_id || 'N/A' }}
+                        {{ invoice.customer_id || 'Tidak tersedia' }}
                       </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
               <div v-else class="text-center text-gray-500 py-8">
-                No invoices found
+                Tidak ada tagihan
               </div>
             </div>
           </div>
@@ -1014,9 +1013,9 @@ class="bg-white border border-gray-200 rounded-lg p-6"
           <div v-if="activeTab === 'tickets'" class="space-y-6">
             <div class="bg-white border border-gray-200 rounded-lg p-6">
               <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold text-gray-900">Trouble Tickets</h3>
+                <h3 class="text-lg font-semibold text-gray-900">Tiket Gangguan</h3>
                 <span class="text-sm text-gray-500">
-                  Showing tickets for: <strong>{{ customerDetail?.customer?.name || 'Unknown Customer' }}</strong>
+                  Menampilkan tiket untuk: <strong>{{ customerDetail?.customer?.name || 'Pelanggan tidak diketahui' }}</strong>
                 </span>
               </div>
               <div v-if="customerTickets.length > 0" class="space-y-4">
@@ -1026,24 +1025,24 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                     <h4 class="text-sm font-medium text-gray-900">{{ ticket.title }}</h4>
                     <span :class="getTicketStatusColor(ticket.status)"
                       class="inline-flex px-2 py-1 text-xs font-medium rounded-full">
-                      {{ ticket.status?.toUpperCase() }}
+                      {{ getStatusLabel(ticket.status) }}
                     </span>
                   </div>
-                  <p class="text-sm text-gray-600 mb-2">{{ ticket.description || 'No description' }}</p>
+                  <p class="text-sm text-gray-600 mb-2">{{ ticket.description || 'Tidak ada deskripsi' }}</p>
                   <div class="flex justify-between items-center text-xs text-gray-500">
-                    <span>Type: {{ ticket.type_name || ticket.type || 'N/A' }}</span>
-                    <span>Created: {{ formatDate(ticket.created_at) }}</span>
+                    <span>Jenis: {{ ticket.type_name || ticket.type || 'Tidak tersedia' }}</span>
+                    <span>Dibuat: {{ formatDate(ticket.created_at) }}</span>
                   </div>
                   <div class="text-xs text-gray-400 mt-1">
-                    Customer ID: {{ ticket.customer_id || 'N/A' }}
+                    ID Pelanggan: {{ ticket.customer_id || 'Tidak tersedia' }}
                   </div>
                   <div v-if="ticket.customer_note || ticket.technician_note || ticket.noc_note" class="mt-3 space-y-2">
                     <div v-if="ticket.customer_note" class="text-xs">
-                      <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">CS:</span>
+                      <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">Layanan Pelanggan:</span>
                       <span class="ml-1 text-gray-700">{{ ticket.customer_note }}</span>
                     </div>
                     <div v-if="ticket.technician_note" class="text-xs">
-                      <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">Tech:</span>
+                      <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">Teknisi:</span>
                       <span class="ml-1 text-gray-700">{{ ticket.technician_note }}</span>
                     </div>
                     <div v-if="ticket.noc_note" class="text-xs">
@@ -1054,7 +1053,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
                 </div>
               </div>
               <div v-else class="text-center text-gray-500 py-8">
-                No trouble tickets found
+                Tidak ada tiket gangguan
               </div>
             </div>
           </div>
@@ -1062,9 +1061,9 @@ class="bg-white border border-gray-200 rounded-lg p-6"
           <!-- Orders Tab -->
           <div v-if="activeTab === 'orders'" class="space-y-6">
             <div class="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">Orders</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Pesanan</h3>
               <div class="text-center text-gray-500 py-8">
-                No orders found
+                Tidak ada pesanan
               </div>
             </div>
           </div>
@@ -1072,9 +1071,9 @@ class="bg-white border border-gray-200 rounded-lg p-6"
           <!-- Files Tab -->
           <div v-if="activeTab === 'files'" class="space-y-6">
             <div class="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">Files</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Berkas</h3>
               <div class="text-center text-gray-500 py-8">
-                No files found
+                Tidak ada berkas
               </div>
             </div>
           </div>
@@ -1082,9 +1081,9 @@ class="bg-white border border-gray-200 rounded-lg p-6"
           <!-- Transactions Tab -->
           <div v-if="activeTab === 'transactions'" class="space-y-6">
             <div class="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">Transactions</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Transaksi</h3>
               <div class="text-center text-gray-500 py-8">
-                No transactions found
+                Tidak ada transaksi
               </div>
             </div>
           </div>
@@ -1092,9 +1091,9 @@ class="bg-white border border-gray-200 rounded-lg p-6"
           <!-- Quotes Tab -->
           <div v-if="activeTab === 'quotes'" class="space-y-6">
             <div class="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">Quotes</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Penawaran</h3>
               <div class="text-center text-gray-500 py-8">
-                No quotes found
+                Tidak ada penawaran
               </div>
             </div>
           </div>
@@ -1103,32 +1102,32 @@ class="bg-white border border-gray-200 rounded-lg p-6"
           <!-- Edit Tab -->
           <div v-if="activeTab === 'edit'" class="space-y-6">
             <div class="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">Edit Customer</h3>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Ubah Data Pelanggan</h3>
               <div class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <UInput v-model="editForm.name" placeholder="Enter full name" />
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+                    <UInput v-model="editForm.name" placeholder="Masukkan nama lengkap" />
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                    <UInput v-model="editForm.phone" placeholder="Enter phone number" />
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nomor Telepon</label>
+                    <UInput v-model="editForm.phone" placeholder="Masukkan nomor telepon" />
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Company</label>
-                    <UInput v-model="editForm.company" placeholder="Enter company name" />
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Perusahaan</label>
+                    <UInput v-model="editForm.company" placeholder="Masukkan nama perusahaan" />
                   </div>
                   <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                    <UTextarea v-model="editForm.address" placeholder="Enter address" />
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Alamat</label>
+                    <UTextarea v-model="editForm.address" placeholder="Masukkan alamat" />
                   </div>
                 </div>
                 <div class="flex gap-2 pt-4">
                   <UButton @click="saveCustomer" color="blue">
-                    Save Changes
+                    Simpan Perubahan
                   </UButton>
                   <UButton @click="resetEditForm" color="gray" variant="outline">
-                    Reset
+                    Atur Ulang
                   </UButton>
                 </div>
               </div>
@@ -1140,7 +1139,7 @@ class="bg-white border border-gray-200 rounded-lg p-6"
 
       <!-- Footer -->
       <div class="flex justify-end p-6 border-t border-gray-200">
-        <UButton @click="$emit('close')" color="gray">Close</UButton>
+        <UButton @click="$emit('close')" color="gray">Tutup</UButton>
       </div>
     </div>
   </div>
@@ -1323,47 +1322,47 @@ const getDeviceProductInfo = (device: any) => {
 // NEW: Helper function to get primary technician name
 const getPrimaryTechnicianName = (installation: any) => {
   if (!installation.technicians || installation.technicians.length === 0) {
-    return 'N/A'
+    return 'Tidak tersedia'
   }
   
   const primaryTechnician = installation.technicians.find((tech: any) => tech.is_primary)
   if (primaryTechnician) {
-    return primaryTechnician.technician_name || 'Unknown'
+    return primaryTechnician.technician_name || 'Tidak diketahui'
   }
   
   // If no primary technician, return the first technician
-  return installation.technicians[0].technician_name || 'Unknown'
+  return installation.technicians[0].technician_name || 'Tidak diketahui'
 }
 
 // Tab configuration
 const tabs = computed(() => [
-  { id: 'summary', name: 'Summary', icon: 'bar-chart-3' },
-  { id: 'connection', name: 'Connection Status', icon: 'signal' },
-  { id: 'activity', name: 'Activity', icon: 'clock' },
-  { id: 'invoices', name: 'Invoices', icon: 'file-text' },
-  { id: 'quotes', name: 'Quotes', icon: 'copy' },
-  { id: 'tickets', name: 'Trouble Tickets', icon: 'alert-triangle' },
-  { id: 'orders', name: 'Orders', icon: 'shopping-bag' },
-  { id: 'files', name: 'Files', icon: 'file' },
-  { id: 'transactions', name: 'Transactions', icon: 'dollar-sign' },
-  { id: 'edit', name: 'Edit', icon: 'pencil' }
+  { id: 'summary', name: 'Ringkasan', icon: 'bar-chart-3' },
+  { id: 'connection', name: 'Status Koneksi', icon: 'signal' },
+  { id: 'activity', name: 'Aktivitas', icon: 'clock' },
+  { id: 'invoices', name: 'Tagihan', icon: 'file-text' },
+  { id: 'quotes', name: 'Penawaran', icon: 'copy' },
+  { id: 'tickets', name: 'Tiket Gangguan', icon: 'alert-triangle' },
+  { id: 'orders', name: 'Pesanan', icon: 'shopping-bag' },
+  { id: 'files', name: 'Berkas', icon: 'file' },
+  { id: 'transactions', name: 'Transaksi', icon: 'dollar-sign' },
+  { id: 'edit', name: 'Ubah Data', icon: 'pencil' }
 ])
 
 // Mobile tab configuration (shorter names for mobile)
 const mobileTabs = computed(() => [
-  { id: 'summary', name: 'Summary', icon: 'bar-chart-3' },
-  { id: 'connection', name: 'Connection', icon: 'signal' },
-  { id: 'activity', name: 'Activity', icon: 'clock' },
-  { id: 'invoices', name: 'Invoices', icon: 'file-text', count: customerInvoices.value.length },
-  { id: 'tickets', name: 'Tickets', icon: 'alert-triangle', count: customerTickets.value.length },
-  { id: 'edit', name: 'Edit', icon: 'pencil' }
+  { id: 'summary', name: 'Ringkasan', icon: 'bar-chart-3' },
+  { id: 'connection', name: 'Koneksi', icon: 'signal' },
+  { id: 'activity', name: 'Aktivitas', icon: 'clock' },
+  { id: 'invoices', name: 'Tagihan', icon: 'file-text', count: customerInvoices.value.length },
+  { id: 'tickets', name: 'Tiket', icon: 'alert-triangle', count: customerTickets.value.length },
+  { id: 'edit', name: 'Ubah Data', icon: 'pencil' }
 ])
 
 // Recent activity (mock data for now)
 const recentActivity = ref([
-  { id: 1, description: 'Customer installation completed', date: new Date() },
-  { id: 2, description: 'Trouble ticket resolved', date: new Date(Date.now() - 86400000) },
-  { id: 3, description: 'Invoice paid', date: new Date(Date.now() - 172800000) }
+  { id: 1, description: 'Instalasi pelanggan selesai', date: new Date() },
+  { id: 2, description: 'Tiket gangguan diselesaikan', date: new Date(Date.now() - 86400000) },
+  { id: 3, description: 'Tagihan telah dibayar', date: new Date(Date.now() - 172800000) }
 ])
 
   
@@ -1382,8 +1381,35 @@ const editForm = ref<{
 })
 
 const formatDate = (date: string | Date) => {
-  if (!date) return 'N/A'
-  return new Date(date).toLocaleDateString()
+  if (!date) return 'Tidak tersedia'
+  return new Date(date).toLocaleDateString('id-ID')
+}
+
+const getStatusLabel = (status?: string) => {
+  const labels: Record<string, string> = {
+    paid: 'Lunas',
+    pending: 'Menunggu',
+    unpaid: 'Belum dibayar',
+    overdue: 'Jatuh tempo',
+    active: 'Aktif',
+    inactive: 'Tidak aktif',
+    finished: 'Selesai',
+    ongoing: 'Sedang ditangani',
+    unfinished: 'Belum selesai',
+    completed: 'Selesai',
+    cancelled: 'Dibatalkan',
+  }
+  return status ? labels[status.toLowerCase()] || status : 'Tidak diketahui'
+}
+
+const getConnectionStatusLabel = (status: string) => {
+  const labels: Record<string, string> = {
+    up: 'Terhubung',
+    down: 'Terputus',
+    off: 'Mati',
+    unknown: 'Tidak diketahui',
+  }
+  return labels[status.toLowerCase()] || status
 }
 
 const getStatusColor = (status: string) => {
@@ -1969,8 +1995,8 @@ const isolateCustomer = async () => {
   const macAddresses = getCustomerMacAddresses()
   if (macAddresses.length === 0) {
     useCustomToast().add({
-      title: 'Error',
-      description: 'Customer network devices with MAC addresses are required for isolation',
+      title: 'Gagal',
+      description: 'Perangkat jaringan pelanggan harus memiliki alamat MAC untuk diisolasi',
       color: 'red'
     })
     return
@@ -1987,8 +2013,8 @@ const isolateCustomer = async () => {
     await Promise.all(promises)
 
     useCustomToast().add({
-      title: 'Success',
-      description: `Customer has been isolated - hotspot access restricted for ${macAddresses.length} device(s)`,
+      title: 'Berhasil',
+      description: `Pelanggan berhasil diisolasi - akses hotspot dibatasi untuk ${macAddresses.length} perangkat`,
       color: 'green'
     })
 
@@ -1998,8 +2024,8 @@ const isolateCustomer = async () => {
   } catch (error: any) {
     console.error('Failed to isolate customer:', error)
     useCustomToast().add({
-      title: 'Error',
-      description: error.message || 'Failed to isolate customer',
+      title: 'Gagal',
+      description: error.message || 'Gagal mengisolasi pelanggan',
       color: 'red'
     })
   } finally {
@@ -2011,8 +2037,8 @@ const restoreCustomer = async () => {
   const macAddresses = getCustomerMacAddresses()
   if (macAddresses.length === 0) {
     useCustomToast().add({
-      title: 'Error',
-      description: 'Customer network devices with MAC addresses are required for restoration',
+      title: 'Gagal',
+      description: 'Perangkat jaringan pelanggan harus memiliki alamat MAC untuk memulihkan akses',
       color: 'red'
     })
     return
@@ -2029,8 +2055,8 @@ const restoreCustomer = async () => {
     await Promise.all(promises)
 
     useCustomToast().add({
-      title: 'Success',
-      description: `Customer access has been restored - hotspot access enabled for ${macAddresses.length} device(s)`,
+      title: 'Berhasil',
+      description: `Akses pelanggan berhasil dipulihkan - akses hotspot diaktifkan untuk ${macAddresses.length} perangkat`,
       color: 'green'
     })
 
@@ -2040,8 +2066,8 @@ const restoreCustomer = async () => {
   } catch (error: any) {
     console.error('Failed to restore customer:', error)
     useCustomToast().add({
-      title: 'Error',
-      description: error.message || 'Failed to restore customer access',
+      title: 'Gagal',
+      description: error.message || 'Gagal memulihkan akses pelanggan',
       color: 'red'
     })
   } finally {
@@ -2055,15 +2081,15 @@ const copyMacAddress = async (macAddress: string) => {
   try {
     await navigator.clipboard.writeText(macAddress)
     useCustomToast().add({
-      title: 'Copied',
-      description: 'MAC address copied to clipboard',
+      title: 'Tersalin',
+      description: 'Alamat MAC disalin ke papan klip',
       color: 'green'
     })
   } catch (error) {
     console.error('Failed to copy MAC address:', error)
     useCustomToast().add({
-      title: 'Error',
-      description: 'Failed to copy MAC address',
+      title: 'Gagal',
+      description: 'Gagal menyalin alamat MAC',
       color: 'red'
     })
   }
@@ -2101,7 +2127,7 @@ const fetchCustomerDetail = async () => {
           .map((inst: any) => [inst.id || inst.installation_id, inst])
       )
     } else {
-      throw new Error('Failed to fetch customer details')
+      throw new Error('Gagal memuat detail pelanggan')
     }
 
     // Fetch installation reports after we have coord map from detail

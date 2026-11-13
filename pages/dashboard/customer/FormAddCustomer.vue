@@ -162,19 +162,19 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   if (props.isEdit) {
     try {
       const response = await customerAdminApi().editCustomer(props.data.id, state);
-      notification.success('Success', response.message);
+      notification.success('Berhasil', response.message);
       onSuccess();
     } catch (error: any) {
-      notification.error('Error', error.message || 'Failed to update customer');
+      notification.error('Gagal', error.message || 'Gagal memperbarui data pelanggan');
     }
   } else {
     try {
       // Create customer - network device will be created during installation
       const customerResponse = await customerAdminApi().createCustomer(state);
-      notification.success('Success', customerResponse.message);
+      notification.success('Berhasil', customerResponse.message);
       onSuccess();
     } catch (error: any) {
-      notification.error('Error', error.message || 'Failed to create customer');
+      notification.error('Gagal', error.message || 'Gagal menambahkan pelanggan');
     }
   }
 
@@ -211,11 +211,11 @@ async function reverseGeocode(lat: number, lng: number) {
     if (result.success && result.data) {
       state.address = result.data.display_name || "Address not found";
     } else {
-      state.address = "Address not found";
+      state.address = "Alamat tidak ditemukan";
     }
   } catch (error) {
     console.error("Reverse geocoding failed:", error);
-    state.address = "Error fetching address";
+    state.address = "Gagal mengambil alamat";
   }
 }
 
@@ -965,7 +965,7 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
       <!-- Modal Header -->
       <div class="flex items-center justify-between mb-6 p-4 bg-white rounded-xl shadow-sm border border-gray-200">
         <h1 class="text-xl font-bold text-black">
-          {{ props.isEdit ? "Edit" : "Add New" }} Customer
+          {{ props.isEdit ? "Ubah" : "Tambah" }} Pelanggan
         </h1>
         <UButton 
           @click="closeModal" 
@@ -987,7 +987,7 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
             <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
               <h3 class="text-xl font-bold text-black mb-3 flex items-center gap-2">
                 <LucideIcon name="user" :size="20" class="text-blue-600" />
-                Customer Information
+                Informasi Pelanggan
               </h3>
               
                <div class="space-y-4">
@@ -1010,7 +1010,7 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
                    <template #label>
                      <div class="flex items-center gap-2">
                        <LucideIcon name="map" :size="16" class="text-gray-600" />
-                       <span class="text-black font-medium">Area Code</span>
+                       <span class="text-black font-medium">Wilayah</span>
                      </div>
                    </template>
                    <USelectMenu 
@@ -1028,7 +1028,7 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
                  <div class="space-y-6 mt-6 pt-6 border-t border-gray-200">
                    <h4 class="text-xl font-bold text-black mb-3 flex items-center gap-2">
                      <LucideIcon name="tag" :size="20" class="text-purple-600" />
-                     Customer Type
+                     Jenis Pelanggan
                    </h4>
                    
                    <!-- Customer Type Cards -->
@@ -1040,8 +1040,8 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
                            <LucideIcon name="wifi" :size="28" class="text-white" />
                          </div>
                          <div class="flex-1 overflow-hidden">
-                           <h5 class="text-lg font-semibold text-black leading-tight whitespace-nowrap">Internet Customer</h5>
-                           <p class="text-sm text-gray-600 mt-1 break-words">Regular internet service users</p>
+                           <h5 class="text-lg font-semibold text-black leading-tight whitespace-nowrap">Pelanggan Internet</h5>
+                           <p class="text-sm text-gray-600 mt-1 break-words">Pengguna layanan internet</p>
                          </div>
                        </div>
                        <UFormGroup name="is_internet" class="mb-0">
@@ -1051,12 +1051,12 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
                          <USelectMenu 
                            v-model="state.is_internet" 
                            :options="[
-                             { label: 'Yes', value: 'yes' },
-                             { label: 'No', value: 'no' }
+                             { label: 'Ya', value: 'yes' },
+                               { label: 'Tidak', value: 'no' }
                            ]" 
                            value-attribute="value" 
                            option-attribute="label" 
-                           placeholder="Select status"
+                           placeholder="Pilih status"
                            class="w-full customer-select"
                          />
                        </UFormGroup>
@@ -1069,8 +1069,8 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
                            <LucideIcon name="handshake" :size="28" class="text-white" />
                          </div>
                          <div class="flex-1 overflow-hidden">
-                           <h5 class="text-lg font-semibold text-black leading-tight whitespace-nowrap">Collaborator</h5>
-                           <p class="text-sm text-gray-600 mt-1 break-words">Business partners & resellers</p>
+                           <h5 class="text-lg font-semibold text-black leading-tight whitespace-nowrap">Mitra</h5>
+                           <p class="text-sm text-gray-600 mt-1 break-words">Rekan bisnis dan penjual kembali</p>
                          </div>
                        </div>
                        <UFormGroup name="is_collaborator" class="mb-0">
@@ -1080,12 +1080,12 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
                          <USelectMenu 
                            v-model="state.is_collaborator" 
                            :options="[
-                             { label: 'Yes', value: 'yes' },
-                             { label: 'No', value: 'no' }
+                             { label: 'Ya', value: 'yes' },
+                             { label: 'Tidak', value: 'no' }
                            ]" 
                            value-attribute="value" 
                            option-attribute="label" 
-                           placeholder="Select status"
+                           placeholder="Pilih status"
                            class="w-full customer-select"
                          />
                        </UFormGroup>
@@ -1097,14 +1097,14 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
                      <div class="flex items-start gap-3">
                        <LucideIcon name="info" :size="24" class="text-blue-600 mt-1 flex-shrink-0" />
                        <div class="text-sm text-gray-800">
-                         <p class="font-semibold mb-3 text-base text-black">Customer Type Guidelines:</p>
+                         <p class="font-semibold mb-3 text-base text-black">Panduan Jenis Pelanggan:</p>
                          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                            <div class="space-y-2">
                              <div class="flex items-start gap-2">
                                <LucideIcon name="wifi" :size="16" class="text-blue-600 mt-0.5 flex-shrink-0" />
                                <div>
-                                 <p class="font-medium text-black">Internet Customer</p>
-                                 <p class="text-xs text-gray-600">Regular customers who use internet services</p>
+                                 <p class="font-medium text-black">Pelanggan Internet</p>
+                                 <p class="text-xs text-gray-600">Pelanggan yang menggunakan layanan internet</p>
                                </div>
                              </div>
                            </div>
@@ -1112,15 +1112,15 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
                              <div class="flex items-start gap-2">
                                <LucideIcon name="handshake" :size="16" class="text-purple-600 mt-0.5 flex-shrink-0" />
                                <div>
-                                 <p class="font-medium text-black">Collaborator</p>
-                                 <p class="text-xs text-gray-600">Business partners, resellers, or service providers</p>
+                                 <p class="font-medium text-black">Mitra</p>
+                                 <p class="text-xs text-gray-600">Rekan bisnis, penjual kembali, atau penyedia layanan</p>
                                </div>
                              </div>
                            </div>
                          </div>
                          <div class="mt-4 p-3 bg-white rounded-lg border border-gray-200">
                            <p class="text-xs font-medium text-gray-700">
-                             💡 <strong>Note:</strong> A customer can be both internet customer and collaborator
+                             💡 <strong>Catatan:</strong> Pelanggan dapat sekaligus menjadi pelanggan internet dan mitra
                            </p>
                          </div>
                        </div>
@@ -1137,7 +1137,7 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
                      </label>
                      <UInput 
                        v-model="state.alias" 
-                       placeholder="Optional nickname"
+                       placeholder="Nama panggilan (opsional)"
                        class="w-full customer-input"
                      />
                    </div>
@@ -1175,21 +1175,21 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
             <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
               <h3 class="text-xl font-bold text-black mb-3 flex items-center gap-2">
                 <LucideIcon name="building-2" :size="20" class="text-green-600" />
-                Business Information
+                Informasi Usaha
               </h3>
               
                <div class="space-y-4">
                  <div class="space-y-1">
                    <label class="block text-sm font-medium text-black mb-1 flex items-center gap-2">
                      <LucideIcon name="users" :size="16" class="text-gray-600" />
-                     <span>Sales Representative</span>
+                     <span>Perwakilan Penjualan</span>
                    </label>
                    <USelectMenu 
                      v-model="state.sales_representative_id" 
                      :options="salesRepresentatives" 
                      value-attribute="value"
                      option-attribute="label"
-                     placeholder="Pilih sales representative"
+                     placeholder="Pilih perwakilan penjualan"
                      class="w-full customer-select"
                      searchable
                    />
@@ -1198,14 +1198,14 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
                  <div class="space-y-1">
                    <label class="block text-sm font-medium text-black mb-1 flex items-center gap-2">
                      <LucideIcon name="building-office" :size="16" class="text-gray-600" />
-                     <span>Company</span>
+                     <span>Perusahaan</span>
                    </label>
                    <USelectMenu 
                      v-model="state.company_id" 
                      :options="companies" 
                      value-attribute="value"
                      option-attribute="label"
-                     placeholder="Pilih company (optional)"
+                     placeholder="Pilih perusahaan (opsional)"
                      class="w-full customer-select"
                      searchable
                    />
@@ -1219,7 +1219,7 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
             <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 h-fit">
               <h3 class="text-xl font-bold text-black mb-3 flex items-center gap-2">
                 <LucideIcon name="map-pin" :size="20" class="text-red-600" />
-                Location & Address
+                Lokasi & Alamat
               </h3>
               
               <!-- Map Container -->
@@ -1248,7 +1248,7 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
                       <template #leading>
                         <LucideIcon name="navigation" :size="16" />
                       </template>
-                      My Position
+                      Lokasi Saya
                     </UButton>
                   </LControl>
                 </LMap>
@@ -1259,12 +1259,12 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
                 <template #label>
                   <div class="flex items-center gap-2">
                     <LucideIcon name="map-pin" :size="16" class="text-gray-600" />
-                    <span class="text-black font-medium">Address</span>
+                    <span class="text-black font-medium">Alamat</span>
                   </div>
                 </template>
                 <UInput 
                   v-model="state.address" 
-                  placeholder="Address will be auto-filled from map"
+                  placeholder="Alamat akan terisi otomatis dari peta"
                   class="w-full customer-input"
                   readonly
                 />
@@ -1275,18 +1275,18 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
                 <template #label>
                   <div class="flex items-center gap-2">
                     <LucideIcon name="navigation" :size="16" class="text-gray-600" />
-                    <span class="text-black font-medium">Coordinates</span>
+                    <span class="text-black font-medium">Koordinat</span>
                   </div>
                 </template>
                 <div class="grid grid-cols-2 gap-4">
                   <div>
                     <label class="block text-sm font-medium text-black mb-1 flex items-center gap-2">
                       <LucideIcon name="map-pin" :size="14" class="text-gray-500" />
-                      <span>Latitude</span>
+                      <span>Garis Lintang</span>
                     </label>
                     <UInput 
                       v-model="state.latitude" 
-                      placeholder="Latitude" 
+                      placeholder="Garis lintang"
                       type="number" 
                       step="any"
                       class="w-full customer-input"
@@ -1295,11 +1295,11 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
                   <div>
                     <label class="block text-sm font-medium text-black mb-1 flex items-center gap-2">
                       <LucideIcon name="map-pin" :size="14" class="text-gray-500" />
-                      <span>Longitude</span>
+                      <span>Garis Bujur</span>
                     </label>
                     <UInput 
                       v-model="state.longitude" 
-                      placeholder="Longitude" 
+                      placeholder="Garis bujur"
                       type="number" 
                       step="any"
                       class="w-full customer-input"
@@ -1315,7 +1315,7 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
         <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
           <div class="text-sm text-gray-700 flex items-center gap-1">
             <LucideIcon name="info" :size="16" />
-            <span>All fields marked with * are required</span>
+            <span>Kolom bertanda * wajib diisi</span>
           </div>
           <div class="flex gap-3 w-full sm:w-auto">
             <UButton 
@@ -1329,7 +1329,7 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
               <template #leading>
                 <LucideIcon name="x" :size="16" />
               </template>
-              Cancel
+              Batal
             </UButton>
             <UButton 
               type="submit" 
@@ -1340,7 +1340,7 @@ body.customer-form-modal-open [id^="headlessui-menu"] [class*="bg-black"],
               <template #leading>
                 <LucideIcon name="check" :size="16" />
               </template>
-              Submit
+              Simpan
             </UButton>
           </div>
         </div>

@@ -28,12 +28,12 @@ const showConfirmDialog = ref(false);
 
 const schema = object({
   name: string()
-    .min(3, "Must be at least 3 characters")
-    .required("Required"),
+    .min(3, "Minimal 3 karakter")
+    .required("Wajib diisi"),
   role_permissions: array()
     .of(object())
-    .min(1, "At least one permission must be configured")
-    .required("Required"),
+    .min(1, "Minimal satu izin harus dikonfigurasi")
+    .required("Wajib diisi"),
 })
 
 // Define available features from database
@@ -91,7 +91,7 @@ if (props.id) {
     }
   } catch (err) {
     console.error("Error fetching role:", err);
-    error.value = "Failed to load role data";
+    error.value = "Gagal memuat data peran";
   }
 } else {
   // Initialize for new role
@@ -176,7 +176,7 @@ async function onSubmit(event: SubmitEvent) {
     }
     onSuccess();
   } catch (err: any) {
-    error.value = err.message || "An error occurred while saving the role";
+    error.value = err.message || "Terjadi kesalahan saat menyimpan peran";
     console.error("Error creating/editing role:", err);
   } finally {
     isLoading.value = false;
@@ -188,7 +188,7 @@ async function onSubmit(event: SubmitEvent) {
   <UModal>
     <div class="p-6">
       <h2 class="text-xl font-bold mb-4">
-        {{ props.isEdit ? "Edit" : "Add New" }} Role
+        {{ props.isEdit ? "Ubah" : "Tambah" }} Peran
       </h2>
       
       <!-- Error Display -->
@@ -198,20 +198,20 @@ async function onSubmit(event: SubmitEvent) {
       
       <UForm :schema="schema" :state="state" @submit="onSubmit" class="space-y-4">
         <!-- Role Name -->
-        <UFormGroup label="Role Name" name="name">
-          <UInput v-model="state.name" placeholder="Enter role name" />
+        <UFormGroup label="Nama Peran" name="name">
+          <UInput v-model="state.name" placeholder="Masukkan nama peran" />
         </UFormGroup>
         
         <!-- Features -->
-        <UFormGroup label="Features" name="features">
+        <UFormGroup label="Fitur" name="features">
           <div class="space-y-3">
             <!-- Select All -->
             <div class="flex items-center justify-between border-b pb-2">
-              <span class="font-medium">All Features</span>
+              <span class="font-medium">Semua Fitur</span>
               <UCheckbox
                 :model-value="areAllFeaturesChecked()"
                 @update:model-value="toggleAllFeatures($event)"
-                label="Select All"
+                label="Pilih Semua"
               />
             </div>
             
@@ -231,7 +231,7 @@ async function onSubmit(event: SubmitEvent) {
         <!-- Submit Button -->
         <div class="flex justify-end space-x-2 pt-4">
           <UButton @click="showConfirmation" :loading="isLoading" :disabled="isLoading">
-            {{ isLoading ? 'Saving...' : 'Save' }}
+            {{ isLoading ? 'Menyimpan...' : 'Simpan' }}
           </UButton>
         </div>
       </UForm>
@@ -240,11 +240,11 @@ async function onSubmit(event: SubmitEvent) {
     <!-- Simple Confirmation -->
     <UModal v-model="showConfirmDialog">
       <div class="p-6">
-        <h3 class="text-lg font-semibold mb-4">Confirm</h3>
-        <p class="mb-4">Save this role?</p>
+        <h3 class="text-lg font-semibold mb-4">Konfirmasi</h3>
+        <p class="mb-4">Simpan peran ini?</p>
         <div class="flex justify-end space-x-2">
-          <UButton @click="showConfirmDialog = false" variant="outline">Cancel</UButton>
-          <UButton @click="confirmSubmit" color="primary">Yes</UButton>
+          <UButton @click="showConfirmDialog = false" variant="outline">Batal</UButton>
+          <UButton @click="confirmSubmit" color="primary">Ya</UButton>
         </div>
       </div>
     </UModal>

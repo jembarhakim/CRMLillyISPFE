@@ -3020,11 +3020,11 @@ onMounted(async () => {
           <LucideIcon name="file-plus" :size="40" class="text-white" />
         </div>
         <h1 class="text-2xl font-bold text-black mb-2">
-          Add Installation Report
+          Tambah Laporan Instalasi
         </h1>
         <p class="text-base text-gray-600 max-w-2xl mx-auto">
-          Document completed new installation with team assignment and optional
-          MikroTik auto-provisioning
+          Catat instalasi baru yang telah selesai, penugasan tim, serta
+          konfigurasi otomatis MikroTik (opsional)
         </p>
 
         <!-- Load Test Data Button for Debugging -->
@@ -3035,7 +3035,7 @@ onMounted(async () => {
             class="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
           >
             <LucideIcon name="refresh-cw" :size="20" />
-            Load Test Data (Debug)
+            Muat Data Uji (Debug)
           </button>
         </div>
       </div>
@@ -3053,7 +3053,7 @@ onMounted(async () => {
             class="text-lg font-semibold text-black mb-3 flex items-center gap-2"
           >
             <LucideIcon name="info" :size="20" class="text-blue-600" />
-            Customer Information
+            Informasi Pelanggan
           </h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <UFormGroup name="customer_id">
@@ -3061,16 +3061,16 @@ onMounted(async () => {
                 <div class="flex items-center gap-2">
                   <LucideIcon name="user" :size="16" class="text-gray-600" />
                   <span class="text-black font-medium"
-                    >Customer <span class="text-red-500">*</span></span
+                    >Pelanggan <span class="text-red-500">*</span></span
                   >
                 </div>
               </template>
               <USelectMenu
                 v-model="state.customer_id"
                 :options="state.customers"
-                placeholder="Select customer"
+                placeholder="Pilih pelanggan"
                 searchable
-                searchable-placeholder="Search by customer name"
+                searchable-placeholder="Cari berdasarkan nama pelanggan"
                 option-attribute="name"
                 value-attribute="id"
                 :search-attributes="['name', 'phone']"
@@ -3090,15 +3090,15 @@ onMounted(async () => {
                 </div>
               </template>
               <UInput
-                v-model="state.status"
+                :model-value="state.status === 'completed' ? 'Selesai' : state.status"
                 readonly
                 disabled
                 class="bg-gray-100 customer-input"
               />
               <p class="text-xs text-gray-600 mt-1">
                 <LucideIcon name="info" :size="14" class="inline mr-1" />
-                Installation reports are always "completed" since technicians
-                document after finishing the work
+                Laporan instalasi selalu berstatus "selesai" karena teknisi
+                mengisi laporan setelah pekerjaan rampung
               </p>
             </UFormGroup>
 
@@ -3106,7 +3106,7 @@ onMounted(async () => {
               <template #label>
                 <div class="flex items-center gap-2">
                   <LucideIcon name="tag" :size="16" class="text-gray-600" />
-                  <span class="text-black font-medium">Installation Type</span>
+                  <span class="text-black font-medium">Jenis Instalasi</span>
                 </div>
               </template>
               <UInput
@@ -3117,8 +3117,8 @@ onMounted(async () => {
               />
               <p class="text-xs text-gray-600 mt-1">
                 <LucideIcon name="info" :size="14" class="inline mr-1" />
-                This form is for new installations only. Use separate forms for
-                maintenance (from trouble tickets) or upgrades
+                Formulir ini hanya untuk instalasi baru. Gunakan formulir terpisah untuk
+                pemeliharaan (dari tiket gangguan) atau peningkatan layanan
               </p>
             </UFormGroup>
 
@@ -3130,7 +3130,7 @@ onMounted(async () => {
                     :size="16"
                     class="text-gray-600"
                   />
-                  <span>On Air Date</span>
+                  <span>Tanggal Aktif</span>
                 </div>
               </template>
               <UInput
@@ -3148,7 +3148,7 @@ onMounted(async () => {
                     :size="16"
                     class="text-gray-600"
                   />
-                  <span>Trial End Date</span>
+                  <span>Tanggal Akhir Uji Coba</span>
                 </div>
               </template>
               <UInput
@@ -3166,7 +3166,7 @@ onMounted(async () => {
                     :size="16"
                     class="text-gray-600"
                   />
-                  <span>Service Ready Date</span>
+                  <span>Tanggal Layanan Siap</span>
                 </div>
               </template>
               <UInput
@@ -3184,7 +3184,7 @@ onMounted(async () => {
                     :size="16"
                     class="text-gray-600"
                   />
-                  <span>Installation Completed At</span>
+                  <span>Waktu Instalasi Selesai</span>
                 </div>
               </template>
               <UInput
@@ -3221,13 +3221,13 @@ onMounted(async () => {
                       :size="18"
                       class="text-blue-600"
                     />
-                    <span>Terminal Installation</span>
+                    <span>Instalasi Terminal</span>
                   </div>
                   <p
                     class="text-xs text-gray-600 dark:text-gray-400 mt-1 font-normal"
                   >
-                    Check this if this installation is for a terminal (HTB) that
-                    will serve multiple customers
+                    Centang jika instalasi ini merupakan terminal (HTB) yang
+                    melayani beberapa pelanggan
                   </p>
                 </label>
               </div>
@@ -3241,15 +3241,15 @@ onMounted(async () => {
               <template #label>
                 <div class="flex items-center gap-2">
                   <LucideIcon name="server" :size="16" class="text-gray-600" />
-                  <span>Select Terminal Installation</span>
+                  <span>Pilih Instalasi Terminal</span>
                 </div>
               </template>
               <USelectMenu
                 v-model="state.terminal_customer_installation_id"
                 :options="state.terminalInstallations"
-                placeholder="Select terminal installation (HTB)"
+                placeholder="Pilih instalasi terminal (HTB)"
                 searchable
-                searchable-placeholder="Search by customer name or installation ID"
+                searchable-placeholder="Cari berdasarkan nama pelanggan atau ID instalasi"
                 option-attribute="display"
                 value-attribute="id"
                 :search-attributes="['customer_name', 'installation_id']"
@@ -3308,12 +3308,12 @@ onMounted(async () => {
                   :size="16"
                   class="text-gray-600"
                 />
-                <span>Notes</span>
+                <span>Catatan</span>
               </div>
             </template>
             <UTextarea
               v-model="state.notes"
-              placeholder="Additional notes about the installation"
+              placeholder="Catatan tambahan terkait instalasi"
               :rows="3"
               class="w-full customer-input"
             />
@@ -3324,7 +3324,7 @@ onMounted(async () => {
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
           <h3 class="text-xl font-bold text-black mb-3 flex items-center gap-2">
             <LucideIcon name="map-pin" :size="20" class="text-red-600" />
-            Location & Address
+            Lokasi & Alamat
           </h3>
 
           <div class="mb-6">
@@ -3346,7 +3346,7 @@ onMounted(async () => {
                   <template #leading>
                     <LucideIcon name="navigation" :size="16" />
                   </template>
-                  My Position
+                  Lokasi Saya
                 </UButton>
               </LControl>
             </LMap>
@@ -3356,12 +3356,12 @@ onMounted(async () => {
             <template #label>
               <div class="flex items-center gap-2">
                 <LucideIcon name="map-pin" :size="16" class="text-gray-600" />
-                <span class="text-black font-medium">Address</span>
+                <span class="text-black font-medium">Alamat</span>
               </div>
             </template>
             <UInput
               v-model="state.address"
-              placeholder="Address will be auto-filled from map"
+              placeholder="Alamat akan terisi otomatis dari peta"
               class="w-full customer-input"
               readonly
             />
@@ -3371,19 +3371,19 @@ onMounted(async () => {
             <template #label>
               <div class="flex items-center gap-2">
                 <LucideIcon name="navigation" :size="16" class="text-gray-600" />
-                <span class="text-black font-medium">Coordinates</span>
+                <span class="text-black font-medium">Koordinat</span>
               </div>
             </template>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-black mb-1 flex items-center gap-2">
                   <LucideIcon name="map-pin" :size="14" class="text-gray-500" />
-                  <span>Latitude</span>
+                  <span>Garis Lintang</span>
                 </label>
                 <UInput
                   :model-value="state.latitude ?? 0"
                   @update:model-value="onLatInput"
-                  placeholder="Latitude"
+                  placeholder="Garis lintang"
                   type="number"
                   step="any"
                   class="w-full customer-input"
@@ -3392,12 +3392,12 @@ onMounted(async () => {
               <div>
                 <label class="block text-sm font-medium text-black mb-1 flex items-center gap-2">
                   <LucideIcon name="map-pin" :size="14" class="text-gray-500" />
-                  <span>Longitude</span>
+                  <span>Garis Bujur</span>
                 </label>
                 <UInput
                   :model-value="state.longitude ?? 0"
                   @update:model-value="onLngInput"
-                  placeholder="Longitude"
+                  placeholder="Garis bujur"
                   type="number"
                   step="any"
                   class="w-full customer-input"
@@ -3421,11 +3421,11 @@ onMounted(async () => {
                   :size="20"
                   class="text-blue-600"
                 />
-                Installation Details
+                Detail Instalasi
                 <span class="text-red-500">*</span>
               </h3>
               <p class="text-sm text-gray-600 mt-1">
-                Assign technicians with their roles and responsibilities
+                Tetapkan teknisi beserta peran dan tanggung jawabnya
               </p>
             </div>
             <UButton
@@ -3437,7 +3437,7 @@ onMounted(async () => {
               <template #leading>
                 <LucideIcon name="plus-circle" :size="20" />
               </template>
-              Add Technician
+              Tambah Teknisi
             </UButton>
           </div>
 
@@ -3450,9 +3450,9 @@ onMounted(async () => {
               :size="64"
               class="text-gray-400 mx-auto mb-3"
             />
-            <p class="text-gray-600 font-medium">No technicians assigned yet</p>
+            <p class="text-gray-600 font-medium">Belum ada teknisi yang ditugaskan</p>
             <p class="text-sm text-gray-500 mt-1">
-              Click "Add Technician" to assign your installation team
+              Klik "Tambah Teknisi" untuk menetapkan tim instalasi
             </p>
           </div>
 
@@ -3471,7 +3471,7 @@ onMounted(async () => {
                     {{ index + 1 }}
                   </div>
                   <span class="text-base font-semibold text-gray-700"
-                    >Technician {{ index + 1 }}</span
+                    >Teknisi {{ index + 1 }}</span
                   >
                 </div>
                 <div
@@ -3479,7 +3479,7 @@ onMounted(async () => {
                   class="flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold"
                 >
                   <LucideIcon name="star" :size="16" />
-                  PRIMARY
+                  UTAMA
                 </div>
               </div>
 
@@ -3488,14 +3488,14 @@ onMounted(async () => {
                 <!-- Technician Selection -->
                 <div class="w-full">
                   <label class="block text-sm font-semibold text-black mb-2">
-                    Select Technician <span class="text-red-500">*</span>
+                    Pilih Teknisi <span class="text-red-500">*</span>
                   </label>
                   <USelectMenu
                     v-model="tech.technician_id"
                     :options="getAvailableTechniciansForIndex(index)"
-                    placeholder="Choose a technician"
+                    placeholder="Pilih teknisi"
                     searchable
-                    searchable-placeholder="Search by name"
+                    searchable-placeholder="Cari berdasarkan nama"
                     option-attribute="name"
                     value-attribute="id"
                     :search-attributes="['name']"
@@ -3506,8 +3506,8 @@ onMounted(async () => {
                     v-if="getAvailableTechniciansForIndex(index).length === 0"
                     class="text-xs text-orange-600 mt-1"
                   >
-                    ⚠️ All available technicians have been assigned. Remove
-                    other assignments to see more options.
+                    ⚠️ Semua teknisi yang tersedia sudah ditugaskan. Hapus
+                    penugasan lain untuk melihat pilihan tambahan.
                   </p>
                 </div>
 
@@ -3516,7 +3516,7 @@ onMounted(async () => {
                   <!-- Role Selection -->
                   <div class="w-full">
                     <label class="block text-sm font-semibold text-black mb-2">
-                      Role <span class="text-red-500">*</span>
+                      Peran <span class="text-red-500">*</span>
                     </label>
                     <USelectMenu
                       v-model="tech.role"
@@ -3524,17 +3524,17 @@ onMounted(async () => {
                         {
                           value: 'senior',
                           label: '👨‍🔧 Senior',
-                          description: 'Lead technician',
+                          description: 'Teknisi utama',
                         },
                         {
                           value: 'junior',
                           label: '👷 Junior',
-                          description: 'Supporting role',
+                          description: 'Teknisi pendamping',
                         },
                         {
                           value: 'helper',
-                          label: '🔧 Helper',
-                          description: 'Assistant',
+                          label: '🔧 Pembantu',
+                          description: 'Asisten teknisi',
                         },
                       ]"
                       value-attribute="value"
@@ -3547,7 +3547,7 @@ onMounted(async () => {
                   <!-- Action Buttons -->
                   <div class="w-full">
                     <label class="block text-sm font-semibold text-black mb-2"
-                      >Actions</label
+                      >Tindakan</label
                     >
                     <div class="flex gap-2 w-full">
                       <UButton
@@ -3560,9 +3560,9 @@ onMounted(async () => {
                       >
                         <LucideIcon name="star" :size="16" />
                         <span class="hidden xs:inline">{{
-                          tech.is_primary ? "Primary" : "Set Primary"
+                          tech.is_primary ? "Utama" : "Jadikan Utama"
                         }}</span>
-                        <span class="xs:hidden">Primary</span>
+                        <span class="xs:hidden">Utama</span>
                       </UButton>
                       <UButton
                         @click="removeTechnician(index)"
@@ -3581,14 +3581,14 @@ onMounted(async () => {
                 <!-- Notes Section -->
                 <div class="w-full">
                   <label class="block text-sm font-semibold text-black mb-2">
-                    Notes
+                    Catatan
                     <span class="text-gray-500 text-xs font-normal"
-                      >(optional)</span
+                      >(opsional)</span
                     >
                   </label>
                   <UInput
                     v-model="tech.notes"
-                    placeholder="e.g., Responsible for fiber splicing, familiar with this area, etc."
+                    placeholder="Contoh: bertanggung jawab atas penyambungan serat optik, memahami wilayah ini, dan sebagainya"
                     size="lg"
                     class="w-full customer-input"
                   />
@@ -3605,15 +3605,15 @@ onMounted(async () => {
                 class="text-blue-600 flex-shrink-0 mt-0.5"
               />
               <div class="text-sm text-black">
-                <p class="font-semibold mb-1">Team Requirements:</p>
+                <p class="font-semibold mb-1">Persyaratan Tim:</p>
                 <ul class="list-disc list-inside space-y-1 text-gray-700">
                   <li>
-                    At least one <strong>Senior</strong> technician is required
+                    Minimal satu teknisi <strong>Senior</strong> wajib ditugaskan
                   </li>
-                  <li>Primary technician will be the main point of contact</li>
+                  <li>Teknisi utama menjadi narahubung utama</li>
                   <li>
-                    You can assign multiple technicians for complex
-                    installations
+                    Anda dapat menugaskan beberapa teknisi untuk instalasi
+                    yang kompleks
                   </li>
                 </ul>
               </div>
@@ -3627,22 +3627,22 @@ onMounted(async () => {
             class="text-lg font-semibold text-black mb-3 flex items-center gap-2"
           >
             <LucideIcon name="cpu-chip" :size="20" class="text-blue-600" />
-            Network Device Information
+            Informasi Perangkat Jaringan
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <UFormGroup name="assets_id">
               <template #label>
                 <div class="flex items-center gap-2">
                   <LucideIcon name="package" :size="16" class="text-gray-600" />
-                  <span>Asset <span class="text-red-500">*</span></span>
+                  <span>Aset <span class="text-red-500">*</span></span>
                 </div>
               </template>
               <USelectMenu
                 v-model="state.assets_id"
                 :options="state.assets"
-                placeholder="Select asset"
+                placeholder="Pilih aset"
                 searchable
-                searchable-placeholder="Search by brand/model"
+                searchable-placeholder="Cari berdasarkan merek/model"
                 option-attribute="display"
                 value-attribute="id"
                 :search-attributes="['brand', 'type', 'model']"
@@ -3656,16 +3656,16 @@ onMounted(async () => {
                 <div class="flex items-center gap-2">
                   <LucideIcon name="wifi" :size="16" class="text-gray-600" />
                   <span
-                    >Package/Product <span class="text-red-500">*</span></span
+                    >Paket/Produk <span class="text-red-500">*</span></span
                   >
                 </div>
               </template>
               <USelectMenu
                 v-model="state.product_id"
                 :options="state.products"
-                placeholder="Select internet package"
+                placeholder="Pilih paket internet"
                 searchable
-                searchable-placeholder="Search by package name or speed"
+                searchable-placeholder="Cari berdasarkan nama paket atau kecepatan"
                 option-attribute="display"
                 value-attribute="id"
                 :search-attributes="['name', 'description']"
@@ -3673,8 +3673,8 @@ onMounted(async () => {
               />
               <p class="text-xs text-gray-600 mt-1">
                 <LucideIcon name="info" :size="14" class="inline mr-1" />
-                Package selection will automatically set the bandwidth limit for
-                MikroTik provisioning
+                Pemilihan paket akan mengatur batas bandwidth secara otomatis untuk
+                konfigurasi MikroTik
               </p>
             </UFormGroup>
 
@@ -3682,12 +3682,12 @@ onMounted(async () => {
               <template #label>
                 <div class="flex items-center gap-2">
                   <LucideIcon name="network" :size="16" class="text-gray-600" />
-                  <span>Switch ID</span>
+                  <span>ID Switch</span>
                 </div>
               </template>
               <UInput
                 v-model="state.switch_id"
-                placeholder="Enter switch ID"
+                placeholder="Masukkan ID switch"
                 class="w-full customer-input"
               />
             </UFormGroup>
@@ -3700,12 +3700,12 @@ onMounted(async () => {
                     :size="16"
                     class="text-gray-600"
                   />
-                  <span>Port Number</span>
+                  <span>Nomor Port</span>
                 </div>
               </template>
               <UInput
                 v-model="state.port_number"
-                placeholder="Enter port number"
+                placeholder="Masukkan nomor port"
                 class="w-full customer-input"
               />
             </UFormGroup>

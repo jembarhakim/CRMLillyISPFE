@@ -26,7 +26,7 @@ const notification = useNotification();
 // Set page title
 
 useHead({
-  title: "Invoice Management - CRM System",
+  title: "Manajemen Tagihan - CRM",
 });
 
 let customer = ref<any[]>([]);
@@ -79,7 +79,7 @@ async function fetchAccounts() {
     }));
   } catch (error) {
     console.error("Error fetching accounts:", error);
-    notification.error("Error", "Failed to load accounts");
+    notification.error("Gagal", "Gagal memuat akun");
   } finally {
     loadingAccounts.value = false;
   }
@@ -104,31 +104,31 @@ const columns = [
   {
     key: "number",
 
-    label: "Number",
+    label: "Nomor",
   },
 
   {
     key: "customer_display",
 
-    label: "Customer",
+    label: "Pelanggan",
   },
 
   {
     key: "amount",
 
-    label: "Amount",
+    label: "Jumlah",
   },
 
   {
     key: "total_paid",
 
-    label: "Total Paid",
+    label: "Total Dibayar",
   },
 
   {
     key: "amount_due",
 
-    label: "Amount Due",
+    label: "Sisa Tagihan",
   },
 
   {
@@ -140,19 +140,19 @@ const columns = [
   {
     key: "invoice_date",
 
-    label: "Invoice Date",
+    label: "Tanggal Tagihan",
   },
 
   {
     key: "due_date",
 
-    label: "Due Date",
+    label: "Tanggal Jatuh Tempo",
   },
 
   {
     key: "actions",
 
-    label: "Actions",
+    label: "Tindakan",
   },
 ];
 
@@ -160,6 +160,17 @@ const columns = [
 const availableColumns = computed(() => {
   return columns.filter((col) => col.key !== "actions");
 });
+
+function getInvoiceStatusLabel(status?: string) {
+  const labels: Record<string, string> = {
+    paid: "Lunas",
+    unpaid: "Belum dibayar",
+    pending: "Menunggu",
+    overdue: "Jatuh tempo",
+    partial: "Dibayar sebagian",
+  };
+  return status ? labels[status.toLowerCase()] || status : "Tidak diketahui";
+}
 
 // Initialize with all columns selected
 selectedColumns.value = new Set(availableColumns.value.map((col) => col.key));
@@ -548,7 +559,7 @@ async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
       // Continue anyway - we'll still open the PDF
 
       notification.warning(
-        "Warning",
+        "Peringatan",
         "Gagal menandai PDF sebagai dilihat, tetapi PDF tetap akan dibuka.",
         3000
       );
@@ -600,7 +611,7 @@ async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
 
     if (isAutoOpen) {
       notification.success(
-        "Status Diubah ke PAID",
+        "Status Diubah menjadi Lunas",
         "PDF invoice dibuka otomatis. PDF ini tidak dapat dibuka lagi untuk mencegah duplikasi pembayaran.",
         5000
       );
@@ -622,12 +633,12 @@ async function handlePdfView(invoiceId: string, isAutoOpen: boolean = false) {
       );
 
       notification.error(
-        "Error",
+        "Gagal",
         "Server error: PDF tidak dapat dibuka. Silakan coba lagi.",
         5000
       );
     } else {
-      notification.error("Error", error.message || "Gagal membuka PDF", 5000);
+      notification.error("Gagal", error.message || "Gagal membuka PDF", 5000);
     }
   }
 }
@@ -1006,13 +1017,13 @@ const items = (row: any) => {
   const menuItems = [
     [
       {
-        label: "Send Whatsapp",
+        label: "Kirim WhatsApp",
 
         click: () => sendWhatsapp(row.customer.phone, row.id),
       },
 
       {
-        label: isPdfViewed(row.id) ? "PDF Sudah Dilihat" : "Download PDF",
+        label: isPdfViewed(row.id) ? "PDF Sudah Dilihat" : "Unduh PDF",
 
         disabled: isPdfViewed(row.id),
 
@@ -1029,7 +1040,7 @@ const items = (row: any) => {
         const available = !cid || !activeRecurringCustomerIds.value.has(cid);
 
         return {
-          label: available ? "Start Recurring" : "Already Recurring",
+          label: available ? "Mulai Penagihan Berulang" : "Sudah Berulang",
 
           disabled: !available,
 
@@ -1038,7 +1049,7 @@ const items = (row: any) => {
       })(),
 
       {
-        label: "Edit",
+        label: "Ubah",
 
         click: () => OpenModalAddCustomer(true, row),
       },
@@ -1046,7 +1057,7 @@ const items = (row: any) => {
 
     [
       {
-        label: "Delete",
+        label: "Hapus",
 
         click: () => deleteData(row.id),
       },
@@ -1146,8 +1157,8 @@ function openColumnSelector() {
 async function proceedWithPrint() {
   if (selectedColumns.value.size === 0) {
     notification.warning(
-      "No Columns Selected",
-      "Please select at least one column to print."
+      "Kolom Belum Dipilih",
+      "Pilih minimal satu kolom untuk dicetak."
     );
     return;
   }
@@ -1425,8 +1436,8 @@ async function printAllUnpaidInvoices() {
 
     if (unpaidPendingInvoices.length === 0) {
       notification.warning(
-        "No Invoices",
-        "No unpaid or pending invoices found in the current filter."
+        "Tidak Ada Tagihan",
+        "Tidak ditemukan tagihan belum dibayar atau menunggu pada saringan ini."
       );
       return;
     }
@@ -1465,20 +1476,20 @@ async function printAllUnpaidInvoices() {
     const toast = useCustomToast();
 
     toast.add({
-      title: "Report Generated",
-      description: `Generated report for ${
+      title: "Laporan Dibuat",
+      description: `Laporan dibuat untuk ${
         unpaidPendingInvoices.length
       } invoices (${
-        statusFilter.value || "all statuses"
-      }). Use the controls in the new window to print or save as PDF.`,
+        statusFilter.value || "semua status"
+      }). Gunakan kontrol di jendela baru untuk mencetak atau menyimpan sebagai PDF.`,
       color: "green",
     });
   } catch (error: any) {
     console.error("Print error:", error);
 
     notification.error(
-      "Print Failed",
-      error?.message || "Failed to generate report"
+      "Gagal Mencetak",
+      error?.message || "Gagal membuat laporan"
     );
   } finally {
     printing.value = false;
@@ -1489,21 +1500,21 @@ async function printAllUnpaidInvoices() {
 <template>
   <AdminPageHeader
     class="mb-5"
-    title="Invoice"
+    title="Tagihan"
     description="Kelola tagihan pelanggan, status pembayaran, dan laporan invoice."
     icon="file-text"
     eyebrow="Penagihan"
   />
   <div class="flex justify-between items-center mb-4">
     <div class="flex gap-2 mb-4">
-      <UButton label="Add Invoice" @click="OpenModalAddCustomer(false, null)" />
+      <UButton label="Tambah Tagihan" @click="OpenModalAddCustomer(false, null)" />
 
       <UButton
         color="blue"
         variant="soft"
         :loading="isLoading"
         @click="getData"
-        title="Refresh Data"
+        title="Muat Ulang Data"
       >
         <template #leading>
           <LucideIcon name="refresh-cw" :size="16" />
@@ -1512,7 +1523,7 @@ async function printAllUnpaidInvoices() {
     </div>
 
     <UButton
-      label="Print Filtered Report"
+      label="Cetak Laporan Terfilter"
       color="orange"
       @click="openColumnSelector"
       :loading="printing"
@@ -1533,44 +1544,44 @@ async function printAllUnpaidInvoices() {
 
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1"
-          >Filter Customer</label
+          >Saring Pelanggan</label
         >
 
-        <UInput v-model="q" placeholder="Search customer..." />
+        <UInput v-model="q" placeholder="Cari pelanggan..." />
       </div>
 
       <!-- Date Filter -->
 
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1"
-          >Filter by Date</label
+          >Saring berdasarkan Tanggal</label
         >
 
-        <UInput v-model="dateFilter" type="date" placeholder="Select date..." />
+        <UInput v-model="dateFilter" type="date" placeholder="Pilih tanggal..." />
       </div>
 
       <!-- Status Filter -->
 
       <div>
         <label class="block text sm font-medium text-gray-700 mb-1"
-          >Filter by Status</label
+          >Saring berdasarkan Status</label
         >
 
         <USelectMenu
           v-model="statusFilter"
           :options="[
-            { label: 'All Status', value: '' },
+            { label: 'Semua Status', value: '' },
 
-            { label: 'Paid', value: 'paid' },
+            { label: 'Lunas', value: 'paid' },
 
-            { label: 'Unpaid', value: 'unpaid' },
+            { label: 'Belum Dibayar', value: 'unpaid' },
 
-            { label: 'Pending', value: 'pending' },
-            { label: 'Unpaid + Pending', value: 'unpaid_pending' },
+            { label: 'Menunggu', value: 'pending' },
+            { label: 'Belum Dibayar + Menunggu', value: 'unpaid_pending' },
           ]"
           option-attribute="label"
           value-attribute="value"
-          placeholder="Select status..."
+          placeholder="Pilih status..."
         />
       </div>
 
@@ -1583,7 +1594,7 @@ async function printAllUnpaidInvoices() {
           variant="solid"
           class="w-full filter-button"
         >
-          Clear Filters
+          Hapus Saringan
         </UButton>
       </div>
     </div>
@@ -1635,7 +1646,7 @@ async function printAllUnpaidInvoices() {
           <span
             class="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-blue-100 text-blue-700"
           >
-            Router update pending
+            Pembaruan router menunggu
           </span>
         </template>
 
@@ -1646,7 +1657,7 @@ async function printAllUnpaidInvoices() {
             <span
               class="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-red-100 text-red-700"
             >
-              Router update failed
+              Pembaruan router gagal
             </span>
 
             <UButton
@@ -1654,7 +1665,7 @@ async function printAllUnpaidInvoices() {
               color="red"
               variant="outline"
               @click.stop="retryRouterJobs(row.id)"
-              >Retry</UButton
+              >Coba Lagi</UButton
             >
           </div>
         </template>
@@ -1663,7 +1674,7 @@ async function printAllUnpaidInvoices() {
           <span
             class="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded-full bg-emerald-100 text-emerald-700"
           >
-            Router updated
+            Router diperbarui
           </span>
         </template>
       </div>
@@ -1675,9 +1686,9 @@ async function printAllUnpaidInvoices() {
           <button
             @click="openPartialPaymentModal(row)"
             class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition-colors cursor-pointer w-full justify-center"
-            title="Click to make partial payment"
+            title="Klik untuk melakukan pembayaran sebagian"
           >
-            {{ row.status }}
+            {{ getInvoiceStatusLabel(row.status) }}
 
             <svg
               class="w-3 h-3 ml-1"
@@ -1717,7 +1728,7 @@ async function printAllUnpaidInvoices() {
                 <p
                   class="text-xs font-medium text-yellow-800 dark:text-yellow-200 mb-1"
                 >
-                  Pending Reason:
+                  Alasan Menunggu:
                 </p>
 
                 <p
@@ -1741,7 +1752,7 @@ async function printAllUnpaidInvoices() {
               class="w-full"
               @click="updateStatus(row.id, 'paid', row.status)"
             >
-              Mark Paid
+              Tandai Lunas
             </UButton>
 
             <UButton
@@ -1751,7 +1762,7 @@ async function printAllUnpaidInvoices() {
               class="w-full"
               @click="updateStatus(row.id, 'unpaid', row.status)"
             >
-              Mark Unpaid
+              Tandai Belum Dibayar
             </UButton>
           </div>
         </div>
@@ -1770,7 +1781,7 @@ async function printAllUnpaidInvoices() {
               ></path>
             </svg>
 
-            {{ row.status }}
+            {{ getInvoiceStatusLabel(row.status) }}
           </span>
         </div>
 
@@ -1787,7 +1798,7 @@ async function printAllUnpaidInvoices() {
               class="w-full"
               @click="updateStatus(row.id, 'paid', row.status)"
             >
-              Mark Paid
+              Tandai Lunas
             </UButton>
 
             <UButton
@@ -1797,7 +1808,7 @@ async function printAllUnpaidInvoices() {
               class="w-full"
               @click="updateStatus(row.id, 'pending', row.status)"
             >
-              Mark Pending
+              Tandai Menunggu
             </UButton>
           </div>
         </div>
@@ -1905,17 +1916,17 @@ async function printAllUnpaidInvoices() {
 
             <div class="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span class="text-gray-500 dark:text-gray-400">Customer:</span>
+                <span class="text-gray-500 dark:text-gray-400">Pelanggan:</span>
 
                 <p class="font-medium text-gray-900 dark:text-white">
                   {{
-                    statusConfirmationData.invoiceData?.customer?.name || "N/A"
+                    statusConfirmationData.invoiceData?.customer?.name || "Tidak tersedia"
                   }}
                 </p>
               </div>
 
               <div>
-                <span class="text-gray-500 dark:text-gray-400">Amount:</span>
+                <span class="text-gray-500 dark:text-gray-400">Jumlah:</span>
 
                 <p class="font-medium text-gray-900 dark:text-white">
                   {{
@@ -1944,7 +1955,7 @@ async function printAllUnpaidInvoices() {
                       statusConfirmationData.currentStatus === 'paid',
                   }"
                 >
-                  {{ statusConfirmationData.currentStatus?.toUpperCase() }}
+                  {{ getInvoiceStatusLabel(statusConfirmationData.currentStatus) }}
                 </span>
               </div>
 
@@ -1956,7 +1967,7 @@ async function printAllUnpaidInvoices() {
                 <span
                   class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800"
                 >
-                  {{ statusConfirmationData.newStatus?.toUpperCase() }}
+                  {{ getInvoiceStatusLabel(statusConfirmationData.newStatus) }}
                 </span>
               </div>
             </div>
@@ -2003,25 +2014,25 @@ async function printAllUnpaidInvoices() {
           <!-- Transaction Details -->
           <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
             <h4 class="font-medium text-blue-900 dark:text-blue-100 mb-3">
-              Transaction Details
+              Detail Transaksi
             </h4>
 
             <div class="space-y-4">
-              <UFormGroup label="Account" name="account_id" required>
+              <UFormGroup label="Akun" name="account_id" required>
                 <USelectMenu
                   v-model="statusConfirmationData.account_id"
                   :options="accounts"
                   value-attribute="value"
                   option-attribute="label"
-                  placeholder="Select account..."
+                  placeholder="Pilih akun..."
                   :loading="loadingAccounts"
                 />
                 <template #help>
-                  <span class="text-xs text-gray-500">Select the account for this transaction</span>
+                  <span class="text-xs text-gray-500">Pilih akun untuk transaksi ini</span>
                 </template>
               </UFormGroup>
 
-              <UFormGroup label="Payment Method" name="method" required>
+              <UFormGroup label="Metode Pembayaran" name="method" required>
                 <USelectMenu
                   v-model="statusConfirmationData.method"
                   :options="[
@@ -2030,10 +2041,10 @@ async function printAllUnpaidInvoices() {
                   ]"
                   value-attribute="value"
                   option-attribute="label"
-                  placeholder="Select payment method..."
+                  placeholder="Pilih metode pembayaran..."
                 />
                 <template #help>
-                  <span class="text-xs text-gray-500">Select the payment method</span>
+                  <span class="text-xs text-gray-500">Pilih metode pembayaran</span>
                 </template>
               </UFormGroup>
             </div>
@@ -2044,14 +2055,14 @@ async function printAllUnpaidInvoices() {
           <div class="text-center">
             <p class="text-lg font-medium text-gray-900 dark:text-white">
               Apakah Anda yakin ingin mengubah status pembayaran menjadi
-              <span class="text-green-600 font-bold">PAID</span>?
+              <span class="text-green-600 font-bold">LUNAS</span>?
             </p>
 
             <p class="text-sm text-blue-600 dark:text-blue-400 mt-2">
               💡 PDF invoice akan terbuka otomatis setelah konfirmasi
             </p>
             <p class="text-xs text-gray-500 mt-1">
-              A transaction record will be created automatically
+              Catatan transaksi akan dibuat secara otomatis
             </p>
           </div>
         </div>
@@ -2099,34 +2110,34 @@ async function printAllUnpaidInvoices() {
       }"
     >
       <template #header>
-        <h3 class="text-lg font-semibold">Start Recurring Invoice</h3>
+        <h3 class="text-lg font-semibold">Mulai Tagihan Berulang</h3>
       </template>
 
       <div class="space-y-4 p-2">
-        <UFormGroup label="Invoice Date" required>
+        <UFormGroup label="Tanggal Tagihan" required>
           <UInput v-model="recurringForm.invoice_date" type="date" />
         </UFormGroup>
 
-        <UFormGroup label="Due Date" required>
+        <UFormGroup label="Tanggal Jatuh Tempo" required>
           <UInput v-model="recurringForm.due_date" type="date" />
         </UFormGroup>
 
-        <UFormGroup label="Frequency" required>
+        <UFormGroup label="Frekuensi" required>
           <USelectMenu
             v-model="recurringForm.frequency"
             :options="[
-              { label: 'Monthly', value: 'monthly' },
+              { label: 'Bulanan', value: 'monthly' },
 
-              { label: 'Quarterly', value: 'quarterly' },
+              { label: 'Triwulanan', value: 'quarterly' },
 
-              { label: 'Yearly', value: 'yearly' },
+              { label: 'Tahunan', value: 'yearly' },
             ]"
             option-attribute="label"
             value-attribute="value"
           />
         </UFormGroup>
 
-        <UFormGroup label="Description">
+        <UFormGroup label="Deskripsi">
           <UTextarea v-model="recurringForm.description" :rows="3" />
         </UFormGroup>
       </div>
@@ -2134,11 +2145,11 @@ async function printAllUnpaidInvoices() {
       <template #footer>
         <div class="flex justify-end gap-2">
           <UButton color="gray" variant="soft" @click="closeStartRecurringModal"
-            >Cancel</UButton
+            >Batal</UButton
           >
 
           <UButton color="green" @click="createRecurringFromInvoice"
-            >Start</UButton
+            >Mulai</UButton
           >
         </div>
       </template>
@@ -2155,7 +2166,7 @@ async function printAllUnpaidInvoices() {
     >
       <template #header>
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold">Select Columns to Print</h3>
+          <h3 class="text-lg font-semibold">Pilih Kolom untuk Dicetak</h3>
           <UButton
             :icon="
               allColumnsSelected ? 'i-heroicons-x-mark' : 'i-heroicons-check'
@@ -2164,9 +2175,9 @@ async function printAllUnpaidInvoices() {
             variant="ghost"
             size="sm"
             @click="toggleSelectAllColumns"
-            :title="allColumnsSelected ? 'Unselect All' : 'Select All'"
+            :title="allColumnsSelected ? 'Batalkan Pilihan' : 'Pilih Semua'"
           >
-            {{ allColumnsSelected ? "Unselect All" : "Select All" }}
+            {{ allColumnsSelected ? "Batalkan Pilihan" : "Pilih Semua" }}
           </UButton>
         </div>
       </template>

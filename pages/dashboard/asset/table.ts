@@ -3,15 +3,15 @@ import { assetAdminApi } from "@/api/admin/asset";
 export const tableColumns = [
   {
     key: "number",
-    label: "Number",
+    label: "Nomor",
   },
   {
     key: "type",
-    label: "Type",
+    label: "Jenis",
   },
   {
     key: "brand",
-    label: "Brand",
+    label: "Merek",
   },
   {
     key: "model",
@@ -19,23 +19,23 @@ export const tableColumns = [
   },
   {
     key: "serial_number",
-    label: "Serial Number",
+    label: "Nomor Seri",
   },
   {
     key: "date",
-    label: "Date",
+    label: "Tanggal",
   },
   {
     key: "description",
-    label: "Description",
+    label: "Deskripsi",
   },
   {
     key: "asset_items",
-    label: "Asset Items",
+    label: "Item Aset",
   },
   {
     key: "actions",
-    label: "Action",
+    label: "Tindakan",
   },
 ];
 

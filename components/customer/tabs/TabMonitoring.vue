@@ -131,7 +131,7 @@ onUnmounted(() => {
             <div class="flex flex-wrap items-center gap-3">
                 <div
                     class="bg-white rounded-full px-4 py-2 shadow-sm border border-white flex items-center gap-2 text-xs">
-                    <span class="text-gray-500">Timeframe:</span>
+                    <span class="text-gray-500">Periode:</span>
                     <select v-model="selectedTimeRange" @change="fetchConnectionHistory"
                         class="font-bold text-gray-900 bg-transparent focus:outline-none cursor-pointer">
                         <option value="1h">1 Jam</option>
@@ -147,17 +147,17 @@ onUnmounted(() => {
                     <span class="text-gray-500">Status:</span>
                     <select v-model="statusFilter"
                         class="font-bold text-gray-900 bg-transparent focus:outline-none cursor-pointer">
-                        <option value="">All</option>
-                        <option value="up">Up</option>
-                        <option value="down">Down</option>
-                        <option value="off">Off</option>
+                        <option value="">Semua</option>
+                        <option value="up">Terhubung</option>
+                        <option value="down">Terputus</option>
+                        <option value="off">Mati</option>
                     </select>
                 </div>
 
                 <button @click="refreshData"
                     class="bg-white rounded-full px-4 py-2 shadow-sm border border-white flex items-center gap-2 text-xs font-bold text-gray-800 hover:text-[#A93133]">
                     <span class="w-2 h-2 rounded-full" :class="wsConnected ? 'bg-green-500' : 'bg-[#A93133]'"></span>
-                    <span>{{ wsConnected ? 'Live Stream' : 'Refresh' }}</span>
+                    <span>{{ wsConnected ? 'Pembaruan langsung' : 'Muat ulang' }}</span>
                 </button>
             </div>
 
@@ -165,19 +165,19 @@ onUnmounted(() => {
             <div class="grid grid-cols-3 gap-3">
                 <div
                     class="bg-white rounded-full px-5 py-2 shadow-sm border border-white flex items-center justify-between gap-3">
-                    <span class="text-xs text-gray-500 font-medium">Up</span>
+                    <span class="text-xs text-gray-500 font-medium">Terhubung</span>
                     <span class="text-base sm:text-lg font-extrabold text-green-600">{{ connectionSummary.totalUp
                     }}</span>
                 </div>
                 <div
                     class="bg-white rounded-full px-5 py-2 shadow-sm border border-white flex items-center justify-between gap-3">
-                    <span class="text-xs text-gray-500 font-medium">Down</span>
+                    <span class="text-xs text-gray-500 font-medium">Terputus</span>
                     <span class="text-base sm:text-lg font-extrabold text-[#A93133]">{{ connectionSummary.totalDown
                     }}</span>
                 </div>
                 <div
                     class="bg-white rounded-full px-5 py-2 shadow-sm border border-white flex items-center justify-between gap-3">
-                    <span class="text-xs text-gray-500 font-medium">Off</span>
+                    <span class="text-xs text-gray-500 font-medium">Mati</span>
                     <span class="text-base sm:text-lg font-extrabold text-gray-600">{{ connectionSummary.totalOff
                     }}</span>
                 </div>
@@ -189,7 +189,7 @@ onUnmounted(() => {
             <!-- Kiri: Bar Chart Koneksi (Persis Design 1 dengan Warna Merah Lilly) -->
             <div class="bg-white rounded-3xl p-6 shadow-[0_10px_25px_rgb(169,49,51,0.05)] border border-white">
                 <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-xs sm:text-sm font-bold text-gray-700">Overall Connection Stability</h3>
+                    <h3 class="text-xs sm:text-sm font-bold text-gray-700">Stabilitas Koneksi Keseluruhan</h3>
                     <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#F9EBEB] text-[#A93133]">{{
                         selectedTimeRange.toUpperCase() }}</span>
                 </div>
@@ -224,7 +224,7 @@ onUnmounted(() => {
                     </div>
                     <span
                         class="text-xs font-extrabold text-green-400 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20">
-                        99.9% UPTIME
+                        99,9% waktu aktif
                     </span>
                 </div>
 
@@ -232,8 +232,8 @@ onUnmounted(() => {
                 <div class="my-4 space-y-3">
                     <div>
                         <div class="flex justify-between text-[11px] text-gray-300 mb-1.5">
-                            <span>Core Fiber Backbone</span>
-                            <span class="text-green-400 font-bold">Operational</span>
+                            <span>Jaringan Inti Serat Optik</span>
+                            <span class="text-green-400 font-bold">Beroperasi</span>
                         </div>
                         <div class="grid grid-cols-20 gap-1">
                             <div v-for="i in 20" :key="i" class="h-3 rounded-xs bg-green-500"></div>
@@ -242,8 +242,8 @@ onUnmounted(() => {
 
                     <div>
                         <div class="flex justify-between text-[11px] text-gray-300 mb-1.5">
-                            <span>Gateway & DNS Resolver</span>
-                            <span class="text-green-400 font-bold">Operational</span>
+                            <span>Gerbang Jaringan & DNS</span>
+                            <span class="text-green-400 font-bold">Beroperasi</span>
                         </div>
                         <div class="grid grid-cols-20 gap-1">
                             <div v-for="i in 20" :key="i" class="h-3 rounded-xs"
@@ -253,7 +253,7 @@ onUnmounted(() => {
                 </div>
 
                 <div class="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-gray-400">
-                    <span>Pantauan Kuma Monitoring Real-time</span>
+                    <span>Pemantauan Kuma waktu nyata</span>
                     <span class="text-white font-semibold">Ping: 4ms</span>
                 </div>
             </div>
@@ -291,7 +291,7 @@ onUnmounted(() => {
                         </div>
                         <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase"
                             :class="cust.status === 'up' ? 'bg-green-100 text-green-700' : cust.status === 'down' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'">
-                            {{ cust.status }}
+                            {{ cust.status === 'up' ? 'Terhubung' : cust.status === 'down' ? 'Terputus' : 'Mati' }}
                         </span>
                     </div>
                 </div>
@@ -326,7 +326,7 @@ onUnmounted(() => {
                             <span class="font-bold text-gray-900">FTTH Optical</span>
                         </li>
                         <li class="flex items-center justify-between">
-                            <span class="text-gray-500">Packet Loss</span>
+                            <span class="text-gray-500">Kehilangan Paket</span>
                             <span class="font-bold text-green-600">0.0%</span>
                         </li>
                         <li class="flex items-center justify-between">
@@ -338,7 +338,7 @@ onUnmounted(() => {
                             <span class="font-bold text-green-600">Optimal</span>
                         </li>
                         <li class="flex items-center justify-between">
-                            <span class="text-gray-500">Auto-Check</span>
+                            <span class="text-gray-500">Pemeriksaan Otomatis</span>
                             <span class="font-bold text-[#A93133]">30 Detik</span>
                         </li>
                     </ul>

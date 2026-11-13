@@ -8,7 +8,7 @@ import ViewTransaction from "./view-transaction/ViewTransaction.vue";
 import { accountAdminApi } from "@/api/admin/account";
 // Set page title
 useHead({
-    title: "Transaction Management - CRM System",
+    title: "Manajemen Transaksi - CRM",
 });
 
 const activeTab = ref(0);
@@ -82,11 +82,11 @@ watch(
 
 const tab_items = [
     {
-        label: "Deposit",
+        label: "Setoran",
         value: "deposit",
     },
     {
-        label: "Expense",
+        label: "Pengeluaran",
         value: "expense",
     },
     // {
@@ -94,11 +94,11 @@ const tab_items = [
     //   value: "tranfer",
     // },
     {
-        label: "View Transaction",
+        label: "Lihat Transaksi",
         value: "view-transaction",
     },
     {
-        label: "Balance Sheet",
+        label: "Neraca",
         value: "balance-sheet",
     },
 ];
@@ -107,7 +107,7 @@ const tab_items = [
 <template>
     <div class="space-y-5">
     <AdminPageHeader
-        title="Transaction"
+        title="Transaksi"
         description="Pantau transaksi keuangan, deposit, pengeluaran, dan neraca."
         icon="wallet"
         eyebrow="Keuangan"

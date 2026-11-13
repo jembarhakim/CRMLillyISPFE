@@ -205,7 +205,7 @@ function openDetail(ticket: CustomerTicket) {
             <div class="flex flex-wrap items-center gap-3">
                 <div
                     class="bg-white rounded-full px-4 py-2 shadow-sm border border-white flex items-center gap-2 text-xs">
-                    <span class="text-gray-500">Filter Status:</span>
+                    <span class="text-gray-500">Saring Status:</span>
                     <select v-model="stageFilter"
                         class="font-bold text-gray-900 bg-transparent focus:outline-none cursor-pointer">
                         <option value="all">Semua Tiket</option>
@@ -216,7 +216,7 @@ function openDetail(ticket: CustomerTicket) {
 
                 <div
                     class="bg-white rounded-full px-4 py-2 shadow-sm border border-white flex items-center gap-2 text-xs">
-                    <span class="text-gray-500">Auto-Refresh:</span>
+                    <span class="text-gray-500">Muat Ulang Otomatis:</span>
                     <span class="font-bold text-[#A93133]">20 Detik</span>
                 </div>
 
@@ -231,7 +231,7 @@ function openDetail(ticket: CustomerTicket) {
             <div class="grid grid-cols-3 gap-3">
                 <div
                     class="bg-white rounded-full px-5 py-2 shadow-sm border border-white flex items-center justify-between gap-3">
-                    <span class="text-xs text-gray-500 font-medium">Total</span>
+                    <span class="text-xs text-gray-500 font-medium">Jumlah</span>
                     <span class="text-base sm:text-lg font-extrabold text-gray-900">{{ summary.total }}</span>
                 </div>
                 <div
@@ -322,7 +322,7 @@ function openDetail(ticket: CustomerTicket) {
                 class="bg-white rounded-3xl p-6 shadow-[0_10px_25px_rgb(169,49,51,0.05)] border border-white flex flex-col justify-between">
                 <div>
                     <h3 class="text-xs sm:text-sm font-bold text-gray-700 pb-3 border-b border-gray-100">
-                        Alur Penanganan Gangguan Terpadu (Real-time)
+                        Alur Penanganan Gangguan Terpadu (Waktu Nyata)
                     </h3>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-4">
@@ -382,7 +382,7 @@ function openDetail(ticket: CustomerTicket) {
                                 </p>
                             </div>
                             <UBadge size="xs" :color="ticketStageStyle(ticket.stage).color"
-                                :label="ticket.stage_label || ticketStageStyle(ticket.stage).label" />
+                                :label="ticketStageStyle(ticket.stage).label" />
                         </div>
 
                         <div class="flex items-center gap-1.5 mt-3">
@@ -399,7 +399,7 @@ function openDetail(ticket: CustomerTicket) {
                     <h3 class="text-xs font-bold text-gray-700 pb-2.5 border-b border-gray-100">Cek Mandiri</h3>
                     <ul class="space-y-3 mt-3 text-xs">
                         <li class="flex items-center justify-between">
-                            <span class="text-gray-500">Restart Modem</span>
+                            <span class="text-gray-500">Mulai ulang modem</span>
                             <span class="font-bold text-gray-900">5 Menit</span>
                         </li>
                         <li class="flex items-center justify-between">
@@ -441,7 +441,7 @@ function openDetail(ticket: CustomerTicket) {
                             <span class="font-bold text-green-600">Gratis</span>
                         </li>
                         <li class="flex items-center justify-between">
-                            <span class="text-gray-500">Update WA</span>
+                            <span class="text-gray-500">Pembaruan WhatsApp</span>
                             <span class="font-bold text-gray-900">Otomatis</span>
                         </li>
                     </ul>

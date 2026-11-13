@@ -9,7 +9,7 @@
         <!-- Header -->
         <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-medium text-gray-900">Partial Payment</h3>
+            <h3 class="text-lg font-medium text-gray-900">Pembayaran Sebagian</h3>
             <button
               @click="$emit('close')"
               class="text-gray-400 hover:text-gray-600 transition-colors"
@@ -25,22 +25,22 @@
         <div class="px-6 py-4">
           <!-- Invoice Information -->
           <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-            <h4 class="font-medium text-gray-900 mb-2">Invoice Details</h4>
+            <h4 class="font-medium text-gray-900 mb-2">Detail Tagihan</h4>
             <div class="space-y-1 text-sm text-gray-600">
               <div class="flex justify-between">
-                <span>Invoice ID:</span>
+                <span>ID Tagihan:</span>
                 <span class="font-mono">{{ invoice.id }}</span>
               </div>
               <div class="flex justify-between">
-                <span>Total Amount:</span>
+                <span>Total Tagihan:</span>
                 <span class="font-medium">{{ formatIDR(invoice.amount) }}</span>
               </div>
               <div class="flex justify-between">
-                <span>Total Paid:</span>
+                <span>Total Dibayar:</span>
                 <span class="font-medium">{{ formatIDR(totalPaid) }}</span>
               </div>
               <div class="flex justify-between">
-                <span>Outstanding:</span>
+                <span>Sisa Tagihan:</span>
                 <span class="font-medium text-red-600">{{ formatIDR(outstandingAmount) }}</span>
               </div>
             </div>
@@ -50,7 +50,7 @@
           <form @submit.prevent="submitPayment">
             <div class="mb-4">
               <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">
-                Payment Amount
+                Jumlah Pembayaran
               </label>
               <div class="relative">
                 <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">Rp</span>
@@ -61,29 +61,29 @@
                   min="1"
                   :max="outstandingAmount"
                   class="block w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-                  placeholder="Enter payment amount"
+                  placeholder="Masukkan jumlah pembayaran"
                   required
                 />
               </div>
               <p class="mt-1 text-xs text-gray-500">
-                Maximum: {{ formatIDR(outstandingAmount) }}
+                Maksimum: {{ formatIDR(outstandingAmount) }}
               </p>
             </div>
 
             <!-- Optional reason -->
             <div class="mb-4">
               <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">
-                Reason <span class="text-red-500">*</span>
+                Alasan <span class="text-red-500">*</span>
               </label>
               <textarea
                 id="reason"
                 v-model="reason"
                 rows="3"
                 class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
-                placeholder="Add a note or customer reason"
+                placeholder="Tambahkan catatan atau alasan pelanggan"
                 required
               />
-              <p class="mt-1 text-xs text-gray-500 text-red-500">This note will be sent with the payment. <span v-if="!reason">(Required)</span></p>
+              <p class="mt-1 text-xs text-gray-500 text-red-500">Catatan ini akan dikirim bersama pembayaran. <span v-if="!reason">(Wajib diisi)</span></p>
             </div>
 
             <!-- Error Message -->
@@ -98,15 +98,15 @@
                 @click="$emit('close')"
                 class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
               >
-                Cancel
+                Batal
               </button>
               <button
                 type="submit"
                 :disabled="loading || !paymentAmount || paymentAmount > outstandingAmount"
                 class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span v-if="loading">Processing...</span>
-                <span v-else>Submit Payment</span>
+                <span v-if="loading">Memproses...</span>
+                <span v-else>Kirim Pembayaran</span>
               </button>
             </div>
           </form>
@@ -153,17 +153,17 @@ const outstandingAmount = computed(() => {
 
 const submitPayment = async () => {
   if (!paymentAmount.value || paymentAmount.value <= 0) {
-    errorMessage.value = 'Please enter a valid payment amount'
+    errorMessage.value = 'Masukkan jumlah pembayaran yang valid'
     return
   }
 
   if (paymentAmount.value > outstandingAmount.value) {
-    errorMessage.value = 'Payment amount cannot exceed outstanding balance'
+    errorMessage.value = 'Jumlah pembayaran tidak boleh melebihi sisa tagihan'
     return
   }
 
   if (!reason.value || reason.value.trim() === '') {
-    errorMessage.value = 'Reason is required for partial payments'
+    errorMessage.value = 'Alasan wajib diisi untuk pembayaran sebagian'
     return
   }
 
@@ -178,7 +178,7 @@ const submitPayment = async () => {
     emit('success')
     emit('close')
   } catch (error: any) {
-    errorMessage.value = error.message || 'Failed to process payment'
+    errorMessage.value = error.message || 'Gagal memproses pembayaran'
   } finally {
     loading.value = false
   }

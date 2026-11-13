@@ -6,22 +6,22 @@ import Internet from "./internet/Internet.vue";
 
 // Set page title
 useHead({
-  title: 'Reports - CRM System'
+  title: 'Laporan - CRM'
 })
 
 const customerInstallationRef = ref();
 
 const tab_items = [
   {
-    label: "Report Cash Flow",
+    label: "Laporan Arus Kas",
     value: "report-cash-flow",
   },
   {
-    label: "Report Internet",
+    label: "Laporan Internet",
     value: "report-internet",
   },
   {
-    label: "Report Customer Installation",
+    label: "Laporan Instalasi Pelanggan",
     value: "report-customer",
   }
 ];
@@ -44,7 +44,7 @@ onUnmounted(() => {
 <template>
   <div class="space-y-5">
     <AdminPageHeader
-      title="Report"
+      title="Laporan"
       description="Tinjau laporan arus kas, layanan internet, dan instalasi pelanggan."
       icon="bar-chart"
       eyebrow="Analitik & Laporan"

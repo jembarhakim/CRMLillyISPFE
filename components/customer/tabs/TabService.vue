@@ -116,6 +116,13 @@ function requestSummaryText(request: ServiceRequestItem) {
     return `${request.current_product_name || '-'} → ${request.requested_product_name || '-'}`
 }
 
+function requestTypeLabel(type: string) {
+    if (type === 'upgrade') return 'Peningkatan'
+    if (type === 'downgrade') return 'Penurunan'
+    if (type === 'relocation') return 'Relokasi'
+    return 'Lainnya'
+}
+
 onMounted(loadPage)
 </script>
 
@@ -154,8 +161,8 @@ onMounted(loadPage)
 
                 <div class="mt-4 flex gap-2">
                     <button v-for="opt in [
-                        { id: 'upgrade', label: 'Upgrade' },
-                        { id: 'downgrade', label: 'Downgrade' },
+                        { id: 'upgrade', label: 'Peningkatan' },
+                        { id: 'downgrade', label: 'Penurunan' },
                         { id: 'relocation', label: 'Relokasi' },
                     ]" :key="opt.id" type="button" @click="selectRequestType(opt.id as RequestType)"
                         class="px-4 py-2 rounded-full text-xs font-bold transition-all"
@@ -177,7 +184,7 @@ onMounted(loadPage)
                             </select>
                         </label>
                         <p v-if="planOptions.length === 0" class="text-[11px] text-gray-400">
-                            Tidak ada paket {{ requestType === 'upgrade' ? 'upgrade' : 'downgrade' }} yang tersedia.
+                            Tidak ada paket {{ requestType === 'upgrade' ? 'peningkatan' : 'penurunan' }} yang tersedia.
                         </p>
                     </template>
 
@@ -228,9 +235,9 @@ onMounted(loadPage)
                     <li v-for="request in page.requests" :key="request.id"
                         class="p-3.5 rounded-2xl bg-[#F9EBEB]/40 border border-[#A93133]/10">
                         <div class="flex items-center justify-between gap-2">
-                            <p class="text-xs font-bold text-gray-900">{{ request.type_label }}</p>
+                            <p class="text-xs font-bold text-gray-900">{{ requestTypeLabel(request.request_type) }}</p>
                             <UBadge size="xs" :color="serviceRequestStatusStyle(request.status).color"
-                                :label="request.status_label" />
+                                :label="serviceRequestStatusStyle(request.status).label" />
                         </div>
                         <p class="mt-1.5 text-[11px] text-gray-600">{{ requestSummaryText(request) }}</p>
                         <p class="mt-1 text-[10px] text-gray-400">Diajukan {{ formatDateTimeID(request.created_at) }}</p>

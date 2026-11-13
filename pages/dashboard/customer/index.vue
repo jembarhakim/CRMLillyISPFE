@@ -1025,14 +1025,14 @@ const relatedCustomers = computed(() => {
     <div v-if="isLoading" class="flex items-center justify-center py-12">
       <div class="text-center">
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mb-4"></div>
-        <p class="text-gray-600">Loading customers...</p>
+        <p class="text-gray-600">Memuat data pelanggan...</p>
       </div>
     </div>
 
     <!-- Content (hidden while loading) -->
     <div v-else class="space-y-6">
     <AdminPageHeader
-      title="Customer"
+      title="Pelanggan"
       description="Kelola data pelanggan, layanan, dan status koneksi."
       icon="users"
       eyebrow="Manajemen Pelanggan"
@@ -1042,14 +1042,14 @@ const relatedCustomers = computed(() => {
         <BroadcastFeature
           :related-customers="relatedCustomers"
           class="w-full sm:w-auto"
-          :title="`Send payment reminder to ${relatedCustomers.length} customer(s) with unpaid/pending invoices`"
+          :title="`Kirim pengingat pembayaran kepada ${relatedCustomers.length} pelanggan dengan tagihan belum dibayar atau menunggu`"
         >
           <template #leading>
             <LucideIcon name="send" :size="16" />
           </template>
         </BroadcastFeature>
         <UButton
-          label="Add Customer"
+          label="Tambah Pelanggan"
           @click="OpenModalAddCustomer(false, null)"
           class="w-full sm:w-auto"
         >
@@ -1058,7 +1058,7 @@ const relatedCustomers = computed(() => {
           </template>
         </UButton>
         <UButton
-          label="Add Installation Report"
+          label="Tambah Laporan Instalasi"
           @click="OpenModalReportInstallation(false, null)"
           class="w-full sm:w-auto"
           color="primary"
@@ -1068,7 +1068,7 @@ const relatedCustomers = computed(() => {
           </template>
         </UButton>
         <UButton
-          label="Refresh Device Status"
+          label="Muat Ulang Status Perangkat"
           @click="refreshDeviceStatuses"
           class="w-full sm:w-auto"
           color="blue"
@@ -1080,7 +1080,7 @@ const relatedCustomers = computed(() => {
         </UButton>
         <UButton
           v-if="statusFilter !== 'all' || invoiceFilter !== 'all'"
-          label="Clear Filters"
+          label="Hapus Filter"
           @click="
             statusFilter = 'all';
             invoiceFilter = 'all';
@@ -1102,7 +1102,7 @@ const relatedCustomers = computed(() => {
       <div class="flex-1 search-input-wrapper">
         <UInput
           v-model="q"
-          placeholder="Search customers by name, email, phone..."
+          placeholder="Cari nama, email, atau nomor telepon pelanggan..."
           class="w-full text-white placeholder:text-white/70"
         >
           <template #leading>
@@ -1126,7 +1126,7 @@ const relatedCustomers = computed(() => {
           class="flex items-center gap-2"
         >
           <div class="w-3 h-3 bg-gray-400 rounded-full"></div>
-          <span>All</span>
+          <span>Semua</span>
           <span class="ml-1 text-xs opacity-75">({{ customer.length }})</span>
         </UButton>
         <UButton
@@ -1139,7 +1139,7 @@ const relatedCustomers = computed(() => {
           class="flex items-center gap-2"
         >
           <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-          <span>Down</span>
+          <span>Terputus</span>
           <span class="ml-1 text-xs opacity-75"
             >({{ getStatusCount("down") }})</span
           >
@@ -1154,7 +1154,7 @@ const relatedCustomers = computed(() => {
           class="flex items-center gap-2"
         >
           <div class="w-3 h-3 bg-orange-500 rounded-full"></div>
-          <span>Mixed</span>
+          <span>Bervariasi</span>
           <span class="ml-1 text-xs opacity-75"
             >({{ getStatusCount("mixed") }})</span
           >
@@ -1169,7 +1169,7 @@ const relatedCustomers = computed(() => {
           class="flex items-center gap-2"
         >
           <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-          <span>Up</span>
+          <span>Terhubung</span>
           <span class="ml-1 text-xs opacity-75"
             >({{ getStatusCount("up") }})</span
           >
@@ -1184,7 +1184,7 @@ const relatedCustomers = computed(() => {
           class="flex items-center gap-2"
         >
           <div class="w-3 h-3 bg-gray-500 rounded-full"></div>
-          <span>Unknown</span>
+          <span>Tidak diketahui</span>
           <span class="ml-1 text-xs opacity-75"
             >({{ getStatusCount("unknown") }})</span
           >
@@ -1199,7 +1199,7 @@ const relatedCustomers = computed(() => {
           class="flex items-center gap-2"
         >
           <div class="w-3 h-3 bg-gray-300 rounded-full"></div>
-          <span>No Devices</span>
+          <span>Tanpa Perangkat</span>
           <span class="ml-1 text-xs opacity-75"
             >({{ getStatusCount("off") }})</span
           >
@@ -1220,7 +1220,7 @@ const relatedCustomers = computed(() => {
           class="flex items-center gap-2"
         >
           <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-          <span>Unpaid/Pending</span>
+          <span>Belum Dibayar/Menunggu</span>
           <span class="ml-1 text-xs opacity-75"
             >({{
               customer.filter(
@@ -1276,7 +1276,7 @@ const relatedCustomers = computed(() => {
               <span
                 v-if="customer.hasUnpaidInvoice"
                 class="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-800 whitespace-nowrap"
-                :title="`${customer.unpaidInvoiceCount || 0} unpaid invoice(s)`"
+                :title="`${customer.unpaidInvoiceCount || 0} tagihan belum dibayar`"
               >
                 <LucideIcon name="alert-circle" class="w-3 h-3 mr-1.5" />
                 {{ customer.unpaidInvoiceCount || 0 }} Unpaid
@@ -1411,7 +1411,7 @@ const relatedCustomers = computed(() => {
                   {{ customer.product_count }} different packages
                 </div>
               </div>
-              <div v-else class="text-gray-500 italic">No package assigned</div>
+              <div v-else class="text-gray-500 italic">Belum ada paket yang ditetapkan</div>
             </div>
           </div>
         </div>
@@ -1459,36 +1459,36 @@ const relatedCustomers = computed(() => {
                 <span v-if="!row.hasInstallationReport" 
                       class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 whitespace-nowrap">
                   <LucideIcon name="check-circle" :size="12" class="mr-1" />
-                  Active
+                  Aktif
                 </span>
                 <span v-else-if="getCustomerDeviceStatus(row) === 'down'" 
                       class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 whitespace-nowrap">
                   <LucideIcon name="x-circle" :size="12" class="mr-1" />
-                  Down
+                  Terputus
                   <span v-if="row.installationReportCount > 0" class="ml-1 text-red-600 font-semibold">
-                    ({{ row.installationReportCount }} {{ row.installationReportCount > 1 ? 'reports' : 'report' }})
+                    ({{ row.installationReportCount }} laporan)
                   </span>
                 </span>
                 <span v-else-if="getCustomerDeviceStatus(row) === 'mixed'" 
                       class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 whitespace-nowrap">
                   <LucideIcon name="alert-triangle" :size="12" class="mr-1" />
-                  Mixed
+                  Campuran
                   <span v-if="row.installationReportCount > 0" class="ml-1 text-orange-600 font-semibold">
-                    ({{ row.installationReportCount }} {{ row.installationReportCount > 1 ? 'reports' : 'report' }})
+                    ({{ row.installationReportCount }} laporan)
                   </span>
                 </span>
                 <span v-else-if="getCustomerDeviceStatus(row) === 'up'" 
                       class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 whitespace-nowrap">
                   <LucideIcon name="check-circle" :size="12" class="mr-1" />
-                  Up
+                  Terhubung
                   <span v-if="row.installationReportCount > 0" class="ml-1 text-green-600 font-semibold">
-                    ({{ row.installationReportCount }} {{ row.installationReportCount > 1 ? 'reports' : 'report' }})
+                    ({{ row.installationReportCount }} laporan)
                   </span>
                 </span>
                 <span v-else 
                       class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 whitespace-nowrap">
                   <LucideIcon name="question-mark-circle" :size="12" class="mr-1" />
-                  Unknown
+                  Tidak diketahui
                 </span>
               </div>
             </div>
@@ -1509,7 +1509,7 @@ const relatedCustomers = computed(() => {
           <template #area_name-data="{ row }">
             <div class="table-cell-content">
               <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="text-sm text-gray-700 whitespace-nowrap">{{ row.area?.name_city || 'N/A' }}</span>
+                <span class="text-sm text-gray-700 whitespace-nowrap">{{ row.area?.name_city || 'Tidak tersedia' }}</span>
                 <span v-if="row.area?.code_name" 
                       class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-600 whitespace-nowrap">
                   {{ row.area.code_name }}
@@ -1536,7 +1536,7 @@ const relatedCustomers = computed(() => {
                 </div>
               </div>
               <div v-else class="text-sm text-gray-500 italic">
-                No package assigned
+                Belum ada paket
               </div>
             </div>
           </template>
@@ -1552,7 +1552,7 @@ const relatedCustomers = computed(() => {
                 <span v-if="row.is_collaborator === 'yes'" 
                       class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 whitespace-nowrap">
                   <LucideIcon name="handshake" :size="12" class="mr-1" />
-                  Collaborator
+                  Mitra
                 </span>
                 <span v-if="row.is_internet !== 'yes' && row.is_collaborator !== 'yes'" 
                       class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 whitespace-nowrap">
@@ -1592,9 +1592,9 @@ const relatedCustomers = computed(() => {
       <div class="mb-4">
         <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
           <LucideIcon name="map" :size="24" class="text-primary" />
-          Customer Distribution Map
+          Peta Sebaran Pelanggan
         </h2>
-        <p class="text-sm text-gray-500">Geographical view of all active customer installations</p>
+        <p class="text-sm text-gray-500">Peta lokasi seluruh instalasi pelanggan aktif</p>
       </div>
       <CustomerMap @view-detail="OpenCustomerDetailModal" />
     </div>
@@ -1639,7 +1639,7 @@ const relatedCustomers = computed(() => {
       >
         <template #header>
           <div class="flex justify-between items-center bg-white rounded-xl border-b border-gray-200 pb-4">
-            <h3 class="text-xl font-bold text-black">Installation Report</h3>
+            <h3 class="text-xl font-bold text-black">Laporan Instalasi</h3>
             <UButton 
               @click="closeInstallationModal" 
               variant="outline" 

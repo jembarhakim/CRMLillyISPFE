@@ -6,7 +6,7 @@ import { formatIDR } from "@/helper/currency";
 import { useCustomToast } from "@/composables/useCustomToast";
 // Set page title
 useHead({
-    title: "Internet Package Management - CRM System",
+    title: "Manajemen Paket Internet - CRM",
 });
 
 const internetPackages = ref<any[]>([]); // Use ref for reactivity
@@ -29,23 +29,23 @@ const internetPackageList = computed(() => {
 const column = [
     {
         key: "number",
-        label: "Number",
+        label: "Nomor",
     },
     {
         key: "name",
-        label: "Name",
+        label: "Nama",
     },
     {
         key: "price",
-        label: "Price",
+        label: "Harga",
     },
     {
         key: "description",
-        label: "Description",
+        label: "Deskripsi",
     },
     {
         key: "actions",
-        label: "Action",
+        label: "Tindakan",
     },
 ];
 
@@ -71,14 +71,14 @@ async function deletePacket(id: string) {
         .deleteInternetPacket(id)
         .then((response) => {
             useCustomToast().add({
-                title: "Success Delete Product",
+                title: "Berhasil menghapus paket",
             });
 
             fetchData();
         })
         .catch((error) => {
             useCustomToast().add({
-                title: "Failed Delete Product",
+                title: "Gagal menghapus paket",
                 color: "red",
             });
         });
@@ -114,14 +114,14 @@ function openModal(isEdit: boolean, data: any) {
 const items = (row: any) => [
     [
         {
-            label: "Edit",
+            label: "Ubah",
             icon: "pencil-square-20-solid",
             click: () => openModal(true, row),
         },
     ],
     [
         {
-            label: "Delete",
+            label: "Hapus",
             icon: "trash-2-20-solid",
             click: () => deletePacket(row.id.toString()),
         },
@@ -132,7 +132,7 @@ const items = (row: any) => [
 <template>
     <div class="space-y-5">
         <AdminPageHeader
-            title="Internet Package"
+            title="Paket Internet"
             description="Atur paket layanan internet, harga, dan detail produk."
             icon="wifi"
             eyebrow="Produk & Layanan"
@@ -161,7 +161,7 @@ const items = (row: any) => [
                             <button
                                 type="button"
                                 class="bg-gray-700 text-white px-2 py-1 text-sm hover:bg-gray-600 rounded inline-flex items-center justify-center shadow-sm transition-colors duration-200 group"
-                                aria-label="Actions"
+                                aria-label="Tindakan"
                             >
                                 <LucideIcon
                                     name="ellipsis-vertical"

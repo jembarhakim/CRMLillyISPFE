@@ -7,8 +7,8 @@ import { useCustomToast } from '@/composables/useCustomToast'
 
 const schema = object({
     name: string()
-        .min(3, 'Must be at least 3 characters')
-        .required('Required'),
+        .min(3, 'Nama paket minimal 3 karakter')
+        .required('Nama paket wajib diisi'),
 })
 
 type Schema = InferType<typeof schema>
@@ -87,17 +87,17 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     if (props.isEdit) {
         console.log(props.data.id, state)
         await internetPackageAdminApi().editInternetPacket(props.data.id, state).then((response) => {
-            useCustomToast().add({ title: "Success Update Product", color: "green", description: response.message })
+            useCustomToast().add({ title: "Berhasil memperbarui paket", color: "green", description: response.message })
             onSuccess()
         }).catch((error) => {
-            useCustomToast().add({ title: "Error Update Product", color: "red", description: error })
+            useCustomToast().add({ title: "Gagal memperbarui paket", color: "red", description: error })
         })
     } else {
         await internetPackageAdminApi().createInternetPackage(state).then((response) => {
-            useCustomToast().add({ title: "Success Create Product", color: "green", description: response.message })
+            useCustomToast().add({ title: "Berhasil menambahkan paket", color: "green", description: response.message })
             onSuccess()
         }).catch((error) => {
-            useCustomToast().add({ title: "Error Create Product", color: "red", description: error })
+            useCustomToast().add({ title: "Gagal menambahkan paket", color: "red", description: error })
         })
     }
 }
@@ -107,19 +107,19 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     <UModal>
         <div class="p-4">
             <div class="p-2 mb-4 text-2xl font-bold text-center">
-                <h1>{{ props.isEdit ? "Edit" : "Add New" }} Internet Package</h1>
+                <h1>{{ props.isEdit ? "Ubah" : "Tambah" }} Paket Internet</h1>
             </div>
             <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
 
-                <UFormGroup label="Package Name" name="name">
+                <UFormGroup label="Nama Paket" name="name">
                     <UInput v-model="state.name" />
                 </UFormGroup>
-                <UFormGroup label="Price" name="price">
+                <UFormGroup label="Harga" name="price">
                     <div class="relative">
                         <UInput 
                             type="text" 
                             v-model="formattedPrice" 
-                            placeholder="Enter price amount"
+                            placeholder="Masukkan nominal harga"
                             class="pl-12"
                         />
                         <div class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm font-medium">
@@ -127,15 +127,15 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                         </div>
                     </div>
                     <div class="text-sm text-gray-600 mt-1">
-                        Current value: {{ displayPrice }}
+                        Nilai saat ini: {{ displayPrice }}
                     </div>
                 </UFormGroup>
-                <UFormGroup label="Description" name="description">
+                <UFormGroup label="Deskripsi" name="description">
                     <UTextarea type="text" v-model="state.description" />
                 </UFormGroup>
 
                 <UButton type="submit">
-                    Submit
+                    Simpan
                 </UButton>
             </UForm>
         </div>

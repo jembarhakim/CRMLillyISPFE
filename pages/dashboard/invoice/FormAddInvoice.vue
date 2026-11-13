@@ -31,8 +31,8 @@ const notification = useNotification();
 const loadingProduct = ref(false);
 
 const schema = object({
-  customer_id: string().required("Customer is required"),
-  amount: string().required("Amount is required"),
+  customer_id: string().required("Pelanggan wajib dipilih"),
+  amount: string().required("Jumlah wajib diisi"),
 });
 
 type Schema = InferType<typeof schema>;
@@ -223,10 +223,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   try {
     // Validate required fields
     if (!state.customer_id) {
-      throw new Error("Customer is required");
+      throw new Error("Pelanggan wajib dipilih");
     }
     if (!state.invoice_items || state.invoice_items.length === 0) {
-      throw new Error("At least one invoice item is required");
+      throw new Error("Minimal satu item tagihan wajib diisi");
     }
 
     // Validate invoice items
@@ -234,7 +234,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       const item = state.invoice_items[i];
       if (!item.name || !item.price || !item.qty) {
         throw new Error(
-          `Item ${i + 1} is missing required fields (name, price, or quantity)`
+          `Item ${i + 1} belum lengkap (nama, harga, atau jumlah)`
         );
       }
 
@@ -246,7 +246,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         throw new Error(
           `Item ${
             i + 1
-          } product name cannot be empty for collaborator customers`
+          } nama produk tidak boleh kosong untuk pelanggan mitra`
         );
       }
     }
@@ -275,14 +275,14 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         console.log("❌ Edit failed:", response?.message);
         notification.error(
           "MikroTik Error",
-          response?.message || "Scheduler update failed"
+          response?.message || "Gagal memperbarui penjadwalan"
         );
         return;
       }
       console.log("✅ Edit successful:", response.message);
       notification.success(
-        "Success",
-        response.message || "Invoice updated successfully"
+        "Berhasil",
+        response.message || "Tagihan berhasil diperbarui"
       );
     } else {
       console.log("🆕 Creating invoice...");
@@ -291,14 +291,14 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         console.log("❌ Create failed:", response?.message);
         notification.error(
           "MikroTik Error",
-          response?.message || "Scheduler update failed"
+          response?.message || "Gagal memperbarui penjadwalan"
         );
         return;
       }
       console.log("✅ Create successful:", response.message);
       notification.success(
-        "Success",
-        response.message || "Invoice created successfully"
+        "Berhasil",
+        response.message || "Tagihan berhasil dibuat"
       );
     }
 
@@ -306,7 +306,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     onSuccess();
   } catch (error: any) {
     console.error("❌ Invoice submission error:", error);
-    notification.error("Error", error.message || "Failed to save invoice");
+    notification.error("Gagal", error.message || "Gagal menyimpan tagihan");
   } finally {
     console.log("🔄 Resetting isSubmitting to false");
     isSubmitting.value = false;
@@ -356,7 +356,7 @@ async function getDataOptions() {
     }));
   } catch (error) {
     console.error("Error fetching customers:", error);
-    notification.error("Error", "Failed to load customers");
+    notification.error("Gagal", "Gagal memuat data pelanggan");
   }
 }
 
@@ -409,8 +409,8 @@ function handleFilterChange(filter: "all" | "internet" | "collaborator") {
   // If internet customers are selected, redirect to recurring invoice
   if (filter === "internet") {
     notification.info(
-      "Redirecting",
-      "Internet customers should use recurring invoice. Redirecting to recurring invoice page..."
+      "Mengalihkan",
+      "Pelanggan internet menggunakan tagihan berulang. Mengalihkan ke halaman tagihan berulang..."
     );
 
     // Close the notification and redirect after a short delay
@@ -473,8 +473,8 @@ watch(
           formattedPrices.value = { 0: "" };
 
           notification.info(
-            "Info",
-            "For collaborator customers, you can enter custom product names"
+            "Informasi",
+            "Untuk pelanggan mitra, Anda dapat memasukkan nama produk khusus"
           );
         } else {
           // For internet customers, auto-fill product name and price for the first item
@@ -503,8 +503,8 @@ watch(
 
             // Show success message
             notification.success(
-              "Success",
-              `Product "${product.name}" auto-filled from customer's package`
+              "Berhasil",
+              `Produk "${product.name}" diisi otomatis dari paket pelanggan`
             );
           } else {
             // If customer has no product, reset to empty
@@ -521,16 +521,16 @@ watch(
             formattedPrices.value = { 0: "" };
 
             notification.warning(
-              "Warning",
-              "Customer has no product package assigned"
+              "Peringatan",
+              "Pelanggan belum memiliki paket produk"
             );
           }
         }
       } catch (error) {
         console.error("Failed to fetch customer detail:", error);
         notification.error(
-          "Error",
-          "Failed to load customer product information"
+          "Gagal",
+          "Gagal memuat informasi produk pelanggan"
         );
       }
     } else {
@@ -556,7 +556,7 @@ watch(
   <UModal>
     <div class="w-full p-4">
       <div class="p-2 mb-4 text-2xl font-bold text-center">
-        <h1>{{ props.isEdit ? "Edit" : "Add New" }} Invoice</h1>
+        <h1>{{ props.isEdit ? "Ubah" : "Tambah" }} Tagihan</h1>
       </div>
 
       <!-- Customer Filter Buttons -->
@@ -565,10 +565,10 @@ watch(
           <h3
             class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2"
           >
-            Customer Type Selection
+            Pilih Jenis Pelanggan
           </h3>
           <p class="text-sm text-gray-600 dark:text-gray-400">
-            Choose the type of customer for this invoice
+            Pilih jenis pelanggan untuk tagihan ini
           </p>
         </div>
 
@@ -590,7 +590,7 @@ watch(
             class="px-6 py-2"
           >
             <LucideIcon name="handshake" class="w-4 h-4 mr-2" />
-            COLLABORATOR
+            MITRA
           </UButton>
         </div>
 
@@ -604,19 +604,19 @@ watch(
               class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0"
             />
             <div class="text-sm text-blue-800 dark:text-blue-200">
-              <p class="font-medium mb-1">Invoice Type Guidelines:</p>
+              <p class="font-medium mb-1">Panduan Jenis Tagihan:</p>
               <ul class="space-y-1 text-xs">
                 <li>
-                  • <strong>INTERNET customers:</strong> Use recurring invoice
-                  for subscription-based billing
+                  • <strong>Pelanggan INTERNET:</strong> Gunakan tagihan berulang
+                  untuk layanan berlangganan
                 </li>
                 <li>
-                  • <strong>COLLABORATOR customers:</strong> Use regular invoice
-                  for one-time or project-based billing
+                  • <strong>Pelanggan MITRA:</strong> Gunakan tagihan biasa
+                  untuk pembayaran satu kali atau berbasis proyek
                 </li>
                 <li>
-                  • Clicking "INTERNET" will redirect you to the recurring
-                  invoice page
+                  • Menekan "INTERNET" akan mengalihkan Anda ke halaman tagihan
+                  berulang
                 </li>
               </ul>
             </div>
@@ -630,22 +630,20 @@ watch(
         class="space-y-4"
         @submit="onSubmit"
       >
-        <UFormGroup label="Customer" name="customer_id">
+        <UFormGroup label="Pelanggan" name="customer_id">
           <div class="space-y-2">
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">
                 {{
                   customerFilter === "all"
-                    ? "All Customers"
+                    ? "Semua Pelanggan"
                     : customerFilter === "internet"
-                    ? "Internet Customers (Redirects to Recurring Invoice)"
-                    : "Collaborator Customers Only"
+                    ? "Pelanggan Internet (Dialihkan ke Tagihan Berulang)"
+                    : "Khusus Pelanggan Mitra"
                 }}
               </span>
               <span class="text-xs text-gray-500">
-                {{ customer.length }} customer{{
-                  customer.length !== 1 ? "s" : ""
-                }}
+                {{ customer.length }} pelanggan
               </span>
             </div>
             <USelectMenu
@@ -663,12 +661,12 @@ watch(
           class="bg-blue-50 rounded-lg p-4 border border-blue-200"
         >
           <h3 class="text-lg font-medium text-blue-900 mb-3">
-            Customer Information
+            Informasi Pelanggan
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-blue-700"
-                >Customer Name</label
+                >Nama Pelanggan</label
               >
               <p class="mt-1 text-sm text-blue-900">
                 {{ selectedCustomerDetail.customer.name }}
@@ -676,38 +674,38 @@ watch(
             </div>
             <div v-if="customerFilter === 'collaborator'">
               <label class="block text-sm font-medium text-blue-700"
-                >Customer Type</label
+                >Jenis Pelanggan</label
               >
               <p class="mt-1 text-sm text-blue-900">
-                Collaborator (Custom Products)
+                Mitra (Produk Khusus)
               </p>
             </div>
             <div v-else>
               <label class="block text-sm font-medium text-blue-700"
-                >Product Package</label
+                >Paket Produk</label
               >
               <p class="mt-1 text-sm text-blue-900">
                 {{
                   selectedCustomerDetail.customer.product?.name ||
-                  "No product assigned"
+                  "Belum ada produk"
                 }}
               </p>
             </div>
             <div v-if="customerFilter !== 'collaborator'">
               <label class="block text-sm font-medium text-blue-700"
-                >Package Price</label
+                >Harga Paket</label
               >
               <p class="mt-1 text-sm text-blue-900">
                 {{
                   selectedCustomerDetail.customer.product_name
                     ? `Rp ${selectedCustomerDetail.customer.product_name.toLocaleString()}`
-                    : "No price"
+                    : "Tidak ada harga"
                 }}
               </p>
             </div>
             <div v-if="customerFilter !== 'collaborator'">
               <label class="block text-sm font-medium text-blue-700"
-                >Installation Date</label
+                >Tanggal Instalasi</label
               >
               <p class="mt-1 text-sm text-blue-900">
                 {{
@@ -715,13 +713,13 @@ watch(
                     ? new Date(
                         selectedCustomerDetail.customer.installation_date
                       ).toLocaleDateString()
-                    : "Not installed"
+                    : "Belum diinstal"
                 }}
               </p>
             </div>
           </div>
         </div>
-        <UFormGroup label="Amount" name="amount">
+        <UFormGroup label="Jumlah" name="amount">
           <div class="relative">
             <UInput
               v-model="displayAmount"
@@ -735,11 +733,11 @@ watch(
             </div>
           </div>
           <div class="text-sm text-gray-600 mt-1">
-            Current value: {{ displayAmount }}
+            Nilai saat ini: {{ displayAmount }}
           </div>
           <template #help>
             <span class="text-xs text-gray-500"
-              >Amount is automatically calculated from line items</span
+              >Jumlah dihitung otomatis dari rincian item</span
             >
           </template>
         </UFormGroup>
@@ -749,7 +747,7 @@ watch(
           class="space-y-4"
         >
           <UFormGroup
-            :label="`Product ${index + 1} Name`"
+            :label="`Nama Produk ${index + 1}`"
             :name="`item-name-${index}`"
           >
             <div class="relative">
@@ -757,7 +755,7 @@ watch(
               <UInput
                 v-if="customerFilter === 'collaborator'"
                 v-model="item.name"
-                placeholder="Enter custom product name (e.g., Hadiah hasil pkl)"
+                placeholder="Masukkan nama produk (contoh: Hadiah hasil PKL)"
                 class="w-full"
               />
               <!-- For internet customers, show as read-only input when customer is selected -->
@@ -768,7 +766,7 @@ watch(
                 v-model="item.name"
                 readonly
                 class="bg-gray-100 cursor-not-allowed"
-                placeholder="Product name will be auto-filled when customer is selected"
+                placeholder="Nama produk akan terisi otomatis setelah pelanggan dipilih"
               />
               <!-- For additional items or when no customer selected, show dropdown -->
               <UInputMenu
@@ -782,7 +780,7 @@ watch(
               />
               <div v-if="customerFilter === 'collaborator'" class="mt-1">
                 <p class="text-xs text-blue-600">
-                  ✓ Custom product name for collaborator customer
+                  ✓ Nama produk khusus untuk pelanggan mitra
                 </p>
               </div>
               <div
@@ -792,10 +790,10 @@ watch(
                 class="mt-1"
               >
                 <p class="text-xs text-green-600">
-                  ✓ Auto-filled from customer's package:
+                  ✓ Diisi otomatis dari paket pelanggan:
                   {{
                     selectedCustomerDetail.customer.product_name ||
-                    "No product assigned"
+                    "Belum ada produk"
                   }}
                 </p>
               </div>
@@ -804,14 +802,14 @@ watch(
                 class="mt-1"
               >
                 <p class="text-xs text-gray-500">
-                  Select a customer to auto-fill product information
+                  Pilih pelanggan untuk mengisi informasi produk secara otomatis
                 </p>
               </div>
             </div>
           </UFormGroup>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <UFormGroup label="Quantity">
+            <UFormGroup label="Jumlah">
               <div class="relative">
                 <UInput
                   :model-value="quantityInputs[index] ?? item.qty.toString()"
@@ -823,7 +821,7 @@ watch(
                 />
               </div>
             </UFormGroup>
-            <UFormGroup label="Price">
+            <UFormGroup label="Harga">
               <div class="relative">
                 <UInput
                   :model-value="
@@ -844,7 +842,7 @@ watch(
                 </div>
               </div>
               <div class="text-xs text-gray-600 mt-1">
-                Value: {{ item.price > 0 ? formatIDR(item.price) : "Rp 0,00" }}
+                Nilai: {{ item.price > 0 ? formatIDR(item.price) : "Rp 0,00" }}
               </div>
             </UFormGroup>
             <UFormGroup label="Total">
@@ -863,7 +861,7 @@ watch(
                 </div>
               </div>
               <div class="text-xs text-gray-600 mt-1">
-                Value: {{ item.total > 0 ? formatIDR(item.total) : "Rp 0,00" }}
+                Nilai: {{ item.total > 0 ? formatIDR(item.total) : "Rp 0,00" }}
               </div>
             </UFormGroup>
           </div>
@@ -881,7 +879,7 @@ watch(
           <UButton @click="addItem" variant="outline">Tambah Item</UButton>
         </UFormGroup>
         <UButton type="submit" :loading="isSubmitting" :disabled="isSubmitting">
-          {{ isSubmitting ? "Submitting..." : "Submit" }}
+          {{ isSubmitting ? "Menyimpan..." : "Simpan" }}
         </UButton>
       </UForm>
     </div>

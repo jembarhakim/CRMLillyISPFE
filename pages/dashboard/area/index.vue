@@ -8,7 +8,7 @@ import LucideIcon from '@/components/LucideIcon.vue';
 
 // Set page title
 useHead({
-  title: 'Area Management - CRM System'
+  title: 'Manajemen Wilayah - CRM'
 })
 
 const notification = useNotification();
@@ -31,23 +31,23 @@ const areaList = computed(()=>{
 const columns = [
   {
     key: "name_city",
-    label: "City",
+    label: "Kota",
   },
   {
     key: "name_subdistrict",
-    label: "Subdistrict",
+    label: "Kecamatan",
   },
   {
     key: "name_village",
-    label: "Village",
+    label: "Desa/Kelurahan",
   },
   {
     key: "code_name",
-    label: "Code Name",
+    label: "Kode Wilayah",
   },
   {
     key: "actions",
-    label: "Manage",
+    label: "Tindakan",
   },
 ];
 
@@ -95,10 +95,10 @@ function openModal(isEdit: boolean, data: any) {
 
 async function deleteData(id: string){
   await areaAdminApi().deleteArea(id).then((response) => {
-    notification.success('Success', 'Area deleted successfully')
+    notification.success('Berhasil', 'Wilayah berhasil dihapus')
     fetchData()
   }).catch((error) => {
-    notification.error('Error', 'Failed to delete area')
+    notification.error('Gagal', 'Gagal menghapus wilayah')
   })
 }
 </script>
@@ -106,7 +106,7 @@ async function deleteData(id: string){
 <template>
   <div class="space-y-5">
     <AdminPageHeader
-      title="Area"
+      title="Wilayah"
       description="Kelola data kota, kecamatan, desa, dan kode area layanan."
       icon="map"
       eyebrow="Wilayah Layanan"
@@ -138,7 +138,7 @@ async function deleteData(id: string){
           </template>
           <template #actions-data="{ row }">
             <div class="flex flex-wrap gap-2">
-              <UButton color="gray" label="Edit" @click="openModal(true,row)">
+              <UButton color="gray" label="Ubah" @click="openModal(true,row)">
                 <template #leading>
                   <LucideIcon name="pencil" :size="16" />
                 </template>

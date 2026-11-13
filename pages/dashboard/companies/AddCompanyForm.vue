@@ -35,16 +35,16 @@ if (props.id) {
     });
 }
 const schema = object({
-  name: string().required("Name is required"),
+  name: string().required("Nama wajib diisi"),
   // url: string().url("URL must be a valid URL").required("URL is required"),
   email: string()
-    .required("Email is required")
-    .email("Email must be a valid email"),
+    .required("Email wajib diisi")
+    .email("Format email tidak valid"),
   phone: string()
-    .matches(/^\d+$/, "Phone number must be digits")
-    .required("Phone number is required"),
-  npwp: string().required("NPWP is required"),
-  address: string().required("Address is required"),
+    .matches(/^\d+$/, "Nomor telepon hanya boleh berisi angka")
+    .required("Nomor telepon wajib diisi"),
+  npwp: string().required("NPWP wajib diisi"),
+  address: string().required("Alamat wajib diisi"),
 });
 
 const emit = defineEmits(["success"]);
@@ -82,7 +82,7 @@ async function onSubmit() {
   <UModal>
     <div class="p-4">
       <div class="p-2 mb-4 text-2xl font-bold text-center">
-        <h1>{{ props.isEdit ? "Edit" : "Add New" }} Company</h1>
+        <h1>{{ props.isEdit ? "Ubah" : "Tambah" }} Perusahaan</h1>
       </div>
       <UForm
         :schema="schema"
@@ -90,7 +90,7 @@ async function onSubmit() {
         class="space-y-4"
         @submit="onSubmit"
       >
-        <UFormGroup label="Name" name="name">
+        <UFormGroup label="Nama" name="name">
           <UInput v-model="state.name" />
         </UFormGroup>
         <UFormGroup label="URL" name="url">
@@ -99,22 +99,22 @@ async function onSubmit() {
         <UFormGroup label="Email" name="email">
           <UInput v-model="state.email" />
         </UFormGroup>
-        <UFormGroup label="Phone" name="phone">
+        <UFormGroup label="Telepon" name="phone">
           <UInput v-model="state.phone" />
         </UFormGroup>
-        <UFormGroup label="Logo URL" name="logo_url">
+        <UFormGroup label="URL Logo" name="logo_url">
           <UInput v-model="state.logo_url" />
         </UFormGroup>
         <UFormGroup label="NPWP" name="npwp">
           <UInput v-model="state.npwp" />
         </UFormGroup>
-        <UFormGroup label="Address" name="address">
+        <UFormGroup label="Alamat" name="address">
           <UInput v-model="state.address" />
         </UFormGroup>
-        <UFormGroup label="Description" name="description">
+        <UFormGroup label="Deskripsi" name="description">
           <UInput v-model="state.description" />
         </UFormGroup>
-        <UButton type="submit"> Submit </UButton>
+        <UButton type="submit"> Simpan </UButton>
       </UForm>
     </div>
   </UModal>

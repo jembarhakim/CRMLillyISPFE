@@ -24,18 +24,18 @@ const props = defineProps({
 const emit = defineEmits(["success", "close"]);
 
 const unitOptions = [
-  { value: 'PCS', label: 'PCS (Piece)' },
+  { value: 'PCS', label: 'PCS (Buah)' },
   { value: 'M', label: 'M (Meter)' },
   { value: 'KG', label: 'KG (Kilogram)' },
-  { value: 'BOX', label: 'BOX' },
-  { value: 'ROLL', label: 'ROLL' },
+  { value: 'BOX', label: 'BOX (Kotak)' },
+  { value: 'ROLL', label: 'ROLL (Gulungan)' },
 ];
 
 const schema = object({
-  transaction_type: string().required("Transaction type is required"),
-  item_type: string().required("Item selection is required"),
-  quantity: number().required("Quantity is required").min(0.01, "Quantity must be greater than 0"),
-  unit: string().required("Unit is required"),
+  transaction_type: string().required("Jenis transaksi wajib dipilih"),
+  item_type: string().required("Item wajib dipilih"),
+  quantity: number().required("Jumlah wajib diisi").min(0.01, "Jumlah harus lebih dari 0"),
+  unit: string().required("Satuan wajib dipilih"),
 });
 
 const state = reactive({
@@ -69,7 +69,7 @@ async function loadCatalogItems() {
     }
   } catch (error) {
     console.error('Failed to load catalog items:', error);
-    notification.error('Error', 'Failed to load items catalog. Please ensure items are added to the catalog first.');
+    notification.error('Gagal', 'Gagal memuat katalog item. Pastikan item sudah ditambahkan ke katalog.');
   }
 }
 
@@ -122,7 +122,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     
     if (state.item_type === 'asset') {
       if (!state.asset_id) {
-        notification.error('Validation Error', 'Please select an asset');
+        notification.error('Data tidak valid', 'Pilih aset terlebih dahulu');
         state.loading = false;
         return;
       }
@@ -132,14 +132,14 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       if (catalogItem) {
         itemId = catalogItem.id;
       } else {
-        notification.error('Validation Error', `No catalog item found for this asset. Please create a catalog item linked to this asset first in the Items Catalog.`);
+        notification.error('Data tidak valid', 'Item katalog untuk aset ini tidak ditemukan. Buat item katalog yang terhubung ke aset ini terlebih dahulu.');
         state.loading = false;
         return;
       }
     } else {
       // For catalog items
       if (!state.catalog_item_id) {
-        notification.error('Validation Error', 'Please select an item from the catalog');
+        notification.error('Data tidak valid', 'Pilih item dari katalog terlebih dahulu');
         state.loading = false;
         return;
       }
@@ -164,11 +164,11 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
     const response = await itemsTransactionAdminApi().createItemsTransaction(transactionData);
     
-    notification.success('Success', `Goods transaction recorded successfully`);
+    notification.success('Berhasil', 'Transaksi barang berhasil dicatat');
     emit("success");
   } catch (error: any) {
     console.error("Error creating goods transaction:", error);
-    notification.error('Error', error.message || 'Failed to record goods transaction');
+    notification.error('Gagal', error.message || 'Gagal mencatat transaksi barang');
   } finally {
     state.loading = false;
   }
@@ -194,7 +194,7 @@ onMounted(() => {
     <template #header>
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          {{ isEdit ? 'Edit' : 'Record' }} Goods Transaction
+          {{ isEdit ? 'Ubah' : 'Catat' }} Transaksi Barang
         </h3>
         <UButton
           color="gray"
@@ -212,7 +212,7 @@ onMounted(() => {
       @submit="onSubmit"
     >
       <!-- Transaction Type -->
-      <UFormGroup name="transaction_type" label="Transaction Type">
+      <UFormGroup name="transaction_type" label="Jenis Transaksi">
         <div class="flex gap-4">
           <label class="flex items-center gap-2 cursor-pointer">
             <input
@@ -221,7 +221,7 @@ onMounted(() => {
               value="out"
               class="w-4 h-4 text-blue-600"
             />
-            <span class="text-gray-900 dark:text-gray-100">Goods OUT (Alat Keluar)</span>
+            <span class="text-gray-900 dark:text-gray-100">Barang Keluar</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
             <input
@@ -230,13 +230,13 @@ onMounted(() => {
               value="in"
               class="w-4 h-4 text-blue-600"
             />
-            <span class="text-gray-900 dark:text-gray-100">Goods IN (Alat Masuk)</span>
+            <span class="text-gray-900 dark:text-gray-100">Barang Masuk</span>
           </label>
         </div>
       </UFormGroup>
 
       <!-- Item Type Selection -->
-      <UFormGroup name="item_type" label="Item Type">
+      <UFormGroup name="item_type" label="Jenis Item">
         <div class="flex gap-4">
           <label class="flex items-center gap-2 cursor-pointer">
             <input
@@ -245,7 +245,7 @@ onMounted(() => {
               value="catalog"
               class="w-4 h-4 text-blue-600"
             />
-            <span class="text-gray-900 dark:text-gray-100">From Catalog</span>
+            <span class="text-gray-900 dark:text-gray-100">Dari Katalog</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
             <input
@@ -254,7 +254,7 @@ onMounted(() => {
               value="asset"
               class="w-4 h-4 text-blue-600"
             />
-            <span class="text-gray-900 dark:text-gray-100">Asset from System</span>
+            <span class="text-gray-900 dark:text-gray-100">Aset dari Sistem</span>
           </label>
         </div>
       </UFormGroup>
@@ -263,27 +263,27 @@ onMounted(() => {
       <UFormGroup
         v-if="state.item_type === 'catalog'"
         name="catalog_item_id"
-        label="Select Item from Catalog"
+        label="Pilih Item dari Katalog"
       >
         <USelectMenu
           v-model="state.catalog_item_id"
           :options="state.catalogItems"
-          placeholder="Select item from catalog"
+          placeholder="Pilih item dari katalog"
           option-attribute="label"
           value-attribute="value"
           searchable
-          searchable-placeholder="Search items..."
+          searchable-placeholder="Cari item..."
         />
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
           <LucideIcon name="info" :size="14" class="inline mr-1" />
-          Select an item from the catalog. If no items are available, please add items to the catalog first.
+          Pilih item dari katalog. Jika belum tersedia, tambahkan item ke katalog terlebih dahulu.
           <UButton
             variant="link"
             size="xs"
             @click="navigateTo('/dashboard/asset/items-catalog')"
             class="ml-1"
           >
-            Go to Items Catalog
+            Buka Katalog Item
           </UButton>
         </p>
       </UFormGroup>
@@ -292,41 +292,41 @@ onMounted(() => {
       <UFormGroup
         v-if="state.item_type === 'asset'"
         name="asset_id"
-        label="Select Asset"
+        label="Pilih Aset"
       >
         <USelectMenu
           v-model="state.asset_id"
           :options="state.assets"
-          placeholder="Select asset (e.g., Router TOTOLINK)"
+          placeholder="Pilih aset (contoh: Router TOTOLINK)"
           option-attribute="display"
           value-attribute="id"
           searchable
-          searchable-placeholder="Search by brand, model, or serial number"
+          searchable-placeholder="Cari berdasarkan merek, model, atau nomor seri"
           :search-attributes="['brand', 'model', 'serial_number', 'type']"
         />
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
           <LucideIcon name="info" :size="14" class="inline mr-1" />
-          Select an asset from the asset management system (e.g., routers, switches, etc.)
+          Pilih aset dari sistem manajemen aset (contoh: router, switch, dan lainnya)
         </p>
       </UFormGroup>
 
       <!-- Quantity and Unit -->
       <div class="grid grid-cols-2 gap-4">
-        <UFormGroup name="quantity" label="Quantity">
+        <UFormGroup name="quantity" label="Jumlah">
           <UInput
             v-model.number="state.quantity"
             type="number"
             step="0.01"
             min="0.01"
-            placeholder="Enter quantity"
+            placeholder="Masukkan jumlah"
           />
         </UFormGroup>
 
-        <UFormGroup name="unit" label="Unit">
+        <UFormGroup name="unit" label="Satuan">
           <USelectMenu
             v-model="state.unit"
             :options="unitOptions"
-            placeholder="Select unit"
+            placeholder="Pilih satuan"
             option-attribute="label"
             value-attribute="value"
           />
@@ -334,7 +334,7 @@ onMounted(() => {
       </div>
 
       <!-- Transaction Date -->
-      <UFormGroup name="transaction_date" label="Transaction Date">
+      <UFormGroup name="transaction_date" label="Tanggal Transaksi">
         <UInput
           v-model="state.transaction_date"
           type="date"
@@ -342,10 +342,10 @@ onMounted(() => {
       </UFormGroup>
 
       <!-- Notes -->
-      <UFormGroup name="notes" label="Notes (Optional)">
+      <UFormGroup name="notes" label="Catatan (Opsional)">
         <UTextarea
           v-model="state.notes"
-          placeholder="Additional notes about this transaction"
+          placeholder="Catatan tambahan terkait transaksi ini"
           :rows="3"
         />
       </UFormGroup>
@@ -358,7 +358,7 @@ onMounted(() => {
           variant="outline"
           @click="emit('close')"
         >
-          Cancel
+          Batal
         </UButton>
         <UButton
           type="submit"
@@ -368,7 +368,7 @@ onMounted(() => {
           <template #leading>
             <LucideIcon name="save" :size="16" />
           </template>
-          {{ isEdit ? 'Update' : 'Record' }} Transaction
+          {{ isEdit ? 'Perbarui' : 'Catat' }} Transaksi
         </UButton>
       </div>
     </UForm>

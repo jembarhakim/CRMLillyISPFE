@@ -377,10 +377,10 @@ onBeforeUnmount(() => {
         <label class="block text-sm font-semibold text-gray-700">
           Kategori
           <select v-model="editor.category" class="notification-field mt-1.5 w-full rounded-lg border-gray-300 text-sm shadow-sm transition focus:border-[#A93133] focus:ring-[#A93133]">
-            <option value="custom">Custom</option>
-            <option value="ticket">Ticket</option>
-            <option value="work_order">Work order</option>
-            <option value="invoice">Invoice</option>
+            <option value="custom">Khusus</option>
+            <option value="ticket">Tiket</option>
+            <option value="work_order">Perintah kerja</option>
+            <option value="invoice">Tagihan</option>
           </select>
         </label>
         <label class="block text-sm font-semibold text-gray-700">

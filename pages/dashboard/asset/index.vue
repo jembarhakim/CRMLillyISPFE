@@ -6,7 +6,6 @@ import FormAddComponent from "./AddAssetForm.vue";
 import GoodsTransactionModal from "./GoodsTransactionModal.vue";
 import { defaultAssets } from "./asset.model";
 import { tableColumns } from "./table";
-import { format } from "date-fns";
 import LucideIcon from "@/components/LucideIcon.vue";
 import { computed, onMounted, ref } from "vue";
 
@@ -14,7 +13,7 @@ const notification = useNotificationStore();
 
 // Set page title
 useHead({
-  title: "Asset Management - CRM System",
+  title: "Manajemen Aset - CRM",
 });
 
 const page = ref(1);
@@ -53,12 +52,16 @@ const filteredRows = computed(() => {
 });
 
 function formatDate(dateString: string) {
-  if (!dateString) return "No Date";
+  if (!dateString) return "Tidak ada tanggal";
   try {
     const date = new Date(dateString);
-    return format(date, "MMM dd, yyyy");
+    return date.toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   } catch (error) {
-    return "Invalid Date";
+    return "Tanggal tidak valid";
   }
 }
 
@@ -113,17 +116,17 @@ function OpenModalAddAsset(isEdit: boolean, data: any) {
 const items = (row: any) => [
   [
     {
-      label: "View Details",
+      label: "Lihat Detail",
       icon: "eye-20-solid",
       click: () => navigateTo(`/dashboard/asset/${row.id}`),
     },
     {
-      label: "Edit",
+      label: "Ubah",
       icon: "pencil-square-20-solid",
       click: () => OpenModalAddAsset(true, row),
     },
     {
-      label: "Delete",
+      label: "Hapus",
       icon: "trash-2-20-solid",
       click: () => deleteAsset(row.id),
     },
@@ -169,7 +172,7 @@ const filteredGoodsTransactions = computed(() => {
 
 // Get transaction type display
 function getTransactionTypeDisplay(type: string) {
-  return type === "out" ? "OUT (Keluar)" : "IN (Masuk)";
+  return type === "out" ? "Keluar" : "Masuk";
 }
 
 // Get transaction type color
@@ -185,9 +188,9 @@ function getTransactionItemName(transaction: any) {
     if (firstItem.asset) {
       return `${firstItem.asset.brand} ${firstItem.asset.model} (${firstItem.asset.serial_number})`;
     }
-    return firstItem.id_items || "Unknown Item";
+    return firstItem.id_items || "Item tidak diketahui";
   }
-  return "No Items";
+  return "Tidak ada item";
 }
 
 // Open delete confirmation modal
@@ -210,14 +213,14 @@ async function confirmDeleteTransaction() {
       transactionToDelete.value,
       transactionType
     );
-    notification.success("Success", "Transaction deleted successfully");
+    notification.success("Berhasil", "Transaksi berhasil dihapus");
     await loadGoodsTransactions();
     showDeleteModal.value = false;
     transactionToDelete.value = null;
   } catch (error: any) {
     notification.error(
-      "Error",
-      error.message || "Failed to delete transaction"
+      "Gagal",
+      error.message || "Gagal menghapus transaksi"
     );
   }
 }
@@ -261,19 +264,19 @@ onMounted(() => {
   <div class="admin-data-toolbar">
     <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
     <UButton
-      label="Add Asset"
+      label="Tambah Aset"
       @click="OpenModalAddAsset(false, null)"
       class="w-full sm:w-auto"
     />
     <UButton
-      label="Manage Asset Items"
+      label="Kelola Item Aset"
       color="blue"
       variant="outline"
       @click="goToAssetItems"
       class="w-full sm:w-auto"
     />
     <UButton
-      label="Items Catalog"
+      label="Katalog Item"
       color="purple"
       variant="outline"
       @click="goToItemsCatalog"
@@ -284,7 +287,7 @@ onMounted(() => {
       </template>
     </UButton>
     <UButton
-      label="Record Goods Transaction"
+      label="Catat Transaksi Barang"
       color="green"
       variant="outline"
       @click="showGoodsModal = true"
@@ -316,7 +319,7 @@ onMounted(() => {
         </template>
         <template #asset_items-data="{ row }">
           <UBadge
-            :label="`${row.asset_items?.length || 0} items`"
+            :label="`${row.asset_items?.length || 0} item`"
             color="blue"
             variant="soft"
             size="sm"
@@ -347,7 +350,7 @@ onMounted(() => {
           <h3
             class="text-base font-semibold text-gray-900 dark:text-gray-100 truncate"
           >
-            {{ row.type || row.brand || "Asset" }}
+            {{ row.type || row.brand || "Aset" }}
           </h3>
           <p
             v-if="row.brand && row.model"
@@ -367,7 +370,7 @@ onMounted(() => {
         <div v-if="row.serial_number" class="flex items-start">
           <span
             class="font-medium text-gray-700 dark:text-gray-300 w-24 flex-shrink-0"
-            >Serial:</span
+            >Nomor Seri:</span
           >
           <span
             class="text-gray-900 dark:text-gray-100 break-all font-mono text-xs"
@@ -377,7 +380,7 @@ onMounted(() => {
         <div v-if="row.date" class="flex items-center">
           <span
             class="font-medium text-gray-700 dark:text-gray-300 w-24 flex-shrink-0"
-            >Date:</span
+            >Tanggal:</span
           >
           <span class="text-gray-900 dark:text-gray-100">{{
             formatDate(row.date)
@@ -386,10 +389,10 @@ onMounted(() => {
         <div v-if="row.asset_items" class="flex items-center">
           <span
             class="font-medium text-gray-700 dark:text-gray-300 w-24 flex-shrink-0"
-            >Items:</span
+            >Item:</span
           >
           <UBadge
-            :label="`${row.asset_items?.length || 0} items`"
+            :label="`${row.asset_items?.length || 0} item`"
             color="blue"
             variant="soft"
             size="sm"
@@ -410,7 +413,7 @@ onMounted(() => {
           <template #leading>
             <LucideIcon name="eye" :size="14" />
           </template>
-          View
+          Lihat
         </UButton>
         <UButton
           color="gray"
@@ -422,7 +425,7 @@ onMounted(() => {
           <template #leading>
             <LucideIcon name="pencil" :size="14" />
           </template>
-          Edit
+          Ubah
         </UButton>
       </div>
     </div>
@@ -455,21 +458,21 @@ onMounted(() => {
             class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2"
           >
             <LucideIcon name="package" :size="20" />
-            <span class="truncate">Goods Transactions</span>
+            <span class="truncate">Transaksi Barang</span>
           </h3>
           <p
             class="text-sm text-gray-600 dark:text-gray-400 mt-1 hidden sm:block"
           >
-            Record and track goods going in and out of inventory
+            Catat dan lacak barang yang masuk dan keluar dari inventaris
           </p>
         </div>
         <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <USelectMenu
             v-model="goodsTransactionFilter"
             :options="[
-              { value: 'all', label: 'All Transactions' },
-              { value: 'out', label: 'Goods OUT Only' },
-              { value: 'in', label: 'Goods IN Only' },
+              { value: 'all', label: 'Semua Transaksi' },
+              { value: 'out', label: 'Barang Keluar' },
+              { value: 'in', label: 'Barang Masuk' },
             ]"
             option-attribute="label"
             value-attribute="value"
@@ -488,7 +491,7 @@ onMounted(() => {
             <template #leading>
               <LucideIcon name="refresh-cw" :size="16" />
             </template>
-            Refresh
+            Muat Ulang
           </UButton>
         </div>
       </div>
@@ -499,7 +502,7 @@ onMounted(() => {
         class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
       ></div>
       <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-        Loading transactions...
+        Memuat transaksi...
       </p>
     </div>
 
@@ -513,10 +516,10 @@ onMounted(() => {
         class="mx-auto text-gray-400 mb-3"
       />
       <p class="text-gray-600 dark:text-gray-400 font-medium">
-        No transactions found
+        Tidak ada transaksi
       </p>
       <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">
-        Click "Record Goods Transaction" to add your first transaction
+        Klik "Catat Transaksi Barang" untuk menambahkan transaksi pertama
       </p>
     </div>
 
@@ -527,12 +530,12 @@ onMounted(() => {
           <UTable
             :rows="filteredGoodsTransactions"
             :columns="[
-              { key: 'date', label: 'Date' },
-              { key: 'transaction_type', label: 'Type' },
+              { key: 'date', label: 'Tanggal' },
+              { key: 'transaction_type', label: 'Jenis' },
               { key: 'items', label: 'Item' },
-              { key: 'quantity', label: 'Quantity' },
-              { key: 'notes', label: 'Notes' },
-              { key: 'actions', label: 'Actions' },
+              { key: 'quantity', label: 'Jumlah' },
+              { key: 'notes', label: 'Catatan' },
+              { key: 'actions', label: 'Tindakan' },
             ]"
             class="dashboard-table transaction-table-responsive"
           >
@@ -554,16 +557,16 @@ onMounted(() => {
           <template #items-data="{ row }">
             <div class="flex flex-col">
               <span v-if="row.items && row.items.length > 0" class="font-medium text-gray-900 dark:text-gray-900 text-sm">
-                {{ row.items.length }} item(s)
+                {{ row.items.length }} item
               </span>
               <span v-else class="font-medium text-gray-900 dark:text-gray-100 text-sm">
-                No items
+                Tidak ada item
               </span>
               <div v-for="(item, idx) in row.items?.slice(0, 2)" :key="idx" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {{ item.item_name || (item.asset ? `${item.asset.brand} ${item.asset.model}` : item.id_items) }} - {{ item.quantity }} {{ item.unit }}
               </div>
               <span v-if="row.items && row.items.length > 2" class="text-xs text-gray-400 italic">
-                +{{ row.items.length - 2 }} more
+                +{{ row.items.length - 2 }} lainnya
               </span>
             </div>
           </template>

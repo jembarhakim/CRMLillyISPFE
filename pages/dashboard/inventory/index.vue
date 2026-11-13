@@ -5,7 +5,7 @@ import { useCustomToast } from '@/composables/useCustomToast'
 
 // Set page title
 useHead({
-  title: 'Inventory Management - CRM System'
+  title: 'Manajemen Inventaris - CRM'
 })
 
 // Reactive data
@@ -72,7 +72,7 @@ async function fetchInventoryStatus() {
   } catch (error) {
     console.error('Failed to fetch inventory status:', error)
     useCustomToast().add({
-      title: 'Failed to fetch inventory data',
+      title: 'Gagal memuat data inventaris',
       color: 'red'
     })
   } finally {
@@ -85,7 +85,7 @@ async function createPurchase() {
   try {
     const response = await inventoryAdminApi().createPurchase(purchaseForm)
     useCustomToast().add({
-      title: 'Purchase created successfully!'
+      title: 'Pembelian berhasil dibuat'
     })
     fetchInventoryStatus()
     // Reset form
@@ -98,7 +98,7 @@ async function createPurchase() {
     }]
   } catch (error: any) {
     useCustomToast().add({
-      title: error.message || 'Failed to create purchase',
+      title: error.message || 'Gagal membuat pembelian',
       color: 'red'
     })
   }
@@ -122,12 +122,12 @@ async function createDeployment() {
 
     const response = await inventoryAdminApi().createDeployment(data)
     useCustomToast().add({
-      title: 'Asset deployment successful!'
+      title: 'Penempatan aset berhasil'
     })
     fetchInventoryStatus()
   } catch (error: any) {
     useCustomToast().add({
-      title: error.message || 'Failed to deploy asset',
+      title: error.message || 'Gagal menempatkan aset',
       color: 'red'
     })
   }
@@ -136,6 +136,17 @@ async function createDeployment() {
 // Calculate subtotal
 function calculateSubtotal(item: any) {
   item.sub_total = item.qty_masuk * item.harga_satuan
+}
+
+function statusLabel(status: string) {
+  const labels: Record<string, string> = {
+    in_stock: 'Tersedia',
+    in_use: 'Digunakan',
+    maintenance: 'Dalam Pemeliharaan',
+    damaged: 'Rusak',
+    retired: 'Tidak Digunakan',
+  }
+  return labels[status] || status
 }
 
 // Add new purchase item
@@ -165,34 +176,34 @@ onMounted(() => {
 
 <template>
   <div class="p-6">
-    <h1 class="text-2xl font-bold mb-6">Inventory Management</h1>
+    <h1 class="text-2xl font-bold mb-6">Manajemen Inventaris</h1>
 
     <!-- Filters -->
     <UCard class="mb-6">
       <template #header>
-        <h3 class="text-lg font-semibold">Filter Inventory</h3>
+        <h3 class="text-lg font-semibold">Saring Inventaris</h3>
       </template>
       
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <UInput
           v-model="filters.brand"
-          placeholder="Filter by brand"
-          label="Brand"
+          placeholder="Saring berdasarkan merek"
+          label="Merek"
         />
         <UInput
           v-model="filters.model"
-          placeholder="Filter by model"
+          placeholder="Saring berdasarkan model"
           label="Model"
         />
         <USelect
           v-model="filters.status"
           :options="[
-            { label: 'All Status', value: '' },
-            { label: 'In Stock', value: 'in_stock' },
-            { label: 'In Use', value: 'in_use' },
-            { label: 'Maintenance', value: 'maintenance' },
-            { label: 'Damaged', value: 'damaged' },
-            { label: 'Retired', value: 'retired' }
+            { label: 'Semua Status', value: '' },
+            { label: 'Tersedia', value: 'in_stock' },
+            { label: 'Digunakan', value: 'in_use' },
+            { label: 'Dalam Pemeliharaan', value: 'maintenance' },
+            { label: 'Rusak', value: 'damaged' },
+            { label: 'Tidak Digunakan', value: 'retired' }
           ]"
           label="Status"
         />
@@ -200,7 +211,7 @@ onMounted(() => {
       
       <div class="mt-4">
         <UButton @click="fetchInventoryStatus" :loading="loading">
-          Apply Filters
+          Terapkan Saringan
         </UButton>
       </div>
     </UCard>
@@ -208,16 +219,16 @@ onMounted(() => {
     <!-- Inventory Status -->
     <UCard class="mb-6">
       <template #header>
-        <h3 class="text-lg font-semibold">Current Inventory Status</h3>
+        <h3 class="text-lg font-semibold">Status Inventaris Saat Ini</h3>
       </template>
       
       <div v-if="loading" class="text-center py-4">
         <LucideIcon name="refresh-cw" class="animate-spin h-6 w-6 mx-auto" />
-        <p class="mt-2">Loading inventory data...</p>
+        <p class="mt-2">Memuat data inventaris...</p>
       </div>
       
       <div v-else-if="inventoryData.length === 0" class="text-center py-4 text-gray-500">
-        No inventory data found
+        Data inventaris tidak ditemukan
       </div>
       
       <div v-else class="space-y-4">
@@ -229,26 +240,26 @@ onMounted(() => {
           <div class="flex justify-between items-start mb-2">
             <div>
               <h4 class="font-semibold">{{ item.brand }} {{ item.model }}</h4>
-              <p class="text-sm text-gray-600">Status: {{ item.status }}</p>
+              <p class="text-sm text-gray-600">Status: {{ statusLabel(item.status) }}</p>
             </div>
             <UBadge :color="item.status === 'in_stock' ? 'green' : 'yellow'">
-              {{ item.count }} items
+              {{ item.count }} item
             </UBadge>
           </div>
           
           <div v-if="item.items.length > 0" class="mt-3">
             <details class="cursor-pointer">
-              <summary class="text-sm font-medium">View Items ({{ item.items.length }})</summary>
+              <summary class="text-sm font-medium">Lihat Item ({{ item.items.length }})</summary>
               <div class="mt-2 space-y-1">
                 <div
                   v-for="assetItem in item.items.slice(0, 5)"
                   :key="assetItem.id"
                   class="text-xs bg-gray-50 p-2 rounded"
                 >
-                  MAC: {{ assetItem.mac_address }} | Created: {{ new Date(assetItem.created_at).toLocaleDateString() }}
+                  MAC: {{ assetItem.mac_address }} | Dibuat: {{ new Date(assetItem.created_at).toLocaleDateString('id-ID') }}
                 </div>
                 <div v-if="item.items.length > 5" class="text-xs text-gray-500">
-                  ... and {{ item.items.length - 5 }} more items
+                  ... dan {{ item.items.length - 5 }} item lainnya
                 </div>
               </div>
             </details>
@@ -260,7 +271,7 @@ onMounted(() => {
     <!-- Purchase Form -->
     <UCard class="mb-6">
       <template #header>
-        <h3 class="text-lg font-semibold">Purchase New Stock</h3>
+        <h3 class="text-lg font-semibold">Catat Stok Barang</h3>
       </template>
       
       <div class="space-y-4">
@@ -268,12 +279,12 @@ onMounted(() => {
           <UInput
             v-model="purchaseForm.date"
             type="date"
-            label="Purchase Date"
+            label="Tanggal Pembelian"
           />
           <UTextarea
             v-model="purchaseForm.notes"
-            placeholder="Purchase notes..."
-            label="Notes"
+            placeholder="Catatan pembelian..."
+            label="Catatan"
           />
         </div>
         
@@ -282,26 +293,26 @@ onMounted(() => {
             <USelect
               v-model="item.asset_id"
               :options="assets.map(a => ({ label: `${a.brand} ${a.model}`, value: a.id }))"
-              placeholder="Select asset"
-              label="Asset"
+              placeholder="Pilih aset"
+              label="Aset"
             />
             <UInput
               v-model="item.serial_number"
-              placeholder="Serial number"
-              label="Serial Number"
+              placeholder="Nomor seri"
+              label="Nomor Seri"
             />
             <UInput
               v-model.number="item.qty_masuk"
               type="number"
               min="1"
-              label="Quantity"
+              label="Jumlah"
               @input="calculateSubtotal(item)"
             />
             <UInput
               v-model.number="item.harga_satuan"
               type="number"
               min="0"
-              label="Unit Price"
+              label="Harga Satuan"
               @input="calculateSubtotal(item)"
             />
             <div>
@@ -320,17 +331,17 @@ onMounted(() => {
               variant="outline"
               size="sm"
             >
-              Remove
+              Hapus
             </UButton>
           </div>
         </div>
         
         <UButton @click="addPurchaseItem" variant="outline">
-          Add Item
+          Tambah Item
         </UButton>
         
         <UButton @click="createPurchase" class="w-full">
-          Create Purchase
+          Buat Pembelian
         </UButton>
       </div>
     </UCard>
@@ -338,46 +349,46 @@ onMounted(() => {
     <!-- Deployment Form -->
     <UCard>
       <template #header>
-        <h3 class="text-lg font-semibold">Asset Deployment</h3>
+        <h3 class="text-lg font-semibold">Penempatan Aset</h3>
       </template>
       
       <div class="space-y-4">
         <UInput
           v-model="deploymentForm.asset_item_id"
-          placeholder="Asset Item ID"
-          label="Asset Item ID"
+          placeholder="ID item aset"
+          label="ID Item Aset"
         />
         
         <USelect
           v-model="deploymentForm.transaction_type"
           :options="[
-            { label: 'Deploy (Out)', value: 'out' },
-            { label: 'Return (In)', value: 'in' }
+            { label: 'Tempatkan (Keluar)', value: 'out' },
+            { label: 'Kembalikan (Masuk)', value: 'in' }
           ]"
-          label="Transaction Type"
+          label="Jenis Transaksi"
         />
         
         <UTextarea
           v-model="deploymentForm.notes"
-          placeholder="Deployment notes..."
-          label="Notes"
+          placeholder="Catatan penempatan..."
+          label="Catatan"
         />
         
         <UInput
           v-model="deploymentForm.customer_installation_id"
-          placeholder="Customer Installation ID (optional)"
-          label="Customer Installation ID"
+          placeholder="ID instalasi pelanggan (opsional)"
+          label="ID Instalasi Pelanggan"
         />
         
         <UInput
           v-model="deploymentForm.trouble_ticket_id"
           type="number"
-          placeholder="Trouble Ticket ID (optional)"
-          label="Trouble Ticket ID"
+          placeholder="ID tiket gangguan (opsional)"
+          label="ID Tiket Gangguan"
         />
         
         <UButton @click="createDeployment" class="w-full">
-          Deploy Asset
+          Tempatkan Aset
         </UButton>
       </div>
     </UCard>

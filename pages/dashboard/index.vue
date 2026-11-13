@@ -610,7 +610,7 @@ watch([useYearRange, yearStart, yearEnd], async () => { if (useYearRange.value) 
 <template>
   <div class="w-full space-y-5 font-['Poppins',sans-serif]">
     <AdminPageHeader
-      title="Dashboard Overview"
+      title="Ringkasan Dasbor"
       description="Pantau performa pendapatan, pertumbuhan pelanggan, dan tiket gangguan secara real-time."
       icon="home"
       eyebrow="Pusat Kendali & Analitik"
@@ -635,7 +635,7 @@ watch([useYearRange, yearStart, yearEnd], async () => { if (useYearRange.value) 
         <div
           class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md flex flex-col justify-between">
           <div class="flex items-center justify-between gap-2">
-            <p class="text-xs sm:text-sm font-medium text-gray-500">Total Income</p>
+            <p class="text-xs sm:text-sm font-medium text-gray-500">Total Pemasukan</p>
             <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500"></span>
           </div>
           <p
@@ -648,7 +648,7 @@ watch([useYearRange, yearStart, yearEnd], async () => { if (useYearRange.value) 
         <div
           class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md flex flex-col justify-between">
           <div class="flex items-center justify-between gap-2">
-            <p class="text-xs sm:text-sm font-medium text-gray-500">Total Expenses</p>
+            <p class="text-xs sm:text-sm font-medium text-gray-500">Total Pengeluaran</p>
             <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-red-500"></span>
           </div>
           <p
@@ -661,7 +661,7 @@ watch([useYearRange, yearStart, yearEnd], async () => { if (useYearRange.value) 
         <div
           class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md flex flex-col justify-between">
           <div class="flex items-center justify-between gap-2">
-            <p class="text-xs sm:text-sm font-medium text-gray-500">Net Worth</p>
+            <p class="text-xs sm:text-sm font-medium text-gray-500">Kekayaan Bersih</p>
             <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-blue-500"></span>
           </div>
           <p
@@ -674,7 +674,7 @@ watch([useYearRange, yearStart, yearEnd], async () => { if (useYearRange.value) 
         <div
           class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md flex flex-col justify-between">
           <div class="flex items-center justify-between gap-2">
-            <p class="text-xs sm:text-sm font-medium text-gray-500">Total Customers</p>
+            <p class="text-xs sm:text-sm font-medium text-gray-500">Total Pelanggan</p>
             <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-[#A93133]"></span>
           </div>
           <p class="mt-2.5 text-lg sm:text-xl xl:text-2xl font-bold tracking-tight text-[#111111] leading-snug">
@@ -689,7 +689,7 @@ watch([useYearRange, yearStart, yearEnd], async () => { if (useYearRange.value) 
         <div
           class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md flex flex-col justify-between">
           <div class="flex items-center justify-between gap-2">
-            <p class="text-xs sm:text-sm font-medium text-gray-500">Total Invoices</p>
+            <p class="text-xs sm:text-sm font-medium text-gray-500">Total Tagihan</p>
             <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500"></span>
           </div>
           <p class="mt-2.5 text-lg sm:text-xl xl:text-2xl font-bold tracking-tight text-[#111111] leading-snug">
@@ -701,7 +701,7 @@ watch([useYearRange, yearStart, yearEnd], async () => { if (useYearRange.value) 
         <div
           class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md flex flex-col justify-between">
           <div class="flex items-center justify-between gap-2">
-            <p class="text-xs sm:text-sm font-medium text-gray-500">Total Areas</p>
+            <p class="text-xs sm:text-sm font-medium text-gray-500">Total Wilayah</p>
             <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-indigo-500"></span>
           </div>
           <p class="mt-2.5 text-lg sm:text-xl xl:text-2xl font-bold tracking-tight text-[#111111] leading-snug">
@@ -713,7 +713,7 @@ watch([useYearRange, yearStart, yearEnd], async () => { if (useYearRange.value) 
         <div
           class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md flex flex-col justify-between">
           <div class="flex items-center justify-between gap-2">
-            <p class="text-xs sm:text-sm font-medium text-gray-500">Total Products</p>
+            <p class="text-xs sm:text-sm font-medium text-gray-500">Total Produk</p>
             <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-purple-500"></span>
           </div>
           <p class="mt-2.5 text-lg sm:text-xl xl:text-2xl font-bold tracking-tight text-[#111111] leading-snug">
@@ -725,7 +725,7 @@ watch([useYearRange, yearStart, yearEnd], async () => { if (useYearRange.value) 
         <div
           class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md flex flex-col justify-between">
           <div class="flex items-center justify-between gap-2">
-            <p class="text-xs sm:text-sm font-medium text-gray-500">Trouble Accumulation</p>
+            <p class="text-xs sm:text-sm font-medium text-gray-500">Akumulasi Gangguan</p>
             <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-orange-500"></span>
           </div>
           <p class="mt-2.5 text-lg sm:text-xl xl:text-2xl font-bold tracking-tight text-[#111111] leading-snug">
@@ -750,10 +750,10 @@ watch([useYearRange, yearStart, yearEnd], async () => { if (useYearRange.value) 
               <template v-else-if="filterType === 'custom' && customDateFrom && customDateTo">{{ customDateFrom }} s/d
                 {{ customDateTo }}</template>
               <template v-else-if="useYearRange && yearStart && yearEnd">{{ yearStart }} - {{ yearEnd }}</template>
-              <template v-else>Semua Waktu (All Time)</template>
+              <template v-else>Sepanjang Waktu</template>
             </strong>
           </span>
-          <span>Unpaid/Pending: <strong class="text-gray-800">{{ unpaidCustomersList.length }} pelanggan</strong></span>
+          <span>Belum Dibayar/Menunggu: <strong class="text-gray-800">{{ unpaidCustomersList.length }} pelanggan</strong></span>
           <span>Tiket Terbaru: <strong class="text-gray-800">{{ recentTickets.length }} tiket</strong></span>
         </div>
       </div>
@@ -782,11 +782,11 @@ watch([useYearRange, yearStart, yearEnd], async () => { if (useYearRange.value) 
             <label class="text-xs font-semibold text-gray-700">Tipe Filter</label>
             <select v-model="filterType" @change="applyDateFilter"
               class="px-3.5 py-2.5 text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#A93133]/20 focus:border-[#A93133] font-medium">
-              <option value="all-time">All Time</option>
-              <option value="monthly">Monthly</option>
-              <option value="yearly">Yearly</option>
-              <option value="range">Range (Days)</option>
-              <option value="custom">Custom Date Range</option>
+              <option value="all-time">Sepanjang Waktu</option>
+              <option value="monthly">Bulanan</option>
+              <option value="yearly">Tahunan</option>
+              <option value="range">Rentang Hari</option>
+              <option value="custom">Rentang Tanggal Khusus</option>
             </select>
           </div>
 

@@ -5,21 +5,21 @@
         <!-- Header Section -->
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Installation Reports</h1>
-            <p class="text-sm text-gray-600 mt-1">View and manage installation reports</p>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Laporan Instalasi</h1>
+            <p class="text-sm text-gray-600 mt-1">Lihat dan kelola laporan instalasi</p>
           </div>
           <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <UButton @click="goBackToDashboard" 
                      color="gray" variant="outline"
                      class="w-full sm:w-auto">
               <LucideIcon name="arrow-left" :size="16" class="mr-2" />
-              Back to Dashboard
+              Kembali ke Dasbor
             </UButton>
             <UButton @click="exportReports" 
                      color="green" variant="outline"
                      class="w-full sm:w-auto">
               <LucideIcon name="download" :size="16" class="mr-2" />
-              Export Reports
+              Ekspor Laporan
             </UButton>
           </div>
         </div>
@@ -29,20 +29,20 @@
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <h3 class="text-base sm:text-lg font-semibold text-blue-800 flex items-center">
               <LucideIcon name="funnel" class="mr-2" />
-              Filters
+              Filter
             </h3>
             <div class="flex flex-col sm:flex-row gap-2">
               <UButton @click="clearFilters" 
                        color="gray" variant="outline" size="sm"
                        class="w-full sm:w-auto">
                 <LucideIcon name="x" :size="16" class="mr-1" />
-                Clear All
+                Hapus Semua
               </UButton>
               <UButton @click="applyFilters" 
                        color="blue" size="sm"
                        class="w-full sm:w-auto">
                 <LucideIcon name="search" :size="16" class="mr-1" />
-                Apply Filters
+                Terapkan Filter
               </UButton>
             </div>
           </div>
@@ -50,11 +50,11 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
             <UFormGroup class="mb-3 sm:mb-4">
               <template #label>
-                <span class="text-black font-bold text-xs sm:text-sm">Search</span>
+                <span class="text-black font-bold text-xs sm:text-sm">Cari</span>
               </template>
               <UInput 
                 v-model="filters.search"
-                placeholder="Search customer, technician..."
+                placeholder="Cari pelanggan atau teknisi..."
                 @input="onFilterChange"
                 class="w-full search-input-dark"
               >
@@ -71,7 +71,7 @@
               <USelectMenu
                 v-model="filters.status"
                 :options="statusOptions"
-                placeholder="All Status"
+                placeholder="Semua Status"
                 value-attribute="value"
                 option-attribute="label"
                 @change="onFilterChange"
@@ -81,12 +81,12 @@
             
             <UFormGroup class="mb-3 sm:mb-4">
               <template #label>
-                <span class="text-black font-bold text-xs sm:text-sm">Installation Type</span>
+                <span class="text-black font-bold text-xs sm:text-sm">Jenis Instalasi</span>
               </template>
               <USelectMenu
                 v-model="filters.installation_type"
                 :options="installationTypeOptions"
-                placeholder="All Types"
+                placeholder="Semua Jenis"
                 value-attribute="value"
                 option-attribute="label"
                 @change="onFilterChange"
@@ -96,7 +96,7 @@
             
             <UFormGroup class="mb-3 sm:mb-4">
               <template #label>
-                <span class="text-black font-bold text-xs sm:text-sm">Date From</span>
+                <span class="text-black font-bold text-xs sm:text-sm">Tanggal Mulai</span>
               </template>
               <UInput 
                 v-model="filters.date_from" 
@@ -108,7 +108,7 @@
             
             <UFormGroup class="mb-3 sm:mb-4">
               <template #label>
-                <span class="text-black font-bold text-xs sm:text-sm">Date To</span>
+                <span class="text-black font-bold text-xs sm:text-sm">Tanggal Akhir</span>
               </template>
               <UInput 
                 v-model="filters.date_to" 
@@ -122,9 +122,9 @@
         <!-- Active Filters Display -->
         <div v-if="hasActiveFilters" class="mt-4 pt-4 border-t border-blue-200">
           <div class="flex items-center flex-wrap gap-2">
-            <span class="text-sm font-medium text-blue-700">Active Filters:</span>
+            <span class="text-sm font-medium text-blue-700">Filter Aktif:</span>
             <span v-if="filters.search" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-              Search: "{{ filters.search }}"
+              Pencarian: "{{ filters.search }}"
               <button @click="clearFilter('search')" class="ml-1 hover:text-indigo-600">
                 <LucideIcon name="x" class="w-3 h-3" />
               </button>
@@ -136,19 +136,19 @@
               </button>
             </span>
             <span v-if="filters.installation_type" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              Type: {{ getInstallationTypeLabel(filters.installation_type) }}
+              Jenis: {{ getInstallationTypeLabel(filters.installation_type) }}
               <button @click="clearFilter('installation_type')" class="ml-1 hover:text-green-600">
                 <LucideIcon name="x" class="w-3 h-3" />
               </button>
             </span>
             <span v-if="filters.date_from" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-              From: {{ formatFilterDate(filters.date_from) }}
+              Dari: {{ formatFilterDate(filters.date_from) }}
               <button @click="clearFilter('date_from')" class="ml-1 hover:text-purple-600">
                 <LucideIcon name="x" class="w-3 h-3" />
               </button>
             </span>
             <span v-if="filters.date_to" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-              To: {{ formatFilterDate(filters.date_to) }}
+              Sampai: {{ formatFilterDate(filters.date_to) }}
               <button @click="clearFilter('date_to')" class="ml-1 hover:text-purple-600">
                 <LucideIcon name="x" class="w-3 h-3" />
               </button>
@@ -161,11 +161,11 @@
         <div class="block sm:hidden space-y-4">
           <div v-if="loading" class="text-center py-8">
             <LucideIcon name="refresh-cw" class="animate-spin text-2xl text-blue-600 mb-2" />
-            <p class="text-gray-600">Loading reports...</p>
+            <p class="text-gray-600">Memuat laporan...</p>
           </div>
           <div v-else-if="filteredReports.length === 0" class="text-center py-8 text-gray-500">
             <LucideIcon name="file-text" class="text-4xl mb-2" />
-            <p>No installation reports found</p>
+            <p>Laporan instalasi tidak ditemukan</p>
           </div>
           <div v-else v-for="report in paginatedReports" :key="report.installation_id"
                class="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
@@ -176,7 +176,7 @@
                   :to="`/dashboard/report/customer-installation/detail/${report.installation_id}`"
                   class="text-lg font-semibold hover:underline text-blue-600 hover:text-blue-800"
                 >
-                  {{ report.customer_name || 'Unknown' }}
+                  {{ report.customer_name || 'Tidak Diketahui' }}
                 </NuxtLink>
               </div>
               <UDropdown
@@ -199,11 +199,11 @@
             <div class="space-y-2 text-sm">
               <div class="flex items-center gap-2">
                 <LucideIcon name="user" class="w-4 h-4 text-gray-400" />
-                <span class="text-gray-600">{{ report.technician_name || 'Unknown Technician' }}</span>
+                <span class="text-gray-600">{{ report.technician_name || 'Teknisi Tidak Diketahui' }}</span>
               </div>
               <div class="flex items-center gap-2">
                 <LucideIcon name="wrench" class="w-4 h-4 text-gray-400" />
-                <span class="text-gray-600">{{ report.installation_type || 'Unknown Type' }}</span>
+                <span class="text-gray-600">{{ report.installation_type || 'Jenis Tidak Diketahui' }}</span>
               </div>
               <div v-if="report.status_psb" class="flex items-center gap-2">
                 <LucideIcon name="flag" class="w-4 h-4 text-gray-400" />
@@ -217,7 +217,7 @@
                 <div class="flex gap-1 flex-wrap">
                   <span :class="getStatusColor(report.installation_status)"
                         class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap">
-                    {{ report.installation_status || 'Unknown' }}
+                    {{ report.installation_status || 'Tidak Diketahui' }}
                   </span>
                 </div>
               </div>
@@ -235,21 +235,21 @@
                     :to="`/dashboard/report/customer-installation/detail/${row.installation_id}`"
                     class="hover:underline font-medium text-blue-600 hover:text-blue-800"
                   >
-                    {{ row.customer_name || 'Unknown' }}
+                    {{ row.customer_name || 'Tidak Diketahui' }}
                   </NuxtLink>
                 </div>
               </template>
 
               <template #technician-data="{ row }">
                 <div class="table-cell-content">
-                  <div class="text-sm font-medium text-gray-900">{{ row.technician_name || 'Unknown' }}</div>
+                  <div class="text-sm font-medium text-gray-900">{{ row.technician_name || 'Tidak Diketahui' }}</div>
                 </div>
               </template>
 
               <template #type-data="{ row }">
                 <div class="table-cell-content">
                   <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                    {{ row.installation_type || 'Unknown' }}
+                    {{ row.installation_type || 'Tidak Diketahui' }}
                   </span>
                 </div>
               </template>
@@ -257,7 +257,7 @@
               <template #status-data="{ row }">
                 <div class="table-cell-content">
                   <span :class="getStatusColor(row.installation_status)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
-                    {{ row.installation_status || 'Unknown' }}
+                    {{ row.installation_status || 'Tidak Diketahui' }}
                   </span>
                 </div>
               </template>
@@ -295,7 +295,7 @@
         <!-- Pagination -->
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
           <div class="text-xs sm:text-sm text-gray-700 text-center sm:text-left">
-            Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, totalItems) }} of {{ totalItems }} results
+            Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }}–{{ Math.min(currentPage * itemsPerPage, totalItems) }} dari {{ totalItems }} hasil
           </div>
           <div class="flex justify-center sm:justify-end gap-2">
             <UButton 
@@ -305,7 +305,7 @@
               variant="outline"
               class="w-full sm:w-auto"
             >
-              Previous
+              Sebelumnya
             </UButton>
             <UButton 
               @click="nextPage" 
@@ -314,7 +314,7 @@
               variant="outline"
               class="w-full sm:w-auto"
             >
-              Next
+              Berikutnya
             </UButton>
           </div>
         </div>
@@ -333,14 +333,14 @@
         <div class="portrait-modal-inner bg-white rounded-xl shadow-lg">
           <!-- Header -->
           <header class="portrait-modal-header p-4 border-b border-gray-200 flex items-center justify-between">
-            <h2 id="delete-modal-title" class="text-lg font-bold text-gray-900">Delete Installation Report</h2>
+            <h2 id="delete-modal-title" class="text-lg font-bold text-gray-900">Hapus Laporan Instalasi</h2>
             <UButton
               @click="closeDeleteModal"
               variant="outline"
               color="gray"
               size="md"
               class="delete-close-button"
-              aria-label="Close delete dialog"
+              aria-label="Tutup dialog penghapusan"
             >
               <LucideIcon name="x" :size="20" />
             </UButton>
@@ -352,7 +352,7 @@
             <section class="bg-white rounded-lg p-4 border border-gray-200">
               <h3 class="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <LucideIcon name="user" class="w-5 h-5 text-blue-600" />
-                Customer Information
+                Informasi Pelanggan
               </h3>
               <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-md p-3 border border-blue-100">
                 <div class="flex items-center gap-3">
@@ -360,7 +360,7 @@
                     <LucideIcon name="user" class="w-5 h-5" />
                   </div>
                   <div class="truncate">
-                    <div class="font-semibold text-gray-800 text-sm">{{ selectedReport?.customer_name || 'Unknown Customer' }}</div>
+                    <div class="font-semibold text-gray-800 text-sm">{{ selectedReport?.customer_name || 'Pelanggan Tidak Dikenal' }}</div>
                     <div class="text-xs text-gray-500 font-mono mt-1">ID: {{ selectedReport?.installation_id || 'N/A' }}</div>
                   </div>
                 </div>
@@ -371,7 +371,7 @@
             <section class="bg-white rounded-lg p-4 border border-gray-200">
               <h3 class="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <LucideIcon name="alert-triangle" class="w-5 h-5 text-red-600" />
-                Critical Warning
+                Peringatan Penting
               </h3>
               <div class="bg-red-50 border border-red-200 rounded-md p-3">
                 <div class="flex gap-3">
@@ -381,13 +381,13 @@
                     </div>
                   </div>
                   <div class="flex-1 text-sm text-red-800">
-                    <strong class="block mb-2">⚠️ CRITICAL WARNING</strong>
-                    <p class="mb-2">You are about to <span class="font-bold">PERMANENTLY DELETE</span> this installation report and all associated data.</p>
+                    <strong class="block mb-2">⚠️ PERINGATAN PENTING</strong>
+                    <p class="mb-2">Anda akan <span class="font-bold">MENGHAPUS PERMANEN</span> laporan instalasi ini beserta semua data terkait.</p>
                     <ul class="list-disc list-inside text-red-700 space-y-1">
-                      <li>Delete the installation report and clean up RouterOS configurations</li>
-                      <li>Update MAC status to "in_stock"</li>
-                      <li>Remove technician assignments and assets</li>
-                      <li>Delete associated invoices and network items</li>
+                      <li>Menghapus laporan instalasi dan membersihkan konfigurasi RouterOS</li>
+                      <li>Mengubah status MAC menjadi "tersedia"</li>
+                      <li>Menghapus penugasan teknisi dan aset</li>
+                      <li>Menghapus tagihan dan item jaringan terkait</li>
                     </ul>
                   </div>
                 </div>
@@ -398,11 +398,11 @@
             <section class="bg-white rounded-lg p-4 border border-gray-200">
               <h3 class="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <LucideIcon name="info" class="w-5 h-5 text-gray-600" />
-                Impact Summary
+                Ringkasan Dampak
               </h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div class="p-3 bg-white rounded border">
-                  <div class="text-xs text-gray-500">Customer</div>
+                  <div class="text-xs text-gray-500">Pelanggan</div>
                   <div class="font-semibold text-gray-900 text-sm">{{ selectedReport?.customer_name || 'Unknown' }}</div>
                 </div>
                 <div class="p-3 bg-white rounded border">
@@ -410,11 +410,11 @@
                   <div class="font-semibold text-sm" :class="getStatusColor(selectedReport?.installation_status)">{{ selectedReport?.installation_status || 'Unknown' }}</div>
                 </div>
                 <div class="p-3 bg-white rounded border">
-                  <div class="text-xs text-gray-500">Report ID</div>
+                  <div class="text-xs text-gray-500">ID Laporan</div>
                   <div class="font-mono text-sm text-gray-800">{{ selectedReport?.installation_id || 'N/A' }}</div>
                 </div>
                 <div class="p-3 bg-white rounded border">
-                  <div class="text-xs text-gray-500">MAC Address</div>
+                  <div class="text-xs text-gray-500">Alamat MAC</div>
                   <div class="font-mono text-sm text-blue-800">{{ selectedReport?.mac_address || 'Not available' }}</div>
                 </div>
               </div>
@@ -427,16 +427,16 @@
               <div class="bg-yellow-50 border border-yellow-200 rounded-md p-3 flex items-start gap-3">
                 <UCheckbox v-model="deleteConfirmationChecked" :disabled="deleting" color="red" class="mt-1" />
                 <div class="text-sm text-gray-800">
-                  I understand that this action will <span class="font-bold text-red-700 mx-1">PERMANENTLY DELETE</span> the installation report for
-                  <strong class="text-blue-600">"{{ selectedReport?.customer_name || 'Unknown' }}"</strong> and all associated data.
-                  <div class="text-xs text-red-600 mt-1 flex items-center"><LucideIcon name="alert-triangle" class="w-4 h-4 mr-1" />This action CANNOT be undone!</div>
+                  Saya memahami tindakan ini akan <span class="font-bold text-red-700 mx-1">MENGHAPUS PERMANEN</span> laporan instalasi milik
+                  <strong class="text-blue-600">"{{ selectedReport?.customer_name || 'Tidak Dikenal' }}"</strong> beserta semua data terkait.
+                  <div class="text-xs text-red-600 mt-1 flex items-center"><LucideIcon name="alert-triangle" class="w-4 h-4 mr-1" />Tindakan ini TIDAK DAPAT dibatalkan!</div>
                 </div>
               </div>
 
               <div class="flex flex-col sm:flex-row sm:justify-end sm:items-center gap-3">
                 <div class="text-xs text-gray-600 flex items-center gap-1">
                   <LucideIcon name="info" class="w-4 h-4 text-yellow-600" />
-                  All warnings must be read
+                  Baca semua peringatan terlebih dahulu
                 </div>
                 <div class="flex gap-3 w-full sm:w-auto">
                   <UButton
@@ -448,7 +448,7 @@
                     :disabled="deleting"
                     class="flex-1 sm:flex-initial"
                   >
-                    Cancel
+                    Batal
                   </UButton>
                   <UButton
                     type="submit"
@@ -461,7 +461,7 @@
                     class="flex-1 sm:flex-initial font-semibold shadow-sm"
                   >
                     <LucideIcon v-if="!deleting" name="trash-2" :size="18" class="mr-2" />
-                    {{ deleting ? 'Deleting...' : 'Delete Report' }}
+                    {{ deleting ? 'Menghapus...' : 'Hapus Laporan' }}
                   </UButton>
                 </div>
               </div>
